@@ -1,0 +1,823 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Record Disbursement - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .back-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .back-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        color: #64748B;
+    }
+
+    .alert-info {
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        border-left: 4px solid #3B82F6;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+    }
+
+    .alert-info i {
+        color: #3B82F6;
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .alert-info strong {
+        color: #1E40AF;
+    }
+
+    .alert-info-text {
+        color: #1E40AF;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .form-section {
+        margin-bottom: 24px;
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-label i {
+        color: #64748B;
+        font-size: 16px;
+    }
+
+    .text-danger {
+        color: #DC2626;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: #94A3B8;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-text i {
+        font-size: 14px;
+    }
+
+    .confirmation-section {
+        background: #FEF3C7;
+        border: 1px solid #FCD34D;
+        border-left: 4px solid #F59E0B;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 24px 0;
+    }
+
+    .confirmation-icon {
+        width: 48px;
+        height: 48px;
+        background: #FEF3C7;
+        border: 2px solid #F59E0B;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+
+    .confirmation-icon i {
+        font-size: 24px;
+        color: #F59E0B;
+    }
+
+    .confirmation-section h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #92400E;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .confirmation-section p {
+        color: #92400E;
+        font-size: 14px;
+        text-align: center;
+        margin-bottom: 16px;
+        line-height: 1.6;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .form-check-input {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #F59E0B;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .form-check-input:checked {
+        background-color: #F59E0B;
+        border-color: #F59E0B;
+    }
+
+    .form-check-label {
+        color: #92400E;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background: #229954;
+        transform: translateY(-1px);
+    }
+
+    .btn-success:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-outline-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+    }
+
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spinner 0.6s linear infinite;
+    }
+
+    @keyframes spinner {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .info-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    .info-card-header {
+        background: #F8FAFC;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .info-card-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-card-body {
+        padding: 0;
+    }
+
+    .info-item {
+        padding: 16px 20px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 16px;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .info-label i {
+        font-size: 14px;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .amount-highlight {
+        color: #27ae60;
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .applicant-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .applicant-avatar {
+        width: 56px;
+        height: 56px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 600;
+        font-size: 18px;
+        color: #3498db;
+    }
+
+    .applicant-details h6 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 4px 0;
+    }
+
+    .applicant-meta {
+        font-size: 13px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .info-item {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .info-value {
+            text-align: left;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'allocation_list' %}">Allocations</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Record Disbursement</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-cash-coin"></i>
+            Record Disbursement
+        </h1>
+        <a href="{% url 'allocation_list' %}" class="back-btn">
+            <i class="bi bi-arrow-left"></i>
+            Back to Allocations
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Main Form Section -->
+        <div class="col-lg-8">
+            <div class="section-container">
+                <!-- Alert Info -->
+                <div class="alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <div class="alert-info-text">
+                        <strong>Important:</strong> Once recorded, this disbursement cannot be undone. Please ensure all details are correct before proceeding.
+                    </div>
+                </div>
+
+                <form method="post" id="disbursementForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section">
+                        <label for="cheque_number" class="form-label">
+                            <i class="bi bi-receipt"></i>
+                            Cheque Number 
+                            <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="cheque_number" 
+                               id="cheque_number" 
+                               required 
+                               placeholder="Enter cheque number (e.g., CHQ-001234)"
+                               pattern="[A-Za-z0-9\-]+"
+                               title="Please enter a valid cheque number">
+                        <div class="form-text">
+                            <i class="bi bi-lightbulb"></i>
+                            Enter the unique cheque number for this disbursement
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label for="disbursement_date" class="form-label">
+                            <i class="bi bi-calendar-event"></i>
+                            Disbursement Date
+                        </label>
+                        <input type="date" 
+                               class="form-control" 
+                               name="disbursement_date" 
+                               id="disbursement_date" 
+                               value="{% now 'Y-m-d' %}"
+                               max="{% now 'Y-m-d' %}">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i>
+                            Date when the disbursement was made
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label for="remarks" class="form-label">
+                            <i class="bi bi-chat-text"></i>
+                            Remarks
+                        </label>
+                        <textarea class="form-control" 
+                                  name="remarks" 
+                                  id="remarks" 
+                                  rows="4" 
+                                  placeholder="Enter any additional remarks about the disbursement (optional)..."></textarea>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i>
+                            Optional notes about this disbursement
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Section -->
+                    <div class="confirmation-section">
+                        <div class="confirmation-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <h5>Confirm Disbursement</h5>
+                        <p>
+                            You are about to disburse <strong>KES {{ allocation.amount_allocated|floatformat:2 }}</strong> 
+                            to <strong>{{ allocation.application.applicant.user.get_full_name }}</strong>
+                        </p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmDisbursement" required>
+                            <label class="form-check-label" for="confirmDisbursement">
+                                I confirm that this disbursement has been completed and all details are correct
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success" id="submitBtn">
+                            <i class="bi bi-check-circle"></i>
+                            Record Disbursement
+                        </button>
+                        <a href="{% url 'allocation_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar with Details -->
+        <div class="col-lg-4">
+            <!-- Allocation Information -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-info-circle"></i>
+                        Allocation Details
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-hash"></i>
+                            Application
+                        </span>
+                        <span class="info-value">{{ allocation.application.application_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-cash-stack"></i>
+                            Amount
+                        </span>
+                        <span class="info-value amount-highlight">KES {{ allocation.amount_allocated|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-calendar-check"></i>
+                            Approved On
+                        </span>
+                        <span class="info-value">{{ allocation.allocation_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-person-check"></i>
+                            Approved By
+                        </span>
+                        <span class="info-value">{{ allocation.approved_by.get_full_name|default:allocation.approved_by.username }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-toggle-on"></i>
+                            Status
+                        </span>
+                        <span class="info-value">
+                            <span class="status-badge status-approved">
+                                <i class="bi bi-check-circle"></i>Approved
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applicant Information -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-person"></i>
+                        Applicant Details
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="applicant-header">
+                        <div class="applicant-avatar">
+                            {{ allocation.application.applicant.user.first_name.0 }}{{ allocation.application.applicant.user.last_name.0 }}
+                        </div>
+                        <div class="applicant-details">
+                            <h6>{{ allocation.application.applicant.user.get_full_name }}</h6>
+                            <div class="applicant-meta">
+                                <i class="bi bi-credit-card"></i>
+                                {{ allocation.application.applicant.id_number }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-telephone"></i>
+                            Phone
+                        </span>
+                        <span class="info-value">{{ allocation.application.applicant.user.phone_number|default:"Not provided" }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-envelope"></i>
+                            Email
+                        </span>
+                        <span class="info-value">{{ allocation.application.applicant.user.email }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-geo-alt"></i>
+                            Ward
+                        </span>
+                        <span class="info-value">{{ allocation.application.applicant.ward.name|default:"Not specified" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Institution Information -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-building"></i>
+                        Institution Details
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-mortarboard"></i>
+                            Institution
+                        </span>
+                        <span class="info-value">{{ allocation.application.institution.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-tag"></i>
+                            Type
+                        </span>
+                        <span class="info-value">{{ allocation.application.institution.get_institution_type_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-geo"></i>
+                            County
+                        </span>
+                        <span class="info-value">{{ allocation.application.institution.county }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-card-text"></i>
+                            Admission No.
+                        </span>
+                        <span class="info-value">{{ allocation.application.admission_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-ladder"></i>
+                            Year of Study
+                        </span>
+                        <span class="info-value">Year {{ allocation.application.year_of_study }}</span>
+                    </div>
+                    {% if allocation.application.course_name %}
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-book"></i>
+                            Course
+                        </span>
+                        <span class="info-value">{{ allocation.application.course_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('disbursementForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const chequeInput = document.getElementById('cheque_number');
+    const confirmCheckbox = document.getElementById('confirmDisbursement');
+
+    // Form validation
+    function validateForm() {
+        const chequeNumber = chequeInput.value.trim();
+        const isConfirmed = confirmCheckbox.checked;
+        
+        return chequeNumber.length > 0 && isConfirmed;
+    }
+
+    // Enable/disable submit button based on form validity
+    function toggleSubmitButton() {
+        submitBtn.disabled = !validateForm();
+    }
+
+    // Add event listeners
+    chequeInput.addEventListener('input', toggleSubmitButton);
+    confirmCheckbox.addEventListener('change', toggleSubmitButton);
+
+    // Initial validation
+    toggleSubmitButton();
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Show loading state
+        submitBtn.classList.add('btn-loading');
+        submitBtn.innerHTML = '<span style="opacity: 0;">Processing...</span>';
+        submitBtn.disabled = true;
+
+        // Allow form submission to continue
+    });
+
+    // Cheque number formatting
+    chequeInput.addEventListener('input', function() {
+        let value = this.value.toUpperCase();
+        // Remove any characters that aren't alphanumeric or hyphen
+        value = value.replace(/[^A-Z0-9\-]/g, '');
+        this.value = value;
+    });
+
+    // Auto-focus on cheque number input
+    chequeInput.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,456 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}My Applications - Kiharu Bursary{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .application-item {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .application-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #3498db;
+    }
+
+    .application-wrapper {
+        display: flex;
+        gap: 20px;
+        align-items: start;
+        flex-wrap: wrap;
+    }
+
+    .application-number-section {
+        min-width: 140px;
+    }
+
+    .application-number {
+        font-size: 15px;
+        font-weight: 600;
+        color: #3498db;
+        margin-bottom: 6px;
+    }
+
+    .application-date {
+        font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .status-section {
+        min-width: 120px;
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: #64748B;
+    }
+
+    .status-submitted {
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+
+    .status-under_review {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .status-approved {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .status-disbursed {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8B5CF6;
+    }
+
+    .details-section {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .institution-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .category-name {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .amount-section {
+        min-width: 140px;
+    }
+
+    .amount-display {
+        font-size: 16px;
+        font-weight: 600;
+        color: #10B981;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .amount-label {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .actions-section {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .application-wrapper {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .application-number-section,
+        .status-section,
+        .details-section,
+        .amount-section {
+            min-width: 100%;
+        }
+
+        .actions-section {
+            width: 100%;
+        }
+
+        .actions-section .btn {
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'student_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">My Applications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-files"></i>
+                    My Applications
+                </h1>
+                <p class="page-subtitle">
+                    Track all your bursary applications in one place
+                </p>
+            </div>
+            <a href="{% url 'student_application_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> New Application
+            </a>
+        </div>
+
+        <!-- Applications List -->
+        {% if applications %}
+            {% for application in applications %}
+            <div class="application-item">
+                <div class="application-wrapper">
+                    <!-- Application Number and Date -->
+                    <div class="application-number-section">
+                        <div class="application-number">
+                            {{ application.application_number }}
+                        </div>
+                        <div class="application-date">
+                            <i class="bi bi-calendar"></i>
+                            {{ application.date_submitted|date:"M j, Y"|default:"Draft" }}
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="status-section">
+                        <span class="status-badge status-{{ application.status }}">
+                            {{ application.get_status_display }}
+                        </span>
+                    </div>
+
+                    <!-- Institution and Category -->
+                    <div class="details-section">
+                        <div class="institution-name">
+                            {{ application.institution.name }}
+                        </div>
+                        <div class="category-name">
+                            {{ application.bursary_category.name }}
+                        </div>
+                    </div>
+
+                    <!-- Amount Requested -->
+                    <div class="amount-section">
+                        <div class="amount-display">
+                            <i class="bi bi-currency-exchange"></i>
+                            KES {{ application.amount_requested|floatformat:2 }}
+                        </div>
+                        <div class="amount-label">Amount Requested</div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="actions-section">
+                        <a href="{% url 'student_application_detail' application.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> View
+                        </a>
+                        {% if application.status == 'draft' %}
+                        <a href="{% url 'student_application_edit' application.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="pagination-container">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-folder-x"></i>
+                </div>
+                <h3 class="empty-title">No Applications Yet</h3>
+                <p class="empty-text">
+                    You haven't submitted any bursary applications yet.
+                </p>
+                <a href="{% url 'student_application_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Create Your First Application
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

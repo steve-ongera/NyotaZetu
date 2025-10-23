@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiharu Bursary System - Enhanced Admin</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 70px;
+            --navbar-height: 60px;
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --light-bg: #f8f9fa;
+            --transition-speed: 0.3s;
+            --shadow-light: 0 2px 10px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 20px rgba(0,0,0,0.15);
+            --sidebar-bg: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Enhanced Navbar */
+        .navbar-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-light);
+            height: var(--navbar-height);
+            padding: 0;
+            z-index: 1050;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            font-size: 1.3rem;
+            letter-spacing: -0.5px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .county-logo {
+            height: 42px;
+            width: auto;
+            margin-right: 12px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .county-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .navbar-nav .nav-link {
+            color: var(--primary-color) !important;
+            font-weight: 600;
+            padding: 0 20px;
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            border-radius: 8px;
+            margin: 0 5px;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--accent-color) !important;
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Professional Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--navbar-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--navbar-height));
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-medium);
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow: hidden;
+            border-right: 1px solid rgba(255,255,255,0.3);
+            transform: translateX(0);
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            text-align: center;
+            position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 25px 10px;
+        }
+
+        .sidebar-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+            pointer-events: none;
+        }
+
+        .sidebar-header h5 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            transition: all var(--transition-speed) ease;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .sidebar.collapsed .sidebar-header h5 {
+            font-size: 0.9rem;
+        }
+
+        .sidebar-content {
+            height: calc(100% - 80px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px 0;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 2px 8px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar-menu > li > a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            font-weight: 500;
+            font-size: 0.95rem;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-menu > li > a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .sidebar-menu > li > a:hover::before {
+            left: 100%;
+        }
+
+        .sidebar-menu > li > a:hover {
+            background: rgba(52, 152, 219, 0.08);
+            color: var(--accent-color);
+            transform: translateX(4px) scale(1.02);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .sidebar-menu > li > a.active {
+            background: linear-gradient(135deg, var(--accent-color), #2980b9);
+            color: white;
+            transform: translateX(2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+            border-left: 3px solid #2980b9;
+        }
+
+        .sidebar-menu > li > a.active::before {
+            display: none;
+        }
+
+        .sidebar-menu a i {
+            width: 22px;
+            margin-right: 12px;
+            text-align: center;
+            font-size: 1.1rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar.collapsed .sidebar-menu a i {
+            margin-right: 0;
+            font-size: 1.2rem;
+        }
+
+        .menu-text {
+            flex: 1;
+            text-align: left;
+            white-space: nowrap;
+            transition: all var(--transition-speed) ease;
+            opacity: 1;
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .chevron-icon {
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.8rem;
+            opacity: 1;
+        }
+
+        .sidebar.collapsed .chevron-icon {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        .chevron-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-submenu {
+            background: rgba(52, 152, 219, 0.05);
+            margin: 5px 8px;
+            border-radius: 8px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-submenu.show {
+            max-height: 400px;
+            border-left-color: var(--accent-color);
+        }
+
+        .sidebar.collapsed .sidebar-submenu {
+            display: none;
+        }
+
+        .sidebar-submenu a {
+            display: block;
+            padding: 12px 20px 12px 45px;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: all var(--transition-speed) ease;
+            border-radius: 6px;
+            margin: 2px 8px;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .sidebar-submenu a::before {
+            content: '';
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            transform: translateY(-50%) scale(0);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar-submenu a:hover::before {
+            transform: translateY(-50%) scale(1);
+        }
+
+        .sidebar-submenu a:hover {
+            background: rgba(255,255,255,0.8);
+            color: var(--accent-color);
+            padding-left: 50px;
+            transform: translateX(5px);
+        }
+
+        .sidebar-submenu a.active {
+            background: var(--accent-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .sidebar-submenu a.active::before {
+            background: white;
+            transform: translateY(-50%) scale(1);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 25px;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: calc(100vh - var(--navbar-height));
+            position: relative;
+        }
+
+        .main-content.collapsed {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        .main-content.mobile {
+            margin-left: 0;
+        }
+
+        .content-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .content-header:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .content-header h1 {
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .breadcrumb-item a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        /* Enhanced Toggle Button */
+        .sidebar-toggle {
+            background: rgba(52, 152, 219, 0.1);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            border-radius: 12px;
+            padding: 8px 12px;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-toggle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .sidebar-toggle:hover::before {
+            left: 100%;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .sidebar-toggle.active {
+            background: var(--accent-color);
+            color: white;
+            transform: rotate(180deg);
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: var(--navbar-height);
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - var(--navbar-height));
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1030;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Enhanced Dropdown */
+        .dropdown-menu {
+            border: none;
+            box-shadow: var(--shadow-medium);
+            border-radius: 12px;
+            padding: 8px 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            animation: dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+            border-radius: 8px;
+            margin: 2px 8px;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        /* Notification Badge */
+        .badge {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .main-content.collapsed {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 85vw;
+                max-width: 320px;
+            }
+            
+            .main-content {
+                padding: 15px;
+            }
+            
+            .content-header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .content-header h1 {
+                font-size: 1.6rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Enhanced Alert */
+        .alert {
+            border: none;
+            border-radius: 12px;
+            padding: 20px 25px;
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--accent-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Professional Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), #2980b9);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.05), transparent);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+        <div class="container-fluid">
+            <!-- Sidebar Toggle Button -->
+            <button class="btn sidebar-toggle me-3" type="button" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <!-- Brand -->
+            <a class="navbar-brand" href="#">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232c3e50'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3EMC%3C/text%3E%3C/svg%3E" alt="Muranga County" class="county-logo">
+                Kiharu Bursary System
+            </a>
+
+            <!-- Navbar Items -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Notifications -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell"></i>
+                            <span class="badge bg-danger rounded-pill">3</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown">
+                            <li><h6 class="dropdown-header">Recent Notifications</h6></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-text me-2"></i>New Application Submitted</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-check-circle me-2"></i>Application Approved</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-exclamation-triangle me-2"></i>Document Missing</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">View All Notifications</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- User Profile -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i>
+                            Admin User
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile Settings</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Preferences</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help & Support</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Enhanced Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h5><i class="bi bi-grid-1x2 me-2"></i><span class="menu-text">Admin Panel</span></h5>
+        </div>
+        
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#dashboard" class="menu-link">
+                        <span><i class="bi bi-speedometer2"></i><span class="menu-text">Dashboard</span></span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="applicationsMenu">
+                        <span><i class="bi bi-file-earmark-text"></i><span class="menu-text">Applications</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="applicationsMenu">
+                        <li><a href="#all-applications" class="submenu-link">All Applications</a></li>
+                        <li><a href="#pending-review" class="submenu-link">Pending Review</a></li>
+                        <li><a href="#approved" class="submenu-link">Approved</a></li>
+                        <li><a href="#rejected" class="submenu-link">Rejected</a></li>
+                        <li><a href="#in-progress" class="submenu-link">In Progress</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="applicantsMenu">
+                        <span><i class="bi bi-people"></i><span class="menu-text">Applicants</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="applicantsMenu">
+                        <li><a href="#all-applicants" class="submenu-link">All Applicants</a></li>
+                        <li><a href="#high-school" class="submenu-link">High School</a></li>
+                        <li><a href="#college" class="submenu-link">College</a></li>
+                        <li><a href="#university" class="submenu-link">University</a></li>
+                        <li><a href="#special-needs" class="submenu-link">Special Needs</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="budgetMenu">
+                        <span><i class="bi bi-cash-stack"></i><span class="menu-text">Budget & Finance</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="budgetMenu">
+                        <li><a href="#fiscal-years" class="submenu-link">Fiscal Years</a></li>
+                        <li><a href="#budget-categories" class="submenu-link">Budget Categories</a></li>
+                        <li><a href="#allocations" class="submenu-link">Allocations</a></li>
+                        <li><a href="#disbursements" class="submenu-link">Disbursements</a></li>
+                        <li><a href="#financial-reports" class="submenu-link">Financial Reports</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#institutions" class="menu-link">
+                        <span><i class="bi bi-building"></i><span class="menu-text">Institutions</span></span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="reportsMenu">
+                        <span><i class="bi bi-graph-up"></i><span class="menu-text">Analytics & Reports</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="reportsMenu">
+                        <li><a href="#application-reports" class="submenu-link">Application Reports</a></li>
+                        <li><a href="#financial-reports" class="submenu-link">Financial Reports</a></li>
+                        <li><a href="#ward-reports" class="submenu-link">Ward Reports</a></li>
+                        <li><a href="#institution-reports" class="submenu-link">Institution Reports</a></li>
+                        <li><a href="#performance-metrics" class="submenu-link">Performance Metrics</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="usersMenu">
+                        <span><i class="bi bi-person-gear"></i><span class="menu-text">User Management</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="usersMenu">
+                        <li><a href="#all-users" class="submenu-link">All Users</a></li>
+                        <li><a href="#administrators" class="submenu-link">Administrators</a></li>
+                        <li><a href="#reviewers" class="submenu-link">Reviewers</a></li>
+                        <li><a href="#finance-officers" class="submenu-link">Finance Officers</a></li>
+                        <li><a href="#permissions" class="submenu-link">Permissions</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#communications" class="menu-link">
+                        <span><i class="bi bi-chat-dots"></i><span class="menu-text">Communications</span></span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="#" class="menu-link has-submenu" data-target="settingsMenu">
+                        <span><i class="bi bi-gear"></i><span class="menu-text">System Settings</span></span>
+                        <i class="bi bi-chevron-down chevron-icon"></i>
+                    </a>
+                    <ul class="sidebar-submenu" id="settingsMenu">
+                        <li><a href="#system-settings" class="submenu-link">General Settings</a></li>
+                        <li><a href="#announcements" class="submenu-link">Announcements</a></li>
+                        <li><a href="#faq-management" class="submenu-link">FAQ Management</a></li>
+                        <li><a href="#sms-settings" class="submenu-link">SMS Configuration</a></li>
+                        <li><a href="#backup-restore" class="submenu-link">Backup & Restore</a></li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <a href="#audit-logs" class="menu-link">
+                        <span><i class="bi bi-shield-check"></i><span class="menu-text">Security & Audit</span></span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent" style="margin-top: 60px;">
+        <!-- Content Header -->
+        <div class="content-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1>Dashboard Overview</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Home</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>New Action
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="content">
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Welcome to the Enhanced Kiharu Bursary System Administration Panel. The sidebar is now fully responsive and features smooth animations with professional styling.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Cards -->
+            <div class="row mt-4">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; transition: all 0.3s ease;">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="card-title">Total Applications</h5>
+                            <h3 class="text-primary">1,247</h3>
+                            <p class="text-muted mb-0">+12% from last month</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; transition: all 0.3s ease;">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-check-circle text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="card-title">Approved</h5>
+                            <h3 class="text-success">892</h3>
+                            <p class="text-muted mb-0">71.5% approval rate</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; transition: all 0.3s ease;">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-clock text-warning" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="card-title">Pending</h5>
+                            <h3 class="text-warning">243</h3>
+                            <p class="text-muted mb-0">Awaiting review</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; transition: all 0.3s ease;">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-cash-stack text-info" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5 class="card-title">Total Budget</h5>
+                            <h3 class="text-info">KSh 45.2M</h3>
+                            <p class="text-muted mb-0">FY 2024/25</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="mb-0">&copy; 2025 Kiharu Bursary System - Murang'a County Government | Enhanced Professional Interface</p>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Enhanced JavaScript -->
+    <script>
+        class EnhancedAdminSidebar {
+            constructor() {
+                this.sidebar = document.getElementById('sidebar');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.sidebarOverlay = document.getElementById('sidebarOverlay');
+                this.mainContent = document.getElementById('mainContent');
+                this.isOpen = true;
+                this.isCollapsed = false;
+                this.isMobile = window.innerWidth <= 992;
+                this.activeSubmenu = null;
+                this.touchStartX = 0;
+                this.touchCurrentX = 0;
+                this.isDragging = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.handleResize();
+                this.initializeActiveStates();
+                this.setupGestureHandling();
+                this.setupKeyboardNavigation();
+                
+                // Initialize based on screen size
+                if (this.isMobile) {
+                    this.sidebar.classList.add('mobile-hidden');
+                    this.mainContent.classList.add('mobile');
+                    this.isOpen = false;
+                } else {
+                    this.mainContent.classList.remove('mobile');
+                }
+            }
+
+            bindEvents() {
+                // Enhanced sidebar toggle with double-click for collapse
+                this.sidebarToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.toggleSidebar();
+                });
+
+                this.sidebarToggle.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    if (!this.isMobile) {
+                        this.toggleCollapse();
+                    }
+                });
+
+                // Overlay click to close
+                this.sidebarOverlay.addEventListener('click', () => {
+                    this.closeSidebar();
+                });
+
+                // Enhanced submenu handling
+                document.querySelectorAll('.has-submenu').forEach(menuItem => {
+                    menuItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.toggleSubmenu(menuItem);
+                    });
+                });
+
+                // Menu item clicks with animation
+                document.querySelectorAll('.menu-link:not(.has-submenu)').forEach(menuItem => {
+                    menuItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.setActiveMenuItem(menuItem);
+                        this.animateClick(menuItem);
+                        
+                        if (this.isMobile) {
+                            setTimeout(() => this.closeSidebar(), 300);
+                        }
+                    });
+                });
+
+                // Submenu item clicks
+                document.querySelectorAll('.submenu-link').forEach(submenuItem => {
+                    submenuItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.setActiveSubmenuItem(submenuItem);
+                        this.animateClick(submenuItem);
+                        
+                        if (this.isMobile) {
+                            setTimeout(() => this.closeSidebar(), 300);
+                        }
+                    });
+                });
+
+                // Enhanced resize handler
+                window.addEventListener('resize', this.debounce(() => {
+                    this.handleResize();
+                }, 150));
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeydown(e);
+                });
+
+                // Hover effects for desktop
+                if (!this.isTouchDevice()) {
+                    this.setupHoverEffects();
+                }
+            }
+
+            setupGestureHandling() {
+                // Touch/swipe gestures for mobile
+                document.addEventListener('touchstart', (e) => {
+                    this.touchStartX = e.touches[0].clientX;
+                }, { passive: true });
+
+                document.addEventListener('touchmove', (e) => {
+                    this.touchCurrentX = e.touches[0].clientX;
+                    
+                    if (this.isMobile && Math.abs(this.touchCurrentX - this.touchStartX) > 20) {
+                        this.isDragging = true;
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchend', (e) => {
+                    if (this.isDragging && this.isMobile) {
+                        const deltaX = this.touchCurrentX - this.touchStartX;
+                        
+                        if (deltaX > 50 && !this.isOpen) {
+                            this.openSidebar();
+                        } else if (deltaX < -50 && this.isOpen) {
+                            this.closeSidebar();
+                        }
+                    }
+                    
+                    this.isDragging = false;
+                }, { passive: true });
+
+                // Mouse drag for desktop (optional enhancement)
+                if (!this.isTouchDevice()) {
+                    this.setupMouseDrag();
+                }
+            }
+
+            setupMouseDrag() {
+                let isMouseDragging = false;
+                let mouseStartX = 0;
+
+                this.sidebar.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.sidebar-content')) return;
+                    mouseStartX = e.clientX;
+                    isMouseDragging = true;
+                    this.sidebar.style.userSelect = 'none';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isMouseDragging && !this.isMobile) {
+                        const deltaX = e.clientX - mouseStartX;
+                        if (Math.abs(deltaX) > 10) {
+                            if (deltaX < -30 && this.isOpen && !this.isCollapsed) {
+                                this.toggleCollapse();
+                                isMouseDragging = false;
+                            }
+                        }
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isMouseDragging = false;
+                    this.sidebar.style.userSelect = '';
+                });
+            }
+
+            setupKeyboardNavigation() {
+                // Add ARIA attributes for accessibility
+                this.sidebar.setAttribute('role', 'navigation');
+                this.sidebar.setAttribute('aria-label', 'Main navigation');
+                
+                document.querySelectorAll('.menu-link, .submenu-link').forEach((link, index) => {
+                    link.setAttribute('tabindex', '0');
+                    link.setAttribute('role', 'menuitem');
+                });
+            }
+
+            setupHoverEffects() {
+                // Enhanced hover effects for menu items
+                document.querySelectorAll('.menu-link').forEach(menuItem => {
+                    menuItem.addEventListener('mouseenter', () => {
+                        if (!menuItem.classList.contains('active')) {
+                            this.addHoverEffect(menuItem);
+                        }
+                    });
+
+                    menuItem.addEventListener('mouseleave', () => {
+                        this.removeHoverEffect(menuItem);
+                    });
+                });
+            }
+
+            toggleSidebar() {
+                if (this.isMobile) {
+                    if (this.isOpen) {
+                        this.closeSidebar();
+                    } else {
+                        this.openSidebar();
+                    }
+                } else {
+                    this.toggleCollapse();
+                }
+            }
+
+            toggleCollapse() {
+                if (this.isMobile) return;
+                
+                this.isCollapsed = !this.isCollapsed;
+                
+                if (this.isCollapsed) {
+                    this.sidebar.classList.add('collapsed');
+                    this.mainContent.classList.add('collapsed');
+                    this.sidebarToggle.classList.add('active');
+                    this.closeAllSubmenus();
+                } else {
+                    this.sidebar.classList.remove('collapsed');
+                    this.mainContent.classList.remove('collapsed');
+                    this.sidebarToggle.classList.remove('active');
+                }
+                
+                this.animateToggle();
+            }
+
+            openSidebar() {
+                this.sidebar.classList.remove('mobile-hidden');
+                this.sidebar.classList.add('show');
+                this.sidebarOverlay.classList.add('show');
+                this.sidebarToggle.classList.add('active');
+                this.isOpen = true;
+                
+                if (this.isMobile) {
+                    document.body.style.overflow = 'hidden';
+                }
+                
+                this.animateOpen();
+            }
+
+            closeSidebar() {
+                if (this.isMobile) {
+                    this.sidebar.classList.add('mobile-hidden');
+                    this.sidebar.classList.remove('show');
+                    this.sidebarOverlay.classList.remove('show');
+                    this.sidebarToggle.classList.remove('active');
+                    this.isOpen = false;
+                    document.body.style.overflow = '';
+                } else if (this.isCollapsed) {
+                    this.toggleCollapse();
+                }
+                
+                this.animateClose();
+            }
+
+            toggleSubmenu(menuItem) {
+                const targetId = menuItem.getAttribute('data-target');
+                const targetSubmenu = document.getElementById(targetId);
+                const chevronIcon = menuItem.querySelector('.chevron-icon');
+                const isCurrentlyOpen = targetSubmenu.classList.contains('show');
+
+                // Close other submenus with animation
+                document.querySelectorAll('.sidebar-submenu.show').forEach(submenu => {
+                    if (submenu.id !== targetId) {
+                        submenu.classList.remove('show');
+                        const otherChevron = document.querySelector(`[data-target="${submenu.id}"] .chevron-icon`);
+                        if (otherChevron) {
+                            otherChevron.classList.remove('rotated');
+                        }
+                    }
+                });
+
+                // Toggle current submenu with enhanced animation
+                if (isCurrentlyOpen) {
+                    targetSubmenu.classList.remove('show');
+                    chevronIcon.classList.remove('rotated');
+                    this.activeSubmenu = null;
+                } else {
+                    targetSubmenu.classList.add('show');
+                    chevronIcon.classList.add('rotated');
+                    this.activeSubmenu = targetId;
+                    
+                    // Animate submenu items
+                    setTimeout(() => {
+                        targetSubmenu.querySelectorAll('.submenu-link').forEach((link, index) => {
+                            link.style.animation = `slideInLeft 0.3s ease forwards ${index * 0.05}s`;
+                        });
+                    }, 100);
+                }
+                
+                this.animateSubmenuToggle(menuItem);
+            }
+
+            setActiveMenuItem(menuItem) {
+                this.clearAllActiveStates();
+                menuItem.classList.add('active');
+                this.updateBreadcrumb(menuItem);
+            }
+
+            setActiveSubmenuItem(submenuItem) {
+                this.clearAllActiveStates();
+                submenuItem.classList.add('active');
+                
+                const parentSubmenu = submenuItem.closest('.sidebar-submenu');
+                if (parentSubmenu) {
+                    const parentMenuItem = document.querySelector(`[data-target="${parentSubmenu.id}"]`);
+                    if (parentMenuItem) {
+                        parentMenuItem.classList.add('active');
+                    }
+                }
+                this.updateBreadcrumb(submenuItem);
+            }
+
+            clearAllActiveStates() {
+                document.querySelectorAll('.menu-link, .submenu-link').forEach(item => {
+                    item.classList.remove('active');
+                });
+            }
+
+            closeAllSubmenus() {
+                document.querySelectorAll('.sidebar-submenu.show').forEach(submenu => {
+                    submenu.classList.remove('show');
+                    const chevron = document.querySelector(`[data-target="${submenu.id}"] .chevron-icon`);
+                    if (chevron) {
+                        chevron.classList.remove('rotated');
+                    }
+                });
+                this.activeSubmenu = null;
+            }
+
+            handleResize() {
+                const wasMobile = this.isMobile;
+                this.isMobile = window.innerWidth <= 992;
+                
+                if (wasMobile !== this.isMobile) {
+                    if (this.isMobile) {
+                        // Switch to mobile mode
+                        this.sidebar.classList.remove('collapsed');
+                        this.sidebar.classList.add('mobile-hidden');
+                        this.mainContent.classList.remove('collapsed');
+                        this.mainContent.classList.add('mobile');
+                        this.sidebarOverlay.classList.remove('show');
+                        this.isOpen = false;
+                        this.isCollapsed = false;
+                        document.body.style.overflow = '';
+                    } else {
+                        // Switch to desktop mode
+                        this.sidebar.classList.remove('mobile-hidden', 'show');
+                        this.mainContent.classList.remove('mobile');
+                        this.sidebarOverlay.classList.remove('show');
+                        this.isOpen = true;
+                        document.body.style.overflow = '';
+                    }
+                    
+                    this.sidebarToggle.classList.remove('active');
+                }
+            }
+
+            handleKeydown(e) {
+                // Keyboard shortcuts
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'b':
+                            e.preventDefault();
+                            this.toggleSidebar();
+                            break;
+                        case '\\':
+                            e.preventDefault();
+                            if (!this.isMobile) {
+                                this.toggleCollapse();
+                            }
+                            break;
+                    }
+                }
+                
+                if (e.key === 'Escape' && this.isOpen && this.isMobile) {
+                    this.closeSidebar();
+                }
+            }
+
+            // Animation methods
+            animateToggle() {
+                this.sidebarToggle.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    this.sidebarToggle.style.transform = '';
+                }, 150);
+            }
+
+            animateOpen() {
+                this.sidebar.style.transform = 'translateX(0)';
+            }
+
+            animateClose() {
+                if (this.isMobile) {
+                    this.sidebar.style.transform = 'translateX(-100%)';
+                }
+            }
+
+            animateClick(element) {
+                element.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    element.style.transform = '';
+                }, 150);
+            }
+
+            animateSubmenuToggle(menuItem) {
+                const icon = menuItem.querySelector('i');
+                icon.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    icon.style.transform = '';
+                }, 200);
+            }
+
+            addHoverEffect(element) {
+                element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            }
+
+            removeHoverEffect(element) {
+                element.style.transition = '';
+            }
+
+            updateBreadcrumb(activeElement) {
+                const breadcrumb = document.querySelector('.breadcrumb');
+                if (breadcrumb) {
+                    const text = activeElement.querySelector('.menu-text')?.textContent || 
+                                activeElement.textContent.trim();
+                    const activeItem = breadcrumb.querySelector('.breadcrumb-item.active');
+                    if (activeItem) {
+                        activeItem.textContent = text;
+                    }
+                }
+            }
+
+            initializeActiveStates() {
+                const dashboardLink = document.querySelector('[href="#dashboard"]');
+                if (dashboardLink) {
+                    dashboardLink.classList.add('active');
+                }
+            }
+
+            // Utility methods
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            isTouchDevice() {
+                return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            }
+
+            // Public API methods
+            openSubmenu(submenuId) {
+                const menuItem = document.querySelector(`[data-target="${submenuId}"]`);
+                if (menuItem) {
+                    this.toggleSubmenu(menuItem);
+                }
+            }
+
+            setActiveByHref(href) {
+                const menuItem = document.querySelector(`[href="${href}"]`);
+                if (menuItem) {
+                    if (menuItem.classList.contains('submenu-link')) {
+                        this.setActiveSubmenuItem(menuItem);
+                    } else {
+                        this.setActiveMenuItem(menuItem);
+                    }
+                }
+            }
+
+            getState() {
+                return {
+                    isOpen: this.isOpen,
+                    isCollapsed: this.isCollapsed,
+                    isMobile: this.isMobile,
+                    activeSubmenu: this.activeSubmenu
+                };
+            }
+        }
+
+        // Initialize enhanced sidebar
+        document.addEventListener('DOMContentLoaded', function() {
+            window.adminSidebar = new EnhancedAdminSidebar();
+            
+            // Add smooth transitions to cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                    this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                    this.style.boxShadow = '';
+                });
+            });
+            
+            // Add loading animation for demo
+            setTimeout(() => {
+                document.querySelectorAll('.loading-shimmer').forEach(el => {
+                    el.classList.remove('loading-shimmer');
+                });
+            }, 1000);
+        });
+
+        // Enhanced dropdown animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl, {
+                    popperConfig: {
+                        modifiers: [
+                            {
+                                name: 'offset',
+                                options: {
+                                    offset: [0, 8],
+                                },
+                            },
+                        ],
+                    }
+                });
+            });
+        });
+
+        // Add CSS animations dynamically
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInLeft {
+                from {
+                    opacity: 0;
+                    transform: translateX(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            @keyframes fadeInScale {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

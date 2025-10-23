@@ -1,0 +1,824 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}Application {{ application.application_number }} - Kiharu Bursary{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .page-section-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #3498db;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+
+
+    .section-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+
+    .status-section {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .status-info {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .status-draft {
+        background: rgba(100, 116, 139, 0.1);
+        color: #64748B;
+    }
+
+    .status-submitted {
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+
+    .status-under_review {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .status-approved {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .status-disbursed {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8B5CF6;
+    }
+
+    .status-details {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .status-details i {
+        margin-right: 6px;
+    }
+
+    .amount-display {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        min-width: 250px;
+    }
+
+    .amount-label {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+    }
+
+    .amount-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .amount-note {
+        font-size: 12px;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+    }
+
+    .info-item {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 16px;
+        border-left: 3px solid #3498db;
+        transition: all 0.3s ease;
+    }
+
+    .info-item:hover {
+        background: #F1F5F9;
+        transform: translateY(-2px);
+    }
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .info-value {
+        font-size: 15px;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .info-item-highlight {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+        border-left-color: #3498db;
+    }
+
+    .info-item-highlight .info-value {
+        color: #3498db;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .alert-custom {
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid;
+    }
+
+    .alert-info-custom {
+        background: rgba(52, 152, 219, 0.05);
+        border-color: rgba(52, 152, 219, 0.2);
+        color: #1E293B;
+    }
+
+    .alert-warning-custom {
+        background: rgba(245, 158, 11, 0.05);
+        border-color: rgba(245, 158, 11, 0.2);
+        color: #1E293B;
+    }
+
+    .alert-icon {
+        font-size: 24px;
+        color: #3498db;
+    }
+
+    .alert-warning-custom .alert-icon {
+        color: #F59E0B;
+    }
+
+    .document-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+    }
+
+    .document-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .document-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #3498db;
+    }
+
+    .document-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 12px;
+    }
+
+    .document-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .document-description {
+        font-size: 13px;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .document-meta {
+        font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #E2E8F0;
+    }
+
+    .timeline-item {
+        position: relative;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -32px;
+        top: 20px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #3498db;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px #3498db;
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: between;
+        align-items: start;
+        margin-bottom: 12px;
+        gap: 16px;
+    }
+
+    .timeline-reviewer {
+        flex: 1;
+    }
+
+    .reviewer-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .timeline-comment {
+        color: #64748B;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .timeline-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .timeline-date {
+        font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .recommendation-badge {
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .recommendation-approve {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .recommendation-reject {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .recommendation-pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+
+    .recommended-amount {
+        font-size: 13px;
+        color: #10B981;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .action-buttons {
+            width: 100%;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+        }
+
+        .status-row {
+            flex-direction: column;
+        }
+
+        .amount-display {
+            width: 100%;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .document-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .timeline {
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            left: 10px;
+        }
+
+        .timeline-item::before {
+            left: -26px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'student_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'student_application_list' %}">My Applications</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ application.application_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Application {{ application.application_number }}
+                </h1>
+                <p class="page-subtitle">
+                    View your application details and status
+                </p>
+            </div>
+            <div class="action-buttons">
+                {% if application.status == 'draft' %}
+                    <a href="{% url 'student_application_edit' application.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </a>
+                    <a href="{% url 'student_application_documents' application.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-cloud-upload me-1"></i> Documents
+                    </a>
+                    <a href="{% url 'student_application_submit' application.pk %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-send me-1"></i> Submit
+                    </a>
+                {% endif %}
+                <a href="{% url 'student_application_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-list-ul me-1"></i> All Applications
+                </a>
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="status-section">
+            <div class="status-row">
+                <div class="status-info">
+                    <h4 style="font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 12px;">Application Status</h4>
+                    <span class="status-badge status-{{ application.status }}">
+                        {{ application.get_status_display }}
+                    </span>
+                    <div class="status-details">
+                        <div>
+                            <i class="bi bi-calendar"></i>
+                            <strong>Submitted:</strong> {{ application.date_submitted|date:"M j, Y g:i A"|default:"Not submitted" }}
+                        </div>
+                        <div>
+                            <i class="bi bi-clock-history"></i>
+                            <strong>Last Updated:</strong> {{ application.last_updated|date:"M j, Y g:i A" }}
+                        </div>
+                    </div>
+                </div>
+                {% if allocation %}
+                <div class="amount-display">
+                    <div class="amount-label">Approved Amount</div>
+                    <div class="amount-value">KES {{ allocation.amount_allocated|floatformat:2 }}</div>
+                    {% if allocation.is_disbursed %}
+                        <div class="amount-note">
+                            <i class="bi bi-check-circle"></i>
+                            Disbursed on {{ allocation.disbursement_date|date:"M j, Y" }}
+                        </div>
+                    {% else %}
+                        <div class="amount-note">
+                            <i class="bi bi-clock"></i>
+                            Awaiting disbursement
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Institution Information -->
+    <div class="section-container">
+        <h4 class="page-section-header">
+            <span class="section-icon">
+                <i class="bi bi-building"></i>
+            </span>
+            Institution Information
+        </h4>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Category</div>
+                <div class="info-value">{{ application.bursary_category.name }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Institution</div>
+                <div class="info-value">{{ application.institution.name }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Admission Number</div>
+                <div class="info-value">{{ application.admission_number }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Year of Study</div>
+                <div class="info-value">Year {{ application.year_of_study }}</div>
+            </div>
+            {% if application.course_name %}
+            <div class="info-item">
+                <div class="info-label">Course</div>
+                <div class="info-value">{{ application.course_name }}</div>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <div class="info-label">Expected Completion</div>
+                <div class="info-value">{{ application.expected_completion_date|date:"M j, Y" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Information -->
+    <div class="section-container">
+        <h4 class="page-section-header">
+            <span class="section-icon">
+                <i class="bi bi-currency-exchange"></i>
+            </span>
+            Financial Information
+        </h4>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Total Fees Payable</div>
+                <div class="info-value">KES {{ application.total_fees_payable|floatformat:2 }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Fees Paid</div>
+                <div class="info-value">KES {{ application.fees_paid|floatformat:2 }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Fees Balance</div>
+                <div class="info-value">KES {{ application.fees_balance|floatformat:2 }}</div>
+            </div>
+            <div class="info-item info-item-highlight">
+                <div class="info-label">Amount Requested</div>
+                <div class="info-value">KES {{ application.amount_requested|floatformat:2 }}</div>
+            </div>
+            {% if application.other_bursaries %}
+            <div class="info-item">
+                <div class="info-label">Other Bursaries</div>
+                <div class="info-value">KES {{ application.other_bursaries_amount|floatformat:2 }} from {{ application.other_bursaries_source }}</div>
+            </div>
+            {% endif %}
+            {% if application.previous_allocation %}
+            <div class="info-item">
+                <div class="info-label">Previous CDF Bursary</div>
+                <div class="info-value">KES {{ application.previous_allocation_amount|floatformat:2 }} in {{ application.previous_allocation_year }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Family Situation -->
+    {% if application.is_orphan or application.is_disabled or application.has_chronic_illness %}
+    <div class="section-container">
+        <h4 class="page-section-header">
+            <span class="section-icon">
+                <i class="bi bi-people"></i>
+            </span>
+            Family Situation
+        </h4>
+        {% if application.is_orphan %}
+            <div class="alert-custom alert-info-custom">
+                <i class="bi bi-info-circle alert-icon"></i>
+                <div>Student is an orphan</div>
+            </div>
+        {% endif %}
+        {% if application.is_disabled %}
+            <div class="alert-custom alert-info-custom">
+                <i class="bi bi-wheelchair alert-icon"></i>
+                <div>Student has a disability</div>
+            </div>
+        {% endif %}
+        {% if application.has_chronic_illness %}
+            <div class="alert-custom alert-info-custom">
+                <i class="bi bi-heart-pulse alert-icon"></i>
+                <div>
+                    <div><strong>Student has chronic illness</strong></div>
+                    {% if application.chronic_illness_description %}
+                        <div style="margin-top: 8px; font-size: 13px; color: #64748B;">
+                            {{ application.chronic_illness_description }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Documents Section -->
+    <div class="section-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h4 class="page-section-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">
+                <span class="section-icon">
+                    <i class="bi bi-files"></i>
+                </span>
+                Supporting Documents
+            </h4>
+            {% if application.status == 'draft' %}
+                <a href="{% url 'student_application_documents' application.pk %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Add Documents
+                </a>
+            {% endif %}
+        </div>
+        
+        {% if documents %}
+            <div class="document-grid">
+                {% for document in documents %}
+                <div class="document-card">
+                    <div class="document-header">
+                        <div style="flex: 1;">
+                            <div class="document-title">{{ document.get_document_type_display }}</div>
+                            {% if document.description %}
+                                <div class="document-description">{{ document.description }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="document-actions">
+                            <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            {% if application.status == 'draft' %}
+                                <a href="{% url 'student_document_delete' document.pk %}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Are you sure you want to delete this document?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="document-meta">
+                        <i class="bi bi-clock"></i>
+                        {{ document.uploaded_at|date:"M j, Y g:i A" }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert-custom alert-warning-custom">
+                <i class="bi bi-exclamation-triangle alert-icon"></i>
+                <div>
+                    No documents uploaded yet.
+                    {% if application.status == 'draft' %}
+                        <a href="{% url 'student_application_documents' application.pk %}" style="color: #3498db; text-decoration: none; font-weight: 500;">
+                            Upload documents now
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Reviews and Comments -->
+    {% if reviews %}
+    <div class="section-container">
+        <h4 class="section-header">
+            <span class="section-icon">
+                <i class="bi bi-chat-left-text"></i>
+            </span>
+            Reviews and Comments
+        </h4>
+        <div class="timeline">
+            {% for review in reviews %}
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div class="timeline-reviewer">
+                        <div class="reviewer-name">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</div>
+                    </div>
+                </div>
+                <div class="timeline-comment">{{ review.comments }}</div>
+                <div class="timeline-meta">
+                    <div class="timeline-date">
+                        <i class="bi bi-clock"></i>
+                        {{ review.review_date|date:"M j, Y g:i A" }}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        {% if review.recommendation == 'approve' %}
+                            <span class="recommendation-badge recommendation-approve">{{ review.get_recommendation_display }}</span>
+                        {% elif review.recommendation == 'reject' %}
+                            <span class="recommendation-badge recommendation-reject">{{ review.get_recommendation_display }}</span>
+                        {% else %}
+                            <span class="recommendation-badge recommendation-pending">{{ review.get_recommendation_display }}</span>
+                        {% endif %}
+                        {% if review.recommended_amount %}
+                            <div class="recommended-amount">
+                                Recommended: KES {{ review.recommended_amount|floatformat:2 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

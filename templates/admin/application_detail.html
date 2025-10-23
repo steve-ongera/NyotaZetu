@@ -1,0 +1,1363 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Application {{ application.application_number }} - Kiharu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .action-buttons-header {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-primary-custom {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary-custom:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary-custom {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-success-custom {
+        padding: 10px 20px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-success-custom:hover {
+        background: #229954;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .status-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .status-label {
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 500;
+        margin-right: 10px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-draft {
+        background: #E2E8F0;
+        color: #64748B;
+    }
+
+    .status-submitted {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-under-review {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .amount-display {
+        color: #1E293B;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+   .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr; /* 8:4 ratio */
+        gap: 24px;
+        align-items: start;
+    }
+
+
+    .main-content {
+        background-color: #ffffff;
+        border-radius: 8px;
+        min-width: 0;
+     
+    }
+
+    .sidebar-content {
+        min-width: 0;
+    }
+
+    .tabs-navigation {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    .tab-list {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .tab-item {
+        flex: 1;
+    }
+
+    .tab-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px;
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: none;
+        border: none;
+        width: 100%;
+    }
+
+    .tab-link:hover {
+        color: #3498db;
+        background: #F8FAFC;
+    }
+
+    .tab-link.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+        background: white;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .card-custom {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        padding: 16px 20px;
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .card-title-custom {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .card-body-custom {
+        padding: 20px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .info-value.highlight {
+        color: #e74c3c;
+        font-weight: 600;
+    }
+
+    .document-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .document-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .document-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: #3498db;
+    }
+
+    .document-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+        opacity: 0.8;
+    }
+
+    .document-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+        word-break: break-word;
+    }
+
+    .document-date {
+        font-size: 12px;
+        color: #64748B;
+        margin-bottom: 12px;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .doc-action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .doc-action-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+    }
+
+    .applicant-header {
+        text-align: center;
+        padding: 20px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .applicant-avatar {
+        width: 80px;
+        height: 80px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+    }
+
+    .applicant-avatar i {
+        font-size: 36px;
+        color: #3498db;
+    }
+
+    .applicant-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .applicant-email {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .review-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .reviewer-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .review-date {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .review-recommendation {
+        margin-bottom: 8px;
+    }
+
+    .review-label {
+        font-size: 12px;
+        color: #64748B;
+        margin-right: 6px;
+    }
+
+    .recommendation-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .recommendation-approve {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .recommendation-reject {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .recommendation-more-info {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .review-amount {
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+
+    .review-comments {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .allocation-info {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .allocation-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: #1E293B;
+        border-radius: 8px;
+        max-width: 95vw;
+        max-height: 95vh;
+        width: 100%;
+        height: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header-custom {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #1E293B;
+    }
+
+    .modal-title-custom {
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .modal-subtitle {
+        font-size: 13px;
+        color: #94A3B8;
+        margin-left: 8px;
+    }
+
+    .modal-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .modal-btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        color: white;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .modal-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-close-custom {
+        background: none;
+        border: none;
+        font-size: 28px;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+
+    .btn-close-custom:hover {
+        opacity: 1;
+    }
+
+    .modal-body-custom {
+        padding: 0;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0F172A;
+        position: relative;
+        overflow: auto;
+    }
+
+    .preview-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .preview-iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+
+    .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(52, 152, 219, 0.2);
+        border-top-color: #3498db;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .zoom-indicator {
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        min-width: 50px;
+        text-align: center;
+    }
+
+    @media (max-width: 1200px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sidebar-content {
+            order: -1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .action-buttons-header {
+            width: 100%;
+        }
+
+        .tab-list {
+            flex-direction: column;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .document-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .status-card {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'application_list' %}">Applications</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ application.application_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Application {{ application.application_number }}
+                </h1>
+                <p class="page-subtitle">
+                    Submitted on {{ application.date_submitted|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="action-buttons-header">
+                <a href="{% url 'application_list' %}" class="btn-secondary-custom">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to List
+                </a>
+                {% if application.status == 'submitted' or application.status == 'under_review' %}
+                <a href="{% url 'application_review' application.id %}" class="btn-success-custom">
+                    <i class="bi bi-clipboard-check"></i>
+                    Review Application
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Status Card -->
+        <div class="status-card">
+            <div>
+                <span class="status-label">Application Status:</span>
+                {% if application.status == 'draft' %}
+                    <span class="status-badge status-draft">Draft</span>
+                {% elif application.status == 'submitted' %}
+                    <span class="status-badge status-submitted">Submitted</span>
+                {% elif application.status == 'under_review' %}
+                    <span class="status-badge status-under-review">Under Review</span>
+                {% elif application.status == 'approved' %}
+                    <span class="status-badge status-approved">Approved</span>
+                {% elif application.status == 'rejected' %}
+                    <span class="status-badge status-rejected">Rejected</span>
+                {% elif application.status == 'disbursed' %}
+                    <span class="status-badge status-disbursed">Disbursed</span>
+                {% endif %}
+            </div>
+            <div>
+                <span class="status-label">Amount Requested:</span>
+                <span class="amount-display">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Tabs Navigation -->
+                <div class="tabs-navigation">
+                    <ul class="tab-list">
+                        <li class="tab-item">
+                            <button class="tab-link active" data-tab="overview">
+                                <i class="bi bi-info-circle"></i>
+                                Overview
+                            </button>
+                        </li>
+                        <li class="tab-item">
+                            <button class="tab-link" data-tab="academic">
+                                <i class="bi bi-mortarboard"></i>
+                                Academic
+                            </button>
+                        </li>
+                        <li class="tab-item">
+                            <button class="tab-link" data-tab="documents">
+                                <i class="bi bi-paperclip"></i>
+                                Documents
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="tabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-content active" id="overview">
+                        <div class="card-custom">
+                            <div class="card-header-custom">
+                                <h5 class="card-title-custom">
+                                    <i class="bi bi-info-circle text-primary"></i>
+                                    Application Overview
+                                </h5>
+                            </div>
+                            <div class="card-body-custom">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Fiscal Year</span>
+                                        <span class="info-value">{{ application.fiscal_year.name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Category</span>
+                                        <span class="info-value">{{ application.bursary_category.name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Date Submitted</span>
+                                        <span class="info-value">{{ application.date_submitted|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Last Updated</span>
+                                        <span class="info-value">{{ application.last_updated|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Academic Tab -->
+                    <div class="tab-content" id="academic">
+                        <div class="card-custom">
+                            <div class="card-header-custom">
+                                <h5 class="card-title-custom">
+                                    <i class="bi bi-mortarboard text-primary"></i>
+                                    Academic Information
+                                </h5>
+                            </div>
+                            <div class="card-body-custom">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Institution</span>
+                                        <span class="info-value">{{ application.institution.name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Admission Number</span>
+                                        <span class="info-value">{{ application.admission_number }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Year of Study</span>
+                                        <span class="info-value">{{ application.year_of_study }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Total Fees</span>
+                                        <span class="info-value">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Fees Paid</span>
+                                        <span class="info-value">KSh {{ application.fees_paid|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Fees Balance</span>
+                                        <span class="info-value highlight">KSh {{ application.fees_balance|floatformat:0|intcomma }}</span>
+                                    </div>
+                                </div>
+                                {% if application.course_name %}
+                                <div class="info-grid" style="margin-top: 20px;">
+                                    <div class="info-item" style="grid-column: 1 / -1;">
+                                        <span class="info-label">Course</span>
+                                        <span class="info-value">{{ application.course_name }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents Tab -->
+                    <div class="tab-content" id="documents">
+                        <div class="card-custom">
+                            <div class="card-header-custom">
+                                <h5 class="card-title-custom">
+                                    <i class="bi bi-paperclip text-primary"></i>
+                                    Supporting Documents
+                                </h5>
+                            </div>
+                            <div class="card-body-custom">
+                                {% if documents %}
+                                <div class="document-grid">
+                                    {% for document in documents %}
+                                    <div class="document-card" 
+                                         data-document-url="{{ document.file.url }}"
+                                         data-document-name="{{ document.get_document_type_display }}"
+                                         data-document-type="{% if document.file.url|lower|slice:'-4:' == '.pdf' %}pdf{% elif document.file.url|lower|slice:'-4:' == '.doc' or document.file.url|lower|slice:'-5:' == '.docx' %}doc{% elif '.jpg' in document.file.url|lower or '.jpeg' in document.file.url|lower or '.png' in document.file.url|lower %}image{% else %}other{% endif %}"
+                                         data-upload-date="{{ document.uploaded_at|date:'M d, Y' }}">
+                                        <div class="document-icon">
+                                            {% if document.file.url|lower|slice:"-4:" == ".pdf" %}
+                                                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                            {% elif document.file.url|lower|slice:"-4:" == ".doc" or document.file.url|lower|slice:"-5:" == ".docx" %}
+                                                <i class="bi bi-file-earmark-word text-primary"></i>
+                                            {% elif ".jpg" in document.file.url|lower or ".jpeg" in document.file.url|lower or ".png" in document.file.url|lower %}
+                                                <i class="bi bi-file-image text-success"></i>
+                                            {% else %}
+                                                <i class="bi bi-file-earmark-text text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="document-name">{{ document.get_document_type_display }}</div>
+                                        <div class="document-date">{{ document.uploaded_at|date:"M d, Y" }}</div>
+                                        <div class="document-actions">
+                                            <button class="doc-action-btn preview-btn" title="Preview">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <a href="{{ document.file.url }}" class="doc-action-btn" title="Download" download>
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-folder-x"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Documents Found</h3>
+                                    <p class="empty-text">
+                                        No supporting documents have been uploaded for this application.
+                                    </p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <!-- Applicant Information Card -->
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-custom">
+                            <i class="bi bi-person text-primary"></i>
+                            Applicant Information
+                        </h5>
+                    </div>
+                    <div class="applicant-header">
+                        <div class="applicant-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="applicant-name">{{ application.applicant.user.first_name }} {{ application.applicant.user.last_name }}</div>
+                        <div class="applicant-email">{{ application.applicant.user.email }}</div>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">ID Number</span>
+                            <span class="info-value">{{ application.applicant.id_number }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Gender</span>
+                            <span class="info-value">{{ application.applicant.get_gender_display }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Ward</span>
+                            <span class="info-value">{{ application.applicant.ward.name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Phone</span>
+                            <span class="info-value">{{ application.applicant.user.phone_number }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review History Card -->
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-custom">
+                            <i class="bi bi-chat-left-text text-primary"></i>
+                            Review History
+                        </h5>
+                    </div>
+                    <div class="card-body-custom">
+                        {% if reviews %}
+                            {% for review in reviews %}
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <span class="reviewer-name">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</span>
+                                    <span class="review-date">{{ review.review_date|date:"M d, Y" }}</span>
+                                </div>
+                                <div class="review-recommendation">
+                                    <span class="review-label">Recommendation:</span>
+                                    {% if review.recommendation == 'approve' %}
+                                        <span class="recommendation-badge recommendation-approve">Approve</span>
+                                    {% elif review.recommendation == 'reject' %}
+                                        <span class="recommendation-badge recommendation-reject">Reject</span>
+                                    {% else %}
+                                        <span class="recommendation-badge recommendation-more-info">More Info</span>
+                                    {% endif %}
+                                </div>
+                                {% if review.recommended_amount %}
+                                <div class="review-amount">
+                                    <span class="review-label">Recommended Amount:</span>
+                                    <span class="info-value">KSh {{ review.recommended_amount|floatformat:0|intcomma }}</span>
+                                </div>
+                                {% endif %}
+                                <p class="review-comments">{{ review.comments }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="empty-state" style="padding: 40px 20px;">
+                            <div class="empty-icon" style="font-size: 36px;">
+                                <i class="bi bi-chat-left"></i>
+                            </div>
+                            <p class="empty-text">No reviews yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Allocation Info Card -->
+                {% if application.allocation %}
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <h5 class="card-title-custom">
+                            <i class="bi bi-wallet2 text-primary"></i>
+                            Allocation Details
+                        </h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="allocation-info">
+                            <div class="allocation-item">
+                                <span class="info-label">Amount Allocated</span>
+                                <span class="info-value" style="color: #27ae60; font-size: 18px; font-weight: 600;">
+                                    KSh {{ application.allocation.amount_allocated|floatformat:0|intcomma }}
+                                </span>
+                            </div>
+                            <div class="allocation-item">
+                                <span class="info-label">Allocation Date</span>
+                                <span class="info-value">{{ application.allocation.allocation_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="allocation-item">
+                                <span class="info-label">Approved By</span>
+                                <span class="info-value">{{ application.allocation.approved_by.first_name }} {{ application.allocation.approved_by.last_name }}</span>
+                            </div>
+                            <div class="allocation-item">
+                                <span class="info-label">Disbursement Status</span>
+                                {% if application.allocation.is_disbursed %}
+                                    <span class="status-badge status-approved" style="display: inline-block;">Disbursed</span>
+                                {% else %}
+                                    <span class="status-badge status-submitted" style="display: inline-block;">Pending</span>
+                                {% endif %}
+                            </div>
+                            {% if application.allocation.is_disbursed %}
+                            <div class="allocation-item">
+                                <span class="info-label">Disbursement Date</span>
+                                <span class="info-value">{{ application.allocation.disbursement_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="allocation-item">
+                                <span class="info-label">Cheque Number</span>
+                                <span class="info-value">{{ application.allocation.cheque_number }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Preview Modal -->
+<div class="modal" id="documentPreviewModal">
+    <div class="modal-dialog">
+        <div class="modal-header-custom">
+            <div class="modal-title-custom">
+                <button type="button" class="btn-close-custom" onclick="closeModal()">&times;</button>
+                <div>
+                    <span id="documentPreviewTitle">Document Preview</span>
+                    <span class="modal-subtitle" id="documentPreviewSubtitle">Uploaded on Date</span>
+                </div>
+            </div>
+            <div class="modal-controls">
+                <button type="button" class="modal-btn" id="zoomOutBtn" title="Zoom Out">
+                    <i class="bi bi-zoom-out"></i>
+                </button>
+                <span class="zoom-indicator" id="zoomLevel">100%</span>
+                <button type="button" class="modal-btn" id="zoomInBtn" title="Zoom In">
+                    <i class="bi bi-zoom-in"></i>
+                </button>
+                <button type="button" class="modal-btn" id="rotateBtn" title="Rotate">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <a id="downloadDocumentBtn" href="#" class="btn-primary-custom" download style="padding: 8px 16px; font-size: 13px;">
+                    <i class="bi bi-download"></i>
+                    Download
+                </a>
+            </div>
+        </div>
+        <div class="modal-body-custom">
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner"></div>
+            </div>
+            <div class="preview-container" id="previewContainer">
+                <iframe id="documentPreviewFrame" class="preview-iframe" style="display: none;"></iframe>
+                <img id="documentPreviewImage" class="preview-image" style="display: none;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+
+                // Remove active class from all tabs
+                tabLinks.forEach(l => l.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+            });
+        });
+
+        // Document preview functionality
+        const documentCards = document.querySelectorAll('.document-card');
+        const previewModal = document.getElementById('documentPreviewModal');
+        const previewFrame = document.getElementById('documentPreviewFrame');
+        const previewImage = document.getElementById('documentPreviewImage');
+        const downloadBtn = document.getElementById('downloadDocumentBtn');
+        const previewTitle = document.getElementById('documentPreviewTitle');
+        const previewSubtitle = document.getElementById('documentPreviewSubtitle');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        // Zoom and rotation controls
+        let currentZoom = 100;
+        let currentRotation = 0;
+
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const rotateBtn = document.getElementById('rotateBtn');
+        const zoomLevel = document.getElementById('zoomLevel');
+
+        // Handle preview button clicks
+        documentCards.forEach(card => {
+            const previewBtn = card.querySelector('.preview-btn');
+            if (previewBtn) {
+                previewBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openDocumentPreview(card);
+                });
+            }
+        });
+
+        function openDocumentPreview(card) {
+            const documentUrl = card.getAttribute('data-document-url');
+            const documentName = card.getAttribute('data-document-name');
+            const documentType = card.getAttribute('data-document-type');
+            const uploadDate = card.getAttribute('data-upload-date');
+
+            // Set modal content
+            previewTitle.textContent = documentName;
+            previewSubtitle.textContent = `Uploaded on ${uploadDate}`;
+            downloadBtn.href = documentUrl;
+            downloadBtn.download = documentName;
+
+            // Show loading
+            loadingSpinner.style.display = 'block';
+            previewFrame.style.display = 'none';
+            previewImage.style.display = 'none';
+
+            // Reset zoom and rotation
+            currentZoom = 100;
+            currentRotation = 0;
+            updateZoomLevel();
+
+            if (documentType === 'image') {
+                showImagePreview(documentUrl);
+            } else if (documentType === 'pdf') {
+                showPDFPreview(documentUrl);
+            } else {
+                showDocumentPreview(documentUrl);
+            }
+
+            previewModal.classList.add('show');
+        }
+
+        function showImagePreview(url) {
+            previewImage.onload = function() {
+                loadingSpinner.style.display = 'none';
+                previewFrame.style.display = 'none';
+                previewImage.style.display = 'block';
+                applyImageTransform();
+            };
+            previewImage.src = url;
+        }
+
+        function showPDFPreview(url) {
+            const fullUrl = window.location.origin + url;
+            previewFrame.onload = function() {
+                loadingSpinner.style.display = 'none';
+                previewFrame.style.display = 'block';
+                previewImage.style.display = 'none';
+            };
+            previewFrame.src = fullUrl + '#toolbar=0&navpanes=0&scrollbar=0';
+        }
+
+        function showDocumentPreview(url) {
+            const fullUrl = window.location.origin + url;
+            const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+            previewFrame.onload = function() {
+                loadingSpinner.style.display = 'none';
+                previewFrame.style.display = 'block';
+                previewImage.style.display = 'none';
+            };
+            previewFrame.src = viewerUrl;
+        }
+
+        // Zoom controls
+        zoomInBtn.addEventListener('click', function() {
+            if (currentZoom < 300) {
+                currentZoom += 25;
+                updateZoomLevel();
+                applyImageTransform();
+            }
+        });
+
+        zoomOutBtn.addEventListener('click', function() {
+            if (currentZoom > 50) {
+                currentZoom -= 25;
+                updateZoomLevel();
+                applyImageTransform();
+            }
+        });
+
+        rotateBtn.addEventListener('click', function() {
+            currentRotation = (currentRotation + 90) % 360;
+            applyImageTransform();
+        });
+
+        function updateZoomLevel() {
+            zoomLevel.textContent = `${currentZoom}%`;
+        }
+
+        function applyImageTransform() {
+            if (previewImage.style.display !== 'none') {
+                const scaleValue = currentZoom / 100;
+                previewImage.style.transform = `scale(${scaleValue}) rotate(${currentRotation}deg)`;
+            }
+        }
+
+        // Close modal on background click
+        previewModal.addEventListener('click', function(e) {
+            if (e.target === previewModal) {
+                closeModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (previewModal.classList.contains('show')) {
+                switch(e.key) {
+                    case 'Escape':
+                        closeModal();
+                        break;
+                    case '+':
+                    case '=':
+                        e.preventDefault();
+                        zoomInBtn.click();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomOutBtn.click();
+                        break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault();
+                        rotateBtn.click();
+                        break;
+                }
+            }
+        });
+    });
+
+    // Close modal function
+    function closeModal() {
+        const modal = document.getElementById('documentPreviewModal');
+        const previewFrame = document.getElementById('documentPreviewFrame');
+        const previewImage = document.getElementById('documentPreviewImage');
+        
+        modal.classList.remove('show');
+        previewFrame.src = '';
+        previewImage.src = '';
+    }
+</script>
+{% endblock %}

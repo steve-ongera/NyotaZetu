@@ -1,0 +1,731 @@
+{% extends "admin_base.html" %}
+{% load static %}
+
+{% block title %}Financial Reports - Kiharu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-warning { color: #f39c12; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .budget-progress-container {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .budget-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .budget-progress-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .budget-progress-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #3498db;
+    }
+
+    .progress {
+        height: 25px;
+        border-radius: 6px;
+        background: #E2E8F0;
+        overflow: hidden;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-bar-custom {
+        height: 100%;
+        background: #3498db;
+        transition: width 1s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        transition: all 0.3s ease;
+    }
+
+    .chart-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-title i {
+        color: #3498db;
+    }
+
+    .chart-canvas-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+    }
+
+    .chart-canvas-container.tall {
+        height: 400px;
+    }
+
+    .chart-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stat-value {
+            font-size: 20px;
+        }
+
+        .chart-canvas-container {
+            height: 250px;
+        }
+
+        .chart-canvas-container.tall {
+            height: 300px;
+        }
+
+        .budget-progress-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Financial Reports</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-cash-stack"></i>
+                    Financial Reports Dashboard
+                </h1>
+                <p class="page-subtitle">
+                    Budget analysis and financial performance for {{ current_fiscal_year.name }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Financial Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="stat-value">KES {{ total_budget|floatformat:0 }}</div>
+                <div class="stat-label">Total Budget</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">KES {{ total_allocated|floatformat:0 }}</div>
+                <div class="stat-label">Total Allocated</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-value">KES {{ total_disbursed|floatformat:0 }}</div>
+                <div class="stat-label">Total Disbursed</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">KES {{ pending_disbursements|floatformat:0 }}</div>
+                <div class="stat-label">Pending Disbursements</div>
+            </div>
+        </div>
+
+        <!-- Budget Utilization Progress -->
+        <div class="budget-progress-container">
+            <div class="budget-progress-header">
+                <h6 class="budget-progress-title">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Budget Utilization
+                </h6>
+                <span class="budget-progress-value">{{ budget_utilization|floatformat:1 }}%</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar progress-bar-custom" 
+                     role="progressbar" 
+                     style="width: {{ budget_utilization|floatformat:1 }}%"
+                     aria-valuenow="{{ budget_utilization|floatformat:1 }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ budget_utilization|floatformat:1 }}%
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="bi bi-pie-chart"></i> Budget Allocation by Category
+                    </div>
+                    <div class="chart-canvas-container">
+                        <canvas id="budgetAllocationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="bi bi-bar-chart"></i> Allocation vs Disbursement
+                    </div>
+                    <div class="chart-canvas-container">
+                        <canvas id="allocationDisbursementChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="bi bi-graph-up"></i> Monthly Disbursement Trends
+                    </div>
+                    <div class="chart-canvas-container tall">
+                        <canvas id="monthlyDisbursementChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 3 -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="bi bi-clipboard-data"></i> Requested vs Allocated Amounts
+                    </div>
+                    <div class="chart-canvas-container">
+                        <canvas id="requestAllocatedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="bi bi-piggy-bank"></i> Budget Remaining by Category
+                    </div>
+                    <div class="chart-canvas-container">
+                        <canvas id="budgetRemainingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+// Helper function to safely convert values to numbers
+function safeParseFloat(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        const cleaned = value.replace(/[^0-9.-]/g, '');
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+}
+
+// Helper function to safely parse JSON data
+function safeParseJSON(jsonString, fallback = []) {
+    try {
+        const parsed = JSON.parse(jsonString);
+        return Array.isArray(parsed) ? parsed : fallback;
+    } catch (e) {
+        console.warn('Failed to parse JSON:', e);
+        return fallback;
+    }
+}
+
+// Helper function to format numbers with commas
+function formatNumber(num) {
+    return Math.round(num).toLocaleString();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Safely parse data from Django with error handling
+        const budgetDataRaw = '{{ budget_data|escapejs }}';
+        const monthlyDisbursementsRaw = '{{ monthly_disbursements|escapejs }}';
+        const requestVsAllocatedRaw = '{{ request_vs_allocated|escapejs }}';
+        
+        console.log('Raw data:', { budgetDataRaw, monthlyDisbursementsRaw, requestVsAllocatedRaw });
+        
+        const budgetData = safeParseJSON(budgetDataRaw);
+        const monthlyDisbursements = safeParseJSON(monthlyDisbursementsRaw);
+        
+        // Handle request vs allocated data
+        let requestVsAllocated = {};
+        try {
+            requestVsAllocated = JSON.parse(requestVsAllocatedRaw || '{}');
+        } catch (e) {
+            console.warn('Failed to parse requestVsAllocated:', e);
+            requestVsAllocated = {
+                total_requested: 0,
+                total_allocated: 0
+            };
+        }
+        
+        // Process budget data to ensure numeric values
+        const processedBudgetData = budgetData.map(item => ({
+            name: item.name || 'Unknown',
+            allocation_amount: safeParseFloat(item.allocation_amount),
+            disbursed: safeParseFloat(item.disbursed),
+            remaining: safeParseFloat(item.remaining || item.allocation_amount) - safeParseFloat(item.disbursed)
+        }));
+        
+        // Process monthly disbursements
+        const processedMonthlyData = monthlyDisbursements.map(item => ({
+            month: item.month || 'Unknown',
+            amount: safeParseFloat(item.amount)
+        }));
+        
+        // Budget Allocation Donut Chart
+        if (processedBudgetData.length > 0) {
+            new Chart(document.getElementById('budgetAllocationChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: processedBudgetData.map(item => item.name),
+                    datasets: [{
+                        data: processedBudgetData.map(item => item.allocation_amount),
+                        backgroundColor: [
+                            '#3498db', '#27ae60', '#f39c12', '#e74c3c', 
+                            '#9b59b6', '#16a085', '#2980b9', '#d35400'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed || 0;
+                                    return context.label + ': KES ' + formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Allocation vs Disbursement Comparison
+        if (processedBudgetData.length > 0) {
+            new Chart(document.getElementById('allocationDisbursementChart'), {
+                type: 'bar',
+                data: {
+                    labels: processedBudgetData.map(item => item.name),
+                    datasets: [{
+                        label: 'Allocated',
+                        data: processedBudgetData.map(item => item.allocation_amount),
+                        backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }, {
+                        label: 'Disbursed',
+                        data: processedBudgetData.map(item => item.disbursed),
+                        backgroundColor: 'rgba(39, 174, 96, 0.8)',
+                        borderColor: 'rgba(39, 174, 96, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'KES ' + formatNumber(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': KES ' + formatNumber(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Monthly Disbursement Trend
+        if (processedMonthlyData.length > 0) {
+            new Chart(document.getElementById('monthlyDisbursementChart'), {
+                type: 'line',
+                data: {
+                    labels: processedMonthlyData.map(item => item.month),
+                    datasets: [{
+                        label: 'Monthly Disbursements',
+                        data: processedMonthlyData.map(item => item.amount),
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'KES ' + formatNumber(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Amount: KES ' + formatNumber(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Request vs Allocated Bar Chart
+        const totalRequested = safeParseFloat(requestVsAllocated.total_requested);
+        const totalAllocated = safeParseFloat(requestVsAllocated.total_allocated);
+        
+        new Chart(document.getElementById('requestAllocatedChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Total Amounts'],
+                datasets: [{
+                    label: 'Requested',
+                    data: [totalRequested],
+                    backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                    borderColor: 'rgba(231, 76, 60, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }, {
+                    label: 'Allocated',
+                    data: [totalAllocated],
+                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + formatNumber(value);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': KES ' + formatNumber(context.parsed.y);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Budget Remaining Chart
+        if (processedBudgetData.length > 0) {
+            new Chart(document.getElementById('budgetRemainingChart'), {
+                type: 'bar',
+                data: {
+                    labels: processedBudgetData.map(item => item.name),
+                    datasets: [{
+                        label: 'Remaining Budget',
+                        data: processedBudgetData.map(item => item.remaining),
+                        backgroundColor: processedBudgetData.map(item => 
+                            item.remaining < 0 ? 'rgba(231, 76, 60, 0.8)' : 'rgba(39, 174, 96, 0.8)'
+                        ),
+                        borderColor: processedBudgetData.map(item => 
+                            item.remaining < 0 ? 'rgba(231, 76, 60, 1)' : 'rgba(39, 174, 96, 1)'
+                        ),
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value) {
+                                    return 'KES ' + formatNumber(Math.abs(value));
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.x;
+                                    const status = value < 0 ? ' (Over Budget)' : ' (Under Budget)';
+                                    return 'Remaining: KES ' + formatNumber(Math.abs(value)) + status;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        console.log('All charts initialized successfully');
+        
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+        
+        // Show error message to user
+        const chartContainers = document.querySelectorAll('.chart-canvas-container');
+        chartContainers.forEach(container => {
+            container.innerHTML = '<div class="chart-loading">Error loading chart data</div>';
+        });
+    }
+});
+</script>
+{% endblock %}

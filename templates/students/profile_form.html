@@ -1,0 +1,694 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_update %}Update Profile{% else %}Create Profile{% endif %} - Kiharu Bursary
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .page-section-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #EF4444;
+        font-weight: 600;
+    }
+
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        background: white;
+        color: #1E293B;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-control:disabled,
+    .form-select:disabled {
+        background: #F8FAFC;
+        color: #94A3B8;
+        cursor: not-allowed;
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 6px;
+        display: block;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+        transition: all 0.3s ease;
+    }
+
+    .form-check:hover {
+        background: #F1F5F9;
+    }
+
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #E2E8F0;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .form-check-input:checked {
+        background-color: #3498db;
+        border-color: #3498db;
+    }
+
+    .form-check-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-check-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1E293B;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .text-danger {
+        color: #EF4444;
+        font-size: 13px;
+        margin-top: 6px;
+        display: block;
+        font-weight: 500;
+    }
+
+    .alert-custom {
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid;
+    }
+
+    .alert-success-custom {
+        background: rgba(16, 185, 129, 0.05);
+        border-color: rgba(16, 185, 129, 0.2);
+        color: #1E293B;
+    }
+
+    .alert-error-custom {
+        background: rgba(239, 68, 68, 0.05);
+        border-color: rgba(239, 68, 68, 0.2);
+        color: #1E293B;
+    }
+
+    .alert-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .alert-success-custom .alert-icon {
+        color: #10B981;
+    }
+
+    .alert-error-custom .alert-icon {
+        color: #EF4444;
+    }
+
+    .alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .alert-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .special-needs-description {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .special-needs-description.show {
+        max-height: 500px;
+        opacity: 1;
+        margin-top: 20px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+        position: relative;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid #E2E8F0;
+        border-top-color: #3498db;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .form-section {
+            padding: 16px;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'student_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'student_profile_view' %}">My Profile</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% if is_update %}Update Profile{% else %}Create Profile{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-{% if is_update %}pencil-square{% else %}person-plus{% endif %}"></i>
+                    {% if is_update %}Update Your Profile{% else %}Create Your Profile{% endif %}
+                </h1>
+                <p class="page-subtitle">
+                    Complete your profile information to continue with your application
+                </p>
+            </div>
+            <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-custom alert-{% if message.tags == 'success' %}success{% else %}error{% endif %}-custom">
+                    <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}-fill alert-icon"></i>
+                    <div style="flex: 1;">{{ message }}</div>
+                    <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Form -->
+        <form method="post" id="profileForm">
+            {% csrf_token %}
+
+            <!-- Personal Information Section -->
+            <div class="form-section">
+                <h4 class="page-section-header">
+                    <span class="section-icon">
+                        <i class="bi bi-person"></i>
+                    </span>
+                    Personal Information
+                </h4>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.gender.id_for_label }}" class="form-label required-field">Gender</label>
+                            {{ form.gender }}
+                            {% if form.gender.errors %}
+                                <span class="text-danger">{{ form.gender.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.date_of_birth.id_for_label }}" class="form-label required-field">Date of Birth</label>
+                            {{ form.date_of_birth }}
+                            {% if form.date_of_birth.errors %}
+                                <span class="text-danger">{{ form.date_of_birth.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.id_number.id_for_label }}" class="form-label required-field">ID Number</label>
+                            {{ form.id_number }}
+                            {% if form.id_number.errors %}
+                                <span class="text-danger">{{ form.id_number.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.special_needs }}
+                                <label for="{{ form.special_needs.id_for_label }}" class="form-check-label">
+                                    Do you have special needs?
+                                </label>
+                            </div>
+                            {% if form.special_needs.errors %}
+                                <span class="text-danger">{{ form.special_needs.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row special-needs-description" id="special-needs-description">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="{{ form.special_needs_description.id_for_label }}" class="form-label">Special Needs Description</label>
+                            {{ form.special_needs_description }}
+                            {% if form.special_needs_description.errors %}
+                                <span class="text-danger">{{ form.special_needs_description.errors }}</span>
+                            {% endif %}
+                            <span class="form-text">Please describe any special needs or accommodations required</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Information Section -->
+            <div class="form-section">
+                <h4 class="page-section-header">
+                    <span class="section-icon">
+                        <i class="bi bi-geo-alt"></i>
+                    </span>
+                    Location Information
+                </h4>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.ward.id_for_label }}" class="form-label required-field">Ward</label>
+                            {{ form.ward }}
+                            {% if form.ward.errors %}
+                                <span class="text-danger">{{ form.ward.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">Location</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <span class="text-danger">{{ form.location.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.sublocation.id_for_label }}" class="form-label">Sub-Location</label>
+                            {{ form.sublocation }}
+                            {% if form.sublocation.errors %}
+                                <span class="text-danger">{{ form.sublocation.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.village.id_for_label }}" class="form-label">Village</label>
+                            {{ form.village }}
+                            {% if form.village.errors %}
+                                <span class="text-danger">{{ form.village.errors }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information Section -->
+            <div class="form-section">
+                <h4 class="page-section-header">
+                    <span class="section-icon">
+                        <i class="bi bi-house-door"></i>
+                    </span>
+                    Address Information
+                </h4>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="{{ form.physical_address.id_for_label }}" class="form-label required-field">Physical Address</label>
+                            {{ form.physical_address }}
+                            {% if form.physical_address.errors %}
+                                <span class="text-danger">{{ form.physical_address.errors }}</span>
+                            {% endif %}
+                            <span class="form-text">Your current residential address</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.postal_address.id_for_label }}" class="form-label">Postal Address</label>
+                            {{ form.postal_address }}
+                            {% if form.postal_address.errors %}
+                                <span class="text-danger">{{ form.postal_address.errors }}</span>
+                            {% endif %}
+                            <span class="form-text">Optional - if different from physical address</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i>
+                    {% if is_update %}Update Profile{% else %}Create Profile{% endif %}
+                </button>
+                <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide special needs description
+    const specialNeedsCheckbox = document.getElementById('id_special_needs');
+    const descriptionSection = document.getElementById('special-needs-description');
+    
+    if (specialNeedsCheckbox) {
+        specialNeedsCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                descriptionSection.classList.add('show');
+            } else {
+                descriptionSection.classList.remove('show');
+                document.getElementById('id_special_needs_description').value = '';
+            }
+        });
+        
+        // Initialize on page load
+        if (specialNeedsCheckbox.checked) {
+            descriptionSection.classList.add('show');
+        }
+    }
+
+    // Location cascade dropdowns
+    const wardSelect = document.getElementById('id_ward');
+    const locationSelect = document.getElementById('id_location');
+    const sublocationSelect = document.getElementById('id_sublocation');
+    const villageSelect = document.getElementById('id_village');
+
+    if (wardSelect) {
+        wardSelect.addEventListener('change', function() {
+            const wardId = this.value;
+            
+            if (wardId) {
+                locationSelect.classList.add('loading');
+                
+                fetch(`{% url "get_locations" %}?ward_id=${wardId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        locationSelect.innerHTML = '<option value="">---------</option>';
+                        sublocationSelect.innerHTML = '<option value="">---------</option>';
+                        villageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        data.forEach(location => {
+                            locationSelect.innerHTML += `<option value="${location.id}">${location.name}</option>`;
+                        });
+                        
+                        locationSelect.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        locationSelect.classList.remove('loading');
+                    });
+            }
+        });
+    }
+
+    if (locationSelect) {
+        locationSelect.addEventListener('change', function() {
+            const locationId = this.value;
+            
+            if (locationId) {
+                sublocationSelect.classList.add('loading');
+                
+                fetch(`{% url "get_sublocations" %}?location_id=${locationId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        sublocationSelect.innerHTML = '<option value="">---------</option>';
+                        villageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        data.forEach(sublocation => {
+                            sublocationSelect.innerHTML += `<option value="${sublocation.id}">${sublocation.name}</option>`;
+                        });
+                        
+                        sublocationSelect.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        sublocationSelect.classList.remove('loading');
+                    });
+            }
+        });
+    }
+
+    if (sublocationSelect) {
+        sublocationSelect.addEventListener('change', function() {
+            const sublocationId = this.value;
+            
+            if (sublocationId) {
+                villageSelect.classList.add('loading');
+                
+                fetch(`{% url "get_villages" %}?sublocation_id=${sublocationId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        villageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        data.forEach(village => {
+                            villageSelect.innerHTML += `<option value="${village.id}">${village.name}</option>`;
+                        });
+                        
+                        villageSelect.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        villageSelect.classList.remove('loading');
+                    });
+            }
+        });
+    }
+
+    // Form submission handling
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Processing...';
+        });
+    }
+});
+</script>
+{% endblock %}

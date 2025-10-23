@@ -1,0 +1,1333 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Security & Audit - Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .security-alert {
+        background: #FEE2E2;
+        border-left: 4px solid #dc3545;
+        padding: 16px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 16px;
+    }
+
+    .security-warning {
+        background: #FEF3C7;
+        border-left: 4px solid #ffc107;
+        padding: 16px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 16px;
+    }
+
+    .alert-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .alert-text {
+        font-size: 14px;
+        margin: 0;
+        color: #64748B;
+    }
+
+    .audit-log-item {
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .audit-log-item:hover {
+        border-color: #3498db;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .audit-log-item.create { border-left: 4px solid #28a745; }
+    .audit-log-item.update { border-left: 4px solid #ffc107; }
+    .audit-log-item.delete { border-left: 4px solid #dc3545; }
+    .audit-log-item.login { border-left: 4px solid #17a2b8; }
+    .audit-log-item.view { border-left: 4px solid #6c757d; }
+
+    .action-badge {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        display: inline-block;
+    }
+
+    .action-create {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .action-update {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .action-delete {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .action-login {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .action-view {
+        background: #F1F5F9;
+        color: #475569;
+    }
+
+    .ip-address {
+        font-family: monospace;
+        background: #F8F9FA;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .log-user {
+        font-weight: 600;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .log-table {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .log-description {
+        font-size: 14px;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .log-record-id {
+        font-size: 13px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+    }
+
+    .log-time {
+        font-weight: 600;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .log-date {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .password-strength {
+        margin-top: 8px;
+    }
+
+    .strength-bar {
+        height: 4px;
+        border-radius: 2px;
+        background: #E2E8F0;
+        overflow: hidden;
+        margin-bottom: 4px;
+    }
+
+    .strength-fill {
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .strength-weak .strength-fill {
+        width: 25%;
+        background: #dc3545;
+    }
+
+    .strength-fair .strength-fill {
+        width: 50%;
+        background: #ffc107;
+    }
+
+    .strength-good .strength-fill {
+        width: 75%;
+        background: #17a2b8;
+    }
+
+    .strength-strong .strength-fill {
+        width: 100%;
+        background: #28a745;
+    }
+
+    .strength-text {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .quick-action-btn {
+        width: 100%;
+        padding: 12px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .quick-action-btn:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+        transform: translateY(-1px);
+    }
+
+    .activity-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .activity-icon {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+
+    .activity-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .activity-label {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 600px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #3498db 0%, #34495e 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.8;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title i {
+        color: #3498db;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-content {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Security & Audit</li>
+        </ol>
+    </nav>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Security Statistics -->
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-shield-check"></i>
+                    Security & Audit
+                </h1>
+                <p class="page-subtitle">Monitor system security and audit trail</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.total_logins_today }}</div>
+                <div class="stat-label">Logins Today</div>
+            </div>
+
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-week"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.total_logins_7_days }}</div>
+                <div class="stat-label">Last 7 Days</div>
+            </div>
+
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-month"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.total_logins_30_days }}</div>
+                <div class="stat-label">Last 30 Days</div>
+            </div>
+
+            <div class="stat-card stat-danger">
+                <div class="stat-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.failed_login_attempts }}</div>
+                <div class="stat-label">Failed Attempts</div>
+            </div>
+
+            <div class="stat-card stat-secondary">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-activity"></i>
+                </div>
+                <div class="stat-value">{{ security_stats.active_sessions }}</div>
+                <div class="stat-label">Active Sessions</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Audit Logs Section -->
+        <div class="col-lg-8">
+            <div class="section-container">
+                <!-- Filters -->
+                <div class="filter-section">
+                    <div class="filter-header" onclick="toggleFilters()">
+                        <h6 class="filter-title">
+                            <i class="bi bi-funnel"></i>
+                            Filter Audit Logs
+                        </h6>
+                        <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+                    </div>
+
+                    <div class="filter-content" id="filtersContent" style="display: none;">
+                        <form method="get" class="filter-content">
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bi bi-flag"></i> Action
+                                </label>
+                                <select name="action" class="filter-select">
+                                    <option value="">All Actions</option>
+                                    {% for action in unique_actions %}
+                                        <option value="{{ action }}" {% if filters.action == action %}selected{% endif %}>
+                                            {{ action|capfirst }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bi bi-person"></i> User
+                                </label>
+                                <input type="text" name="user" class="filter-input" 
+                                       value="{{ filters.user }}" placeholder="Username">
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bi bi-calendar"></i> Date From
+                                </label>
+                                <input type="date" name="date_from" class="filter-input" 
+                                       value="{{ filters.date_from }}">
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bi bi-calendar"></i> Date To
+                                </label>
+                                <input type="date" name="date_to" class="filter-input" 
+                                       value="{{ filters.date_to }}">
+                            </div>
+
+                            <div class="filter-actions" style="grid-column: 1 / -1;">
+                                <button type="submit" class="filter-btn">
+                                    <i class="bi bi-search"></i> Apply Filters
+                                </button>
+                                {% if filters.action or filters.user or filters.date_from or filters.date_to %}
+                                    <a href="{% url 'admin_security_audit' %}" class="clear-btn">
+                                        <i class="bi bi-x-circle"></i> Clear Filters
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Audit Trail -->
+                <h5 class="section-title">
+                    <i class="bi bi-clock-history"></i>
+                    Audit Trail
+                    <span class="badge bg-secondary" style="margin-left: auto;">
+                        {{ audit_logs.paginator.count }} entries
+                    </span>
+                </h5>
+
+                {% if audit_logs %}
+                    {% for log in audit_logs %}
+                        <div class="audit-log-item {{ log.action }}" 
+                             onclick="showAuditDetails({{ log.id }})" 
+                             data-log-id="{{ log.id }}">
+                            <div class="row align-items-start">
+                                <div class="col-md-2">
+                                    <span class="action-badge action-{{ log.action }}">
+                                        {{ log.get_action_display }}
+                                    </span>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="log-user">
+                                        {% if log.user %}
+                                            {{ log.user.username }}
+                                        {% else %}
+                                            <em class="text-muted">System</em>
+                                        {% endif %}
+                                    </div>
+                                    <small class="log-table">{{ log.table_affected }}</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="log-description">{{ log.description|truncatechars:80 }}</div>
+                                    {% if log.record_id %}
+                                        <div class="log-record-id">
+                                            <i class="bi bi-hash"></i>{{ log.record_id }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <div class="log-time">{{ log.timestamp|date:"H:i" }}</div>
+                                    <div class="log-date">{{ log.timestamp|date:"M d" }}</div>
+                                    <div class="ip-address mt-1">{{ log.ip_address }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <!-- Pagination -->
+                    {% if audit_logs.has_other_pages %}
+                        <div class="pagination-container">
+                            <div class="pagination-info">
+                                Showing {{ audit_logs.start_index }} to {{ audit_logs.end_index }} of {{ audit_logs.paginator.count }} entries
+                            </div>
+
+                            <nav>
+                                <ul class="pagination">
+                                    {% if audit_logs.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ audit_logs.previous_page_number }}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in audit_logs.paginator.page_range %}
+                                        {% if audit_logs.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > audit_logs.number|add:'-3' and num < audit_logs.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if audit_logs.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ audit_logs.next_page_number }}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h3 class="empty-title">No Audit Logs Found</h3>
+                        <p class="empty-text">
+                            {% if filters.action or filters.user or filters.date_from or filters.date_to %}
+                                Try adjusting your filter criteria.
+                            {% else %}
+                                Audit logs will appear here as users perform actions in the system.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar: Security Settings & Quick Actions -->
+        <div class="col-lg-4">
+            <!-- Security Alerts -->
+            {% if security_stats.failed_login_attempts > 5 %}
+                <div class="security-alert">
+                    <h6 class="alert-title text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Security Alert
+                    </h6>
+                    <p class="alert-text">High number of failed login attempts detected in the last 7 days.</p>
+                </div>
+            {% endif %}
+
+            {% if security_stats.active_sessions > 50 %}
+                <div class="security-warning">
+                    <h6 class="alert-title text-warning">
+                        <i class="bi bi-people"></i>
+                        High Activity
+                    </h6>
+                    <p class="alert-text">Unusually high number of active sessions today.</p>
+                </div>
+            {% endif %}
+
+            <!-- Change Password -->
+            <div class="section-container">
+                <h5 class="section-title">
+                    <i class="bi bi-key"></i>
+                    Change Password
+                </h5>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="change_password" value="1">
+
+                    <div class="filter-group mb-3">
+                        <label class="filter-label">Current Password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ password_form.old_password.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="filter-group mb-3">
+                        <label class="filter-label">New Password</label>
+                        {{ password_form.new_password1 }}
+                        <div class="password-strength" id="passwordStrength">
+                            <div class="strength-bar">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <small class="strength-text" id="strengthText">Enter password to see strength</small>
+                        </div>
+                        {% if password_form.new_password1.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ password_form.new_password1.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="filter-group mb-3">
+                        <label class="filter-label">Confirm New Password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ password_form.new_password2.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="filter-btn w-100">
+                        <i class="bi bi-shield-check"></i> Update Password
+                    </button>
+                </form>
+            </div>
+
+            <!-- Activity Summary -->
+            <div class="section-container">
+                <h5 class="section-title">
+                    <i class="bi bi-graph-up"></i>
+                    Activity Summary
+                </h5>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="activity-card">
+                            <div class="activity-icon text-success">
+                                <i class="bi bi-plus-circle"></i>
+                            </div>
+                            <div class="activity-value">
+                                {% with created=0 %}
+                                    {% for log in audit_logs %}
+                                        {% if log.action == 'create' %}
+                                            {% with created=created|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ created }}
+                                {% endwith %}
+                            </div>
+                            <div class="activity-label">Created</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="activity-card">
+                            <div class="activity-icon text-warning">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            <div class="activity-value">
+                                {% with updated=0 %}
+                                    {% for log in audit_logs %}
+                                        {% if log.action == 'update' %}
+                                            {% with updated=updated|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ updated }}
+                                {% endwith %}
+                            </div>
+                            <div class="activity-label">Updated</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="activity-card">
+                            <div class="activity-icon text-danger">
+                                <i class="bi bi-trash"></i>
+                            </div>
+                            <div class="activity-value">
+                                {% with deleted=0 %}
+                                    {% for log in audit_logs %}
+                                        {% if log.action == 'delete' %}
+                                            {% with deleted=deleted|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ deleted }}
+                                {% endwith %}
+                            </div>
+                            <div class="activity-label">Deleted</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="activity-card">
+                            <div class="activity-icon text-info">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <div class="activity-value">
+                                {% with viewed=0 %}
+                                    {% for log in audit_logs %}
+                                        {% if log.action == 'view' %}
+                                            {% with viewed=viewed|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ viewed }}
+                                {% endwith %}
+                            </div>
+                            <div class="activity-label">Viewed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section-container">
+                <h5 class="section-title">
+                    <i class="bi bi-lightning-charge"></i>
+                    Quick Actions
+                </h5>
+
+                <button class="quick-action-btn" onclick="exportAuditLogs()">
+                    <i class="bi bi-download"></i>
+                    Export Audit Logs
+                </button>
+                <button class="quick-action-btn" onclick="viewSystemHealth()">
+                    <i class="bi bi-heart-pulse"></i>
+                    System Health
+                </button>
+                <button class="quick-action-btn" onclick="clearOldLogs()">
+                    <i class="bi bi-broom"></i>
+                    Clear Old Logs
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit Log Details Modal -->
+<div class="modal" id="auditDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle"></i>
+                    Audit Log Details
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="auditDetailsContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-expand filters if any filter is active
+        const hasActiveFilters = "{{ filters.action }}" !== "" || 
+                                "{{ filters.user }}" !== "" ||
+                                "{{ filters.date_from }}" !== "" ||
+                                "{{ filters.date_to }}" !== "";
+        
+        if (hasActiveFilters) {
+            document.getElementById('filtersContent').style.display = 'grid';
+            document.getElementById('filterToggle').classList.add('rotated');
+        }
+
+        // Password strength checker
+        const passwordInput = document.getElementById('id_new_password1');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+            });
+        }
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+
+        // Set max date to today for date filters
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = document.querySelectorAll('input[name="date_from"], input[name="date_to"]');
+        dateInputs.forEach(input => input.setAttribute('max', today));
+    });
+
+    // Toggle filters visibility
+    function toggleFilters() {
+        const content = document.getElementById('filtersContent');
+        const toggle = document.getElementById('filterToggle');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'grid';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let feedback = "";
+        
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]/)) strength++;
+        if (password.match(/[A-Z]/)) strength++;
+        if (password.match(/[0-9]/)) strength++;
+        if (password.match(/[^a-zA-Z0-9]/)) strength++;
+        
+        const strengthContainer = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('strengthText');
+        
+        strengthContainer.className = 'password-strength';
+        
+        switch(strength) {
+            case 0:
+            case 1:
+                strengthContainer.classList.add('strength-weak');
+                feedback = "Very weak password";
+                break;
+            case 2:
+                strengthContainer.classList.add('strength-fair');
+                feedback = "Fair password";
+                break;
+            case 3:
+            case 4:
+                strengthContainer.classList.add('strength-good');
+                feedback = "Good password";
+                break;
+            case 5:
+                strengthContainer.classList.add('strength-strong');
+                feedback = "Strong password";
+                break;
+        }
+        
+        strengthText.textContent = feedback;
+    }
+
+    // Show audit log details
+    function showAuditDetails(logId) {
+        const modal = document.getElementById('auditDetailsModal');
+        modal.classList.add('show');
+        
+        fetch(`/admin-audit-log/${logId}/details/`)
+            .then(response => response.json())
+            .then(data => {
+                const content = `
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>User:</strong> ${data.user || 'System'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Action:</strong> ${data.action}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Table:</strong> ${data.table_affected}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Record ID:</strong> ${data.record_id || 'N/A'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>IP Address:</strong> ${data.ip_address}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Timestamp:</strong> ${data.timestamp}
+                        </div>
+                        <div class="col-12 mt-3">
+                            <strong>Description:</strong>
+                            <div class="border rounded p-3 mt-2 bg-light">
+                                ${data.description}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('auditDetailsContent').innerHTML = content;
+            })
+            .catch(error => {
+                document.getElementById('auditDetailsContent').innerHTML = 
+                    '<div class="alert alert-danger">Error loading audit log details</div>';
+            });
+    }
+
+    // Close modal
+    function closeModal() {
+        document.getElementById('auditDetailsModal').classList.remove('show');
+    }
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('show');
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+    });
+
+    // Export audit logs (placeholder)
+    function exportAuditLogs() {
+        alert('Export functionality would be implemented here');
+    }
+
+    // View system health (placeholder)
+    function viewSystemHealth() {
+        alert('System health dashboard would be implemented here');
+    }
+
+    // Clear old logs (placeholder)
+    function clearOldLogs() {
+        if (confirm('Are you sure you want to clear old audit logs? This action cannot be undone.')) {
+            alert('Clear logs functionality would be implemented here');
+        }
+    }
+</script>
+{% endblock %}

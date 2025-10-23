@@ -1,0 +1,389 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Profile Settings - Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+    :root {
+        --primary-color: #3498db;
+        --secondary-color: #34495e;
+    }
+    
+    .profile-card {
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        margin: 0 auto 1rem;
+        font-weight: bold;
+    }
+    
+    .activity-scroll-container {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    
+    .activity-item {
+        border-left: 3px solid #e3f2fd;
+        padding-left: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .activity-item.create {
+        border-left-color: #4caf50;
+    }
+    
+    .activity-item.update {
+        border-left-color: #ff9800;
+    }
+    
+    .activity-item.delete {
+        border-left-color: #f44336;
+    }
+    
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    .page-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-title {
+        color: var(--secondary-color);
+        font-weight: 600;
+    }
+    
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 1rem;
+    }
+    
+    .card-title {
+        color: var(--secondary-color);
+        font-weight: 600;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.25rem;
+    }
+    
+    .card-title i {
+        color: var(--primary-color);
+        margin-right: 0.5rem;
+    }
+    
+    /* Custom scrollbar for activity section */
+    .activity-scroll-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 10px;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: var(--secondary-color);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: var(--secondary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .badge {
+        font-size: 0.7em;
+        padding: 0.35em 0.65em;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                <a href="#">Account</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                Profile Settings
+                </li>
+            </ol>
+            </nav>
+
+            <!-- Page header -->
+            <div class="page-header">
+                <h4 class="page-title">Profile Settings</h4>
+                <p class="page-subtitle">Manage your account information and preferences</p>
+            </div>
+        </div>
+    </div>
+
+
+    {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-8">
+            <div class="profile-card">
+                <h4 class="card-title">
+                    <i class="bi bi-person-gear"></i>
+                    Personal Information
+                </h4>
+                
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.first_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.last_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                {{ form.phone_number }}
+                                <small class="form-text text-muted">Format: +254XXXXXXXXX</small>
+                                {% if form.phone_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.phone_number.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">ID Number</label>
+                                {{ form.id_number }}
+                                {% if form.id_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.id_number.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">User Type</label>
+                                {{ form.user_type }}
+                                {% if form.user_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.user_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                Account is active
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Update Profile
+                        </button>
+                        <a href="{% url 'admin_security_audit' %}" class="btn btn-outline-secondary ms-2">
+                            <i class="bi bi-key me-2"></i>Change Password
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Summary & Recent Activity -->
+        <div class="col-lg-4">
+            <!-- Profile Summary -->
+            <div class="profile-card text-center">
+                <div class="profile-avatar">
+                    {{ user.first_name.0|default:"U" }}{{ user.last_name.0|default:"" }}
+                </div>
+                <h5>{{ user.first_name }} {{ user.last_name }}</h5>
+                <p class="text-muted">{{ user.get_user_type_display }}</p>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">Member Since</small>
+                        <div class="fw-bold">{{ user.date_joined|date:"M Y" }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Last Login</small>
+                        <div class="fw-bold">{{ user.last_login|date:"M d" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="profile-card">
+                <h5 class="card-title">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Activity
+                </h5>
+                
+                {% if recent_activities %}
+                    <div class="activity-scroll-container">
+                        {% for activity in recent_activities %}
+                            <div class="activity-item {{ activity.action }}">
+                                <div class="d-flex justify-content-between">
+                                    <small class="fw-bold">{{ activity.get_action_display }}</small>
+                                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                                </div>
+                                <div class="text-muted small">
+                                    {{ activity.description|truncatechars:50 }}
+                                </div>
+                                {% if activity.table_affected %}
+                                    <small class="badge bg-light text-dark">{{ activity.table_affected }}</small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'admin_security_audit' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-list-ul me-1"></i>View All Activity
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-inbox fa-2x mb-2" style="font-size: 2rem;"></i>
+                        <p>No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function() {
+        'use strict';
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+    
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+</script>
+{% endblock %}
