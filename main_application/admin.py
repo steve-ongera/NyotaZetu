@@ -106,7 +106,7 @@ class CountyAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'code', 'headquarters', 'population', 'is_active')
+            'fields': ('name', 'code', 'headquarters', 'population', 'is_active' , 'system_county')
         }),
         ('County Government', {
             'fields': ('governor_name', 'county_website')
