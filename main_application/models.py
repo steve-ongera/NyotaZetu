@@ -168,6 +168,13 @@ class County(models.Model):
     education_cec_name = models.CharField(max_length=200, blank=True, null=True)
     education_office_email = models.EmailField(blank=True, null=True)
     education_office_phone = models.CharField(max_length=20, blank=True, null=True)
+
+    #  identifies which county this system instance belongs to
+    system_county = models.CharField(
+        max_length=100,
+        help_text="County this bursary system instance is configured for.",
+        default="Murang'a"  # You can set a default for each county installation
+    )
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
