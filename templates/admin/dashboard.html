@@ -1,7 +1,7 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Admin Dashboard - Kiharu Bursary System{% endblock %}
+{% block title %}Admin Dashboard - {{ county.name }} Bursary System{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -61,6 +61,16 @@
 
     .stat-icon.cyan {
         background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+        color: white;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        color: white;
+    }
+
+    .stat-icon.red {
+        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
         color: white;
     }
 
@@ -139,6 +149,17 @@
         color: #3498db;
     }
 
+    /* Chart Container */
+    .chart-container {
+        position: relative;
+        padding: 24px;
+        min-height: 300px;
+    }
+
+    .chart-container canvas {
+        max-height: 400px;
+    }
+
     /* Tables */
     .table-custom {
         width: 100%;
@@ -166,10 +187,6 @@
 
     .table-custom tbody tr:hover {
         background-color: #F8FAFC;
-    }
-
-    .table-custom tbody tr:last-child td {
-        border-bottom: none;
     }
 
     /* User Avatar */
@@ -221,166 +238,17 @@
         color: #3730A3;
     }
 
-    /* Progress Bars */
-    .progress-item {
-        margin-bottom: 24px;
-    }
-
-    .progress-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-
-    .progress-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        color: #1E293B;
-        font-size: 14px;
-    }
-
-    .progress-label i {
-        font-size: 16px;
-    }
-
-    .progress-count {
-        font-weight: 700;
-        color: #1E293B;
-        font-size: 14px;
-    }
-
-    .progress-bar-custom {
-        height: 10px;
-        background: #F1F5F9;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        border-radius: 10px;
-        transition: width 0.6s ease;
-    }
-
-    .progress-footer {
-        text-align: right;
-        margin-top: 4px;
-    }
-
-    .progress-percentage {
-        font-size: 12px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
-    /* Ward Table */
-    .ward-progress {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-    }
-
-    .ward-progress-bar {
-        flex: 1;
-        height: 24px;
-        background: #F1F5F9;
-        border-radius: 6px;
-        overflow: hidden;
-    }
-
-    .ward-progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
-        border-radius: 6px;
-        transition: width 0.6s ease;
-    }
-
-    .ward-percentage {
-        font-weight: 600;
-        color: #3498db;
-        font-size: 14px;
-        min-width: 45px;
-        text-align: right;
-    }
-
-    /* Quick Actions */
-    .quick-actions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-    }
-
-    .action-card {
-        background: white;
-        border: 2px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 24px;
-        text-align: center;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .action-card:hover {
-        border-color: #3498db;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
-    }
-
-    .action-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-    .action-card.warning .action-icon {
-        background: #FEF3C7;
-        color: #D97706;
-    }
-
-    .action-card.info .action-icon {
-        background: #DBEAFE;
-        color: #0891B2;
-    }
-
-    .action-card.success .action-icon {
-        background: #D1FAE5;
-        color: #059669;
-    }
-
-    .action-card.primary .action-icon {
-        background: #DBEAFE;
-        color: #2563EB;
-    }
-
-    .action-title {
-        font-weight: 600;
-        color: #1E293B;
-        font-size: 15px;
-        margin: 0;
-    }
-
-    .action-subtitle {
-        font-size: 13px;
-        color: #64748B;
-        margin: 0;
-    }
-
     /* Grid Layout */
     .grid-layout {
         display: grid;
-        grid-template-columns: 1.5fr 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .grid-layout-thirds {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 24px;
         margin-bottom: 24px;
     }
@@ -425,9 +293,31 @@
         margin: 0;
     }
 
+    /* Alert Boxes */
+    .alert-box {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-box.warning {
+        background: #FEF3C7;
+        border: 1px solid #FCD34D;
+        color: #92400E;
+    }
+
+    .alert-box.info {
+        background: #DBEAFE;
+        border: 1px solid #93C5FD;
+        color: #1E40AF;
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
-        .grid-layout {
+        .grid-layout, .grid-layout-thirds {
             grid-template-columns: 1fr;
         }
     }
@@ -436,24 +326,357 @@
         .stats-grid {
             grid-template-columns: 1fr;
         }
-
-        .stat-card {
-            padding: 20px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-        }
-
-        .quick-actions-grid {
-            grid-template-columns: 1fr;
-        }
     }
 </style>
 {% endblock %}
 
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart.js default configuration
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748B';
+    
+    // 1. Applications by Status (Donut Chart)
+    const statusData = {{ status_chart_data|safe }};
+    if (document.getElementById('statusChart')) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusData.labels,
+                datasets: [{
+                    data: statusData.data,
+                    backgroundColor: statusData.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 2. Applications by Ward (Bar Chart)
+    const wardData = {{ ward_chart_data|safe }};
+    if (document.getElementById('wardChart')) {
+        new Chart(document.getElementById('wardChart'), {
+            type: 'bar',
+            data: {
+                labels: wardData.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: wardData.data,
+                    backgroundColor: '#3498db',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 3. Applications Over Time (Line Chart)
+    const monthlyData = {{ monthly_chart_data|safe }};
+    if (document.getElementById('monthlyChart')) {
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: monthlyData.data,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 4. Financial Timeline (Line Chart - Allocations vs Disbursements)
+    const financialData = {{ financial_timeline_data|safe }};
+    if (document.getElementById('financialChart')) {
+        new Chart(document.getElementById('financialChart'), {
+            type: 'line',
+            data: {
+                labels: financialData.labels,
+                datasets: [{
+                    label: 'Allocations',
+                    data: financialData.allocations,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    borderWidth: 3
+                }, {
+                    label: 'Disbursements',
+                    data: financialData.disbursements,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 5. Applications by Category (Pie Chart)
+    const categoryData = {{ category_chart_data|safe }};
+    if (document.getElementById('categoryChart')) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'pie',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.data,
+                    backgroundColor: ['#3498db', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 6. Applications by Institution Type (Bar Chart)
+    const institutionTypeData = {{ institution_type_chart_data|safe }};
+    if (document.getElementById('institutionTypeChart')) {
+        new Chart(document.getElementById('institutionTypeChart'), {
+            type: 'bar',
+            data: {
+                labels: institutionTypeData.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: institutionTypeData.data,
+                    backgroundColor: '#06B6D4',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 7. Gender Distribution (Donut Chart)
+    const genderData = {{ gender_chart_data|safe }};
+    if (document.getElementById('genderChart')) {
+        new Chart(document.getElementById('genderChart'), {
+            type: 'doughnut',
+            data: {
+                labels: genderData.labels,
+                datasets: [{
+                    data: genderData.data,
+                    backgroundColor: genderData.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 8. Top Institutions (Horizontal Bar Chart)
+    const topInstitutionsData = {{ top_institutions_chart_data|safe }};
+    if (document.getElementById('topInstitutionsChart')) {
+        new Chart(document.getElementById('topInstitutionsChart'), {
+            type: 'bar',
+            data: {
+                labels: topInstitutionsData.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: topInstitutionsData.data,
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 9. Ward Allocation Utilization (Grouped Bar Chart)
+    const wardAllocationData = {{ ward_allocation_chart_data|safe }};
+    if (document.getElementById('wardAllocationChart')) {
+        new Chart(document.getElementById('wardAllocationChart'), {
+            type: 'bar',
+            data: {
+                labels: wardAllocationData.labels,
+                datasets: [{
+                    label: 'Allocated',
+                    data: wardAllocationData.allocated,
+                    backgroundColor: '#3498db',
+                    borderRadius: 6
+                }, {
+                    label: 'Spent',
+                    data: wardAllocationData.spent,
+                    backgroundColor: '#10B981',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 10. Daily Applications Trend (Area Chart)
+    const dailyData = {{ daily_chart_data|safe }};
+    if (document.getElementById('dailyChart')) {
+        new Chart(document.getElementById('dailyChart'), {
+            type: 'line',
+            data: {
+                labels: dailyData.labels,
+                datasets: [{
+                    label: 'Daily Applications',
+                    data: dailyData.data,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
-<!-- Statistics Cards -->
+<!-- Alert Boxes -->
+{% if applications_needing_review > 0 %}
+<div class="alert-box warning">
+    <i class="bi bi-exclamation-triangle" style="font-size: 24px;"></i>
+    <div>
+        <strong>Action Required:</strong> {{ applications_needing_review }} application{{ applications_needing_review|pluralize }} waiting for review.
+        <a href="{% url 'application_list' %}?status=submitted" style="color: inherit; text-decoration: underline;">Review now</a>
+    </div>
+</div>
+{% endif %}
+
+{% if allocations_pending_disbursement > 0 %}
+<div class="alert-box info">
+    <i class="bi bi-cash-stack" style="font-size: 24px;"></i>
+    <div>
+        <strong>Pending Disbursement:</strong> {{ allocations_pending_disbursement }} allocation{{ allocations_pending_disbursement|pluralize }} ready for disbursement.
+        <a href="{% url 'allocation_list' %}?disbursed=false" style="color: inherit; text-decoration: underline;">Process now</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Statistics Cards -->
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-header">
@@ -474,7 +697,7 @@
                 <i class="bi bi-clock"></i>
             </div>
             <div class="stat-badge warning">
-                <i class="bi bi-clock"></i> Attention
+                <i class="bi bi-clock"></i> Pending
             </div>
         </div>
         <div class="stat-value">{{ pending_applications|intcomma }}</div>
@@ -487,7 +710,7 @@
                 <i class="bi bi-check-circle"></i>
             </div>
             <div class="stat-badge success">
-                <i class="bi bi-check-circle"></i> Approved
+                <i class="bi bi-check-circle"></i> {{ approval_rate }}%
             </div>
         </div>
         <div class="stat-value">{{ approved_applications|intcomma }}</div>
@@ -500,95 +723,87 @@
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div class="stat-badge info">
-                <i class="bi bi-cash-stack"></i> Allocated
+                <i class="bi bi-wallet2"></i> Allocated
             </div>
         </div>
         <div class="stat-value">KES {{ total_allocated|floatformat:0|intcomma }}</div>
         <div class="stat-label">Total Allocated</div>
     </div>
-</div>
 
-<!-- Main Content Grid -->
-<div class="grid-layout">
-    <!-- Recent Applications -->
-    <div class="content-card">
-        <div class="card-header-custom">
-            <h6 class="card-title">
-                <i class="bi bi-clock-history"></i>
-                Recent Applications
-            </h6>
-            <a href="{% url 'application_list' %}" class="btn-custom">
-                <i class="bi bi-eye"></i> View All
-            </a>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon purple">
+                <i class="bi bi-arrow-right-circle"></i>
+            </div>
+            <div class="stat-badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">
+                <i class="bi bi-send"></i> Disbursed
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>Application #</th>
-                        <th>Applicant</th>
-                        <th>Institution</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for application in recent_applications %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'application_detail' application.id %}" 
-                               style="color: #3498db; text-decoration: none; font-weight: 600;">
-                                {{ application.application_number }}
-                            </a>
-                        </td>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div class="user-avatar">
-                                    {{ application.applicant.user.first_name|first }}{{ application.applicant.user.last_name|first }}
-                                </div>
-                                <span style="font-weight: 500;">{{ application.applicant.user.get_full_name }}</span>
-                            </div>
-                        </td>
-                        <td style="font-weight: 500;">{{ application.institution.name|truncatewords:3 }}</td>
-                        <td style="font-weight: 600; color: #3498db;">
-                            KES {{ application.amount_requested|floatformat:0|intcomma }}
-                        </td>
-                        <td>
-                            {% if application.status == 'submitted' %}
-                                <span class="status-badge submitted">Submitted</span>
-                            {% elif application.status == 'approved' %}
-                                <span class="status-badge approved">Approved</span>
-                            {% elif application.status == 'rejected' %}
-                                <span class="status-badge rejected">Rejected</span>
-                            {% elif application.status == 'under_review' %}
-                                <span class="status-badge under-review">Under Review</span>
-                            {% elif application.status == 'disbursed' %}
-                                <span class="status-badge disbursed">Disbursed</span>
-                            {% else %}
-                                <span class="status-badge">{{ application.get_status_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td style="color: #64748B; font-size: 13px;">
-                            {{ application.date_submitted|date:"M d, Y" }}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">
-                            <div class="empty-state">
-                                <i class="bi bi-file-earmark-text"></i>
-                                <p>No recent applications</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <div class="stat-value">KES {{ total_disbursed|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Total Disbursed</div>
     </div>
 
-    <!-- Application Status -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon red">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-badge" style="background: rgba(239, 68, 68, 0.1); color: #EF4444;">
+                <i class="bi bi-person-check"></i> Verified
+            </div>
+        </div>
+        <div class="stat-value">{{ total_applicants|intcomma }}</div>
+        <div class="stat-label">Total Applicants</div>
+    </div>
+</div>
+
+<!-- Budget Overview -->
+{% if active_fiscal_year %}
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-calendar3"></i>
+            Budget Overview - {{ active_fiscal_year.name }}
+        </h6>
+        <span class="stat-badge success">Active</span>
+    </div>
+    <div style="padding: 24px;">
+        <div class="stats-grid" style="margin-bottom: 0;">
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Total Budget</div>
+                <div style="font-size: 24px; font-weight: 700; color: #1E293B;">
+                    KES {{ budget_allocated|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Utilized</div>
+                <div style="font-size: 24px; font-weight: 700; color: #3498db;">
+                    KES {{ budget_utilized|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Remaining</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10B981;">
+                    KES {{ budget_remaining|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Utilization Rate</div>
+                <div style="font-size: 24px; font-weight: 700; color: #F59E0B;">
+                    {{ budget_utilization_percentage }}%
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 20px; height: 12px; background: #F1F5F9; border-radius: 12px; overflow: hidden;">
+            <div style="height: 100%; width: {{ budget_utilization_percentage }}%; background: linear-gradient(90deg, #3498db 0%, #10B981 100%); border-radius: 12px;"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Charts Grid -->
+<div class="grid-layout">
+    <!-- Applications by Status -->
     <div class="content-card">
         <div class="card-header-custom">
             <h6 class="card-title">
@@ -596,147 +811,212 @@
                 Applications by Status
             </h6>
         </div>
-        <div style="padding: 24px;">
-            {% for stat in status_stats %}
-            <div class="progress-item">
-                <div class="progress-header">
-                    <div class="progress-label">
-                        {% if stat.status == 'submitted' %}
-                            <i class="bi bi-clock" style="color: #F59E0B;"></i>
-                        {% elif stat.status == 'approved' %}
-                            <i class="bi bi-check-circle" style="color: #10B981;"></i>
-                        {% elif stat.status == 'rejected' %}
-                            <i class="bi bi-x-circle" style="color: #EF4444;"></i>
-                        {% elif stat.status == 'under_review' %}
-                            <i class="bi bi-search" style="color: #06B6D4;"></i>
-                        {% elif stat.status == 'disbursed' %}
-                            <i class="bi bi-cash" style="color: #3498db;"></i>
-                        {% else %}
-                            <i class="bi bi-circle" style="color: #94A3B8;"></i>
-                        {% endif %}
-                        <span>{{ stat.status|title }}</span>
-                    </div>
-                    <span class="progress-count">{{ stat.count }}</span>
-                </div>
-                <div class="progress-bar-custom">
-                    {% widthratio stat.count total_applications 100 as percentage %}
-                    <div class="progress-fill" 
-                         style="width: {{ percentage }}%; 
-                                background: {% if stat.status == 'submitted' %}#F59E0B
-                                {% elif stat.status == 'approved' %}#10B981
-                                {% elif stat.status == 'rejected' %}#EF4444
-                                {% elif stat.status == 'under_review' %}#06B6D4
-                                {% elif stat.status == 'disbursed' %}#3498db
-                                {% else %}#94A3B8{% endif %};">
-                    </div>
-                </div>
-                <div class="progress-footer">
-                    <span class="progress-percentage">{{ percentage }}% of total</span>
-                </div>
-            </div>
-            {% endfor %}
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Gender Distribution -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-gender-ambiguous"></i>
+                Gender Distribution
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="genderChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Applications Over Time -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-graph-up"></i>
+            Applications Trend (Last 6 Months)
+        </h6>
+    </div>
+    <div class="chart-container" style="min-height: 350px;">
+        <canvas id="monthlyChart"></canvas>
+    </div>
+</div>
+
+<!-- Financial Timeline -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-cash-coin"></i>
+            Allocations vs Disbursements
+        </h6>
+    </div>
+    <div class="chart-container" style="min-height: 350px;">
+        <canvas id="financialChart"></canvas>
+    </div>
+</div>
+
+<!-- Three Column Charts -->
+<div class="grid-layout-thirds">
+    <!-- Applications by Category -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-tags"></i>
+                By Category
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Institution Type -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-building"></i>
+                By Institution Type
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="institutionTypeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Daily Trend -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-calendar-day"></i>
+                Daily Trend (30 Days)
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="dailyChart"></canvas>
         </div>
     </div>
 </div>
 
 <!-- Ward Statistics -->
+<div class="grid-layout">
+    <!-- Applications by Ward -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-map"></i>
+                Applications by Ward
+            </h6>
+        </div>
+        <div class="chart-container" style="min-height: 400px;">
+            <canvas id="wardChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Ward Allocation Utilization -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-bar-chart"></i>
+                Ward Budget Utilization
+            </h6>
+        </div>
+        <div class="chart-container" style="min-height: 400px;">
+            <canvas id="wardAllocationChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Top Institutions -->
 <div class="content-card">
     <div class="card-header-custom">
         <h6 class="card-title">
-            <i class="bi bi-map"></i>
-            Applications by Ward
+            <i class="bi bi-award"></i>
+            Top 10 Institutions by Applications
         </h6>
+    </div>
+    <div class="chart-container" style="min-height: 400px;">
+        <canvas id="topInstitutionsChart"></canvas>
+    </div>
+</div>
+
+<!-- Recent Applications Table -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-clock-history"></i>
+            Recent Applications
+        </h6>
+        <a href="{% url 'application_list' %}" class="btn-custom">
+            <i class="bi bi-eye"></i> View All
+        </a>
     </div>
     <div class="table-responsive">
         <table class="table-custom">
             <thead>
                 <tr>
+                    <th>Application #</th>
+                    <th>Applicant</th>
                     <th>Ward</th>
-                    <th>Total Applications</th>
-                    <th style="width: 45%;">Distribution</th>
-                    <th>Actions</th>
+                    <th>Institution</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
-                {% for ward in ward_stats %}
+                {% for application in recent_applications %}
                 <tr>
-                    <td style="font-weight: 600;">
-                        {{ ward.applicant__ward__name|default:"Not Specified" }}
-                    </td>
-                    <td style="font-weight: 600;">{{ ward.count }}</td>
                     <td>
-                        {% widthratio ward.count total_applications 100 as ward_percentage %}
-                        <div class="ward-progress">
-                            <div class="ward-progress-bar">
-                                <div class="ward-progress-fill" style="width: {{ ward_percentage }}%;"></div>
+                        <a href="{% url 'application_detail' application.id %}" 
+                           style="color: #3498db; text-decoration: none; font-weight: 600;">
+                            {{ application.application_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="user-avatar">
+                                {{ application.applicant.user.first_name|first }}{{ application.applicant.user.last_name|first }}
                             </div>
-                            <span class="ward-percentage">{{ ward_percentage }}%</span>
+                            <span style="font-weight: 500;">{{ application.applicant.user.get_full_name }}</span>
                         </div>
                     </td>
+                    <td style="font-weight: 500;">{{ application.applicant.ward.name|default:"N/A" }}</td>
+                    <td style="font-weight: 500;">{{ application.institution.name|truncatewords:3 }}</td>
+                    <td style="font-weight: 600; color: #3498db;">
+                        KES {{ application.amount_requested|floatformat:0|intcomma }}
+                    </td>
                     <td>
-                        <a href="{% url 'application_list' %}?ward={{ ward.applicant__ward__id }}" 
-                           class="btn-custom">
-                            <i class="bi bi-eye"></i> View
-                        </a>
+                        {% if application.status == 'submitted' %}
+                            <span class="status-badge submitted">Submitted</span>
+                        {% elif application.status == 'approved' %}
+                            <span class="status-badge approved">Approved</span>
+                        {% elif application.status == 'rejected' %}
+                            <span class="status-badge rejected">Rejected</span>
+                        {% elif application.status == 'under_review' %}
+                            <span class="status-badge under-review">Under Review</span>
+                        {% elif application.status == 'disbursed' %}
+                            <span class="status-badge disbursed">Disbursed</span>
+                        {% else %}
+                            <span class="status-badge">{{ application.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: #64748B; font-size: 13px;">
+                        {{ application.date_submitted|date:"M d, Y" }}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4">
+                    <td colspan="7">
                         <div class="empty-state">
-                            <i class="bi bi-map"></i>
-                            <p>No ward data available</p>
+                            <i class="bi bi-file-earmark-text"></i>
+                            <p>No recent applications</p>
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="content-card">
-    <div class="card-header-custom">
-        <h6 class="card-title">
-            <i class="bi bi-lightning"></i>
-            Quick Actions
-        </h6>
-    </div>
-    <div style="padding: 24px;">
-        <div class="quick-actions-grid">
-            <a href="{% url 'application_list' %}?status=submitted" class="action-card warning">
-                <div class="action-icon">
-                    <i class="bi bi-clock-fill"></i>
-                </div>
-                <h6 class="action-title">Review Pending</h6>
-                <p class="action-subtitle">{{ pending_applications }} pending</p>
-            </a>
-
-            <a href="{% url 'allocation_list' %}?disbursed=false" class="action-card info">
-                <div class="action-icon">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <h6 class="action-title">Process Disbursements</h6>
-                <p class="action-subtitle">Manage funds</p>
-            </a>
-
-            <a href="{% url 'fiscal_year_create' %}" class="action-card success">
-                <div class="action-icon">
-                    <i class="bi bi-plus-circle"></i>
-                </div>
-                <h6 class="action-title">Create Fiscal Year</h6>
-                <p class="action-subtitle">New period</p>
-            </a>
-
-            <a href="{% url 'financial_reports' %}" class="action-card primary">
-                <div class="action-icon">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <h6 class="action-title">View Reports</h6>
-                <p class="action-subtitle">Analytics</p>
-            </a>
-        </div>
     </div>
 </div>
 {% endblock %}

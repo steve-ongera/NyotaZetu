@@ -398,34 +398,476 @@ def is_reviewer(user):
 def is_finance(user):
     return user.user_type in ['admin', 'finance']
 
-# Dashboard Views
+# Murang'a County Admin Dashboard Views
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Sum, Count, Avg, Q, F
+from django.db.models.functions import TruncMonth, TruncDate
+from django.utils import timezone
+from datetime import timedelta, datetime
+from decimal import Decimal
+import json
+
+from .models import (
+    Application, Allocation, Applicant, Institution, 
+    FiscalYear, WardAllocation, BursaryCategory, DisbursementRound,
+    Ward, Constituency, Review, Document, User, County,
+    SMSLog, EmailLog, AuditLog, Notification, BulkCheque
+)
+
+
+def is_admin(user):
+    """Check if user is admin or has administrative privileges"""
+    return user.user_type in ['admin', 'county_admin', 'finance']
+
+
 @login_required
 @user_passes_test(is_admin)
 def admin_dashboard(request):
-    # Statistics
-    total_applications = Application.objects.count()
-    pending_applications = Application.objects.filter(status='submitted').count()
-    approved_applications = Application.objects.filter(status='approved').count()
-    total_allocated = Allocation.objects.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    """
+    Comprehensive Admin Dashboard for Murang'a County Bursary System
+    Includes statistics, charts data, and recent activity
+    """
     
-    # Recent applications
-    recent_applications = Application.objects.order_by('-date_submitted')[:10]
+    # Get Murang'a County instance
+    try:
+        muranga_county = County.objects.get(name="Murang'a")
+    except County.DoesNotExist:
+        muranga_county = County.objects.first()
     
-    # Applications by ward
-    ward_stats = Application.objects.values('applicant__ward__name').annotate(count=Count('id'))
+    # Get active fiscal year
+    active_fiscal_year = FiscalYear.objects.filter(
+        county=muranga_county,
+        is_active=True
+    ).first()
     
-    # Applications by status
-    status_stats = Application.objects.values('status').annotate(count=Count('id'))
+    # Date ranges for filtering
+    today = timezone.now()
+    thirty_days_ago = today - timedelta(days=30)
+    ninety_days_ago = today - timedelta(days=90)
     
+    # ============= BASIC STATISTICS =============
+    total_applications = Application.objects.filter(
+        applicant__county=muranga_county
+    ).count()
+    
+    pending_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        status__in=['submitted', 'under_review', 'pending_documents']
+    ).count()
+    
+    approved_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        status='approved'
+    ).count()
+    
+    rejected_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        status='rejected'
+    ).count()
+    
+    disbursed_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        status='disbursed'
+    ).count()
+    
+    # Financial Statistics
+    total_allocated = Allocation.objects.filter(
+        application__applicant__county=muranga_county
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    total_disbursed = Allocation.objects.filter(
+        application__applicant__county=muranga_county,
+        is_disbursed=True
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    total_requested = Application.objects.filter(
+        applicant__county=muranga_county
+    ).aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0
+    
+    # Budget utilization for active fiscal year
+    if active_fiscal_year:
+        budget_allocated = active_fiscal_year.total_bursary_allocation
+        budget_utilized = total_allocated
+        budget_remaining = budget_allocated - budget_utilized
+        budget_utilization_percentage = (budget_utilized / budget_allocated * 100) if budget_allocated > 0 else 0
+    else:
+        budget_allocated = budget_utilized = budget_remaining = budget_utilization_percentage = 0
+    
+    # Applicant Statistics
+    total_applicants = Applicant.objects.filter(county=muranga_county).count()
+    verified_applicants = Applicant.objects.filter(
+        county=muranga_county,
+        is_verified=True
+    ).count()
+    
+    # Gender distribution
+    male_applicants = Applicant.objects.filter(county=muranga_county, gender='M').count()
+    female_applicants = Applicant.objects.filter(county=muranga_county, gender='F').count()
+    
+    # Special categories
+    orphan_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        is_orphan=True
+    ).count()
+    
+    disabled_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        is_disabled=True
+    ).count()
+    
+    # Institution Statistics
+    total_institutions = Institution.objects.filter(county=muranga_county).count()
+    
+    # Review Statistics
+    pending_reviews = Review.objects.filter(
+        application__applicant__county=muranga_county,
+        recommendation='forward'
+    ).count()
+    
+    # Document Statistics
+    pending_documents = Document.objects.filter(
+        application__applicant__county=muranga_county,
+        is_verified=False
+    ).count()
+    
+    # ============= RECENT APPLICATIONS =============
+    recent_applications = Application.objects.filter(
+        applicant__county=muranga_county
+    ).select_related(
+        'applicant__user',
+        'institution',
+        'bursary_category',
+        'fiscal_year'
+    ).order_by('-date_submitted')[:10]
+    
+    # ============= CHART DATA =============
+    
+    # 1. Applications by Status (Donut Chart)
+    status_stats = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('status').annotate(count=Count('id')).order_by('-count')
+    
+    status_chart_data = {
+        'labels': [stat['status'].replace('_', ' ').title() for stat in status_stats],
+        'data': [stat['count'] for stat in status_stats],
+        'colors': ['#3498db', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#06B6D4']
+    }
+    
+    # 2. Applications by Ward (Bar Chart)
+    ward_stats = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('applicant__ward__name').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    ward_chart_data = {
+        'labels': [stat['applicant__ward__name'] or 'Not Specified' for stat in ward_stats],
+        'data': [stat['count'] for stat in ward_stats]
+    }
+    
+    # 3. Applications Over Time (Line Chart - Last 6 months)
+    six_months_ago = today - timedelta(days=180)
+    monthly_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        date_submitted__gte=six_months_ago
+    ).annotate(
+        month=TruncMonth('date_submitted')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+    
+    monthly_chart_data = {
+        'labels': [item['month'].strftime('%b %Y') for item in monthly_applications],
+        'data': [item['count'] for item in monthly_applications]
+    }
+    
+    # 4. Allocations vs Disbursements Over Time (Line Chart)
+    monthly_allocations = Allocation.objects.filter(
+        application__applicant__county=muranga_county,
+        allocation_date__gte=six_months_ago
+    ).annotate(
+        month=TruncMonth('allocation_date')
+    ).values('month').annotate(
+        total=Sum('amount_allocated')
+    ).order_by('month')
+    
+    monthly_disbursements = Allocation.objects.filter(
+        application__applicant__county=muranga_county,
+        is_disbursed=True,
+        disbursement_date__gte=six_months_ago
+    ).annotate(
+        month=TruncMonth('disbursement_date')
+    ).values('month').annotate(
+        total=Sum('amount_allocated')
+    ).order_by('month')
+    
+    financial_timeline_data = {
+        'labels': [item['month'].strftime('%b %Y') for item in monthly_allocations],
+        'allocations': [float(item['total']) for item in monthly_allocations],
+        'disbursements': [float(item['total']) for item in monthly_disbursements]
+    }
+    
+    # 5. Applications by Category (Pie Chart)
+    category_stats = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('bursary_category__name').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    category_chart_data = {
+        'labels': [stat['bursary_category__name'] for stat in category_stats],
+        'data': [stat['count'] for stat in category_stats]
+    }
+    
+    # 6. Applications by Institution Type (Bar Chart)
+    institution_type_stats = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('institution__institution_type').annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    ).order_by('-count')
+    
+    institution_type_chart_data = {
+        'labels': [stat['institution__institution_type'].replace('_', ' ').title() for stat in institution_type_stats],
+        'data': [stat['count'] for stat in institution_type_stats],
+        'amounts': [float(stat['total_amount'] or 0) for stat in institution_type_stats]
+    }
+    
+    # 7. Gender Distribution (Donut Chart)
+    gender_chart_data = {
+        'labels': ['Male', 'Female'],
+        'data': [male_applicants, female_applicants],
+        'colors': ['#3498db', '#EC4899']
+    }
+    
+    # 8. Top 10 Institutions by Applications (Horizontal Bar Chart)
+    top_institutions = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('institution__name').annotate(
+        count=Count('id'),
+        total_allocated=Sum('allocation__amount_allocated')
+    ).order_by('-count')[:10]
+    
+    top_institutions_chart_data = {
+        'labels': [inst['institution__name'] for inst in top_institutions],
+        'data': [inst['count'] for inst in top_institutions],
+        'amounts': [float(inst['total_allocated'] or 0) for inst in top_institutions]
+    }
+    
+    # 9. Ward Allocation Utilization (Grouped Bar Chart)
+    ward_allocation_stats = WardAllocation.objects.filter(
+        fiscal_year=active_fiscal_year
+    ).select_related('ward').values(
+        'ward__name',
+        'allocated_amount',
+        'spent_amount'
+    ).order_by('-allocated_amount')[:10]
+    
+    ward_allocation_chart_data = {
+        'labels': [stat['ward__name'] for stat in ward_allocation_stats],
+        'allocated': [float(stat['allocated_amount']) for stat in ward_allocation_stats],
+        'spent': [float(stat['spent_amount']) for stat in ward_allocation_stats]
+    }
+    
+    # 10. Daily Applications Trend (Last 30 Days) - Area Chart
+    daily_applications = Application.objects.filter(
+        applicant__county=muranga_county,
+        date_submitted__gte=thirty_days_ago
+    ).annotate(
+        day=TruncDate('date_submitted')
+    ).values('day').annotate(
+        count=Count('id')
+    ).order_by('day')
+    
+    daily_chart_data = {
+        'labels': [item['day'].strftime('%b %d') for item in daily_applications],
+        'data': [item['count'] for item in daily_applications]
+    }
+    
+    # ============= CONSTITUENCY BREAKDOWN =============
+    constituency_stats = Application.objects.filter(
+        applicant__county=muranga_county
+    ).values('applicant__constituency__name').annotate(
+        count=Count('id'),
+        total_allocated=Sum('allocation__amount_allocated'),
+        approved=Count('id', filter=Q(status='approved')),
+        pending=Count('id', filter=Q(status__in=['submitted', 'under_review']))
+    ).order_by('-count')
+    
+    # ============= RECENT ACTIVITY =============
+    recent_allocations = Allocation.objects.filter(
+        application__applicant__county=muranga_county
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'approved_by'
+    ).order_by('-allocation_date')[:5]
+    
+    recent_reviews = Review.objects.filter(
+        application__applicant__county=muranga_county
+    ).select_related(
+        'application',
+        'reviewer',
+        'application__applicant__user'
+    ).order_by('-review_date')[:5]
+    
+    # ============= DISBURSEMENT STATISTICS =============
+    if active_fiscal_year:
+        disbursement_rounds = DisbursementRound.objects.filter(
+            fiscal_year=active_fiscal_year
+        ).annotate(
+            applications_count=Count('application'),
+            total_allocated=Sum('application__allocation__amount_allocated')
+        )
+    else:
+        disbursement_rounds = []
+    
+    # ============= SYSTEM ACTIVITY =============
+    recent_sms = SMSLog.objects.filter(
+        recipient__applicant_profile__county=muranga_county
+    ).order_by('-sent_at')[:5]
+    
+    recent_emails = EmailLog.objects.filter(
+        recipient__applicant_profile__county=muranga_county
+    ).order_by('-sent_at')[:5]
+    
+    # SMS/Email Statistics
+    total_sms_sent = SMSLog.objects.filter(
+        recipient__applicant_profile__county=muranga_county,
+        status='sent'
+    ).count()
+    
+    total_emails_sent = EmailLog.objects.filter(
+        recipient__applicant_profile__county=muranga_county,
+        status='sent'
+    ).count()
+    
+    # ============= BULK CHEQUE STATISTICS =============
+    total_bulk_cheques = BulkCheque.objects.filter(
+        fiscal_year=active_fiscal_year
+    ).count()
+    
+    pending_bulk_cheques = BulkCheque.objects.filter(
+        fiscal_year=active_fiscal_year,
+        is_collected=False
+    ).count()
+    
+    # ============= USER ACTIVITY =============
+    total_users = User.objects.count()
+    active_applicants = User.objects.filter(
+        user_type='applicant',
+        last_login__gte=thirty_days_ago
+    ).count()
+    
+    # ============= AVERAGE STATISTICS =============
+    avg_amount_requested = Application.objects.filter(
+        applicant__county=muranga_county
+    ).aggregate(Avg('amount_requested'))['amount_requested__avg'] or 0
+    
+    avg_amount_allocated = Allocation.objects.filter(
+        application__applicant__county=muranga_county
+    ).aggregate(Avg('amount_allocated'))['amount_allocated__avg'] or 0
+    
+    # Approval rate
+    approval_rate = (approved_applications / total_applications * 100) if total_applications > 0 else 0
+    
+    # ============= ALERTS & NOTIFICATIONS =============
+    # Applications requiring action
+    applications_needing_review = Application.objects.filter(
+        applicant__county=muranga_county,
+        status='submitted'
+    ).count()
+    
+    # Allocations pending disbursement
+    allocations_pending_disbursement = Allocation.objects.filter(
+        application__applicant__county=muranga_county,
+        is_disbursed=False
+    ).count()
+    
+    # Documents pending verification
+    documents_pending_verification = Document.objects.filter(
+        application__applicant__county=muranga_county,
+        is_verified=False
+    ).count()
+    
+    # ============= CONTEXT PREPARATION =============
     context = {
+        # County Info
+        'county': muranga_county,
+        'active_fiscal_year': active_fiscal_year,
+        
+        # Basic Statistics
         'total_applications': total_applications,
         'pending_applications': pending_applications,
         'approved_applications': approved_applications,
+        'rejected_applications': rejected_applications,
+        'disbursed_applications': disbursed_applications,
+        
+        # Financial Statistics
         'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'total_requested': total_requested,
+        'budget_allocated': budget_allocated,
+        'budget_utilized': budget_utilized,
+        'budget_remaining': budget_remaining,
+        'budget_utilization_percentage': round(budget_utilization_percentage, 2),
+        
+        # Applicant Statistics
+        'total_applicants': total_applicants,
+        'verified_applicants': verified_applicants,
+        'male_applicants': male_applicants,
+        'female_applicants': female_applicants,
+        'orphan_applications': orphan_applications,
+        'disabled_applications': disabled_applications,
+        
+        # Other Statistics
+        'total_institutions': total_institutions,
+        'pending_reviews': pending_reviews,
+        'pending_documents': pending_documents,
+        'total_bulk_cheques': total_bulk_cheques,
+        'pending_bulk_cheques': pending_bulk_cheques,
+        'total_sms_sent': total_sms_sent,
+        'total_emails_sent': total_emails_sent,
+        'total_users': total_users,
+        'active_applicants': active_applicants,
+        
+        # Average Statistics
+        'avg_amount_requested': avg_amount_requested,
+        'avg_amount_allocated': avg_amount_allocated,
+        'approval_rate': round(approval_rate, 2),
+        
+        # Recent Data
         'recent_applications': recent_applications,
+        'recent_allocations': recent_allocations,
+        'recent_reviews': recent_reviews,
+        'recent_sms': recent_sms,
+        'recent_emails': recent_emails,
+        
+        # Ward and Constituency Data
         'ward_stats': ward_stats,
+        'constituency_stats': constituency_stats,
         'status_stats': status_stats,
+        'disbursement_rounds': disbursement_rounds,
+        
+        # Chart Data (JSON)
+        'status_chart_data': json.dumps(status_chart_data),
+        'ward_chart_data': json.dumps(ward_chart_data),
+        'monthly_chart_data': json.dumps(monthly_chart_data),
+        'financial_timeline_data': json.dumps(financial_timeline_data),
+        'category_chart_data': json.dumps(category_chart_data),
+        'institution_type_chart_data': json.dumps(institution_type_chart_data),
+        'gender_chart_data': json.dumps(gender_chart_data),
+        'top_institutions_chart_data': json.dumps(top_institutions_chart_data),
+        'ward_allocation_chart_data': json.dumps(ward_allocation_chart_data),
+        'daily_chart_data': json.dumps(daily_chart_data),
+        
+        # Alerts
+        'applications_needing_review': applications_needing_review,
+        'allocations_pending_disbursement': allocations_pending_disbursement,
+        'documents_pending_verification': documents_pending_verification,
     }
+    
     return render(request, 'admin/dashboard.html', context)
 
 @login_required
