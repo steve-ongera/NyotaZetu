@@ -451,7 +451,10 @@ class WardAllocation(models.Model):
         ordering = ['fiscal_year', 'ward']
     
     def balance(self):
-        return self.allocated_amount - self.spent_amount
+        allocated = self.allocated_amount or 0
+        spent = self.spent_amount or 0
+        return allocated - spent
+
     
     def __str__(self):
         return f"{self.ward.name} - {self.fiscal_year.name}: KES {self.allocated_amount:,.2f}"
