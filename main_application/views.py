@@ -4444,10 +4444,12 @@ from django.http import JsonResponse
 from .models import Applicant, Application, FiscalYear, BursaryCategory, Institution
 from .forms import ApplicationForm  # Make sure to import your form
 
+
+
 @login_required
 def student_application_create(request):
     """
-    Create new bursary application
+    Create new bursary application with enhanced validation
     """
     try:
         applicant = request.user.applicant_profile
@@ -4455,20 +4457,57 @@ def student_application_create(request):
         messages.error(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
     
-    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    # Check for active fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        application_open=True
+    ).first()
+    
     if not current_fiscal_year:
-        messages.error(request, 'No active fiscal year found. Applications are currently closed.')
+        messages.error(request, 'Applications are currently closed. Please check back later.')
         return redirect('student_dashboard')
     
-    # Check if already has application for current year
+    # Check application deadline
+    if current_fiscal_year.application_deadline and current_fiscal_year.application_deadline < timezone.now().date():
+        messages.error(request, f'Application deadline ({current_fiscal_year.application_deadline}) has passed.')
+        return redirect('student_dashboard')
+    
+    # Get current open disbursement round if any
+    current_round = DisbursementRound.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_open=True,
+        application_start_date__lte=timezone.now().date(),
+        application_end_date__gte=timezone.now().date()
+    ).first()
+    
+    # Check if already has application for current fiscal year
     existing_application = Application.objects.filter(
         applicant=applicant, 
         fiscal_year=current_fiscal_year
     ).first()
     
     if existing_application:
-        messages.info(request, 'You already have an application for this fiscal year.')
+        messages.info(
+            request, 
+            f'You already have an application for {current_fiscal_year.name}. '
+            'You can edit your existing application if it is still in draft status.'
+        )
         return redirect('student_application_detail', pk=existing_application.pk)
+    
+    # Check ward allocation availability
+    ward_allocation = None
+    if applicant.ward:
+        ward_allocation = WardAllocation.objects.filter(
+            fiscal_year=current_fiscal_year,
+            ward=applicant.ward
+        ).first()
+        
+        if ward_allocation and ward_allocation.balance() <= 0:
+            messages.warning(
+                request,
+                f'The allocation for {applicant.ward.name} Ward has been exhausted. '
+                'Your application will be placed on a waiting list.'
+            )
     
     if request.method == 'POST':
         form = ApplicationForm(request.POST, fiscal_year=current_fiscal_year)
@@ -4479,54 +4518,146 @@ def student_application_create(request):
                 application.applicant = applicant
                 application.fiscal_year = current_fiscal_year
                 
+                # Assign to current disbursement round if available
+                if current_round:
+                    application.disbursement_round = current_round
+                
                 # Calculate fees_balance
                 application.fees_balance = application.total_fees_payable - application.fees_paid
                 
+                # Initial status
+                application.status = 'draft'
+                
+                # Calculate priority score (you can customize this logic)
+                application.priority_score = calculate_priority_score(application)
+                
                 application.save()
                 
-                messages.success(request, 'Application created successfully! Please upload required documents.')
+                messages.success(
+                    request, 
+                    'Application created successfully! Please upload required documents to submit your application.'
+                )
                 return redirect('student_application_documents', pk=application.pk)
                 
             except Exception as e:
                 messages.error(request, f'Error saving application: {str(e)}')
         else:
-            # Form has validation errors - they will be displayed in template
-            messages.error(request, 'Please correct the errors below.')
+            # Display form validation errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
         form = ApplicationForm(fiscal_year=current_fiscal_year)
     
-    # Get available categories and institutions for context
-    categories = BursaryCategory.objects.filter(fiscal_year=current_fiscal_year)
-    institutions = Institution.objects.all().order_by('name')
+    # Get available categories for the current fiscal year
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    ).order_by('category_type', 'name')
+    
+    # Get active institutions ordered by type and name
+    institutions = Institution.objects.filter(
+        is_active=True
+    ).order_by('institution_type', 'name')
     
     context = {
         'form': form,
         'categories': categories,
         'institutions': institutions,
         'current_fiscal_year': current_fiscal_year,
+        'current_round': current_round,
+        'ward_allocation': ward_allocation,
+        'applicant': applicant,
     }
     
     return render(request, 'students/application_form.html', context)
+
 
 
 # Helper view to get category max amounts via AJAX
 @login_required
 def get_category_max_amount(request):
     """
-    AJAX endpoint to get maximum amount for a category
+    AJAX endpoint to get maximum amount for selected category
     """
-    if request.method == 'GET' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        category_id = request.GET.get('category_id')
-        if category_id:
-            try:
-                category = BursaryCategory.objects.get(id=category_id)
-                return JsonResponse({
-                    'max_amount': float(category.max_amount_per_applicant),
-                    'success': True
-                })
-            except BursaryCategory.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Category not found'})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+    category_id = request.GET.get('category_id')
+    
+    if not category_id:
+        return JsonResponse({'success': False, 'error': 'No category ID provided'})
+    
+    try:
+        category = BursaryCategory.objects.get(pk=category_id, is_active=True)
+        return JsonResponse({
+            'success': True,
+            'max_amount': float(category.max_amount_per_applicant),
+            'min_amount': float(category.min_amount_per_applicant),
+            'category_name': category.name,
+            'allocation_remaining': float(category.allocation_amount)
+        })
+    except BursaryCategory.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Category not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def calculate_priority_score(application):
+    """
+    Calculate priority score based on various factors
+    You can customize this logic based on your requirements
+    """
+    from decimal import Decimal
+    
+    score = Decimal('0.0')
+    
+    # Financial need (40 points max)
+    if application.fees_balance and application.fees_balance > 0:
+        need_ratio = min(
+            float(application.amount_requested) / float(application.fees_balance), 
+            1.0
+        )
+        score += Decimal(str(need_ratio * 40))
+    
+    # Orphan status (20 points)
+    if application.is_total_orphan:
+        score += Decimal('20')
+    elif application.is_orphan:
+        score += Decimal('15')
+    
+    # Disability (15 points)
+    if application.is_disabled:
+        score += Decimal('15')
+    
+    # Chronic illness (10 points)
+    if application.has_chronic_illness:
+        score += Decimal('10')
+    
+    # Household income (15 points - lower income = higher score)
+    if application.household_monthly_income:
+        if application.household_monthly_income < Decimal('10000'):
+            score += Decimal('15')
+        elif application.household_monthly_income < Decimal('20000'):
+            score += Decimal('10')
+        elif application.household_monthly_income < Decimal('30000'):
+            score += Decimal('5')
+    else:
+        score += Decimal('10')  # Assume low income if not provided
+    
+    # Number of siblings in school (10 points max)
+    if application.number_of_siblings_in_school and application.number_of_siblings_in_school > 0:
+        sibling_score = min(application.number_of_siblings_in_school * 2, 10)
+        score += Decimal(str(sibling_score))
+    
+    # Academic performance (10 points max - if provided)
+    if application.previous_academic_year_average:
+        if application.previous_academic_year_average >= Decimal('80'):
+            score += Decimal('10')
+        elif application.previous_academic_year_average >= Decimal('70'):
+            score += Decimal('7')
+        elif application.previous_academic_year_average >= Decimal('60'):
+            score += Decimal('5')
+    
+    return round(score, 2)
+
 
 @login_required
 def student_application_list(request):

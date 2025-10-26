@@ -44,7 +44,7 @@ class ApplicantForm(BootstrapModelForm):
         self.fields['postal_address'].required = False
         self.fields['special_needs_description'].required = False
 
-        
+
 
 from django import forms
 from .models import Application, BursaryCategory, Institution, FiscalYear
@@ -66,11 +66,13 @@ class ApplicationForm(forms.ModelForm):
         widgets = {
             'bursary_category': forms.Select(attrs={
                 'class': 'form-select',
-                'required': True
+                'required': True,
+                'id': 'id_bursary_category'
             }),
             'institution': forms.Select(attrs={
                 'class': 'form-select',
-                'required': True
+                'required': True,
+                'id': 'id_institution'
             }),
             'bursary_source': forms.Select(attrs={
                 'class': 'form-select',
@@ -108,71 +110,85 @@ class ApplicationForm(forms.ModelForm):
                 'step': '0.01',
                 'min': '0',
                 'placeholder': '0.00',
-                'required': True
+                'required': True,
+                'id': 'id_total_fees_payable'
             }),
             'fees_paid': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
                 'placeholder': '0.00',
-                'required': True
+                'required': True,
+                'id': 'id_fees_paid'
             }),
             'fees_balance': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
                 'placeholder': '0.00',
-                'required': True
+                'readonly': True
             }),
             'amount_requested': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
                 'placeholder': '0.00',
-                'required': True
+                'required': True,
+                'id': 'id_amount_requested'
             }),
             'other_bursaries': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_other_bursaries'
             }),
             'other_bursaries_amount': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': '0.00'
+                'placeholder': '0.00',
+                'id': 'id_other_bursaries_amount'
             }),
             'other_bursaries_source': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Source of other bursary'
+                'placeholder': 'Source of other bursary',
+                'id': 'id_other_bursaries_source'
             }),
             'has_received_previous_allocation': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_previous_allocation'
             }),
             'previous_allocation_year': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., 2023-2024'
+                'placeholder': 'e.g., 2023-2024',
+                'id': 'id_previous_allocation_year'
             }),
             'previous_allocation_amount': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': '0.00'
+                'placeholder': '0.00',
+                'id': 'id_previous_allocation_amount'
             }),
             'is_orphan': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_is_orphan'
             }),
             'is_total_orphan': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_is_total_orphan'
             }),
             'is_disabled': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_is_disabled'
             }),
             'has_chronic_illness': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input',
+                'id': 'id_has_chronic_illness'
             }),
             'chronic_illness_description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Please describe the chronic illness'
+                'placeholder': 'Please describe the chronic illness',
+                'id': 'id_chronic_illness_description'
             }),
             'number_of_siblings': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -196,11 +212,17 @@ class ApplicationForm(forms.ModelForm):
         fiscal_year = kwargs.pop('fiscal_year', None)
         super().__init__(*args, **kwargs)
         
+        # Filter categories by fiscal year
         if fiscal_year:
             self.fields['bursary_category'].queryset = BursaryCategory.objects.filter(
                 fiscal_year=fiscal_year,
                 is_active=True
-            )
+            ).order_by('category_type', 'name')
+        
+        # Filter active institutions
+        self.fields['institution'].queryset = Institution.objects.filter(
+            is_active=True
+        ).order_by('institution_type', 'name')
         
         # Set default values for optional numeric fields
         if not self.instance.pk:
@@ -208,61 +230,99 @@ class ApplicationForm(forms.ModelForm):
             self.fields['previous_allocation_amount'].initial = 0
             self.fields['number_of_siblings'].initial = 0
             self.fields['number_of_siblings_in_school'].initial = 0
+        
+        # Add help text for certain fields
+        self.fields['bursary_source'].help_text = 'Select whether you want County Bursary, CDF Bursary, or both'
+        self.fields['amount_requested'].help_text = 'Amount should not exceed the maximum for your selected category'
+        self.fields['previous_academic_year_average'].help_text = 'Enter your average score (0-100) from previous academic year'
 
     def clean_amount_requested(self):
+        """Validate amount requested against category limits"""
         amount_requested = self.cleaned_data.get('amount_requested')
         bursary_category = self.cleaned_data.get('bursary_category')
         
         if amount_requested and bursary_category:
             if amount_requested > bursary_category.max_amount_per_applicant:
                 raise forms.ValidationError(
-                    f'Amount requested cannot exceed KES {bursary_category.max_amount_per_applicant:,.2f} '
-                    f'for this category.'
+                    f'Amount requested (KES {amount_requested:,.2f}) cannot exceed '
+                    f'KES {bursary_category.max_amount_per_applicant:,.2f} for {bursary_category.name}.'
                 )
             if amount_requested < bursary_category.min_amount_per_applicant:
                 raise forms.ValidationError(
-                    f'Amount requested cannot be less than KES {bursary_category.min_amount_per_applicant:,.2f} '
-                    f'for this category.'
+                    f'Amount requested (KES {amount_requested:,.2f}) cannot be less than '
+                    f'KES {bursary_category.min_amount_per_applicant:,.2f} for {bursary_category.name}.'
                 )
+        
+        # Validate against fees balance
+        fees_balance = self.cleaned_data.get('fees_balance')
+        if amount_requested and fees_balance and amount_requested > fees_balance:
+            raise forms.ValidationError(
+                f'Amount requested (KES {amount_requested:,.2f}) cannot exceed '
+                f'your fees balance (KES {fees_balance:,.2f}).'
+            )
+        
         return amount_requested
 
     def clean_fees_paid(self):
+        """Validate fees paid does not exceed total fees"""
         fees_paid = self.cleaned_data.get('fees_paid')
         total_fees_payable = self.cleaned_data.get('total_fees_payable')
         
         if fees_paid and total_fees_payable:
             if fees_paid > total_fees_payable:
                 raise forms.ValidationError(
-                    'Fees paid cannot be greater than total fees payable.'
+                    f'Fees paid (KES {fees_paid:,.2f}) cannot be greater than '
+                    f'total fees payable (KES {total_fees_payable:,.2f}).'
                 )
+            if fees_paid < 0:
+                raise forms.ValidationError('Fees paid cannot be negative.')
+        
         return fees_paid
 
     def clean_fees_balance(self):
+        """Validate and calculate fees balance"""
         fees_balance = self.cleaned_data.get('fees_balance')
         total_fees_payable = self.cleaned_data.get('total_fees_payable')
         fees_paid = self.cleaned_data.get('fees_paid')
         
-        if fees_balance and total_fees_payable and fees_paid:
+        if total_fees_payable is not None and fees_paid is not None:
             calculated_balance = total_fees_payable - fees_paid
-            if abs(fees_balance - calculated_balance) > 0.01:  # Allow small rounding errors
+            # Allow small rounding errors (1 cent)
+            if fees_balance is not None and abs(fees_balance - calculated_balance) > 0.01:
                 raise forms.ValidationError(
                     f'Fees balance should be KES {calculated_balance:,.2f} '
-                    f'(Total Fees - Fees Paid).'
+                    f'(Total Fees: {total_fees_payable:,.2f} - Fees Paid: {fees_paid:,.2f}).'
                 )
+            return calculated_balance
+        
         return fees_balance
 
     def clean_number_of_siblings_in_school(self):
+        """Validate siblings in school does not exceed total siblings"""
         number_of_siblings_in_school = self.cleaned_data.get('number_of_siblings_in_school')
         number_of_siblings = self.cleaned_data.get('number_of_siblings')
         
         if number_of_siblings_in_school and number_of_siblings:
             if number_of_siblings_in_school > number_of_siblings:
                 raise forms.ValidationError(
-                    'Number of siblings in school cannot exceed total number of siblings.'
+                    f'Number of siblings in school ({number_of_siblings_in_school}) '
+                    f'cannot exceed total number of siblings ({number_of_siblings}).'
                 )
+        
         return number_of_siblings_in_school
 
+    def clean_previous_academic_year_average(self):
+        """Validate academic average is between 0 and 100"""
+        average = self.cleaned_data.get('previous_academic_year_average')
+        
+        if average is not None:
+            if average < 0 or average > 100:
+                raise forms.ValidationError('Academic average must be between 0 and 100.')
+        
+        return average
+
     def clean(self):
+        """Additional cross-field validation"""
         cleaned_data = super().clean()
         
         # Validate other bursaries fields
@@ -274,7 +334,7 @@ class ApplicationForm(forms.ModelForm):
             if not other_bursaries_amount or other_bursaries_amount <= 0:
                 self.add_error('other_bursaries_amount', 
                              'Please enter the amount of other bursaries received.')
-            if not other_bursaries_source:
+            if not other_bursaries_source or not other_bursaries_source.strip():
                 self.add_error('other_bursaries_source', 
                              'Please specify the source of other bursaries.')
         
@@ -284,7 +344,7 @@ class ApplicationForm(forms.ModelForm):
         previous_allocation_amount = cleaned_data.get('previous_allocation_amount')
         
         if has_received_previous_allocation:
-            if not previous_allocation_year:
+            if not previous_allocation_year or not previous_allocation_year.strip():
                 self.add_error('previous_allocation_year', 
                              'Please enter the year of previous allocation.')
             if not previous_allocation_amount or previous_allocation_amount <= 0:
@@ -295,17 +355,27 @@ class ApplicationForm(forms.ModelForm):
         has_chronic_illness = cleaned_data.get('has_chronic_illness')
         chronic_illness_description = cleaned_data.get('chronic_illness_description')
         
-        if has_chronic_illness and not chronic_illness_description:
-            self.add_error('chronic_illness_description', 
-                         'Please describe the chronic illness.')
+        if has_chronic_illness:
+            if not chronic_illness_description or not chronic_illness_description.strip():
+                self.add_error('chronic_illness_description', 
+                             'Please describe the chronic illness.')
         
-        # Validate orphan status
+        # Validate orphan status consistency
         is_orphan = cleaned_data.get('is_orphan')
         is_total_orphan = cleaned_data.get('is_total_orphan')
         
         if is_total_orphan and not is_orphan:
             self.add_error('is_total_orphan', 
-                         'Total orphan must also be marked as orphan.')
+                         'If you are a total orphan, you must also be marked as an orphan.')
+        
+        # Validate course name for university/college
+        bursary_category = cleaned_data.get('bursary_category')
+        course_name = cleaned_data.get('course_name')
+        
+        if bursary_category and bursary_category.category_type in ['university', 'college', 'technical', 'freshers']:
+            if not course_name or not course_name.strip():
+                self.add_error('course_name', 
+                             'Course name is required for university/college/technical institutions.')
         
         return cleaned_data
     
