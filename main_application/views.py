@@ -4686,27 +4686,108 @@ def student_application_list(request):
 @login_required
 def student_application_detail(request, pk):
     """
-    View application details
+    View comprehensive application details with all related information
     """
     try:
         applicant = request.user.applicant_profile
     except Applicant.DoesNotExist:
+        messages.error(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
     
-    application = get_object_or_404(Application, pk=pk, applicant=applicant)
-    documents = Document.objects.filter(application=application)
-    reviews = Review.objects.filter(application=application).order_by('-review_date')
+    # Get application or 404
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant',
+            'fiscal_year',
+            'bursary_category',
+            'institution',
+            'disbursement_round'
+        ),
+        pk=pk,
+        applicant=applicant
+    )
     
+    # Get all supporting documents
+    documents = Document.objects.filter(
+        application=application
+    ).select_related('verified_by').order_by('-uploaded_at')
+    
+    # Get all reviews with reviewer information
+    reviews = Review.objects.filter(
+        application=application
+    ).select_related('reviewer').order_by('-review_date')
+    
+    # Check for allocation
+    allocation = None
+    bulk_cheque_info = None
     try:
-        allocation = Allocation.objects.get(application=application)
+        allocation = Allocation.objects.select_related(
+            'approved_by',
+            'disbursed_by'
+        ).get(application=application)
+        
+        # Check if part of bulk cheque
+        try:
+            bulk_allocation = BulkChequeAllocation.objects.select_related(
+                'bulk_cheque',
+                'bulk_cheque__institution'
+            ).get(allocation=allocation)
+            bulk_cheque_info = bulk_allocation.bulk_cheque
+        except BulkChequeAllocation.DoesNotExist:
+            pass
+            
     except Allocation.DoesNotExist:
-        allocation = None
+        pass
+    
+    # Get guardians information (optional - for display)
+    guardians = Guardian.objects.filter(applicant=applicant).order_by('-is_primary_contact')
+    
+    # Get siblings information (optional - for display)
+    siblings = SiblingInformation.objects.filter(applicant=applicant)
+    
+    # Calculate some statistics
+    document_stats = {
+        'total': documents.count(),
+        'verified': documents.filter(is_verified=True).count(),
+        'pending': documents.filter(is_verified=False).count(),
+    }
+    
+    # Check completion status
+    completion_status = {
+        'basic_info': True,  # Always true if application exists
+        'documents_uploaded': documents.count() > 0,
+        'minimum_documents': documents.count() >= 3,  # Customize based on requirements
+        'submitted': application.status != 'draft',
+    }
+    
+    # Calculate completion percentage
+    completed_steps = sum(1 for v in completion_status.values() if v)
+    completion_percentage = (completed_steps / len(completion_status)) * 100
+    
+    # Get ward allocation information
+    ward_allocation = None
+    if application.applicant.ward:
+        from .models import WardAllocation
+        try:
+            ward_allocation = WardAllocation.objects.get(
+                fiscal_year=application.fiscal_year,
+                ward=application.applicant.ward
+            )
+        except WardAllocation.DoesNotExist:
+            pass
     
     context = {
         'application': application,
         'documents': documents,
         'reviews': reviews,
         'allocation': allocation,
+        'bulk_cheque_info': bulk_cheque_info,
+        'guardians': guardians,
+        'siblings': siblings,
+        'document_stats': document_stats,
+        'completion_status': completion_status,
+        'completion_percentage': completion_percentage,
+        'ward_allocation': ward_allocation,
     }
     
     return render(request, 'students/application_detail.html', context)
