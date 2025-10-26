@@ -227,7 +227,7 @@ class InstitutionAdmin(admin.ModelAdmin):
     def application_count(self, obj):
         count = obj.application_set.count()
         return format_html('<a href="{}?institution__id__exact={}">{}</a>', 
-                          reverse('admin:yourapp_application_changelist'), obj.id, count)
+                          reverse('admin:main_application_application_changelist'), obj.id, count)
     application_count.short_description = 'Applications'
 
 
@@ -376,7 +376,7 @@ class ApplicantAdmin(admin.ModelAdmin):
     def application_count(self, obj):
         count = obj.applications.count()
         return format_html('<a href="{}?applicant__id__exact={}">{}</a>', 
-                          reverse('admin:yourapp_application_changelist'), obj.id, count)
+                          reverse('admin:main_application_application_changelist'), obj.id, count)
     application_count.short_description = 'Applications'
     
     actions = ['verify_applicants']
@@ -466,7 +466,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     
     def allocation_link(self, obj):
         if hasattr(obj, 'allocation'):
-            url = reverse('admin:yourapp_allocation_change', args=[obj.allocation.id])
+            url = reverse('admin:main_application_allocation_change', args=[obj.allocation.id])
             return format_html('<a href="{}">View Allocation</a>', url)
         return '-'
     allocation_link.short_description = 'Allocation'
