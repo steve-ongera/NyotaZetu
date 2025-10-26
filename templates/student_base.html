@@ -459,6 +459,553 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+        /* ============================================
+        BUTTON STYLES (Bootstrap-inspired)
+        ============================================ */
+
+        /* Base Button Styles */
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            line-height: 1.5;
+            color: #1E293B;
+            text-align: center;
+            text-decoration: none;
+            vertical-align: middle;
+            cursor: pointer;
+            user-select: none;
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:focus,
+        .btn:active {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+        }
+
+        .btn:disabled,
+        .btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Button Sizes */
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+
+        .btn-xl {
+            padding: 18px 36px;
+            font-size: 18px;
+            border-radius: 10px;
+        }
+
+        /* Button Block (Full Width) */
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            color: #ffffff;
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            color: #ffffff;
+        }
+
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: #21618c;
+            border-color: #21618c;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        /* Secondary Button */
+        .btn-secondary {
+            color: #ffffff;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: #ffffff;
+        }
+
+        .btn-secondary:focus,
+        .btn-secondary:active {
+            background-color: #545b62;
+            border-color: #4e555b;
+            box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.3);
+        }
+
+        /* Success Button */
+        .btn-success {
+            color: #ffffff;
+            background-color: #10B981;
+            border-color: #10B981;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+            border-color: #059669;
+            color: #ffffff;
+        }
+
+        .btn-success:focus,
+        .btn-success:active {
+            background-color: #047857;
+            border-color: #047857;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Danger Button */
+        .btn-danger {
+            color: #ffffff;
+            background-color: #EF4444;
+            border-color: #EF4444;
+        }
+
+        .btn-danger:hover {
+            background-color: #DC2626;
+            border-color: #DC2626;
+            color: #ffffff;
+        }
+
+        .btn-danger:focus,
+        .btn-danger:active {
+            background-color: #B91C1C;
+            border-color: #B91C1C;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Warning Button */
+        .btn-warning {
+            color: #1E293B;
+            background-color: #F59E0B;
+            border-color: #F59E0B;
+        }
+
+        .btn-warning:hover {
+            background-color: #D97706;
+            border-color: #D97706;
+            color: #1E293B;
+        }
+
+        .btn-warning:focus,
+        .btn-warning:active {
+            background-color: #B45309;
+            border-color: #B45309;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Info Button */
+        .btn-info {
+            color: #ffffff;
+            background-color: #06B6D4;
+            border-color: #06B6D4;
+        }
+
+        .btn-info:hover {
+            background-color: #0891B2;
+            border-color: #0891B2;
+            color: #ffffff;
+        }
+
+        .btn-info:focus,
+        .btn-info:active {
+            background-color: #0E7490;
+            border-color: #0E7490;
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Light Button */
+        .btn-light {
+            color: #1E293B;
+            background-color: #F8FAFC;
+            border-color: #E2E8F0;
+        }
+
+        .btn-light:hover {
+            background-color: #F1F5F9;
+            border-color: #CBD5E1;
+            color: #1E293B;
+        }
+
+        .btn-light:focus,
+        .btn-light:active {
+            background-color: #E2E8F0;
+            border-color: #94A3B8;
+            box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.5);
+        }
+
+        /* Dark Button */
+        .btn-dark {
+            color: #ffffff;
+            background-color: #1E293B;
+            border-color: #1E293B;
+        }
+
+        .btn-dark:hover {
+            background-color: #0F172A;
+            border-color: #0F172A;
+            color: #ffffff;
+        }
+
+        .btn-dark:focus,
+        .btn-dark:active {
+            background-color: #020617;
+            border-color: #020617;
+            box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.3);
+        }
+
+        /* Outline Buttons */
+        .btn-outline-primary {
+            color: #3498db;
+            border-color: #3498db;
+            background-color: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            color: #ffffff;
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .btn-outline-secondary {
+            color: #6c757d;
+            border-color: #6c757d;
+            background-color: transparent;
+        }
+
+        .btn-outline-secondary:hover {
+            color: #ffffff;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-outline-success {
+            color: #10B981;
+            border-color: #10B981;
+            background-color: transparent;
+        }
+
+        .btn-outline-success:hover {
+            color: #ffffff;
+            background-color: #10B981;
+            border-color: #10B981;
+        }
+
+        .btn-outline-danger {
+            color: #EF4444;
+            border-color: #EF4444;
+            background-color: transparent;
+        }
+
+        .btn-outline-danger:hover {
+            color: #ffffff;
+            background-color: #EF4444;
+            border-color: #EF4444;
+        }
+
+        .btn-outline-warning {
+            color: #F59E0B;
+            border-color: #F59E0B;
+            background-color: transparent;
+        }
+
+        .btn-outline-warning:hover {
+            color: #1E293B;
+            background-color: #F59E0B;
+            border-color: #F59E0B;
+        }
+
+        .btn-outline-info {
+            color: #06B6D4;
+            border-color: #06B6D4;
+            background-color: transparent;
+        }
+
+        .btn-outline-info:hover {
+            color: #ffffff;
+            background-color: #06B6D4;
+            border-color: #06B6D4;
+        }
+
+        .btn-outline-light {
+            color: #64748B;
+            border-color: #E2E8F0;
+            background-color: transparent;
+        }
+
+        .btn-outline-light:hover {
+            color: #1E293B;
+            background-color: #F8FAFC;
+            border-color: #E2E8F0;
+        }
+
+        .btn-outline-dark {
+            color: #1E293B;
+            border-color: #1E293B;
+            background-color: transparent;
+        }
+
+        .btn-outline-dark:hover {
+            color: #ffffff;
+            background-color: #1E293B;
+            border-color: #1E293B;
+        }
+
+        /* Link Button */
+        .btn-link {
+            color: #3498db;
+            text-decoration: none;
+            background-color: transparent;
+            border-color: transparent;
+            font-weight: 500;
+        }
+
+        .btn-link:hover {
+            color: #2980b9;
+            text-decoration: underline;
+            background-color: transparent;
+            border-color: transparent;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-link:focus {
+            text-decoration: underline;
+            box-shadow: none;
+        }
+
+        .btn-link:disabled {
+            color: #94A3B8;
+        }
+
+        /* Button Group */
+        .btn-group {
+            display: inline-flex;
+            vertical-align: middle;
+        }
+
+        .btn-group > .btn {
+            position: relative;
+            flex: 0 1 auto;
+            margin: 0;
+        }
+
+        .btn-group > .btn:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            margin-left: -1px;
+        }
+
+        .btn-group > .btn:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .btn-group > .btn:hover,
+        .btn-group > .btn:focus,
+        .btn-group > .btn:active {
+            z-index: 1;
+        }
+
+        /* Button with Icon */
+        .btn i {
+            margin-right: 6px;
+            font-size: 16px;
+            vertical-align: middle;
+        }
+
+        .btn i:last-child {
+            margin-right: 0;
+            margin-left: 6px;
+        }
+
+        .btn-sm i {
+            font-size: 14px;
+            margin-right: 4px;
+        }
+
+        .btn-lg i {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        /* Icon-only Button */
+        .btn-icon {
+            padding: 10px;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon i {
+            margin: 0;
+        }
+
+        .btn-icon.btn-sm {
+            width: 32px;
+            height: 32px;
+            padding: 6px;
+        }
+
+        .btn-icon.btn-lg {
+            width: 48px;
+            height: 48px;
+            padding: 12px;
+        }
+
+        /* Rounded Button */
+        .btn-rounded {
+            border-radius: 50px;
+        }
+
+        .btn-circle {
+            border-radius: 50%;
+        }
+
+        /* Button Loading State */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: btn-spin 0.6s linear infinite;
+        }
+
+        @keyframes btn-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Soft/Ghost Buttons */
+        .btn-soft-primary {
+            color: #3498db;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: transparent;
+        }
+
+        .btn-soft-primary:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: #2980b9;
+        }
+
+        .btn-soft-success {
+            color: #10B981;
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: transparent;
+        }
+
+        .btn-soft-success:hover {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #059669;
+        }
+
+        .btn-soft-danger {
+            color: #EF4444;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: transparent;
+        }
+
+        .btn-soft-danger:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #DC2626;
+        }
+
+        .btn-soft-warning {
+            color: #F59E0B;
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: transparent;
+        }
+
+        .btn-soft-warning:hover {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #D97706;
+        }
+
+        .btn-soft-info {
+            color: #06B6D4;
+            background-color: rgba(6, 182, 212, 0.1);
+            border-color: transparent;
+        }
+
+        .btn-soft-info:hover {
+            background-color: rgba(6, 182, 212, 0.2);
+            color: #0891B2;
+        }
+
+        /* Responsive Button Adjustments */
+        @media (max-width: 768px) {
+            .btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .btn-sm {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+            
+            .btn-lg {
+                padding: 12px 24px;
+                font-size: 15px;
+            }
+            
+            .btn-block-mobile {
+                display: block;
+                width: 100%;
+            }
+        }
 
         @keyframes slideIn {
             from {
