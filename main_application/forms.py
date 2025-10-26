@@ -13,15 +13,38 @@ class BootstrapModelForm(forms.ModelForm):
                 field.widget.attrs.update({'class': 'form-control'})
 
 
+
 class ApplicantForm(BootstrapModelForm):
     class Meta:
         model = Applicant
-        exclude = ['user']  # user is set in the view
+        fields = [
+            'gender', 'date_of_birth', 'id_number', 'county', 'constituency',
+            'ward', 'location', 'sublocation', 'village', 'physical_address',
+            'postal_address', 'special_needs', 'special_needs_description'
+        ]
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
             'special_needs_description': forms.Textarea(attrs={'rows': 3}),
             'physical_address': forms.Textarea(attrs={'rows': 2}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'county': forms.Select(attrs={'class': 'form-select'}),
+            'constituency': forms.Select(attrs={'class': 'form-select'}),
+            'ward': forms.Select(attrs={'class': 'form-select'}),
+            'location': forms.Select(attrs={'class': 'form-select'}),
+            'sublocation': forms.Select(attrs={'class': 'form-select'}),
+            'village': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make optional fields not required
+        self.fields['location'].required = False
+        self.fields['sublocation'].required = False
+        self.fields['village'].required = False
+        self.fields['postal_address'].required = False
+        self.fields['special_needs_description'].required = False
+
+        
 
 from django import forms
 from .models import Application, BursaryCategory, Institution, FiscalYear

@@ -4360,6 +4360,7 @@ def student_dashboard(request):
     return render(request, 'students/dashboard.html', context)
 
 
+
 @login_required
 def student_profile_create(request):
     """
@@ -4377,19 +4378,32 @@ def student_profile_create(request):
         if form.is_valid():
             applicant = form.save(commit=False)
             applicant.user = request.user
+            
+            # Auto-populate county and constituency from ward selection
+            if applicant.ward:
+                applicant.constituency = applicant.ward.constituency
+                applicant.county = applicant.ward.constituency.county
+            
             applicant.save()
             
             messages.success(request, 'Profile saved successfully!')
             return redirect('student_dashboard')
+        else:
+            # Add error messages for debugging
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = ApplicantForm(instance=applicant)
     
     # Get location data for dropdowns
-    wards = Ward.objects.all()
+    counties = County.objects.filter(is_active=True)
+    wards = Ward.objects.filter(constituency__county__is_active=True)
     
     context = {
         'form': form,
         'is_update': is_update,
+        'counties': counties,
         'wards': wards,
     }
     

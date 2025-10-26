@@ -17,6 +17,23 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+if DEBUG:
+    # Development settings - more permissive
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = None  # Don't set COOP in development
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # Production settings - strict security
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+
 
 # Application definition
 
