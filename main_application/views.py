@@ -1152,22 +1152,290 @@ def application_list(request):
     
     return render(request, 'admin/application_list.html', context)
 
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Sum, Count, Q
+from .models import (
+    Application, Review, Document, Guardian, SiblingInformation,
+    Allocation, Notification, AuditLog
+)
+
+
+def is_reviewer(user):
+    """Check if user can review applications"""
+    return user.is_authenticated and user.user_type in [
+        'admin', 'county_admin', 'reviewer', 'constituency_admin', 'ward_admin'
+    ]
+
+
 @login_required
 @user_passes_test(is_reviewer)
 def application_detail(request, application_id):
-    application = get_object_or_404(Application, id=application_id)
-    reviews = Review.objects.filter(application=application).order_by('-review_date')
-    documents = Document.objects.filter(application=application)
+    """
+    Comprehensive application detail view with all related information
+    """
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'applicant__county',
+            'applicant__constituency',
+            'applicant__ward',
+            'applicant__location',
+            'applicant__sublocation',
+            'applicant__village',
+            'institution',
+            'bursary_category',
+            'fiscal_year',
+            'disbursement_round'
+        ),
+        id=application_id
+    )
+    
+    applicant = application.applicant
+    
+    # Get all reviews with reviewer details
+    reviews = Review.objects.filter(
+        application=application
+    ).select_related(
+        'reviewer'
+    ).order_by('-review_date')
+    
+    # Get all documents
+    documents = Document.objects.filter(
+        application=application
+    ).select_related(
+        'verified_by'
+    ).order_by('document_type', '-uploaded_at')
+    
+    # Document counts by type
+    document_counts = {
+        'total': documents.count(),
+        'verified': documents.filter(is_verified=True).count(),
+        'pending': documents.filter(is_verified=False).count(),
+    }
+    
+    # Get guardians information
+    guardians = Guardian.objects.filter(
+        applicant=applicant
+    ).order_by('-is_primary_contact')
+    
+    # Get siblings information
+    siblings = SiblingInformation.objects.filter(
+        applicant=applicant
+    ).order_by('-age')
+    
+    # Get allocation if exists
+    allocation = None
+    try:
+        allocation = Allocation.objects.select_related(
+            'approved_by',
+            'disbursed_by'
+        ).get(application=application)
+        
+        # Check if part of bulk cheque
+        bulk_cheque_allocation = None
+        try:
+            from .models import BulkChequeAllocation
+            bulk_cheque_allocation = BulkChequeAllocation.objects.select_related(
+                'bulk_cheque',
+                'bulk_cheque__institution'
+            ).get(allocation=allocation)
+        except:
+            pass
+            
+    except Allocation.DoesNotExist:
+        allocation = None
+        bulk_cheque_allocation = None
+    
+    # Calculate financial summary
+    financial_summary = {
+        'total_fees': float(application.total_fees_payable),
+        'fees_paid': float(application.fees_paid),
+        'fees_balance': float(application.fees_balance),
+        'amount_requested': float(application.amount_requested),
+        'other_bursaries': float(application.other_bursaries_amount) if application.other_bursaries else 0,
+        'total_support_needed': float(application.fees_balance) - float(application.other_bursaries_amount if application.other_bursaries else 0),
+    }
+    
+    # Calculate household income summary
+    total_guardian_income = guardians.aggregate(
+        total=Sum('monthly_income')
+    )['total'] or 0
+    
+    household_summary = {
+        'monthly_income': float(application.household_monthly_income or total_guardian_income),
+        'total_siblings': application.number_of_siblings,
+        'siblings_in_school': application.number_of_siblings_in_school,
+        'dependents': application.number_of_siblings + 1,  # Including applicant
+    }
+    
+    # Calculate per capita income
+    if household_summary['dependents'] > 0:
+        household_summary['per_capita_income'] = household_summary['monthly_income'] / household_summary['dependents']
+    else:
+        household_summary['per_capita_income'] = household_summary['monthly_income']
+    
+    # Vulnerability indicators
+    vulnerability_indicators = {
+        'is_orphan': application.is_orphan,
+        'is_total_orphan': application.is_total_orphan,
+        'is_disabled': application.is_disabled,
+        'has_chronic_illness': application.has_chronic_illness,
+        'special_needs': applicant.special_needs,
+        'low_income': household_summary['monthly_income'] < 30000,  # Below threshold
+        'high_dependents': household_summary['dependents'] > 5,
+    }
+    
+    vulnerability_count = sum(1 for v in vulnerability_indicators.values() if v)
+    
+    # Review statistics
+    review_stats = {
+        'total_reviews': reviews.count(),
+        'approve_recommendations': reviews.filter(recommendation='approve').count(),
+        'reject_recommendations': reviews.filter(recommendation='reject').count(),
+        'more_info_requests': reviews.filter(recommendation='more_info').count(),
+        'average_need_score': reviews.aggregate(avg=Sum('need_score'))['avg'] or 0,
+        'average_merit_score': reviews.aggregate(avg=Sum('merit_score'))['avg'] or 0,
+        'average_vulnerability_score': reviews.aggregate(avg=Sum('vulnerability_score'))['avg'] or 0,
+    }
+    
+    # Get application history (previous applications by same applicant)
+    previous_applications = Application.objects.filter(
+        applicant=applicant
+    ).exclude(
+        id=application.id
+    ).select_related(
+        'fiscal_year',
+        'bursary_category'
+    ).order_by('-date_submitted')[:5]
+    
+    # Calculate total previous allocations
+    previous_allocations_total = Allocation.objects.filter(
+        application__applicant=applicant,
+        application__fiscal_year__start_date__lt=application.fiscal_year.start_date
+    ).aggregate(
+        total=Sum('amount_allocated')
+    )['total'] or 0
+    
+    # Get notifications related to this application
+    notifications = Notification.objects.filter(
+        user=applicant.user,
+        related_application=application
+    ).order_by('-created_at')[:10]
+    
+    # Get audit logs for this application
+    audit_logs = AuditLog.objects.filter(
+        Q(table_affected='Application', record_id=str(application.id)) |
+        Q(table_affected='Review', description__icontains=application.application_number) |
+        Q(table_affected='Allocation', description__icontains=application.application_number)
+    ).select_related('user').order_by('-timestamp')[:20]
+    
+    # Geographic information
+    geographic_info = {
+        'county': applicant.county.name if applicant.county else 'N/A',
+        'constituency': applicant.constituency.name if applicant.constituency else 'N/A',
+        'ward': applicant.ward.name if applicant.ward else 'N/A',
+        'location': applicant.location.name if applicant.location else 'N/A',
+        'sublocation': applicant.sublocation.name if applicant.sublocation else 'N/A',
+        'village': applicant.village.name if applicant.village else 'N/A',
+        'full_address': applicant.physical_address,
+    }
+    
+    # Institution information
+    institution_info = {
+        'name': application.institution.name,
+        'type': application.institution.get_institution_type_display(),
+        'county': application.institution.county.name if application.institution.county else 'N/A',
+        'contact': application.institution.phone_number or 'N/A',
+        'email': application.institution.email or 'N/A',
+        'principal': application.institution.principal_name or 'N/A',
+    }
+    
+    # Calculate recommended actions based on data
+    recommended_actions = []
+    
+    if documents.count() < 5:
+        recommended_actions.append({
+            'type': 'warning',
+            'message': 'Application has fewer than 5 supporting documents. Request additional documentation.'
+        })
+    
+    if document_counts['verified'] < document_counts['total']:
+        recommended_actions.append({
+            'type': 'info',
+            'message': f"{document_counts['pending']} document(s) pending verification."
+        })
+    
+    if vulnerability_count >= 3:
+        recommended_actions.append({
+            'type': 'success',
+            'message': f'High vulnerability score ({vulnerability_count} indicators). Consider priority allocation.'
+        })
+    
+    if household_summary['per_capita_income'] < 3000:
+        recommended_actions.append({
+            'type': 'danger',
+            'message': 'Extremely low per capita income. Urgent financial need identified.'
+        })
+    
+    if application.amount_requested > application.fees_balance:
+        recommended_actions.append({
+            'type': 'warning',
+            'message': 'Requested amount exceeds fees balance. Review may be needed.'
+        })
+    
+    if review_stats['approve_recommendations'] > review_stats['reject_recommendations'] and application.status == 'under_review':
+        recommended_actions.append({
+            'type': 'success',
+            'message': 'Majority of reviewers recommend approval.'
+        })
+    
+    # Comparison with category averages (if applicable)
+    category_applications = Application.objects.filter(
+        bursary_category=application.bursary_category,
+        fiscal_year=application.fiscal_year,
+        status__in=['approved', 'disbursed']
+    )
+    
+    category_stats = {
+        'count': category_applications.count(),
+        'avg_requested': category_applications.aggregate(avg=Sum('amount_requested'))['avg'] or 0,
+        'avg_allocated': 0,
+    }
+    
+    if category_stats['count'] > 0:
+        category_allocations = Allocation.objects.filter(
+            application__in=category_applications
+        ).aggregate(avg=Sum('amount_allocated'))
+        category_stats['avg_allocated'] = category_allocations['avg'] or 0
     
     context = {
         'application': application,
+        'applicant': applicant,
         'reviews': reviews,
         'documents': documents,
+        'document_counts': document_counts,
+        'guardians': guardians,
+        'siblings': siblings,
+        'allocation': allocation,
+        'bulk_cheque_allocation': bulk_cheque_allocation if allocation else None,
+        'financial_summary': financial_summary,
+        'household_summary': household_summary,
+        'vulnerability_indicators': vulnerability_indicators,
+        'vulnerability_count': vulnerability_count,
+        'review_stats': review_stats,
+        'previous_applications': previous_applications,
+        'previous_allocations_total': previous_allocations_total,
+        'notifications': notifications,
+        'audit_logs': audit_logs,
+        'geographic_info': geographic_info,
+        'institution_info': institution_info,
+        'recommended_actions': recommended_actions,
+        'category_stats': category_stats,
     }
+    
     return render(request, 'admin/application_detail.html', context)
 
-
-# Add this to your Django views.py file
 
 from django.http import HttpResponse, Http404, FileResponse
 from django.shortcuts import get_object_or_404

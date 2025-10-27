@@ -20,23 +20,12 @@
 
     .breadcrumb-item + .breadcrumb-item::before {
         content: "/ ";
-        color: #94A3B8;
         padding: 0 8px;
-    }
-
-    .breadcrumb-item.active {
-        color: #1E293B;
-        font-weight: 500;
     }
 
     .breadcrumb a {
         color: #3498db;
         text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    .breadcrumb a:hover {
-        color: #2980b9;
     }
 
     .section-container {
@@ -54,13 +43,17 @@
         border-bottom: 1px solid #F1F5F9;
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: start;
         flex-wrap: wrap;
         gap: 16px;
     }
 
+    .header-left {
+        flex: 1;
+    }
+
     .page-title {
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 600;
         color: #1E293B;
         margin-bottom: 8px;
@@ -69,23 +62,21 @@
         gap: 10px;
     }
 
-    .page-subtitle {
-        color: #64748B;
+    .title-badge {
         font-size: 14px;
-        margin: 0;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
     }
 
-    .action-buttons-header {
+    .action-buttons {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
     }
 
-    .btn-primary-custom {
+    .btn {
         padding: 10px 20px;
-        background: #3498db;
-        color: white;
-        border: none;
         border-radius: 6px;
         font-size: 14px;
         font-weight: 600;
@@ -95,236 +86,175 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        border: none;
     }
 
-    .btn-primary-custom:hover {
-        background: #2980b9;
-        transform: translateY(-1px);
-        color: white;
+    .btn-primary { background: #3498db; color: white; }
+    .btn-success { background: #27ae60; color: white; }
+    .btn-warning { background: #f39c12; color: white; }
+    .btn-danger { background: #e74c3c; color: white; }
+    .btn-secondary { background: white; color: #64748B; border: 1px solid #E2E8F0; }
+
+    .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+
+    /* Alert Boxes */
+    .alert-box {
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        border-left: 4px solid;
     }
 
-    .btn-secondary-custom {
-        padding: 10px 20px;
+    .alert-success { background: #D1FAE5; border-color: #10B981; color: #065F46; }
+    .alert-info { background: #DBEAFE; border-color: #3B82F6; color: #1E40AF; }
+    .alert-warning { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .alert-danger { background: #FEE2E2; border-color: #EF4444; color: #991B1B; }
+
+    .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
         background: white;
-        color: #64748B;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-secondary-custom:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
-    }
-
-    .btn-success-custom {
-        padding: 10px 20px;
-        background: #27ae60;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-success-custom:hover {
-        background: #229954;
-        transform: translateY(-1px);
-        color: white;
-    }
-
-    .status-card {
-        background: #F8FAFC;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
         padding: 20px;
-        margin-bottom: 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    .status-label {
-        color: #64748B;
-        font-size: 14px;
-        font-weight: 500;
-        margin-right: 10px;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .status-draft {
-        background: #E2E8F0;
-        color: #64748B;
-    }
-
-    .status-submitted {
-        background: #FEF3C7;
-        color: #92400E;
-    }
-
-    .status-under-review {
-        background: #DBEAFE;
-        color: #1E40AF;
-    }
-
-    .status-approved {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .status-rejected {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .status-disbursed {
-        background: #E0E7FF;
-        color: #3730A3;
-    }
-
-    .amount-display {
-        color: #1E293B;
-        font-size: 20px;
-        font-weight: 700;
-    }
-
-   .content-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr; /* 8:4 ratio */
-        gap: 24px;
-        align-items: start;
-    }
-
-
-    .main-content {
-        background-color: #ffffff;
-        border-radius: 8px;
-        min-width: 0;
-     
-    }
-
-    .sidebar-content {
-        min-width: 0;
-    }
-
-    .tabs-navigation {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        margin-bottom: 24px;
+        position: relative;
         overflow: hidden;
     }
 
-    .tab-list {
-        display: flex;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        border-bottom: 1px solid #E2E8F0;
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
     }
 
-    .tab-item {
-        flex: 1;
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
     }
 
-    .tab-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 16px;
+    .stat-label {
+        font-size: 13px;
         color: #64748B;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        border-bottom: 3px solid transparent;
-        transition: all 0.3s ease;
-        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        font-size: 28px;
+        opacity: 0.15;
+    }
+
+    /* Content Layout */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+    }
+
+    /* Tabs */
+    .tabs-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .tabs-nav {
+        display: flex;
+        border-bottom: 1px solid #E2E8F0;
+        background: #F8FAFC;
+        overflow-x: auto;
+    }
+
+    .tab-button {
+        padding: 16px 24px;
         background: none;
         border: none;
-        width: 100%;
+        border-bottom: 3px solid transparent;
+        color: #64748B;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .tab-link:hover {
-        color: #3498db;
-        background: #F8FAFC;
-    }
-
-    .tab-link.active {
-        color: #3498db;
-        border-bottom-color: #3498db;
-        background: white;
-    }
+    .tab-button:hover { background: #F1F5F9; color: #334155; }
+    .tab-button.active { color: #3498db; border-bottom-color: #3498db; background: white; }
 
     .tab-content {
         display: none;
+        padding: 24px;
     }
 
-    .tab-content.active {
-        display: block;
-    }
+    .tab-content.active { display: block; }
 
-    .card-custom {
+    /* Cards */
+    .card {
         background: white;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         overflow: hidden;
     }
 
-    .card-header-custom {
+    .card-header {
         padding: 16px 20px;
         background: #F8FAFC;
         border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .card-title-custom {
-        font-size: 15px;
+    .card-title {
+        font-size: 16px;
         font-weight: 600;
         color: #1E293B;
-        margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
+        margin: 0;
     }
 
-    .card-body-custom {
+    .card-body {
         padding: 20px;
     }
 
+    /* Info Grid */
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 20px;
     }
 
     .info-item {
         display: flex;
         flex-direction: column;
+        gap: 6px;
     }
 
     .info-label {
@@ -333,23 +263,115 @@
         color: #64748B;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 6px;
     }
 
     .info-value {
-        font-size: 14px;
+        font-size: 15px;
         color: #1E293B;
         font-weight: 500;
     }
 
-    .info-value.highlight {
-        color: #e74c3c;
+    .info-value.large {
+        font-size: 20px;
+        font-weight: 700;
+        color: #3498db;
+    }
+
+    .info-value.danger { color: #e74c3c; }
+    .info-value.success { color: #27ae60; }
+    .info-value.warning { color: #f39c12; }
+
+    /* Progress Bars */
+    .progress-container {
+        margin: 20px 0;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
         font-weight: 600;
     }
 
+    .progress-bar-bg {
+        height: 10px;
+        background: #E2E8F0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2ecc71);
+        transition: width 0.3s ease;
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #E2E8F0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 24px;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -26px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #3498db;
+    }
+
+    .timeline-content {
+        background: #F8FAFC;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        color: #1E293B;
+        font-size: 14px;
+    }
+
+    .timeline-date {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .timeline-body {
+        font-size: 13px;
+        color: #475569;
+        line-height: 1.6;
+    }
+
+    /* Document Grid */
     .document-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 16px;
     }
 
@@ -360,9 +382,7 @@
         padding: 16px;
         text-align: center;
         cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
+        transition: all 0.3s;
     }
 
     .document-card:hover {
@@ -372,9 +392,8 @@
     }
 
     .document-icon {
-        font-size: 48px;
+        font-size: 40px;
         margin-bottom: 12px;
-        opacity: 0.8;
     }
 
     .document-name {
@@ -382,101 +401,28 @@
         font-weight: 600;
         color: #1E293B;
         margin-bottom: 4px;
-        word-break: break-word;
     }
 
-    .document-date {
-        font-size: 12px;
+    .document-meta {
+        font-size: 11px;
         color: #64748B;
         margin-bottom: 12px;
     }
 
-    .document-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-    }
-
-    .doc-action-btn {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #E2E8F0;
-        background: white;
-        color: #64748B;
-        text-decoration: none;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        font-size: 14px;
-    }
-
-    .doc-action-btn:hover {
-        border-color: #3498db;
-        color: #3498db;
-        background: rgba(52, 152, 219, 0.05);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-icon {
-        font-size: 48px;
-        color: #CBD5E1;
-        margin-bottom: 16px;
-    }
-
-    .empty-title {
-        font-size: 16px;
+    .document-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
         font-weight: 600;
-        color: #64748B;
-        margin-bottom: 8px;
+        text-transform: uppercase;
     }
 
-    .empty-text {
-        font-size: 14px;
-        color: #94A3B8;
-    }
+    .badge-verified { background: #D1FAE5; color: #065F46; }
+    .badge-pending { background: #FEF3C7; color: #92400E; }
 
-    .applicant-header {
-        text-align: center;
-        padding: 20px;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .applicant-avatar {
-        width: 80px;
-        height: 80px;
-        background: rgba(52, 152, 219, 0.1);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 12px;
-    }
-
-    .applicant-avatar i {
-        font-size: 36px;
-        color: #3498db;
-    }
-
-    .applicant-name {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 4px;
-    }
-
-    .applicant-email {
-        font-size: 13px;
-        color: #64748B;
-    }
-
-    .review-item {
+    /* Guardian/Sibling Cards */
+    .person-card {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
@@ -484,81 +430,180 @@
         margin-bottom: 12px;
     }
 
-    .review-header {
+    .person-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: start;
         margin-bottom: 12px;
     }
 
-    .reviewer-name {
-        font-size: 14px;
+    .person-name {
         font-weight: 600;
         color: #1E293B;
+        font-size: 15px;
     }
 
-    .review-date {
+    .person-role {
         font-size: 12px;
         color: #64748B;
+        font-weight: 500;
     }
 
-    .review-recommendation {
-        margin-bottom: 8px;
-    }
-
-    .review-label {
-        font-size: 12px;
-        color: #64748B;
-        margin-right: 6px;
-    }
-
-    .recommendation-badge {
-        display: inline-block;
+    .person-badge {
         padding: 4px 10px;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .person-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+    }
+
+    /* Vulnerability Indicators */
+    .vulnerability-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+
+    .vulnerability-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .vulnerability-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .vulnerability-icon.active {
+        background: #FEE2E2;
+        color: #EF4444;
+    }
+
+    .vulnerability-icon.inactive {
+        background: #E2E8F0;
+        color: #94A3B8;
+    }
+
+    .vulnerability-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #334155;
+    }
+
+    /* Review Score Cards */
+    .score-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .score-card {
+        text-align: center;
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .score-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #3498db;
+        margin-bottom: 4px;
+    }
+
+    .score-label {
+        font-size: 12px;
+        color: #64748B;
+        font-weight: 600;
         text-transform: uppercase;
     }
 
-    .recommendation-approve {
-        background: #D1FAE5;
-        color: #065F46;
+    .score-max {
+        font-size: 11px;
+        color: #94A3B8;
     }
 
-    .recommendation-reject {
-        background: #FEE2E2;
-        color: #991B1B;
+    @media (max-width: 1200px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
-    .recommendation-more-info {
-        background: #FEF3C7;
-        color: #92400E;
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .tabs-nav {
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        .score-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .document-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .action-buttons {
+            width: 100%;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
     }
 
-    .review-amount {
-        margin-bottom: 8px;
-        font-size: 13px;
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-value {
+            font-size: 20px;
+        }
+
+        .document-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
-    .review-comments {
-        font-size: 13px;
-        color: #334155;
-        line-height: 1.6;
-        margin: 0;
-    }
-
-    .allocation-info {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .allocation-item {
-        display: flex;
-        flex-direction: column;
-    }
-
+    /* Modal Styles */
     .modal {
         display: none;
         position: fixed;
@@ -595,6 +640,8 @@
         justify-content: space-between;
         align-items: center;
         background: #1E293B;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
     .modal-title-custom {
@@ -605,6 +652,7 @@
         align-items: center;
         gap: 12px;
         flex: 1;
+        min-width: 200px;
     }
 
     .modal-subtitle {
@@ -617,6 +665,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
     }
 
     .modal-btn {
@@ -714,44 +763,6 @@
         min-width: 50px;
         text-align: center;
     }
-
-    @media (max-width: 1200px) {
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .sidebar-content {
-            order: -1;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .action-buttons-header {
-            width: 100%;
-        }
-
-        .tab-list {
-            flex-direction: column;
-        }
-
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .document-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .status-card {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-    }
 </style>
 {% endblock %}
 
@@ -761,143 +772,293 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'admin_dashboard' %}">
-                    <i class="bi bi-house-door"></i> Dashboard
-                </a>
+                <a href="{% url 'admin_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
             </li>
             <li class="breadcrumb-item">
                 <a href="{% url 'application_list' %}">Applications</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ application.application_number }}</li>
+            <li class="breadcrumb-item active">{{ application.application_number }}</li>
         </ol>
     </nav>
 
+    <!-- Page Header -->
     <div class="section-container">
-        <!-- Page Header -->
         <div class="page-header">
-            <div>
+            <div class="header-left">
                 <h1 class="page-title">
                     <i class="bi bi-file-earmark-text"></i>
-                    Application {{ application.application_number }}
+                    {{ application.application_number }}
+                    {% if application.status == 'approved' %}
+                        <span class="title-badge" style="background: #D1FAE5; color: #065F46;">
+                            <i class="bi bi-check-circle"></i> Approved
+                        </span>
+                    {% elif application.status == 'disbursed' %}
+                        <span class="title-badge" style="background: #E0E7FF; color: #3730A3;">
+                            <i class="bi bi-wallet2"></i> Disbursed
+                        </span>
+                    {% elif application.status == 'rejected' %}
+                        <span class="title-badge" style="background: #FEE2E2; color: #991B1B;">
+                            <i class="bi bi-x-circle"></i> Rejected
+                        </span>
+                    {% endif %}
                 </h1>
-                <p class="page-subtitle">
-                    Submitted on {{ application.date_submitted|date:"M d, Y" }}
+                <p style="color: #64748B; margin: 0;">
+                    <i class="bi bi-calendar"></i> Submitted {{ application.date_submitted|date:"F d, Y" }} at {{ application.date_submitted|date:"h:i A" }}
+                    <span style="margin: 0 8px;">•</span>
+                    <i class="bi bi-clock-history"></i> Last updated {{ application.last_updated|timesince }} ago
                 </p>
             </div>
-            <div class="action-buttons-header">
-                <a href="{% url 'application_list' %}" class="btn-secondary-custom">
-                    <i class="bi bi-arrow-left"></i>
-                    Back to List
+            <div class="action-buttons">
+                <a href="{% url 'application_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
                 </a>
-                {% if application.status == 'submitted' or application.status == 'under_review' %}
-                <a href="{% url 'application_review' application.id %}" class="btn-success-custom">
-                    <i class="bi bi-clipboard-check"></i>
-                    Review Application
+                {% if application.status in 'submitted,under_review' %}
+                <a href="{% url 'application_review' application.id %}" class="btn btn-success">
+                    <i class="bi bi-clipboard-check"></i> Review
                 </a>
                 {% endif %}
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print
+                </button>
             </div>
         </div>
 
-        <!-- Status Card -->
-        <div class="status-card">
-            <div>
-                <span class="status-label">Application Status:</span>
-                {% if application.status == 'draft' %}
-                    <span class="status-badge status-draft">Draft</span>
-                {% elif application.status == 'submitted' %}
-                    <span class="status-badge status-submitted">Submitted</span>
-                {% elif application.status == 'under_review' %}
-                    <span class="status-badge status-under-review">Under Review</span>
-                {% elif application.status == 'approved' %}
-                    <span class="status-badge status-approved">Approved</span>
-                {% elif application.status == 'rejected' %}
-                    <span class="status-badge status-rejected">Rejected</span>
-                {% elif application.status == 'disbursed' %}
-                    <span class="status-badge status-disbursed">Disbursed</span>
-                {% endif %}
-            </div>
-            <div>
-                <span class="status-label">Amount Requested:</span>
-                <span class="amount-display">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
-            </div>
-        </div>
-
-        <!-- Content Grid -->
-        <div class="content-grid">
-            <!-- Main Content -->
-            <div class="main-content">
-                <!-- Tabs Navigation -->
-                <div class="tabs-navigation">
-                    <ul class="tab-list">
-                        <li class="tab-item">
-                            <button class="tab-link active" data-tab="overview">
-                                <i class="bi bi-info-circle"></i>
-                                Overview
-                            </button>
-                        </li>
-                        <li class="tab-item">
-                            <button class="tab-link" data-tab="academic">
-                                <i class="bi bi-mortarboard"></i>
-                                Academic
-                            </button>
-                        </li>
-                        <li class="tab-item">
-                            <button class="tab-link" data-tab="documents">
-                                <i class="bi bi-paperclip"></i>
-                                Documents
-                            </button>
-                        </li>
-                    </ul>
+        <!-- Recommended Actions -->
+        {% if recommended_actions %}
+        <div style="margin-bottom: 24px;">
+            {% for action in recommended_actions %}
+            <div class="alert-box alert-{{ action.type }}">
+                <div class="alert-icon">
+                    {% if action.type == 'success' %}<i class="bi bi-check-circle-fill"></i>
+                    {% elif action.type == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+                    {% elif action.type == 'danger' %}<i class="bi bi-x-circle-fill"></i>
+                    {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
                 </div>
+                <div>{{ action.message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-                <!-- Tab Content -->
-                <div id="tabContent">
+        <!-- Financial Summary Stats -->
+        <div class="stats-grid">
+            <div class="stat-card" style="color: #3498db;">
+                <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                <div class="stat-value">KES {{ financial_summary.amount_requested|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Amount Requested</div>
+            </div>
+            <div class="stat-card" style="color: #e74c3c;">
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="stat-value">KES {{ financial_summary.fees_balance|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Fees Balance</div>
+            </div>
+            <div class="stat-card" style="color: #f39c12;">
+                <div class="stat-icon"><i class="bi bi-people"></i></div>
+                <div class="stat-value">{{ vulnerability_count }}/7</div>
+                <div class="stat-label">Vulnerability Indicators</div>
+            </div>
+            <div class="stat-card" style="color: #27ae60;">
+                <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
+                <div class="stat-value">KES {{ household_summary.per_capita_income|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Per Capita Income</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Left Column - Main Content -->
+            <div>
+                <!-- Tabs Container -->
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-button active" onclick="switchTab('overview')">
+                            <i class="bi bi-grid"></i> Overview
+                        </button>
+                        <button class="tab-button" onclick="switchTab('academic')">
+                            <i class="bi bi-mortarboard"></i> Academic Info
+                        </button>
+                        <button class="tab-button" onclick="switchTab('financial')">
+                            <i class="bi bi-wallet2"></i> Financial Details
+                        </button>
+                        <button class="tab-button" onclick="switchTab('family')">
+                            <i class="bi bi-people"></i> Family Info
+                        </button>
+                        <button class="tab-button" onclick="switchTab('documents')">
+                            <i class="bi bi-paperclip"></i> Documents ({{ document_counts.total }})
+                        </button>
+                        <button class="tab-button" onclick="switchTab('reviews')">
+                            <i class="bi bi-chat-left-text"></i> Reviews ({{ review_stats.total_reviews }})
+                        </button>
+                        <button class="tab-button" onclick="switchTab('history')">
+                            <i class="bi bi-clock-history"></i> History
+                        </button>
+                    </div>
+
                     <!-- Overview Tab -->
-                    <div class="tab-content active" id="overview">
-                        <div class="card-custom">
-                            <div class="card-header-custom">
-                                <h5 class="card-title-custom">
+                    <div class="tab-content active" id="overview-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
                                     <i class="bi bi-info-circle text-primary"></i>
                                     Application Overview
                                 </h5>
                             </div>
-                            <div class="card-body-custom">
+                            <div class="card-body">
                                 <div class="info-grid">
                                     <div class="info-item">
                                         <span class="info-label">Fiscal Year</span>
                                         <span class="info-value">{{ application.fiscal_year.name }}</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Category</span>
+                                        <span class="info-label">Bursary Category</span>
                                         <span class="info-value">{{ application.bursary_category.name }}</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Date Submitted</span>
-                                        <span class="info-value">{{ application.date_submitted|date:"M d, Y H:i" }}</span>
+                                        <span class="info-label">Disbursement Round</span>
+                                        <span class="info-value">
+                                            {% if application.disbursement_round %}
+                                                {{ application.disbursement_round.name }}
+                                            {% else %}
+                                                Not assigned
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Last Updated</span>
-                                        <span class="info-value">{{ application.last_updated|date:"M d, Y H:i" }}</span>
+                                        <span class="info-label">Bursary Source</span>
+                                        <span class="info-value">{{ application.get_bursary_source_display }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Priority Score</span>
+                                        <span class="info-value large">{{ application.priority_score|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Application Status</span>
+                                        <span class="info-value">{{ application.get_status_display }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Vulnerability Indicators -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-shield-exclamation text-warning"></i>
+                                    Vulnerability Assessment
+                                </h5>
+                                <span style="color: #64748B; font-size: 13px;">
+                                    {{ vulnerability_count }} of 7 indicators present
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="vulnerability-grid">
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.is_orphan %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-person-x"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Orphan</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.is_total_orphan %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-person-x-fill"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Total Orphan</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.is_disabled %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-universal-access"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Disabled</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.has_chronic_illness %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-heart-pulse"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Chronic Illness</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.special_needs %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-hospital"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Special Needs</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.low_income %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-cash-coin"></i>
+                                        </div>
+                                        <div class="vulnerability-text">Low Income (&lt;30K)</div>
+                                    </div>
+                                    <div class="vulnerability-item">
+                                        <div class="vulnerability-icon {% if vulnerability_indicators.high_dependents %}active{% else %}inactive{% endif %}">
+                                            <i class="bi bi-people-fill"></i>
+                                        </div>
+                                        <div class="vulnerability-text">High Dependents (&gt;5)</div>
+                                    </div>
+                                </div>
+                                
+                                {% if application.chronic_illness_description %}
+                                <div style="margin-top: 16px; padding: 12px; background: #FEF3C7; border-radius: 6px; border-left: 3px solid #F59E0B;">
+                                    <strong style="color: #92400E; font-size: 13px;">Chronic Illness Details:</strong>
+                                    <p style="color: #78350F; margin: 4px 0 0 0; font-size: 13px;">{{ application.chronic_illness_description }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Category Comparison -->
+                        {% if category_stats.count > 0 %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-bar-chart text-info"></i>
+                                    Category Comparison
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: #64748B; font-size: 13px; margin-bottom: 16px;">
+                                    Comparing with {{ category_stats.count }} approved applications in {{ application.bursary_category.name }}
+                                </p>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Your Request</span>
+                                        <span class="info-value">KES {{ financial_summary.amount_requested|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Category Average Request</span>
+                                        <span class="info-value">KES {{ category_stats.avg_requested|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Category Average Allocation</span>
+                                        <span class="info-value success">KES {{ category_stats.avg_allocated|floatformat:0|intcomma }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Academic Tab -->
-                    <div class="tab-content" id="academic">
-                        <div class="card-custom">
-                            <div class="card-header-custom">
-                                <h5 class="card-title-custom">
+                    <div class="tab-content" id="academic-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
                                     <i class="bi bi-mortarboard text-primary"></i>
                                     Academic Information
                                 </h5>
                             </div>
-                            <div class="card-body-custom">
+                            <div class="card-body">
                                 <div class="info-grid">
-                                    <div class="info-item">
+                                    <div class="info-item" style="grid-column: 1 / -1;">
                                         <span class="info-label">Institution</span>
-                                        <span class="info-value">{{ application.institution.name }}</span>
+                                        <span class="info-value">{{ institution_info.name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Institution Type</span>
+                                        <span class="info-value">{{ institution_info.type }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Institution County</span>
+                                        <span class="info-value">{{ institution_info.county }}</span>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Admission Number</span>
@@ -905,69 +1066,294 @@
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Year of Study</span>
-                                        <span class="info-value">{{ application.year_of_study }}</span>
+                                        <span class="info-value">Year {{ application.year_of_study }}</span>
+                                    </div>
+                                    {% if application.course_name %}
+                                    <div class="info-item" style="grid-column: 1 / -1;">
+                                        <span class="info-label">Course Name</span>
+                                        <span class="info-value">{{ application.course_name }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="info-item">
+                                        <span class="info-label">Expected Completion</span>
+                                        <span class="info-value">{{ application.expected_completion_date|date:"M Y" }}</span>
+                                    </div>
+                                    {% if application.previous_academic_year_average %}
+                                    <div class="info-item">
+                                        <span class="info-label">Previous Academic Average</span>
+                                        <span class="info-value">{{ application.previous_academic_year_average }}%</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <hr style="margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;">
+
+                                <h6 style="font-weight: 600; color: #1E293B; margin-bottom: 12px;">Institution Contact Details</h6>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Principal</span>
+                                        <span class="info-value">{{ institution_info.principal }}</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Total Fees</span>
-                                        <span class="info-value">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</span>
+                                        <span class="info-label">Phone</span>
+                                        <span class="info-value">{{ institution_info.contact }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Email</span>
+                                        <span class="info-value">{{ institution_info.email }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Tab -->
+                    <div class="tab-content" id="financial-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-wallet2 text-success"></i>
+                                    Financial Breakdown
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress-container">
+                                    <div class="progress-header">
+                                        <span>Fees Payment Progress</span>
+                                        <span>{{ financial_summary.fees_paid|floatformat:0|intcomma }} / {{ financial_summary.total_fees|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        {% widthratio financial_summary.fees_paid financial_summary.total_fees 100 as payment_percentage %}
+                                        <div class="progress-bar-fill" style="width: {{ payment_percentage }}%"></div>
+                                    </div>
+                                    <p style="font-size: 12px; color: #64748B; margin-top: 4px;">{{ payment_percentage }}% paid</p>
+                                </div>
+
+                                <div class="info-grid" style="margin-top: 24px;">
+                                    <div class="info-item">
+                                        <span class="info-label">Total Fees Payable</span>
+                                        <span class="info-value">KES {{ financial_summary.total_fees|floatformat:0|intcomma }}</span>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Fees Paid</span>
-                                        <span class="info-value">KSh {{ application.fees_paid|floatformat:0|intcomma }}</span>
+                                        <span class="info-value success">KES {{ financial_summary.fees_paid|floatformat:0|intcomma }}</span>
                                     </div>
                                     <div class="info-item">
                                         <span class="info-label">Fees Balance</span>
-                                        <span class="info-value highlight">KSh {{ application.fees_balance|floatformat:0|intcomma }}</span>
+                                        <span class="info-value danger">KES {{ financial_summary.fees_balance|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Amount Requested</span>
+                                        <span class="info-value large">KES {{ financial_summary.amount_requested|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    {% if application.other_bursaries %}
+                                    <div class="info-item">
+                                        <span class="info-label">Other Bursaries Received</span>
+                                        <span class="info-value warning">KES {{ financial_summary.other_bursaries|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Other Bursary Source</span>
+                                        <span class="info-value">{{ application.other_bursaries_source }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="info-item">
+                                        <span class="info-label">Net Support Needed</span>
+                                        <span class="info-value danger">KES {{ financial_summary.total_support_needed|floatformat:0|intcomma }}</span>
                                     </div>
                                 </div>
-                                {% if application.course_name %}
-                                <div class="info-grid" style="margin-top: 20px;">
-                                    <div class="info-item" style="grid-column: 1 / -1;">
-                                        <span class="info-label">Course</span>
-                                        <span class="info-value">{{ application.course_name }}</span>
+
+                                {% if previous_allocations_total > 0 %}
+                                <hr style="margin: 20px 0;">
+                                <h6 style="font-weight: 600; color: #1E293B; margin-bottom: 12px;">Previous Bursary Support</h6>
+                                <div class="info-item">
+                                    <span class="info-label">Total Previous Allocations</span>
+                                    <span class="info-value success">KES {{ previous_allocations_total|floatformat:0|intcomma }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Household Income -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-house text-warning"></i>
+                                    Household Financial Status
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Monthly Household Income</span>
+                                        <span class="info-value">KES {{ household_summary.monthly_income|floatformat:0|intcomma }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Total Dependents</span>
+                                        <span class="info-value">{{ household_summary.dependents }} persons</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Per Capita Monthly Income</span>
+                                        <span class="info-value {% if household_summary.per_capita_income < 3000 %}danger{% elif household_summary.per_capita_income < 5000 %}warning{% endif %}">
+                                            KES {{ household_summary.per_capita_income|floatformat:0|intcomma }}
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Family Tab -->
+                    <div class="tab-content" id="family-tab">
+                        <!-- Guardians -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-person-badge text-primary"></i>
+                                    Guardians / Parents ({{ guardians.count }})
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if guardians %}
+                                    {% for guardian in guardians %}
+                                    <div class="person-card">
+                                        <div class="person-header">
+                                            <div>
+                                                <div class="person-name">{{ guardian.name }}</div>
+                                                <div class="person-role">{{ guardian.get_relationship_display }}</div>
+                                            </div>
+                                            {% if guardian.is_primary_contact %}
+                                            <span class="person-badge">Primary Contact</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="person-details">
+                                            <div class="info-item">
+                                                <span class="info-label">Phone</span>
+                                                <span class="info-value">{{ guardian.phone_number }}</span>
+                                            </div>
+                                            {% if guardian.email %}
+                                            <div class="info-item">
+                                                <span class="info-label">Email</span>
+                                                <span class="info-value">{{ guardian.email }}</span>
+                                            </div>
+                                            {% endif %}
+                                            <div class="info-item">
+                                                <span class="info-label">Employment Status</span>
+                                                <span class="info-value">{{ guardian.get_employment_status_display }}</span>
+                                            </div>
+                                            {% if guardian.occupation %}
+                                            <div class="info-item">
+                                                <span class="info-label">Occupation</span>
+                                                <span class="info-value">{{ guardian.occupation }}</span>
+                                            </div>
+                                            {% endif %}
+                                            {% if guardian.monthly_income %}
+                                            <div class="info-item">
+                                                <span class="info-label">Monthly Income</span>
+                                                <span class="info-value">KES {{ guardian.monthly_income|floatformat:0|intcomma }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p style="text-align: center; color: #94A3B8; padding: 40px;">No guardian information provided</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Siblings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-people text-info"></i>
+                                    Siblings ({{ siblings.count }})
+                                </h5>
+                                <span style="color: #64748B; font-size: 13px;">
+                                    {{ household_summary.siblings_in_school }} in school
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                {% if siblings %}
+                                    {% for sibling in siblings %}
+                                    <div class="person-card">
+                                        <div class="person-header">
+                                            <div>
+                                                <div class="person-name">{{ sibling.name }}</div>
+                                                <div class="person-role">Age {{ sibling.age }} • {{ sibling.education_level }}</div>
+                                            </div>
+                                            {% if sibling.is_in_school %}
+                                            <span class="person-badge" style="background: #D1FAE5; color: #065F46;">In School</span>
+                                            {% else %}
+                                            <span class="person-badge" style="background: #FEE2E2; color: #991B1B;">Not in School</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if sibling.school_name %}
+                                        <div style="margin-top: 8px;">
+                                            <span class="info-label">School</span>
+                                            <span class="info-value">{{ sibling.school_name }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p style="text-align: center; color: #94A3B8; padding: 40px;">No sibling information provided</p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
 
                     <!-- Documents Tab -->
-                    <div class="tab-content" id="documents">
-                        <div class="card-custom">
-                            <div class="card-header-custom">
-                                <h5 class="card-title-custom">
+                    <div class="tab-content" id="documents-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
                                     <i class="bi bi-paperclip text-primary"></i>
                                     Supporting Documents
                                 </h5>
+                                <span style="color: #64748B; font-size: 13px;">
+                                    {{ document_counts.verified }} verified, {{ document_counts.pending }} pending
+                                </span>
                             </div>
-                            <div class="card-body-custom">
+                            <div class="card-body">
                                 {% if documents %}
                                 <div class="document-grid">
                                     {% for document in documents %}
-                                    <div class="document-card" 
+                                    <div class="document-card"
                                          data-document-url="{{ document.file.url }}"
                                          data-document-name="{{ document.get_document_type_display }}"
                                          data-document-type="{% if document.file.url|lower|slice:'-4:' == '.pdf' %}pdf{% elif document.file.url|lower|slice:'-4:' == '.doc' or document.file.url|lower|slice:'-5:' == '.docx' %}doc{% elif '.jpg' in document.file.url|lower or '.jpeg' in document.file.url|lower or '.png' in document.file.url|lower %}image{% else %}other{% endif %}"
                                          data-upload-date="{{ document.uploaded_at|date:'M d, Y' }}">
                                         <div class="document-icon">
-                                            {% if document.file.url|lower|slice:"-4:" == ".pdf" %}
-                                                <i class="bi bi-file-earmark-pdf text-danger"></i>
-                                            {% elif document.file.url|lower|slice:"-4:" == ".doc" or document.file.url|lower|slice:"-5:" == ".docx" %}
-                                                <i class="bi bi-file-earmark-word text-primary"></i>
-                                            {% elif ".jpg" in document.file.url|lower or ".jpeg" in document.file.url|lower or ".png" in document.file.url|lower %}
-                                                <i class="bi bi-file-image text-success"></i>
+                                            {% if '.pdf' in document.file.url|lower %}
+                                                <i class="bi bi-file-earmark-pdf" style="color: #EF4444;"></i>
+                                            {% elif '.doc' in document.file.url|lower %}
+                                                <i class="bi bi-file-earmark-word" style="color: #3B82F6;"></i>
+                                            {% elif '.jpg' in document.file.url|lower or '.png' in document.file.url|lower or '.jpeg' in document.file.url|lower %}
+                                                <i class="bi bi-file-image" style="color: #10B981;"></i>
                                             {% else %}
-                                                <i class="bi bi-file-earmark-text text-secondary"></i>
+                                                <i class="bi bi-file-earmark-text" style="color: #64748B;"></i>
                                             {% endif %}
                                         </div>
                                         <div class="document-name">{{ document.get_document_type_display }}</div>
-                                        <div class="document-date">{{ document.uploaded_at|date:"M d, Y" }}</div>
-                                        <div class="document-actions">
-                                            <button class="doc-action-btn preview-btn" title="Preview">
-                                                <i class="bi bi-eye"></i>
+                                        <div class="document-meta">
+                                            {{ document.uploaded_at|date:"M d, Y" }}
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            {% if document.is_verified %}
+                                            <span class="document-badge badge-verified">
+                                                <i class="bi bi-check-circle"></i> Verified
+                                            </span>
+                                            {% else %}
+                                            <span class="document-badge badge-pending">
+                                                <i class="bi bi-clock"></i> Pending
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <div style="display: flex; gap: 8px; justify-content: center;">
+                                            <button class="btn btn-sm preview-doc-btn" style="padding: 6px 12px; font-size: 12px; background: #DBEAFE; color: #1E40AF; border: none; cursor: pointer;">
+                                                <i class="bi bi-eye"></i> Preview
                                             </button>
-                                            <a href="{{ document.file.url }}" class="doc-action-btn" title="Download" download>
+                                            <a href="{{ document.file.url }}" download class="btn btn-sm" style="padding: 6px 12px; font-size: 12px; background: #D1FAE5; color: #065F46; text-decoration: none;">
                                                 <i class="bi bi-download"></i>
                                             </a>
                                         </div>
@@ -975,152 +1361,443 @@
                                     {% endfor %}
                                 </div>
                                 {% else %}
-                                <div class="empty-state">
-                                    <div class="empty-icon">
-                                        <i class="bi bi-folder-x"></i>
-                                    </div>
-                                    <h3 class="empty-title">No Documents Found</h3>
-                                    <p class="empty-text">
-                                        No supporting documents have been uploaded for this application.
-                                    </p>
-                                </div>
+                                <p style="text-align: center; color: #94A3B8; padding: 60px 20px;">
+                                    <i class="bi bi-folder-x" style="font-size: 48px; display: block; margin-bottom: 16px;"></i>
+                                    No documents uploaded yet
+                                </p>
                                 {% endif %}
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div class="tab-content" id="reviews-tab">
+                        {% if reviews %}
+                            <!-- Review Statistics -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-graph-up text-success"></i>
+                                        Review Scores
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="score-grid">
+                                        <div class="score-card">
+                                            <div class="score-value">{{ review_stats.average_need_score|floatformat:1 }}</div>
+                                            <div class="score-label">Need Score</div>
+                                            <div class="score-max">out of 10</div>
+                                        </div>
+                                        <div class="score-card">
+                                            <div class="score-value">{{ review_stats.average_merit_score|floatformat:1 }}</div>
+                                            <div class="score-label">Merit Score</div>
+                                            <div class="score-max">out of 10</div>
+                                        </div>
+                                        <div class="score-card">
+                                            <div class="score-value">{{ review_stats.average_vulnerability_score|floatformat:1 }}</div>
+                                            <div class="score-label">Vulnerability</div>
+                                            <div class="score-max">out of 10</div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid #E2E8F0;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 24px; font-weight: 700; color: #e74c3c;">{{ review_stats.reject_recommendations }}</div>
+                                            <div style="font-size: 12px; color: #64748B;">Reject</div>
+                                        </div>
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 24px; font-weight: 700; color: #f39c12;">{{ review_stats.more_info_requests }}</div>
+                                            <div style="font-size: 12px; color: #64748B;">More Info</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Review Timeline -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-chat-left-text text-primary"></i>
+                                        Review History
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        {% for review in reviews %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-content">
+                                                <div class="timeline-header">
+                                                    <div>
+                                                        <div class="timeline-title">
+                                                            {{ review.reviewer.first_name }} {{ review.reviewer.last_name }}
+                                                            <span style="font-weight: 400; color: #64748B; font-size: 13px;">
+                                                                ({{ review.get_review_level_display }})
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="timeline-date">{{ review.review_date|date:"M d, Y" }}</span>
+                                                </div>
+                                                <div class="timeline-body">
+                                                    <div style="margin-bottom: 12px;">
+                                                        <strong>Recommendation: </strong>
+                                                        {% if review.recommendation == 'approve' %}
+                                                            <span class="document-badge badge-verified">
+                                                                <i class="bi bi-check-circle"></i> Approve
+                                                            </span>
+                                                        {% elif review.recommendation == 'reject' %}
+                                                            <span class="document-badge" style="background: #FEE2E2; color: #991B1B;">
+                                                                <i class="bi bi-x-circle"></i> Reject
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="document-badge badge-pending">
+                                                                <i class="bi bi-info-circle"></i> {{ review.get_recommendation_display }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    {% if review.recommended_amount %}
+                                                    <div style="margin-bottom: 8px;">
+                                                        <strong>Recommended Amount: </strong>
+                                                        <span style="color: #27ae60; font-weight: 600;">KES {{ review.recommended_amount|floatformat:0|intcomma }}</span>
+                                                    </div>
+                                                    {% endif %}
+
+                                                    {% if review.need_score or review.merit_score or review.vulnerability_score %}
+                                                    <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px;">
+                                                        {% if review.need_score %}
+                                                        <span><strong>Need:</strong> {{ review.need_score }}/10</span>
+                                                        {% endif %}
+                                                        {% if review.merit_score %}
+                                                        <span><strong>Merit:</strong> {{ review.merit_score }}/10</span>
+                                                        {% endif %}
+                                                        {% if review.vulnerability_score %}
+                                                        <span><strong>Vulnerability:</strong> {{ review.vulnerability_score }}/10</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endif %}
+
+                                                    <p style="margin: 0; padding: 12px; background: white; border-radius: 6px; border: 1px solid #E2E8F0;">
+                                                        {{ review.comments }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <p style="text-align: center; color: #94A3B8; padding: 60px 20px;">
+                                        <i class="bi bi-chat-left" style="font-size: 48px; display: block; margin-bottom: 16px;"></i>
+                                        No reviews submitted yet
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-content" id="history-tab">
+                        <!-- Previous Applications -->
+                        {% if previous_applications %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-clock-history text-warning"></i>
+                                    Previous Applications
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% for prev_app in previous_applications %}
+                                <div style="padding: 16px; background: #F8FAFC; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                        <div>
+                                            <strong style="color: #3498db;">{{ prev_app.application_number }}</strong>
+                                            <div style="font-size: 13px; color: #64748B; margin-top: 4px;">
+                                                {{ prev_app.fiscal_year.name }} • {{ prev_app.bursary_category.name }}
+                                            </div>
+                                        </div>
+                                        <span class="document-badge {% if prev_app.status == 'approved' %}badge-verified{% elif prev_app.status == 'rejected' %}badge-pending{% else %}badge-pending{% endif %}">
+                                            {{ prev_app.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px;">
+                                        <div>
+                                            <span style="color: #64748B;">Requested:</span>
+                                            <strong>KES {{ prev_app.amount_requested|floatformat:0|intcomma }}</strong>
+                                        </div>
+                                        {% if prev_app.allocation %}
+                                        <div>
+                                            <span style="color: #64748B;">Allocated:</span>
+                                            <strong style="color: #27ae60;">KES {{ prev_app.allocation.amount_allocated|floatformat:0|intcomma }}</strong>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <span style="color: #64748B;">Submitted:</span>
+                                            <strong>{{ prev_app.date_submitted|date:"M d, Y" }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Audit Logs -->
+                        {% if audit_logs %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-file-text text-info"></i>
+                                    Audit Trail
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div style="max-height: 500px; overflow-y: auto;">
+                                    {% for log in audit_logs %}
+                                    <div style="padding: 12px; border-bottom: 1px solid #F1F5F9; font-size: 13px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                            <strong style="color: #1E293B;">{{ log.user.first_name }} {{ log.user.last_name }}</strong>
+                                            <span style="color: #64748B; font-size: 12px;">{{ log.timestamp|date:"M d, Y H:i" }}</span>
+                                        </div>
+                                        <div style="color: #64748B;">
+                                            <span style="display: inline-block; padding: 2px 6px; background: #E2E8F0; border-radius: 3px; font-size: 11px; margin-right: 8px;">
+                                                {{ log.get_action_display }}
+                                            </span>
+                                            {{ log.description }}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Notifications -->
+                        {% if notifications %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="bi bi-bell text-warning"></i>
+                                    Notifications Sent
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% for notification in notifications %}
+                                <div style="padding: 12px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0; margin-bottom: 8px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                        <strong style="color: #1E293B; font-size: 13px;">{{ notification.title }}</strong>
+                                        <span style="font-size: 11px; color: #64748B;">{{ notification.created_at|date:"M d, Y" }}</span>
+                                    </div>
+                                    <p style="margin: 0; font-size: 13px; color: #475569;">{{ notification.message }}</p>
+                                    {% if notification.is_read %}
+                                    <div style="margin-top: 6px; font-size: 11px; color: #10B981;">
+                                        <i class="bi bi-check-circle"></i> Read {{ notification.read_at|timesince }} ago
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Sidebar Content -->
-            <div class="sidebar-content">
-                <!-- Applicant Information Card -->
-                <div class="card-custom">
-                    <div class="card-header-custom">
-                        <h5 class="card-title-custom">
+            <!-- Right Sidebar -->
+            <div>
+                <!-- Applicant Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
                             <i class="bi bi-person text-primary"></i>
-                            Applicant Information
+                            Applicant Details
                         </h5>
                     </div>
-                    <div class="applicant-header">
-                        <div class="applicant-avatar">
-                            <i class="bi bi-person-fill"></i>
+                    <div style="text-align: center; padding: 24px 20px; border-bottom: 1px solid #F1F5F9;">
+                        <div style="width: 80px; height: 80px; background: rgba(52, 152, 219, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                            <i class="bi bi-person-fill" style="font-size: 36px; color: #3498db;"></i>
                         </div>
-                        <div class="applicant-name">{{ application.applicant.user.first_name }} {{ application.applicant.user.last_name }}</div>
-                        <div class="applicant-email">{{ application.applicant.user.email }}</div>
+                        <h6 style="font-weight: 600; color: #1E293B; margin-bottom: 4px;">
+                            {{ applicant.user.first_name }} {{ applicant.user.last_name }}
+                        </h6>
+                        <p style="color: #64748B; font-size: 13px; margin: 0;">{{ applicant.user.email }}</p>
                     </div>
-                    <div class="card-body-custom">
+                    <div class="card-body">
                         <div class="info-item" style="margin-bottom: 16px;">
                             <span class="info-label">ID Number</span>
-                            <span class="info-value">{{ application.applicant.id_number }}</span>
+                            <span class="info-value">{{ applicant.id_number }}</span>
                         </div>
                         <div class="info-item" style="margin-bottom: 16px;">
                             <span class="info-label">Gender</span>
-                            <span class="info-value">{{ application.applicant.get_gender_display }}</span>
+                            <span class="info-value">{{ applicant.get_gender_display }}</span>
                         </div>
                         <div class="info-item" style="margin-bottom: 16px;">
-                            <span class="info-label">Ward</span>
-                            <span class="info-value">{{ application.applicant.ward.name }}</span>
+                            <span class="info-label">Date of Birth</span>
+                            <span class="info-value">{{ applicant.date_of_birth|date:"M d, Y" }}</span>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">Phone</span>
-                            <span class="info-value">{{ application.applicant.user.phone_number }}</span>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Phone Number</span>
+                            <span class="info-value">{{ applicant.user.phone_number }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Review History Card -->
-                <div class="card-custom">
-                    <div class="card-header-custom">
-                        <h5 class="card-title-custom">
-                            <i class="bi bi-chat-left-text text-primary"></i>
-                            Review History
+                <!-- Geographic Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bi bi-geo-alt text-danger"></i>
+                            Location Details
                         </h5>
                     </div>
-                    <div class="card-body-custom">
-                        {% if reviews %}
-                            {% for review in reviews %}
-                            <div class="review-item">
-                                <div class="review-header">
-                                    <span class="reviewer-name">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</span>
-                                    <span class="review-date">{{ review.review_date|date:"M d, Y" }}</span>
-                                </div>
-                                <div class="review-recommendation">
-                                    <span class="review-label">Recommendation:</span>
-                                    {% if review.recommendation == 'approve' %}
-                                        <span class="recommendation-badge recommendation-approve">Approve</span>
-                                    {% elif review.recommendation == 'reject' %}
-                                        <span class="recommendation-badge recommendation-reject">Reject</span>
-                                    {% else %}
-                                        <span class="recommendation-badge recommendation-more-info">More Info</span>
-                                    {% endif %}
-                                </div>
-                                {% if review.recommended_amount %}
-                                <div class="review-amount">
-                                    <span class="review-label">Recommended Amount:</span>
-                                    <span class="info-value">KSh {{ review.recommended_amount|floatformat:0|intcomma }}</span>
-                                </div>
-                                {% endif %}
-                                <p class="review-comments">{{ review.comments }}</p>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                        <div class="empty-state" style="padding: 40px 20px;">
-                            <div class="empty-icon" style="font-size: 36px;">
-                                <i class="bi bi-chat-left"></i>
-                            </div>
-                            <p class="empty-text">No reviews yet</p>
+                    <div class="card-body">
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">County</span>
+                            <span class="info-value">{{ geographic_info.county }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Constituency</span>
+                            <span class="info-value">{{ geographic_info.constituency }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Ward</span>
+                            <span class="info-value">{{ geographic_info.ward }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Location</span>
+                            <span class="info-value">{{ geographic_info.location }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Sub-Location</span>
+                            <span class="info-value">{{ geographic_info.sublocation }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Village</span>
+                            <span class="info-value">{{ geographic_info.village }}</span>
+                        </div>
+                        {% if geographic_info.full_address %}
+                        <div class="info-item">
+                            <span class="info-label">Physical Address</span>
+                            <span class="info-value" style="line-height: 1.5;">{{ geographic_info.full_address }}</span>
                         </div>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Allocation Info Card -->
-                {% if application.allocation %}
-                <div class="card-custom">
-                    <div class="card-header-custom">
-                        <h5 class="card-title-custom">
-                            <i class="bi bi-wallet2 text-primary"></i>
+                <!-- Allocation Information -->
+                {% if allocation %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bi bi-wallet2 text-success"></i>
                             Allocation Details
                         </h5>
                     </div>
-                    <div class="card-body-custom">
-                        <div class="allocation-info">
-                            <div class="allocation-item">
-                                <span class="info-label">Amount Allocated</span>
-                                <span class="info-value" style="color: #27ae60; font-size: 18px; font-weight: 600;">
-                                    KSh {{ application.allocation.amount_allocated|floatformat:0|intcomma }}
+                    <div class="card-body">
+                        <div style="text-align: center; padding: 16px; background: #D1FAE5; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="font-size: 28px; font-weight: 700; color: #065F46;">
+                                KES {{ allocation.amount_allocated|floatformat:0|intcomma }}
+                            </div>
+                            <div style="font-size: 12px; color: #10B981; font-weight: 600; text-transform: uppercase;">
+                                Amount Allocated
+                            </div>
+                        </div>
+
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Allocation Date</span>
+                            <span class="info-value">{{ allocation.allocation_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Approved By</span>
+                            <span class="info-value">{{ allocation.approved_by.first_name }} {{ allocation.approved_by.last_name }}</span>
+                        </div>
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Payment Method</span>
+                            <span class="info-value">{{ allocation.get_payment_method_display }}</span>
+                        </div>
+                        {% if allocation.cheque_number %}
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Cheque Number</span>
+                            <span class="info-value">{{ allocation.cheque_number }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Disbursement Status</span>
+                            {% if allocation.is_disbursed %}
+                                <span class="document-badge badge-verified">
+                                    <i class="bi bi-check-circle"></i> Disbursed
                                 </span>
-                            </div>
-                            <div class="allocation-item">
-                                <span class="info-label">Allocation Date</span>
-                                <span class="info-value">{{ application.allocation.allocation_date|date:"M d, Y" }}</span>
-                            </div>
-                            <div class="allocation-item">
-                                <span class="info-label">Approved By</span>
-                                <span class="info-value">{{ application.allocation.approved_by.first_name }} {{ application.allocation.approved_by.last_name }}</span>
-                            </div>
-                            <div class="allocation-item">
-                                <span class="info-label">Disbursement Status</span>
-                                {% if application.allocation.is_disbursed %}
-                                    <span class="status-badge status-approved" style="display: inline-block;">Disbursed</span>
-                                {% else %}
-                                    <span class="status-badge status-submitted" style="display: inline-block;">Pending</span>
-                                {% endif %}
-                            </div>
-                            {% if application.allocation.is_disbursed %}
-                            <div class="allocation-item">
-                                <span class="info-label">Disbursement Date</span>
-                                <span class="info-value">{{ application.allocation.disbursement_date|date:"M d, Y" }}</span>
-                            </div>
-                            <div class="allocation-item">
-                                <span class="info-label">Cheque Number</span>
-                                <span class="info-value">{{ application.allocation.cheque_number }}</span>
-                            </div>
+                            {% else %}
+                                <span class="document-badge badge-pending">
+                                    <i class="bi bi-clock"></i> Pending
+                                </span>
                             {% endif %}
                         </div>
+                        {% if allocation.is_disbursed %}
+                        <div class="info-item" style="margin-bottom: 16px;">
+                            <span class="info-label">Disbursed Date</span>
+                            <span class="info-value">{{ allocation.disbursement_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Disbursed By</span>
+                            <span class="info-value">{{ allocation.disbursed_by.first_name }} {{ allocation.disbursed_by.last_name }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if bulk_cheque_allocation %}
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;">
+                        <div style="padding: 12px; background: #DBEAFE; border-radius: 6px;">
+                            <div style="font-size: 12px; font-weight: 600; color: #1E40AF; margin-bottom: 8px; text-transform: uppercase;">
+                                <i class="bi bi-collection"></i> Bulk Cheque
+                            </div>
+                            <div style="font-size: 13px; color: #1E40AF;">
+                                <strong>Cheque #:</strong> {{ bulk_cheque_allocation.bulk_cheque.cheque_number }}<br>
+                                <strong>Holder:</strong> {{ bulk_cheque_allocation.bulk_cheque.cheque_holder_name }}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bi bi-lightning text-warning"></i>
+                            Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body" style="display: flex; flex-direction: column; gap: 10px;">
+                        {% if application.status in 'submitted,under_review' %}
+                        <a href="{% url 'application_review' application.id %}" class="btn btn-success" style="justify-content: center;">
+                            <i class="bi bi-clipboard-check"></i> Review Application
+                        </a>
+                        {% endif %}
+                        
+                        {% if application.status == 'approved' and not allocation %}
+                        <a href="#" class="btn btn-primary" style="justify-content: center;">
+                            <i class="bi bi-cash-coin"></i> Create Allocation
+                        </a>
+                        {% endif %}
+
+                        <button onclick="window.print()" class="btn btn-secondary" style="justify-content: center;">
+                            <i class="bi bi-printer"></i> Print Details
+                        </button>
+
+                        <a href="mailto:{{ applicant.user.email }}" class="btn btn-secondary" style="justify-content: center;">
+                            <i class="bi bi-envelope"></i> Send Email
+                        </a>
+
+                        <a href="tel:{{ applicant.user.phone_number }}" class="btn btn-secondary" style="justify-content: center;">
+                            <i class="bi bi-telephone"></i> Call Applicant
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1131,7 +1808,7 @@
     <div class="modal-dialog">
         <div class="modal-header-custom">
             <div class="modal-title-custom">
-                <button type="button" class="btn-close-custom" onclick="closeModal()">&times;</button>
+                <button type="button" class="btn-close-custom" onclick="closeDocModal()">&times;</button>
                 <div>
                     <span id="documentPreviewTitle">Document Preview</span>
                     <span class="modal-subtitle" id="documentPreviewSubtitle">Uploaded on Date</span>
@@ -1148,9 +1825,8 @@
                 <button type="button" class="modal-btn" id="rotateBtn" title="Rotate">
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
-                <a id="downloadDocumentBtn" href="#" class="btn-primary-custom" download style="padding: 8px 16px; font-size: 13px;">
-                    <i class="bi bi-download"></i>
-                    Download
+                <a id="downloadDocumentBtn" href="#" class="btn btn-primary" download style="padding: 8px 16px; font-size: 13px; text-decoration: none;">
+                    <i class="bi bi-download"></i> Download
                 </a>
             </div>
         </div>
@@ -1160,130 +1836,131 @@
             </div>
             <div class="preview-container" id="previewContainer">
                 <iframe id="documentPreviewFrame" class="preview-iframe" style="display: none;"></iframe>
-                <img id="documentPreviewImage" class="preview-image" style="display: none;">
+                <img id="documentPreviewImage" class="preview-image" style="display: none;" alt="Document preview">
             </div>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab switching functionality
-        const tabLinks = document.querySelectorAll('.tab-link');
-        const tabContents = document.querySelectorAll('.tab-content');
+function switchTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
 
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                const targetTab = this.getAttribute('data-tab');
+    // Remove active class from all buttons
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => button.classList.remove('active'));
 
-                // Remove active class from all tabs
-                tabLinks.forEach(l => l.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
+    // Show selected tab content
+    document.getElementById(tabName + '-tab').classList.add('active');
 
-                // Add active class to clicked tab
-                this.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
+    // Add active class to clicked button
+    event.target.closest('.tab-button').classList.add('active');
+}
+
+// Document Preview Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const documentCards = document.querySelectorAll('.document-card');
+    const previewModal = document.getElementById('documentPreviewModal');
+    const previewFrame = document.getElementById('documentPreviewFrame');
+    const previewImage = document.getElementById('documentPreviewImage');
+    const downloadBtn = document.getElementById('downloadDocumentBtn');
+    const previewTitle = document.getElementById('documentPreviewTitle');
+    const previewSubtitle = document.getElementById('documentPreviewSubtitle');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    // Zoom and rotation controls
+    let currentZoom = 100;
+    let currentRotation = 0;
+
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const rotateBtn = document.getElementById('rotateBtn');
+    const zoomLevel = document.getElementById('zoomLevel');
+
+    // Handle preview button clicks
+    documentCards.forEach(card => {
+        const previewBtn = card.querySelector('.preview-doc-btn');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openDocumentPreview(card);
             });
-        });
+        }
+    });
 
-        // Document preview functionality
-        const documentCards = document.querySelectorAll('.document-card');
-        const previewModal = document.getElementById('documentPreviewModal');
-        const previewFrame = document.getElementById('documentPreviewFrame');
-        const previewImage = document.getElementById('documentPreviewImage');
-        const downloadBtn = document.getElementById('downloadDocumentBtn');
-        const previewTitle = document.getElementById('documentPreviewTitle');
-        const previewSubtitle = document.getElementById('documentPreviewSubtitle');
-        const loadingSpinner = document.getElementById('loadingSpinner');
+    function openDocumentPreview(card) {
+        const documentUrl = card.getAttribute('data-document-url');
+        const documentName = card.getAttribute('data-document-name');
+        const documentType = card.getAttribute('data-document-type');
+        const uploadDate = card.getAttribute('data-upload-date');
 
-        // Zoom and rotation controls
-        let currentZoom = 100;
-        let currentRotation = 0;
+        // Set modal content
+        previewTitle.textContent = documentName;
+        previewSubtitle.textContent = `Uploaded on ${uploadDate}`;
+        downloadBtn.href = documentUrl;
+        downloadBtn.download = documentName;
 
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
-        const rotateBtn = document.getElementById('rotateBtn');
-        const zoomLevel = document.getElementById('zoomLevel');
+        // Show loading
+        loadingSpinner.style.display = 'block';
+        previewFrame.style.display = 'none';
+        previewImage.style.display = 'none';
 
-        // Handle preview button clicks
-        documentCards.forEach(card => {
-            const previewBtn = card.querySelector('.preview-btn');
-            if (previewBtn) {
-                previewBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    openDocumentPreview(card);
-                });
-            }
-        });
+        // Reset zoom and rotation
+        currentZoom = 100;
+        currentRotation = 0;
+        updateZoomLevel();
 
-        function openDocumentPreview(card) {
-            const documentUrl = card.getAttribute('data-document-url');
-            const documentName = card.getAttribute('data-document-name');
-            const documentType = card.getAttribute('data-document-type');
-            const uploadDate = card.getAttribute('data-upload-date');
+        if (documentType === 'image') {
+            showImagePreview(documentUrl);
+        } else if (documentType === 'pdf') {
+            showPDFPreview(documentUrl);
+        } else {
+            showDocumentPreview(documentUrl);
+        }
 
-            // Set modal content
-            previewTitle.textContent = documentName;
-            previewSubtitle.textContent = `Uploaded on ${uploadDate}`;
-            downloadBtn.href = documentUrl;
-            downloadBtn.download = documentName;
+        previewModal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
 
-            // Show loading
-            loadingSpinner.style.display = 'block';
+    function showImagePreview(url) {
+        previewImage.onload = function() {
+            loadingSpinner.style.display = 'none';
             previewFrame.style.display = 'none';
+            previewImage.style.display = 'block';
+            applyImageTransform();
+        };
+        previewImage.onerror = function() {
+            loadingSpinner.style.display = 'none';
+            alert('Error loading image');
+        };
+        previewImage.src = url;
+    }
+
+    function showPDFPreview(url) {
+        const fullUrl = window.location.origin + url;
+        previewFrame.onload = function() {
+            loadingSpinner.style.display = 'none';
+            previewFrame.style.display = 'block';
             previewImage.style.display = 'none';
+        };
+        previewFrame.src = fullUrl + '#toolbar=0&navpanes=0&scrollbar=0';
+    }
 
-            // Reset zoom and rotation
-            currentZoom = 100;
-            currentRotation = 0;
-            updateZoomLevel();
+    function showDocumentPreview(url) {
+        const fullUrl = window.location.origin + url;
+        const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+        previewFrame.onload = function() {
+            loadingSpinner.style.display = 'none';
+            previewFrame.style.display = 'block';
+            previewImage.style.display = 'none';
+        };
+        previewFrame.src = viewerUrl;
+    }
 
-            if (documentType === 'image') {
-                showImagePreview(documentUrl);
-            } else if (documentType === 'pdf') {
-                showPDFPreview(documentUrl);
-            } else {
-                showDocumentPreview(documentUrl);
-            }
-
-            previewModal.classList.add('show');
-        }
-
-        function showImagePreview(url) {
-            previewImage.onload = function() {
-                loadingSpinner.style.display = 'none';
-                previewFrame.style.display = 'none';
-                previewImage.style.display = 'block';
-                applyImageTransform();
-            };
-            previewImage.src = url;
-        }
-
-        function showPDFPreview(url) {
-            const fullUrl = window.location.origin + url;
-            previewFrame.onload = function() {
-                loadingSpinner.style.display = 'none';
-                previewFrame.style.display = 'block';
-                previewImage.style.display = 'none';
-            };
-            previewFrame.src = fullUrl + '#toolbar=0&navpanes=0&scrollbar=0';
-        }
-
-        function showDocumentPreview(url) {
-            const fullUrl = window.location.origin + url;
-            const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
-            previewFrame.onload = function() {
-                loadingSpinner.style.display = 'none';
-                previewFrame.style.display = 'block';
-                previewImage.style.display = 'none';
-            };
-            previewFrame.src = viewerUrl;
-        }
-
-        // Zoom controls
+    // Zoom controls
+    if (zoomInBtn) {
         zoomInBtn.addEventListener('click', function() {
             if (currentZoom < 300) {
                 currentZoom += 25;
@@ -1291,7 +1968,9 @@
                 applyImageTransform();
             }
         });
+    }
 
+    if (zoomOutBtn) {
         zoomOutBtn.addEventListener('click', function() {
             if (currentZoom > 50) {
                 currentZoom -= 25;
@@ -1299,65 +1978,71 @@
                 applyImageTransform();
             }
         });
+    }
 
+    if (rotateBtn) {
         rotateBtn.addEventListener('click', function() {
             currentRotation = (currentRotation + 90) % 360;
             applyImageTransform();
         });
+    }
 
-        function updateZoomLevel() {
+    function updateZoomLevel() {
+        if (zoomLevel) {
             zoomLevel.textContent = `${currentZoom}%`;
         }
+    }
 
-        function applyImageTransform() {
-            if (previewImage.style.display !== 'none') {
-                const scaleValue = currentZoom / 100;
-                previewImage.style.transform = `scale(${scaleValue}) rotate(${currentRotation}deg)`;
-            }
+    function applyImageTransform() {
+        if (previewImage && previewImage.style.display !== 'none') {
+            const scaleValue = currentZoom / 100;
+            previewImage.style.transform = `scale(${scaleValue}) rotate(${currentRotation}deg)`;
         }
+    }
 
-        // Close modal on background click
+    // Close modal on background click
+    if (previewModal) {
         previewModal.addEventListener('click', function(e) {
             if (e.target === previewModal) {
-                closeModal();
+                closeDocModal();
             }
         });
+    }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (previewModal.classList.contains('show')) {
-                switch(e.key) {
-                    case 'Escape':
-                        closeModal();
-                        break;
-                    case '+':
-                    case '=':
-                        e.preventDefault();
-                        zoomInBtn.click();
-                        break;
-                    case '-':
-                        e.preventDefault();
-                        zoomOutBtn.click();
-                        break;
-                    case 'r':
-                    case 'R':
-                        e.preventDefault();
-                        rotateBtn.click();
-                        break;
-                }
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (previewModal && previewModal.classList.contains('show')) {
+            switch(e.key) {
+                case 'Escape':
+                    closeDocModal();
+                    break;
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    if (zoomInBtn) zoomInBtn.click();
+                    break;
+                case '-':
+                    e.preventDefault();
+                    if (zoomOutBtn) zoomOutBtn.click();
+                    break;
+                case 'r':
+                case 'R':
+                    e.preventDefault();
+                    if (rotateBtn) rotateBtn.click();
+                    break;
             }
-        });
+        }
     });
 
     // Close modal function
-    function closeModal() {
-        const modal = document.getElementById('documentPreviewModal');
-        const previewFrame = document.getElementById('documentPreviewFrame');
-        const previewImage = document.getElementById('documentPreviewImage');
-        
-        modal.classList.remove('show');
-        previewFrame.src = '';
-        previewImage.src = '';
-    }
+    window.closeDocModal = function() {
+        if (previewModal) {
+            previewModal.classList.remove('show');
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        if (previewFrame) previewFrame.src = '';
+        if (previewImage) previewImage.src = '';
+    };
+});
 </script>
 {% endblock %}
