@@ -1,12 +1,30 @@
 {% extends 'student_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}My Profile - Kiharu Bursary{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
+    /* Custom Column Widths - 4:8 ratio */
+    .profile-sidebar-col {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+
+    .profile-content-col {
+        flex: 0 0 66.666667%;
+        max-width: 66.666667%;
+    }
+
+    @media (max-width: 991px) {
+        .profile-sidebar-col,
+        .profile-content-col {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -478,14 +496,18 @@
     </nav>
 
     <div class="row">
-        <!-- Profile Sidebar -->
-        <div class="col-md-4 col-lg-3">
+        <!-- Profile Sidebar - 4 columns -->
+        <div class="col-md-12 col-lg-4 profile-sidebar-col">
             <div class="profile-sidebar">
                 <!-- Avatar Section -->
                 <div class="profile-avatar-section">
                     <div class="avatar-wrapper">
-                        <img src="{% static 'images/avatar.jpg' %}" alt="Profile Avatar" class="avatar-image">
-                        <a href="#" class="avatar-edit-btn">
+                        {% if applicant.profile_picture %}
+                            <img src="{{ applicant.profile_picture.url }}" alt="Profile Avatar" class="avatar-image">
+                        {% else %}
+                            <img src="{% static 'images/default-avatar.png' %}" alt="Profile Avatar" class="avatar-image" onerror="this.src='https://ui-avatars.com/api/?name={{ applicant.user.first_name }}+{{ applicant.user.last_name }}&background=3498db&color=fff&size=120'">
+                        {% endif %}
+                        <a href="{% url 'student_profile_create' %}" class="avatar-edit-btn" title="Edit Profile">
                             <i class="bi bi-camera"></i>
                         </a>
                     </div>
@@ -505,32 +527,38 @@
                 <div class="progress-section">
                     <div class="progress-label">Profile Completion</div>
                     <div class="progress-bar-custom">
-                        <div class="progress-fill" style="width: 85%;"></div>
+                        <div class="progress-fill" style="width: {{ completion_percentage }}%;"></div>
                     </div>
-                    <div class="progress-text">85% complete</div>
+                    <div class="progress-text">{{ completion_percentage }}% complete</div>
                 </div>
 
                 <!-- Stats Section -->
                 <div class="stats-section">
                     <h6>Quick Stats</h6>
                     <div class="stat-item">
-                        <span class="stat-label">Guardians</span>
-                        <span class="stat-value">{{ guardians|length }}</span>
+                        <span class="stat-label">
+                            <i class="bi bi-people me-1"></i> Guardians
+                        </span>
+                        <span class="stat-value">{{ guardians.count }}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Siblings</span>
-                        <span class="stat-value">{{ siblings|length }}</span>
+                        <span class="stat-label">
+                            <i class="bi bi-person-plus me-1"></i> Siblings
+                        </span>
+                        <span class="stat-value">{{ siblings.count }}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Applications</span>
-                        <span class="stat-value">3</span>
+                        <span class="stat-label">
+                            <i class="bi bi-file-text me-1"></i> Applications
+                        </span>
+                        <span class="stat-value">{{ applications_count|default:0 }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-8 col-lg-9">
+        <!-- Main Content - 8 columns -->
+        <div class="col-md-12 col-lg-8 profile-content-col">
             <div class="section-container" style="padding: 0; overflow: hidden;">
                 <!-- Tab Navigation -->
                 <div class="tab-navigation">
@@ -631,10 +659,26 @@
                             <span class="section-icon">
                                 <i class="bi bi-geo-alt"></i>
                             </span>
-                            Location Information
+                            Administrative Location
                         </h5>
 
                         <div class="info-grid">
+                            <div class="info-card">
+                                <div class="info-content">
+                                    <div class="info-label">County</div>
+                                    <div class="info-value">{{ applicant.county.name|default:"Not specified" }}</div>
+                                </div>
+                                <i class="bi bi-flag info-icon"></i>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-content">
+                                    <div class="info-label">Constituency</div>
+                                    <div class="info-value">{{ applicant.constituency.name|default:"Not specified" }}</div>
+                                </div>
+                                <i class="bi bi-map info-icon"></i>
+                            </div>
+
                             <div class="info-card">
                                 <div class="info-content">
                                     <div class="info-label">Ward</div>
@@ -716,7 +760,14 @@
                                         <div class="guardian-avatar">
                                             <i class="bi bi-person"></i>
                                         </div>
-                                        <div class="guardian-name">{{ guardian.name }}</div>
+                                        <div style="flex: 1;">
+                                            <div class="guardian-name">{{ guardian.name }}</div>
+                                            {% if guardian.is_primary_contact %}
+                                                <span class="special-needs-badge" style="background: rgba(16, 185, 129, 0.1); color: #10B981; font-size: 11px;">
+                                                    <i class="bi bi-star-fill"></i> Primary Contact
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="guardian-details">
                                         <div class="guardian-detail-item">
@@ -733,16 +784,32 @@
                                             <span class="detail-value">{{ guardian.email }}</span>
                                         </div>
                                         {% endif %}
+                                        {% if guardian.id_number %}
+                                        <div class="guardian-detail-item">
+                                            <span class="detail-label">ID Number:</span>
+                                            <span class="detail-value">{{ guardian.id_number }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="guardian-detail-item">
+                                            <span class="detail-label">Employment:</span>
+                                            <span class="detail-value">{{ guardian.get_employment_status_display }}</span>
+                                        </div>
                                         {% if guardian.occupation %}
                                         <div class="guardian-detail-item">
                                             <span class="detail-label">Occupation:</span>
                                             <span class="detail-value">{{ guardian.occupation }}</span>
                                         </div>
                                         {% endif %}
+                                        {% if guardian.employer %}
+                                        <div class="guardian-detail-item">
+                                            <span class="detail-label">Employer:</span>
+                                            <span class="detail-value">{{ guardian.employer }}</span>
+                                        </div>
+                                        {% endif %}
                                         {% if guardian.monthly_income %}
                                         <div class="guardian-detail-item">
                                             <span class="detail-label">Monthly Income:</span>
-                                            <span class="detail-value">KES {{ guardian.monthly_income|floatformat:2 }}</span>
+                                            <span class="detail-value">KES {{ guardian.monthly_income|floatformat:2|intcomma }}</span>
                                         </div>
                                         {% endif %}
                                     </div>
@@ -755,7 +822,7 @@
                                     <i class="bi bi-people"></i>
                                 </div>
                                 <h3 class="empty-title">No Guardian Information</h3>
-                                <p class="empty-text">Add guardian information to complete your profile</p>
+                                <p class="empty-text">Add guardian/parent information to complete your profile</p>
                                 <a href="{% url 'guardian_create' %}" class="btn btn-primary">
                                     <i class="bi bi-plus me-1"></i> Add Guardian
                                 </a>
@@ -786,6 +853,7 @@
                                             <th><i class="bi bi-calendar me-1"></i> Age</th>
                                             <th><i class="bi bi-mortarboard me-1"></i> Education Level</th>
                                             <th><i class="bi bi-building me-1"></i> School</th>
+                                            <th><i class="bi bi-check-circle me-1"></i> Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -795,12 +863,27 @@
                                             <td>{{ sibling.age }} years</td>
                                             <td>{{ sibling.education_level }}</td>
                                             <td>{{ sibling.school_name|default:"Not specified" }}</td>
+                                            <td>
+                                                {% if sibling.is_in_school %}
+                                                    <span style="color: #10B981; font-weight: 600;">
+                                                        <i class="bi bi-check-circle-fill"></i> In School
+                                                    </span>
+                                                {% else %}
+                                                    <span style="color: #64748B;">
+                                                        <i class="bi bi-dash-circle-fill"></i> Not in School
+                                                    </span>
+                                                {% endif %}
+                                            </td>
                                         </tr>
+
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
                         {% else %}
+                            
+                            
+                            
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <i class="bi bi-person-plus"></i>
@@ -822,7 +905,7 @@
 
 {% block extra_js %}
 <script>
-    // Tab switching functionality
+    // Tab Navigation Logic
     document.addEventListener('DOMContentLoaded', function() {
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabPanes = document.querySelectorAll('.tab-pane');
@@ -837,9 +920,9 @@
 
                 // Add active class to clicked button and show corresponding pane
                 this.classList.add('active');
-                document.getElementById(targetTab + '-pane').style.display = 'block';
+                document.getElementById(`${targetTab}-pane`).style.display = 'block';
             });
         });
-    });
+    }); 
 </script>
 {% endblock %}

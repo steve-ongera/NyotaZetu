@@ -4412,20 +4412,75 @@ def student_profile_create(request):
 @login_required
 def student_profile_view(request):
     """
-    View student profile details
+    View student profile details with enhanced information
     """
     try:
         applicant = request.user.applicant_profile
     except Applicant.DoesNotExist:
+        messages.warning(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
     
-    guardians = Guardian.objects.filter(applicant=applicant)
-    siblings = SiblingInformation.objects.filter(applicant=applicant)
+    # Get guardians ordered by primary contact first
+    guardians = Guardian.objects.filter(applicant=applicant).order_by('-is_primary_contact', 'name')
     
+    # Get siblings ordered by school status and age
+    siblings = SiblingInformation.objects.filter(applicant=applicant).order_by('-is_in_school', '-age')
+    
+    # Get applications count for this applicant
+    applications_count = Application.objects.filter(applicant=applicant).count()
+    
+    # Calculate profile completion percentage
+    completion_score = 0
+    total_fields = 14  # Total weighted fields to check
+    
+    # Personal information fields (6 fields)
+    if applicant.user.first_name and applicant.user.first_name.strip():
+        completion_score += 1
+    if applicant.user.email and applicant.user.email.strip():
+        completion_score += 1
+    if applicant.gender:
+        completion_score += 1
+    if applicant.date_of_birth:
+        completion_score += 1
+    if applicant.id_number and applicant.id_number.strip():
+        completion_score += 1
+    if applicant.user.phone_number and applicant.user.phone_number.strip():
+        completion_score += 1
+    
+    # Location information fields (6 fields)
+    if applicant.county:
+        completion_score += 1
+    if applicant.constituency:
+        completion_score += 1
+    if applicant.ward:
+        completion_score += 1
+    if applicant.location:
+        completion_score += 1
+    if applicant.sublocation:
+        completion_score += 1
+    if applicant.village:
+        completion_score += 1
+    
+    # Guardian information (1 field - weighted)
+    if guardians.exists():
+        completion_score += 1
+    
+    # Sibling information (1 field - weighted)
+    if siblings.exists():
+        completion_score += 1
+    
+    # Calculate completion percentage
+    completion_percentage = round((completion_score / total_fields) * 100)
+    
+    # Prepare context
     context = {
         'applicant': applicant,
         'guardians': guardians,
         'siblings': siblings,
+        'applications_count': applications_count,
+        'completion_percentage': completion_percentage,
+        'completion_score': completion_score,
+        'total_fields': total_fields,
     }
     
     return render(request, 'students/profile_view.html', context)
