@@ -209,6 +209,13 @@ If you didn't request this code, please contact support immediately.
 
 # Authentication Views
 def login_view(request):
+    # Check if session expired (from middleware)
+    session_expired = request.session.pop('session_expired', False)
+    redirect_after_login = request.session.get('redirect_after_login')
+    
+    # Get the 'next' parameter from URL
+    next_url = request.GET.get('next', redirect_after_login)
+    
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -221,11 +228,11 @@ def login_view(request):
         is_locked, account_lock, user_obj = check_account_lock(username, ip_address)
         if is_locked:
             messages.error(request, 'Account is temporarily locked due to multiple failed attempts. Please try again later.')
-            return render(request, 'auth/login.html')
+            return render(request, 'auth/login.html', {'next': next_url})
         
         # If 2FA code is provided, verify it
         if tfa_code:
-            return handle_tfa_verification(request, username, tfa_code, ip_address)
+            return handle_tfa_verification(request, username, tfa_code, ip_address, next_url)
         
         # Regular authentication
         user = authenticate(request, username=username, password=password)
@@ -249,25 +256,39 @@ def login_view(request):
             
             if user.user_type in ['admin', 'reviewer', 'finance']:
                 # Require 2FA for admin users
-                session_key = get_session_key(request)  # Fixed: Ensure session exists
+                session_key = get_session_key(request)
                 tfa_code_obj = generate_tfa_code(user, ip_address, session_key)
                 
                 # Store pending login data in session
                 request.session['pending_login_user_id'] = user.id
                 request.session['pending_login_time'] = timezone.now().isoformat()
                 request.session['tfa_code_id'] = tfa_code_obj.id
+                request.session['pending_next_url'] = next_url  # Store next URL
                 
                 messages.info(request, 'Verification code sent to your email. Please check and enter the code.')
                 return render(request, 'auth/login.html', {
                     'show_tfa': True,
                     'username': username,
                     'expires_at': tfa_code_obj.expires_at.isoformat(),
+                    'next': next_url,
                 })
             
             elif user.user_type == 'applicant':
                 # Direct login for applicants
                 login(request, user)
-                return redirect('student_dashboard')
+                
+                # Initialize session activity tracking
+                request.session['last_activity'] = timezone.now().isoformat()
+                
+                # Clear the redirect flag and get redirect URL
+                request.session.pop('redirect_after_login', None)
+                
+                # Redirect to next URL or default dashboard
+                if next_url and next_url != '/':
+                    messages.success(request, 'Welcome back! You were redirected to your previous page.')
+                    return redirect(next_url)
+                else:
+                    return redirect('student_dashboard')
         else:
             # Handle failed login
             was_locked = handle_failed_login(username, ip_address, user_agent)
@@ -276,14 +297,20 @@ def login_view(request):
             else:
                 messages.error(request, 'Invalid credentials or insufficient permissions')
     
-    return render(request, 'auth/login.html')
+    # Show session expired message if applicable
+    if session_expired:
+        messages.warning(request, 'Your session expired due to inactivity. Please log in again.')
+    
+    return render(request, 'auth/login.html', {'next': next_url})
 
-def handle_tfa_verification(request, username, tfa_code, ip_address):
-    """Handle 2FA code verification"""
+
+def handle_tfa_verification(request, username, tfa_code, ip_address, next_url=None):
+    """Handle 2FA code verification with redirect support"""
     try:
         # Get pending login data from session
         pending_user_id = request.session.get('pending_login_user_id')
         tfa_code_id = request.session.get('tfa_code_id')
+        stored_next_url = request.session.get('pending_next_url', next_url)
         
         if not pending_user_id or not tfa_code_id:
             messages.error(request, 'Session expired. Please login again.')
@@ -299,6 +326,7 @@ def handle_tfa_verification(request, username, tfa_code, ip_address):
                 'show_tfa': True,
                 'username': username,
                 'code_expired': True,
+                'next': stored_next_url,
             })
         
         # Verify the code
@@ -310,9 +338,14 @@ def handle_tfa_verification(request, username, tfa_code, ip_address):
             request.session.pop('pending_login_user_id', None)
             request.session.pop('pending_login_time', None)
             request.session.pop('tfa_code_id', None)
+            request.session.pop('pending_next_url', None)
+            request.session.pop('redirect_after_login', None)
             
             # Log the user in
             login(request, user)
+            
+            # Initialize session activity tracking
+            request.session['last_activity'] = timezone.now().isoformat()
             
             # Send successful login notification
             message = f"""
@@ -327,8 +360,11 @@ If this wasn't you, please contact support immediately.
             
             create_security_notification(user, 'successful_login', ip_address, message)
             
-            # Redirect based on user type
-            if user.user_type == 'admin':
+            # Redirect based on user type or stored URL
+            if stored_next_url and stored_next_url != '/':
+                messages.success(request, 'Welcome back! You were redirected to your previous page.')
+                return redirect(stored_next_url)
+            elif user.user_type == 'admin':
                 return redirect('admin_dashboard')
             elif user.user_type == 'reviewer':
                 return redirect('reviewer_dashboard')
@@ -340,6 +376,7 @@ If this wasn't you, please contact support immediately.
                 'show_tfa': True,
                 'username': username,
                 'expires_at': code_obj.expires_at.isoformat(),
+                'next': stored_next_url,
             })
     
     except Exception as e:

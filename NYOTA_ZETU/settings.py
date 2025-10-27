@@ -71,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'main_application.middleware.SessionTimeoutMiddleware',  # Custom session timeout middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -188,14 +189,28 @@ CDF_WEBSITE_URL = 'https://kiharucdf.go.ke'
 # For Gmail specifically, you might need:
 EMAIL_TIMEOUT = 10
 
-# Security Settings
+# ========================================
+# AUTHENTICATION & SESSION SETTINGS (FIXED)
+# ========================================
+
+# Fix the LOGIN_URL to point to your actual login view
+LOGIN_URL = '/'  # Changed from default '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-# Session Configuration
-SESSION_COOKIE_AGE = 3600  # 1 hour
+# Session Configuration - Enhanced for better timeout handling
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_SAVE_EVERY_REQUEST = True
+SESSION_SAVE_EVERY_REQUEST = True  # Updates session on every request
+
+# Add these additional session settings for better security
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_COOKIE_NAME = 'nyotazetu_sessionid'  # Custom session cookie name
+
+# Session timeout warning (optional - for frontend implementation)
+SESSION_TIMEOUT_WARNING = 300  # Show warning 5 minutes before expiry
+
 
 # Logging Configuration
 LOGGING = {
