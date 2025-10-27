@@ -7290,3 +7290,938 @@ def custom_page_not_found(request, exception):
 
 def custom_server_error(request):
     return render(request, 'errors/500.html', status=500)
+
+"""
+Disbursement Round Management Views
+Add these views to your views.py file
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q, Sum, Count
+from django.core.paginator import Paginator
+from django.utils import timezone
+from .models import (
+    DisbursementRound, FiscalYear, Application, Allocation, 
+    Ward, BursaryCategory
+)
+import json
+
+
+# Helper function to check if user is admin or county admin
+def is_admin_or_county_admin(user):
+    return user.user_type in ['admin', 'county_admin']
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_list(request):
+    """
+    List all disbursement rounds with filtering and search
+    """
+    # Get all fiscal years for filter
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Get query parameters
+    search_query = request.GET.get('search', '').strip()
+    fiscal_year_id = request.GET.get('fiscal_year', '')
+    status_filter = request.GET.get('status', '')
+    
+    # Base queryset
+    rounds = DisbursementRound.objects.select_related('fiscal_year').all()
+    
+    # Apply search filter
+    if search_query:
+        rounds = rounds.filter(
+            Q(name__icontains=search_query) |
+            Q(fiscal_year__name__icontains=search_query)
+        )
+    
+    # Apply fiscal year filter
+    if fiscal_year_id:
+        rounds = rounds.filter(fiscal_year_id=fiscal_year_id)
+    
+    # Apply status filter
+    if status_filter == 'open':
+        rounds = rounds.filter(is_open=True, is_completed=False)
+    elif status_filter == 'completed':
+        rounds = rounds.filter(is_completed=True)
+    elif status_filter == 'closed':
+        rounds = rounds.filter(is_open=False, is_completed=False)
+    
+    # Order by fiscal year and round number
+    rounds = rounds.order_by('-fiscal_year__start_date', '-round_number')
+    
+    # Calculate statistics
+    total_rounds = rounds.count()
+    open_rounds = rounds.filter(is_open=True, is_completed=False).count()
+    completed_rounds = rounds.filter(is_completed=True).count()
+    
+    # Calculate total allocations
+    total_allocated = rounds.aggregate(
+        total=Sum('allocated_amount')
+    )['total'] or 0
+    
+    total_disbursed = rounds.aggregate(
+        total=Sum('disbursed_amount')
+    )['total'] or 0
+    
+    # Pagination
+    paginator = Paginator(rounds, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Add application statistics to each round
+    for round_obj in page_obj:
+        round_obj.total_applications = Application.objects.filter(
+            disbursement_round=round_obj
+        ).count()
+        
+        round_obj.approved_applications = Application.objects.filter(
+            disbursement_round=round_obj,
+            status='approved'
+        ).count()
+        
+        round_obj.disbursed_applications = Application.objects.filter(
+            disbursement_round=round_obj,
+            status='disbursed'
+        ).count()
+    
+    context = {
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'fiscal_years': fiscal_years,
+        'search_query': search_query,
+        'current_fiscal_year': fiscal_year_id,
+        'current_status': status_filter,
+        'total_rounds': total_rounds,
+        'open_rounds': open_rounds,
+        'completed_rounds': completed_rounds,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+    }
+    
+    return render(request, 'admin/disbursement_rounds/list.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_detail(request, round_id):
+    """
+    View detailed information about a specific disbursement round
+    """
+    round_obj = get_object_or_404(
+        DisbursementRound.objects.select_related('fiscal_year'),
+        id=round_id
+    )
+    
+    # Get applications for this round
+    applications = Application.objects.filter(
+        disbursement_round=round_obj
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'bursary_category'
+    )
+    
+    # Application statistics by status
+    status_stats = applications.values('status').annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    )
+    
+    # Applications by ward
+    ward_stats = applications.values(
+        'applicant__ward__name'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    ).order_by('-count')[:10]
+    
+    # Applications by category
+    category_stats = applications.values(
+        'bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    ).order_by('-count')
+    
+    # Allocations for this round
+    allocations = Allocation.objects.filter(
+        application__disbursement_round=round_obj
+    ).select_related('application__applicant__user')
+    
+    # Disbursement statistics
+    total_applications = applications.count()
+    total_approved = applications.filter(status='approved').count()
+    total_disbursed = applications.filter(status='disbursed').count()
+    
+    total_requested = applications.aggregate(
+        Sum('amount_requested')
+    )['amount_requested__sum'] or 0
+    
+    total_allocated_amount = allocations.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    total_disbursed_amount = allocations.filter(
+        is_disbursed=True
+    ).aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    # Gender distribution
+    gender_stats = applications.values(
+        'applicant__gender'
+    ).annotate(count=Count('id'))
+    
+    # Recent applications (last 10)
+    recent_applications = applications.order_by('-date_submitted')[:10]
+    
+    context = {
+        'round': round_obj,
+        'total_applications': total_applications,
+        'total_approved': total_approved,
+        'total_disbursed': total_disbursed,
+        'total_requested': total_requested,
+        'total_allocated_amount': total_allocated_amount,
+        'total_disbursed_amount': total_disbursed_amount,
+        'status_stats': status_stats,
+        'ward_stats': ward_stats,
+        'category_stats': category_stats,
+        'gender_stats': gender_stats,
+        'recent_applications': recent_applications,
+        'allocations_count': allocations.count(),
+        'balance': round_obj.allocated_amount - total_allocated_amount,
+    }
+    
+    return render(request, 'admin/disbursement_rounds/detail.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_create(request):
+    """
+    Create a new disbursement round
+    """
+    if request.method == 'POST':
+        try:
+            fiscal_year_id = request.POST.get('fiscal_year')
+            round_number = request.POST.get('round_number')
+            name = request.POST.get('name')
+            application_start_date = request.POST.get('application_start_date')
+            application_end_date = request.POST.get('application_end_date')
+            review_deadline = request.POST.get('review_deadline')
+            disbursement_date = request.POST.get('disbursement_date')
+            allocated_amount = request.POST.get('allocated_amount')
+            is_open = request.POST.get('is_open') == 'on'
+            
+            # Validate fiscal year
+            fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+            
+            # Check if round number already exists for this fiscal year
+            if DisbursementRound.objects.filter(
+                fiscal_year=fiscal_year,
+                round_number=round_number
+            ).exists():
+                messages.error(
+                    request,
+                    f'Round {round_number} already exists for {fiscal_year.name}'
+                )
+                return redirect('disbursement_round_create')
+            
+            # Create disbursement round
+            round_obj = DisbursementRound.objects.create(
+                fiscal_year=fiscal_year,
+                round_number=round_number,
+                name=name,
+                application_start_date=application_start_date,
+                application_end_date=application_end_date,
+                review_deadline=review_deadline,
+                disbursement_date=disbursement_date,
+                allocated_amount=allocated_amount,
+                is_open=is_open
+            )
+            
+            messages.success(
+                request,
+                f'Disbursement round "{name}" created successfully!'
+            )
+            return redirect('disbursement_round_detail', round_id=round_obj.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error creating disbursement round: {str(e)}')
+            return redirect('disbursement_round_create')
+    
+    # GET request - show form
+    fiscal_years = FiscalYear.objects.filter(is_active=True).order_by('-start_date')
+    
+    context = {
+        'fiscal_years': fiscal_years,
+    }
+    
+    return render(request, 'admin/disbursement_rounds/create.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_edit(request, round_id):
+    """
+    Edit an existing disbursement round
+    """
+    round_obj = get_object_or_404(DisbursementRound, id=round_id)
+    
+    if request.method == 'POST':
+        try:
+            round_obj.name = request.POST.get('name')
+            round_obj.application_start_date = request.POST.get('application_start_date')
+            round_obj.application_end_date = request.POST.get('application_end_date')
+            round_obj.review_deadline = request.POST.get('review_deadline')
+            round_obj.disbursement_date = request.POST.get('disbursement_date')
+            round_obj.allocated_amount = request.POST.get('allocated_amount')
+            round_obj.is_open = request.POST.get('is_open') == 'on'
+            
+            round_obj.save()
+            
+            messages.success(
+                request,
+                f'Disbursement round "{round_obj.name}" updated successfully!'
+            )
+            return redirect('disbursement_round_detail', round_id=round_obj.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error updating disbursement round: {str(e)}')
+    
+    context = {
+        'round': round_obj,
+    }
+    
+    return render(request, 'admin/disbursement_rounds/edit.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_toggle_status(request, round_id):
+    """
+    Toggle disbursement round open/closed status (AJAX)
+    """
+    if request.method == 'POST':
+        try:
+            round_obj = get_object_or_404(DisbursementRound, id=round_id)
+            
+            # Toggle status
+            round_obj.is_open = not round_obj.is_open
+            round_obj.save()
+            
+            return JsonResponse({
+                'success': True,
+                'is_open': round_obj.is_open,
+                'message': f'Round is now {"open" if round_obj.is_open else "closed"}'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=400)
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_complete(request, round_id):
+    """
+    Mark a disbursement round as completed
+    """
+    if request.method == 'POST':
+        try:
+            round_obj = get_object_or_404(DisbursementRound, id=round_id)
+            
+            # Check if round can be completed
+            if round_obj.is_completed:
+                messages.warning(request, 'This round is already completed.')
+                return redirect('disbursement_round_detail', round_id=round_id)
+            
+            # Mark as completed
+            round_obj.is_completed = True
+            round_obj.is_open = False
+            round_obj.save()
+            
+            messages.success(
+                request,
+                f'Disbursement round "{round_obj.name}" has been marked as completed!'
+            )
+            
+        except Exception as e:
+            messages.error(request, f'Error completing round: {str(e)}')
+    
+    return redirect('disbursement_round_detail', round_id=round_id)
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_delete(request, round_id):
+    """
+    Delete a disbursement round (only if no applications)
+    """
+    if request.method == 'POST':
+        try:
+            round_obj = get_object_or_404(DisbursementRound, id=round_id)
+            
+            # Check if round has applications
+            if Application.objects.filter(disbursement_round=round_obj).exists():
+                messages.error(
+                    request,
+                    'Cannot delete round with existing applications. '
+                    'Please remove all applications first.'
+                )
+                return redirect('disbursement_round_detail', round_id=round_id)
+            
+            # Delete round
+            round_name = round_obj.name
+            round_obj.delete()
+            
+            messages.success(
+                request,
+                f'Disbursement round "{round_name}" deleted successfully!'
+            )
+            return redirect('disbursement_round_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error deleting round: {str(e)}')
+            return redirect('disbursement_round_detail', round_id=round_id)
+    
+    return redirect('disbursement_round_list')
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def disbursement_round_applications(request, round_id):
+    """
+    View all applications for a specific round with filters
+    """
+    round_obj = get_object_or_404(DisbursementRound, id=round_id)
+    
+    # Get query parameters
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '')
+    ward_filter = request.GET.get('ward', '')
+    category_filter = request.GET.get('category', '')
+    
+    # Base queryset
+    applications = Application.objects.filter(
+        disbursement_round=round_obj
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'bursary_category'
+    )
+    
+    # Apply filters
+    if search_query:
+        applications = applications.filter(
+            Q(application_number__icontains=search_query) |
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__id_number__icontains=search_query)
+        )
+    
+    if status_filter:
+        applications = applications.filter(status=status_filter)
+    
+    if ward_filter:
+        applications = applications.filter(applicant__ward_id=ward_filter)
+    
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+    
+    # Order by date submitted
+    applications = applications.order_by('-date_submitted')
+    
+    # Get filter options - Get county from fiscal year instead of user profile
+    # Admin users don't have applicant_profile, so we get county from the round's fiscal year
+    county = round_obj.fiscal_year.county
+    
+    wards = Ward.objects.filter(
+        constituency__county=county
+    ).order_by('name')
+    
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=round_obj.fiscal_year
+    ).order_by('name')
+    
+    # Pagination
+    paginator = Paginator(applications, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'round': round_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'search_query': search_query,
+        'current_status': status_filter,
+        'current_ward': ward_filter,
+        'current_category': category_filter,
+        'wards': wards,
+        'categories': categories,
+    }
+    
+    return render(request, 'admin/disbursement_rounds/applications.html', context)
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.db.models import Q, Sum, Count
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from datetime import datetime
+from .models import (
+    Application, DisbursementRound, FiscalYear, Ward, 
+    BursaryCategory, Institution, Applicant
+)
+
+
+def is_admin_or_county_admin(user):
+    """Check if user is admin or county admin"""
+    return user.is_authenticated and user.user_type in ['admin', 'county_admin']
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def export_applicants_to_excel(request, round_id=None):
+    """
+    Export applicants data to Excel with filters
+    """
+    # Get filters from request
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '')
+    ward_filter = request.GET.get('ward', '')
+    category_filter = request.GET.get('category', '')
+    fiscal_year_filter = request.GET.get('fiscal_year', '')
+    institution_filter = request.GET.get('institution', '')
+    gender_filter = request.GET.get('gender', '')
+    
+    # Base queryset
+    applications = Application.objects.select_related(
+        'applicant__user',
+        'applicant__ward__constituency',
+        'applicant__county',
+        'institution',
+        'bursary_category',
+        'fiscal_year'
+    ).prefetch_related(
+        'applicant__guardians'
+    )
+    
+    # Filter by specific round if provided
+    round_obj = None
+    if round_id:
+        round_obj = get_object_or_404(DisbursementRound, id=round_id)
+        applications = applications.filter(disbursement_round=round_obj)
+    
+    # Apply search filter
+    if search_query:
+        applications = applications.filter(
+            Q(application_number__icontains=search_query) |
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__id_number__icontains=search_query) |
+            Q(applicant__user__email__icontains=search_query) |
+            Q(applicant__user__phone_number__icontains=search_query)
+        )
+    
+    # Apply status filter
+    if status_filter:
+        applications = applications.filter(status=status_filter)
+    
+    # Apply ward filter
+    if ward_filter:
+        applications = applications.filter(applicant__ward_id=ward_filter)
+    
+    # Apply category filter
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+    
+    # Apply fiscal year filter
+    if fiscal_year_filter:
+        applications = applications.filter(fiscal_year_id=fiscal_year_filter)
+    
+    # Apply institution filter
+    if institution_filter:
+        applications = applications.filter(institution_id=institution_filter)
+    
+    # Apply gender filter
+    if gender_filter:
+        applications = applications.filter(applicant__gender=gender_filter)
+    
+    # Order applications
+    applications = applications.order_by('-date_submitted')
+    
+    # Create workbook
+    wb = Workbook()
+    
+    # Create summary sheet
+    ws_summary = wb.active
+    ws_summary.title = "Summary"
+    
+    # Create main data sheet
+    ws_data = wb.create_sheet("Applicants Data")
+    
+    # Define styles
+    header_fill = PatternFill(start_color="2E86AB", end_color="2E86AB", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    title_font = Font(bold=True, size=14, color="1E293B")
+    subtitle_font = Font(bold=True, size=11, color="64748B")
+    border_thin = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal="center", vertical="center")
+    
+    # ============= SUMMARY SHEET =============
+    current_row = 1
+    
+    # Title
+    ws_summary['A1'] = "BURSARY APPLICANTS EXPORT REPORT"
+    ws_summary['A1'].font = title_font
+    ws_summary.merge_cells(f'A1:D1')
+    ws_summary['A1'].alignment = center_align
+    current_row += 2
+    
+    # Export info
+    ws_summary[f'A{current_row}'] = "Export Date:"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    ws_summary[f'B{current_row}'] = datetime.now().strftime("%B %d, %Y %I:%M %p")
+    current_row += 1
+    
+    ws_summary[f'A{current_row}'] = "Exported By:"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    ws_summary[f'B{current_row}'] = f"{request.user.first_name} {request.user.last_name}"
+    current_row += 2
+    
+    # Filters applied
+    ws_summary[f'A{current_row}'] = "FILTERS APPLIED"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    current_row += 1
+    
+    filters_applied = []
+    if round_obj:
+        filters_applied.append(f"Disbursement Round: {round_obj.name}")
+    if fiscal_year_filter:
+        fy = FiscalYear.objects.filter(id=fiscal_year_filter).first()
+        if fy:
+            filters_applied.append(f"Fiscal Year: {fy.name}")
+    if status_filter:
+        filters_applied.append(f"Status: {status_filter.title()}")
+    if ward_filter:
+        ward = Ward.objects.filter(id=ward_filter).first()
+        if ward:
+            filters_applied.append(f"Ward: {ward.name}")
+    if category_filter:
+        cat = BursaryCategory.objects.filter(id=category_filter).first()
+        if cat:
+            filters_applied.append(f"Category: {cat.name}")
+    if institution_filter:
+        inst = Institution.objects.filter(id=institution_filter).first()
+        if inst:
+            filters_applied.append(f"Institution: {inst.name}")
+    if gender_filter:
+        filters_applied.append(f"Gender: {'Male' if gender_filter == 'M' else 'Female'}")
+    if search_query:
+        filters_applied.append(f"Search: {search_query}")
+    
+    if not filters_applied:
+        filters_applied.append("None - All applicants included")
+    
+    for filter_text in filters_applied:
+        ws_summary[f'A{current_row}'] = filter_text
+        current_row += 1
+    
+    current_row += 1
+    
+    # Statistics
+    ws_summary[f'A{current_row}'] = "STATISTICS"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    current_row += 1
+    
+    total_applications = applications.count()
+    total_requested = applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0
+    
+    # Status breakdown
+    status_breakdown = applications.values('status').annotate(count=Count('id'))
+    
+    # Gender breakdown
+    gender_breakdown = applications.values('applicant__gender').annotate(count=Count('id'))
+    
+    ws_summary[f'A{current_row}'] = "Total Applications:"
+    ws_summary[f'B{current_row}'] = total_applications
+    current_row += 1
+    
+    ws_summary[f'A{current_row}'] = "Total Amount Requested:"
+    ws_summary[f'B{current_row}'] = f"KES {total_requested:,.2f}"
+    current_row += 1
+    
+    ws_summary[f'A{current_row}'] = "Average Amount Requested:"
+    if total_applications > 0:
+        ws_summary[f'B{current_row}'] = f"KES {total_requested / total_applications:,.2f}"
+    else:
+        ws_summary[f'B{current_row}'] = "KES 0.00"
+    current_row += 2
+    
+    ws_summary[f'A{current_row}'] = "Status Breakdown:"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    current_row += 1
+    
+    for status in status_breakdown:
+        status_name = status['status'].replace('_', ' ').title()
+        ws_summary[f'A{current_row}'] = f"  {status_name}:"
+        ws_summary[f'B{current_row}'] = status['count']
+        current_row += 1
+    
+    current_row += 1
+    ws_summary[f'A{current_row}'] = "Gender Breakdown:"
+    ws_summary[f'A{current_row}'].font = subtitle_font
+    current_row += 1
+    
+    for gender in gender_breakdown:
+        gender_name = "Male" if gender['applicant__gender'] == 'M' else "Female"
+        ws_summary[f'A{current_row}'] = f"  {gender_name}:"
+        ws_summary[f'B{current_row}'] = gender['count']
+        current_row += 1
+    
+    # Adjust column widths for summary
+    ws_summary.column_dimensions['A'].width = 30
+    ws_summary.column_dimensions['B'].width = 40
+    
+    # ============= DATA SHEET =============
+    
+    # Headers
+    headers = [
+        "No.", "Application Number", "Date Submitted", "Status",
+        "First Name", "Last Name", "Gender", "Date of Birth", "ID Number",
+        "Phone Number", "Email", "County", "Constituency", "Ward", 
+        "Location", "Sub-Location", "Village",
+        "Institution", "Institution Type", "Admission Number", 
+        "Year of Study", "Course Name", "Bursary Category",
+        "Total Fees", "Fees Paid", "Fees Balance", "Amount Requested",
+        "Other Bursaries", "Other Bursaries Amount", "Other Bursaries Source",
+        "Is Orphan", "Is Total Orphan", "Is Disabled", "Has Chronic Illness",
+        "Number of Siblings", "Siblings in School", "Household Monthly Income",
+        "Guardian 1 Name", "Guardian 1 Relationship", "Guardian 1 Phone", 
+        "Guardian 1 Employment", "Guardian 1 Income",
+        "Guardian 2 Name", "Guardian 2 Relationship", "Guardian 2 Phone",
+        "Priority Score"
+    ]
+    
+    # Write headers
+    for col_num, header in enumerate(headers, 1):
+        cell = ws_data.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = border_thin
+    
+    # Write data
+    row_num = 2
+    for idx, app in enumerate(applications, 1):
+        applicant = app.applicant
+        user = applicant.user
+        
+        # Get guardians (max 2 for display)
+        guardians = list(applicant.guardians.all()[:2])
+        guardian1 = guardians[0] if len(guardians) > 0 else None
+        guardian2 = guardians[1] if len(guardians) > 1 else None
+        
+        data_row = [
+            idx,
+            app.application_number,
+            app.date_submitted.strftime("%Y-%m-%d %H:%M") if app.date_submitted else "Not Submitted",
+            app.get_status_display(),
+            user.first_name,
+            user.last_name,
+            "Male" if applicant.gender == 'M' else "Female",
+            applicant.date_of_birth.strftime("%Y-%m-%d"),
+            applicant.id_number,
+            user.phone_number,
+            user.email,
+            applicant.county.name if applicant.county else "",
+            applicant.constituency.name if applicant.constituency else "",
+            applicant.ward.name if applicant.ward else "",
+            applicant.location.name if applicant.location else "",
+            applicant.sublocation.name if applicant.sublocation else "",
+            applicant.village.name if applicant.village else "",
+            app.institution.name,
+            app.institution.get_institution_type_display(),
+            app.admission_number,
+            app.year_of_study,
+            app.course_name or "",
+            app.bursary_category.name,
+            float(app.total_fees_payable),
+            float(app.fees_paid),
+            float(app.fees_balance),
+            float(app.amount_requested),
+            "Yes" if app.other_bursaries else "No",
+            float(app.other_bursaries_amount) if app.other_bursaries else 0,
+            app.other_bursaries_source or "",
+            "Yes" if app.is_orphan else "No",
+            "Yes" if app.is_total_orphan else "No",
+            "Yes" if app.is_disabled else "No",
+            "Yes" if app.has_chronic_illness else "No",
+            app.number_of_siblings,
+            app.number_of_siblings_in_school,
+            float(app.household_monthly_income) if app.household_monthly_income else 0,
+            guardian1.name if guardian1 else "",
+            guardian1.get_relationship_display() if guardian1 else "",
+            guardian1.phone_number if guardian1 else "",
+            guardian1.get_employment_status_display() if guardian1 else "",
+            float(guardian1.monthly_income) if guardian1 and guardian1.monthly_income else 0,
+            guardian2.name if guardian2 else "",
+            guardian2.get_relationship_display() if guardian2 else "",
+            guardian2.phone_number if guardian2 else "",
+            float(app.priority_score)
+        ]
+        
+        for col_num, value in enumerate(data_row, 1):
+            cell = ws_data.cell(row=row_num, column=col_num)
+            cell.value = value
+            cell.border = border_thin
+            
+            # Format currency columns
+            if col_num in [21, 22, 23, 24, 26, 38, 43]:  # Currency columns
+                if isinstance(value, (int, float)):
+                    cell.number_format = '#,##0.00'
+        
+        row_num += 1
+    
+    # Auto-adjust column widths
+    for col_num in range(1, len(headers) + 1):
+        column_letter = get_column_letter(col_num)
+        
+        # Set minimum width
+        max_length = len(str(headers[col_num - 1]))
+        
+        # Check data length (sample first 100 rows for performance)
+        for row in ws_data.iter_rows(min_row=2, max_row=min(102, row_num), 
+                                      min_col=col_num, max_col=col_num):
+            for cell in row:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+        
+        # Set width with limits
+        adjusted_width = min(max_length + 2, 50)
+        ws_data.column_dimensions[column_letter].width = adjusted_width
+    
+    # Freeze header row
+    ws_data.freeze_panes = "A2"
+    
+    # Create allocations sheet if there are approved applications
+    approved_apps = applications.filter(status='approved')
+    if approved_apps.exists():
+        ws_allocations = wb.create_sheet("Allocations")
+        
+        allocation_headers = [
+            "No.", "Application Number", "Applicant Name", "ID Number",
+            "Ward", "Institution", "Amount Requested", "Amount Allocated",
+            "Allocation Date", "Cheque Number", "Payment Method", 
+            "Disbursement Status", "Disbursed Date"
+        ]
+        
+        for col_num, header in enumerate(allocation_headers, 1):
+            cell = ws_allocations.cell(row=1, column=col_num)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = border_thin
+        
+        row_num = 2
+        for idx, app in enumerate(approved_apps, 1):
+            allocation = getattr(app, 'allocation', None)
+            
+            if allocation:
+                allocation_row = [
+                    idx,
+                    app.application_number,
+                    f"{app.applicant.user.first_name} {app.applicant.user.last_name}",
+                    app.applicant.id_number,
+                    app.applicant.ward.name if app.applicant.ward else "",
+                    app.institution.name,
+                    float(app.amount_requested),
+                    float(allocation.amount_allocated),
+                    allocation.allocation_date.strftime("%Y-%m-%d"),
+                    allocation.cheque_number or "",
+                    allocation.get_payment_method_display(),
+                    "Disbursed" if allocation.is_disbursed else "Pending",
+                    allocation.disbursement_date.strftime("%Y-%m-%d") if allocation.disbursement_date else ""
+                ]
+                
+                for col_num, value in enumerate(allocation_row, 1):
+                    cell = ws_allocations.cell(row=row_num, column=col_num)
+                    cell.value = value
+                    cell.border = border_thin
+                    
+                    if col_num in [7, 8]:  # Currency columns
+                        if isinstance(value, (int, float)):
+                            cell.number_format = '#,##0.00'
+                
+                row_num += 1
+        
+        # Auto-adjust allocation sheet columns
+        for col_num in range(1, len(allocation_headers) + 1):
+            column_letter = get_column_letter(col_num)
+            max_length = len(str(allocation_headers[col_num - 1]))
+            
+            for row in ws_allocations.iter_rows(min_row=2, max_row=min(102, row_num),
+                                                min_col=col_num, max_col=col_num):
+                for cell in row:
+                    try:
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+                    except:
+                        pass
+            
+            adjusted_width = min(max_length + 2, 50)
+            ws_allocations.column_dimensions[column_letter].width = adjusted_width
+        
+        ws_allocations.freeze_panes = "A2"
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    # Generate filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if round_obj:
+        filename = f"Applicants_{round_obj.name.replace(' ', '_')}_{timestamp}.xlsx"
+    else:
+        filename = f"Applicants_Export_{timestamp}.xlsx"
+    
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Save workbook
+    wb.save(response)
+    
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_county_admin)
+def export_disbursement_round_applications(request, round_id):
+    """
+    Export applications for a specific disbursement round
+    This is a convenience wrapper that calls the main export function
+    """
+    return export_applicants_to_excel(request, round_id=round_id)

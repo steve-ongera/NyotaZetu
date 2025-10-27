@@ -1,0 +1,805 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Disbursement Rounds - Kiharu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .btn-primary {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .search-filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94A3B8;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn-search {
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-search:hover {
+        background: #2980b9;
+    }
+
+    .btn-clear {
+        padding: 12px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-clear:hover {
+        background: #F8FAFC;
+    }
+
+    .rounds-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .rounds-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .rounds-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .rounds-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .rounds-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .round-name {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .round-number {
+        display: inline-block;
+        padding: 4px 10px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-open {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-closed {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-completed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .date-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .date-label {
+        font-size: 11px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .date-value {
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .amount-display {
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: #E2E8F0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 4px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2ecc71);
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .action-btns {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: white;
+    }
+
+    .btn-view {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-view:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-edit {
+        color: #f39c12;
+        border-color: #f39c12;
+    }
+
+    .btn-edit:hover {
+        background: #f39c12;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .search-row {
+            flex-direction: column;
+        }
+
+        .action-btns {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Disbursement Rounds</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-calendar-check"></i>
+                    Disbursement Rounds Management
+                </h1>
+                <p class="page-subtitle">
+                    Manage application and disbursement cycles
+                </p>
+            </div>
+            <a href="{% url 'disbursement_round_create' %}" class="btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Create New Round
+            </a>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+                <div class="stat-value">{{ total_rounds }}</div>
+                <div class="stat-label">Total Rounds</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-unlock"></i>
+                </div>
+                <div class="stat-value">{{ open_rounds }}</div>
+                <div class="stat-label">Open for Applications</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ completed_rounds }}</div>
+                <div class="stat-label">Completed Rounds</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="stat-value">KES {{ total_allocated|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Allocated</div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="search-filter-section">
+            <form method="get">
+                <div class="search-row">
+                    <div class="search-input-wrapper">
+                        <i class="bi bi-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            class="search-input" 
+                            placeholder="Search by round name or fiscal year..."
+                            value="{{ search_query }}"
+                        >
+                    </div>
+                    <button type="submit" class="btn-search">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    {% if search_query %}
+                    <a href="{% url 'disbursement_round_list' %}" class="btn-clear">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label class="filter-label">Fiscal Year</label>
+                        <select name="fiscal_year" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Fiscal Years</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}" {% if current_fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                                {{ fy.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Status</option>
+                            <option value="open" {% if current_status == 'open' %}selected{% endif %}>Open</option>
+                            <option value="closed" {% if current_status == 'closed' %}selected{% endif %}>Closed</option>
+                            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Rounds Table -->
+        <div class="table-responsive">
+            <table class="rounds-table">
+                <thead>
+                    <tr>
+                        <th>Round</th>
+                        <th>Fiscal Year</th>
+                        <th>Status</th>
+                        <th>Application Period</th>
+                        <th>Disbursement Date</th>
+                        <th>Budget</th>
+                        <th>Progress</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for round in page_obj %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div class="round-name">{{ round.name }}</div>
+                                <span class="round-number">Round {{ round.round_number }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ round.fiscal_year.name }}</strong>
+                        </td>
+                        <td>
+                            {% if round.is_completed %}
+                                <span class="status-badge status-completed">
+                                    <i class="bi bi-check-circle"></i> Completed
+                                </span>
+                            {% elif round.is_open %}
+                                <span class="status-badge status-open">
+                                    <i class="bi bi-unlock"></i> Open
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-closed">
+                                    <i class="bi bi-lock"></i> Closed
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="date-info">
+                                <span class="date-label">Start</span>
+                                <span class="date-value">{{ round.application_start_date|date:"M d, Y" }}</span>
+                                <span class="date-label">End</span>
+                                <span class="date-value">{{ round.application_end_date|date:"M d, Y" }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ round.disbursement_date|date:"M d, Y" }}</strong>
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div class="amount-display">KES {{ round.allocated_amount|floatformat:0|intcomma }}</div>
+                                <small style="color: #64748B;">
+                                    Disbursed: KES {{ round.disbursed_amount|floatformat:0|intcomma }}
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            {% widthratio round.disbursed_amount round.allocated_amount 100 as percentage %}
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: {{ percentage }}%"></div>
+                            </div>
+                            <div class="progress-text">{{ percentage }}% disbursed</div>
+                            <small style="color: #64748B;">
+                                {{ round.total_applications|default:0 }} applications
+                            </small>
+                        </td>
+                        <td>
+                            <div class="action-btns" style="justify-content: flex-end;">
+                                <a href="{% url 'disbursement_round_detail' round.id %}" class="btn-action btn-view">
+                                    <i class="bi bi-eye"></i>
+                                    View
+                                </a>
+                                {% if not round.is_completed %}
+                                <a href="{% url 'disbursement_round_edit' round.id %}" class="btn-action btn-edit">
+                                    <i class="bi bi-pencil"></i>
+                                    Edit
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-calendar-x"></i>
+                                </div>
+                                <h3 class="empty-title">No Disbursement Rounds Found</h3>
+                                <p class="empty-text">
+                                    {% if search_query %}
+                                        No rounds match your search for "{{ search_query }}".
+                                    {% else %}
+                                        Create your first disbursement round to get started.
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'disbursement_round_create' %}" class="btn-primary" style="margin-top: 16px;">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Create New Round
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div style="color: #64748B; font-size: 14px;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} entries
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -179,4 +179,19 @@ urlpatterns = [
     path("ai/analysis/performance-trend/", views.generate_performance_trend, name="performance_trend"),
     path("ai/analysis/geographic-analysis/", views.generate_geographic_analysis, name="geographic_analysis"),
     path("ai/analysis/institution-analysis/", views.generate_institution_analysis, name="institution_analysis"),
+
+    # Disbursement Round Management URLs
+    path('disbursement-rounds/', views.disbursement_round_list, name='disbursement_round_list'),
+    path('disbursement-rounds/create/', views.disbursement_round_create, name='disbursement_round_create'),
+    path('disbursement-rounds/<int:round_id>/', views.disbursement_round_detail, name='disbursement_round_detail'),
+    path('disbursement-rounds/<int:round_id>/edit/', views.disbursement_round_edit, name='disbursement_round_edit'),
+    path('disbursement-rounds/<int:round_id>/toggle-status/', views.disbursement_round_toggle_status, name='disbursement_round_toggle_status'),
+    path('disbursement-rounds/<int:round_id>/complete/', views.disbursement_round_complete, name='disbursement_round_complete'),
+    path('disbursement-rounds/<int:round_id>/delete/', views.disbursement_round_delete, name='disbursement_round_delete'),
+    path('disbursement-rounds/<int:round_id>/applications/', views.disbursement_round_applications, name='disbursement_round_applications'),
+
+    path('export/applicants/', views.export_applicants_to_excel, name='export_applicants'),
+    path('export/round/<int:round_id>/applications/', 
+         views.export_disbursement_round_applications, 
+         name='export_round_applications'),
 ]

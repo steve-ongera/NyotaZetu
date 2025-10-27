@@ -1,0 +1,626 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Create Disbursement Round - Kiharu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-icon {
+        color: #3498db;
+        font-size: 20px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .form-grid-full {
+        grid-column: 1 / -1;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .required-mark {
+        color: #ef4444;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 12px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-help {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 6px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checkbox-group:hover {
+        background: #F1F5F9;
+    }
+
+    .checkbox-input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .alert-info {
+        padding: 16px;
+        background: #DBEAFE;
+        border: 1px solid #93C5FD;
+        border-radius: 6px;
+        color: #1E40AF;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+    }
+
+    .alert-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+        justify-content: flex-end;
+    }
+
+    .btn-primary {
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        padding: 12px 24px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .fiscal-year-info {
+        background: #F0F9FF;
+        border: 1px solid #BAE6FD;
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #075985;
+    }
+
+    .fiscal-year-info strong {
+        color: #0C4A6E;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fiscal year info display
+        const fiscalYearSelect = document.getElementById('fiscal_year');
+        const fiscalYearInfo = document.getElementById('fiscal-year-info');
+        
+        if (fiscalYearSelect && fiscalYearInfo) {
+            fiscalYearSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.value) {
+                    const fyName = selectedOption.text;
+                    const fyData = selectedOption.dataset;
+                    
+                    fiscalYearInfo.innerHTML = `
+                        <strong>Selected Fiscal Year:</strong> ${fyName}<br>
+                        <strong>Period:</strong> ${fyData.startDate} to ${fyData.endDate}<br>
+                        <strong>Total Budget:</strong> KES ${parseFloat(fyData.budget).toLocaleString()}
+                    `;
+                    fiscalYearInfo.style.display = 'block';
+                } else {
+                    fiscalYearInfo.style.display = 'none';
+                }
+            });
+        }
+
+        // Date validation
+        const startDateInput = document.getElementById('application_start_date');
+        const endDateInput = document.getElementById('application_end_date');
+        const reviewDeadlineInput = document.getElementById('review_deadline');
+        const disbursementDateInput = document.getElementById('disbursement_date');
+
+        function validateDates() {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            const reviewDeadline = new Date(reviewDeadlineInput.value);
+            const disbursementDate = new Date(disbursementDateInput.value);
+
+            let isValid = true;
+
+            if (endDate < startDate) {
+                endDateInput.setCustomValidity('Application end date must be after start date');
+                isValid = false;
+            } else {
+                endDateInput.setCustomValidity('');
+            }
+
+            if (reviewDeadline < endDate) {
+                reviewDeadlineInput.setCustomValidity('Review deadline must be after application end date');
+                isValid = false;
+            } else {
+                reviewDeadlineInput.setCustomValidity('');
+            }
+
+            if (disbursementDate < reviewDeadline) {
+                disbursementDateInput.setCustomValidity('Disbursement date must be after review deadline');
+                isValid = false;
+            } else {
+                disbursementDateInput.setCustomValidity('');
+            }
+
+            return isValid;
+        }
+
+        [startDateInput, endDateInput, reviewDeadlineInput, disbursementDateInput].forEach(input => {
+            if (input) {
+                input.addEventListener('change', validateDates);
+            }
+        });
+
+        // Form submission validation
+        const form = document.getElementById('round-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateDates()) {
+                    e.preventDefault();
+                    alert('Please correct the date validation errors before submitting.');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'disbursement_round_list' %}">
+                    Disbursement Rounds
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Create New Round</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-plus-circle"></i>
+                Create New Disbursement Round
+            </h1>
+            <p class="page-subtitle">
+                Set up a new application and disbursement cycle for the bursary program
+            </p>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="alert-info">
+            <div class="alert-icon">
+                <i class="bi bi-info-circle-fill"></i>
+            </div>
+            <div>
+                <strong>Important:</strong> Ensure all dates are set correctly. The application period should allow sufficient time for students to apply, followed by adequate review time before disbursement.
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form id="round-form" method="post">
+            {% csrf_token %}
+
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-info-circle section-icon"></i>
+                    Basic Information
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fiscal_year" class="form-label">
+                            Fiscal Year <span class="required-mark">*</span>
+                        </label>
+                        <select 
+                            name="fiscal_year" 
+                            id="fiscal_year" 
+                            class="form-select" 
+                            required
+                        >
+                            <option value="">Select Fiscal Year</option>
+                            {% for fy in fiscal_years %}
+                            <option 
+                                value="{{ fy.id }}"
+                                data-start-date="{{ fy.start_date|date:'M d, Y' }}"
+                                data-end-date="{{ fy.end_date|date:'M d, Y' }}"
+                                data-budget="{{ fy.total_bursary_allocation }}"
+                            >
+                                {{ fy.name }} {% if fy.is_active %}(Active){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="fiscal-year-info" class="fiscal-year-info" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="round_number" class="form-label">
+                            Round Number <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            name="round_number" 
+                            id="round_number" 
+                            class="form-input" 
+                            min="1" 
+                            max="10"
+                            placeholder="e.g., 1, 2, 3"
+                            required
+                        >
+                        <small class="form-help">
+                            Sequential number for this disbursement round (e.g., 1 for first round)
+                        </small>
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <label for="name" class="form-label">
+                            Round Name <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="name" 
+                            id="name" 
+                            class="form-input" 
+                            placeholder="e.g., First Term Disbursement 2024"
+                            maxlength="100"
+                            required
+                        >
+                        <small class="form-help">
+                            Descriptive name for this disbursement round
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline & Dates -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-calendar-event section-icon"></i>
+                    Timeline & Important Dates
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="application_start_date" class="form-label">
+                            Application Start Date <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            name="application_start_date" 
+                            id="application_start_date" 
+                            class="form-input" 
+                            required
+                        >
+                        <small class="form-help">
+                            When applications open for this round
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="application_end_date" class="form-label">
+                            Application End Date <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            name="application_end_date" 
+                            id="application_end_date" 
+                            class="form-input" 
+                            required
+                        >
+                        <small class="form-help">
+                            Application deadline for this round
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="review_deadline" class="form-label">
+                            Review Deadline <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            name="review_deadline" 
+                            id="review_deadline" 
+                            class="form-input" 
+                            required
+                        >
+                        <small class="form-help">
+                            Deadline for completing all application reviews
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="disbursement_date" class="form-label">
+                            Disbursement Date <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            name="disbursement_date" 
+                            id="disbursement_date" 
+                            class="form-input" 
+                            required
+                        >
+                        <small class="form-help">
+                            Target date for disbursing funds to beneficiaries
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Allocation -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-currency-dollar section-icon"></i>
+                    Budget Allocation
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="allocated_amount" class="form-label">
+                            Allocated Amount (KES) <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            name="allocated_amount" 
+                            id="allocated_amount" 
+                            class="form-input" 
+                            min="0" 
+                            step="0.01"
+                            placeholder="e.g., 5000000.00"
+                            required
+                        >
+                        <small class="form-help">
+                            Total budget allocated for this disbursement round
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Settings -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-toggles section-icon"></i>
+                    Status Settings
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input 
+                                type="checkbox" 
+                                name="is_open" 
+                                id="is_open" 
+                                class="checkbox-input"
+                            >
+                            <span class="checkbox-label">
+                                Open for Applications
+                            </span>
+                        </label>
+                        <small class="form-help">
+                            Check this to immediately open applications for this round. You can change this later.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{% url 'disbursement_round_list' %}" class="btn-secondary">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-circle"></i>
+                    Create Disbursement Round
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

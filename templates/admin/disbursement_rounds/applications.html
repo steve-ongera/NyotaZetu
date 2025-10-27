@@ -1,0 +1,737 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}{{ round.name }} - Applications - Kiharu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-primary, .btn-success, .btn-secondary {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        color: white;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #229954;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-danger { color: #e74c3c; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .search-filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94A3B8;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .applications-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .applications-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .applications-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applications-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applications-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-draft { background: #F3F4F6; color: #6B7280; }
+    .status-submitted { background: #DBEAFE; color: #1E40AF; }
+    .status-under_review { background: #FEF3C7; color: #92400E; }
+    .status-approved { background: #D1FAE5; color: #065F46; }
+    .status-rejected { background: #FEE2E2; color: #991B1B; }
+    .status-disbursed { background: #E0E7FF; color: #3730A3; }
+
+    .applicant-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .applicant-detail {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .amount-display {
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: white;
+        color: #3498db;
+    }
+
+    .btn-action:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .action-buttons {
+            width: 100%;
+        }
+
+        .btn-primary, .btn-success, .btn-secondary {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'disbursement_round_list' %}">Disbursement Rounds</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'disbursement_round_detail' round.id %}">{{ round.name }}</a>
+            </li>
+            <li class="breadcrumb-item active">Applications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    {{ round.name }}
+                </h1>
+                <p class="page-subtitle">
+                    {{ round.fiscal_year.name }} | Round {{ round.round_number }}
+                </p>
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'export_round_applications' round.id %}?{{ request.GET.urlencode }}" 
+                   class="btn-success">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Export to Excel
+                </a>
+                <a href="{% url 'disbursement_round_detail' round.id %}" class="btn-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Round Details
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon"><i class="bi bi-file-earmark"></i></div>
+                <div class="stat-value">{{ page_obj.paginator.count }}</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-value">
+                    {{ page_obj.object_list|length|default:0 }}
+                </div>
+                <div class="stat-label">Showing Now</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+                <div class="stat-value">
+                    {% widthratio round.disbursed_amount round.allocated_amount 100 as percentage %}
+                    {{ percentage }}%
+                </div>
+                <div class="stat-label">Budget Utilized</div>
+            </div>
+            
+            <div class="stat-card stat-danger">
+                <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
+                <div class="stat-value">
+                    {{ round.application_end_date|date:"M d" }}
+                </div>
+                <div class="stat-label">Application Deadline</div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="search-filter-section">
+            <form method="get">
+                <div class="search-row">
+                    <div class="search-input-wrapper">
+                        <i class="bi bi-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            class="search-input" 
+                            placeholder="Search by name, ID, application number..."
+                            value="{{ search_query }}"
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    {% if search_query %}
+                    <a href="{% url 'disbursement_round_applications' round.id %}" class="btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Status</option>
+                            <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="submitted" {% if current_status == 'submitted' %}selected{% endif %}>Submitted</option>
+                            <option value="under_review" {% if current_status == 'under_review' %}selected{% endif %}>Under Review</option>
+                            <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="disbursed" {% if current_status == 'disbursed' %}selected{% endif %}>Disbursed</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Ward</label>
+                        <select name="ward" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Wards</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}" {% if current_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ward.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Category</label>
+                        <select name="category" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Applications Table -->
+        <div class="table-responsive">
+            <table class="applications-table">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Application #</th>
+                        <th>Applicant</th>
+                        <th>Ward</th>
+                        <th>Institution</th>
+                        <th>Category</th>
+                        <th>Amount Requested</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in page_obj %}
+                    <tr>
+                        <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                        <td>
+                            <strong>{{ app.application_number }}</strong>
+                        </td>
+                        <td>
+                            <div class="applicant-info">
+                                <span class="applicant-name">
+                                    {{ app.applicant.user.first_name }} {{ app.applicant.user.last_name }}
+                                </span>
+                                <span class="applicant-detail">
+                                    ID: {{ app.applicant.id_number }}
+                                </span>
+                                <span class="applicant-detail">
+                                    {{ app.applicant.user.phone_number }}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ app.applicant.ward.name|default:"N/A" }}</strong>
+                            {% if app.applicant.ward %}
+                            <br>
+                            <small style="color: #64748B;">
+                                {{ app.applicant.ward.constituency.name }}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="max-width: 200px;">
+                                <strong>{{ app.institution.name }}</strong>
+                                <br>
+                                <small style="color: #64748B;">
+                                    {{ app.institution.get_institution_type_display }}
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            {{ app.bursary_category.name }}
+                        </td>
+                        <td>
+                            <div class="amount-display">
+                                KES {{ app.amount_requested|floatformat:0|intcomma }}
+                            </div>
+                            <small style="color: #64748B;">
+                                Balance: KES {{ app.fees_balance|floatformat:0|intcomma }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ app.status }}">
+                                {{ app.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if app.date_submitted %}
+                                {{ app.date_submitted|date:"M d, Y" }}
+                                <br>
+                                <small style="color: #64748B;">
+                                    {{ app.date_submitted|date:"h:i A" }}
+                                </small>
+                            {% else %}
+                                <span style="color: #94A3B8;">Not submitted</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'application_detail' app.id %}" class="btn-action">
+                                <i class="bi bi-eye"></i>
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 style="font-size: 18px; font-weight: 600; color: #64748B; margin-bottom: 8px;">
+                                    No Applications Found
+                                </h3>
+                                <p style="font-size: 14px; color: #94A3B8;">
+                                    {% if search_query or current_status or current_ward or current_category %}
+                                        No applications match your current filters.
+                                    {% else %}
+                                        No applications have been submitted for this round yet.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div style="color: #64748B; font-size: 14px;">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} entries
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
