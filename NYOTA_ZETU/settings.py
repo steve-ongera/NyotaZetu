@@ -34,6 +34,20 @@ else:
     X_FRAME_OPTIONS = 'DENY'
 
 
+# Allow iframe embedding for PDFs
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# CORS settings (if using django-cors-headers)
+CORS_ALLOWED_ORIGINS = [
+    "https://adb166441780.ngrok-free.app",
+    'http://localhost:8000',    
+    'http://192.168.100.5:8000/',
+    'http://127.0.0.1:8000/',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://adb166441780.ngrok-free.app",
+]
 
 # Application definition
 
