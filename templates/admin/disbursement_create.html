@@ -1,4 +1,5 @@
 {% extends 'admin_base.html' %}
+{% load humanize %}
 {% load static %}
 
 {% block title %}AI-Powered Disbursement - Admin{% endblock %}
@@ -1010,7 +1011,7 @@
                 AI RECOMMENDATION
             </div>
             <div class="ai-amount">
-                KES {{ suggestion.suggested_amount|floatformat:2 }}
+                KES {{ suggestion.suggested_amount|floatformat:2|intcomma }}
             </div>
             <div class="ai-score">
                 Composite Need Score: <strong>{{ suggestion.scores.composite_score }}/100</strong>
@@ -1388,7 +1389,7 @@
                             <i class="bi bi-cash-stack"></i>
                             Allocated Amount
                         </span>
-                        <span class="info-value amount-highlight">KES {{ allocation.amount_allocated|floatformat:2 }}</span>
+                        <span class="info-value amount-highlight">KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">
@@ -1488,28 +1489,28 @@
                             <i class="bi bi-receipt"></i>
                             Total Fees
                         </span>
-                        <span class="info-value">KES {{ allocation.application.total_fees_payable|floatformat:2 }}</span>
+                        <span class="info-value">KES {{ allocation.application.total_fees_payable|floatformat:2|intcomma }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">
                             <i class="bi bi-check2-square"></i>
                             Fees Paid
                         </span>
-                        <span class="info-value">KES {{ allocation.application.fees_paid|floatformat:2 }}</span>
+                        <span class="info-value">KES {{ allocation.application.fees_paid|floatformat:2|intcomma }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">
                             <i class="bi bi-exclamation-circle"></i>
                             Outstanding Balance
                         </span>
-                        <span class="info-value" style="color: #DC2626; font-weight: 800;">KES {{ allocation.application.fees_balance|floatformat:2 }}</span>
+                        <span class="info-value" style="color: #DC2626; font-weight: 800;">KES {{ allocation.application.fees_balance|floatformat:2|intcomma }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">
                             <i class="bi bi-hand-index"></i>
                             Amount Requested
                         </span>
-                        <span class="info-value">KES {{ allocation.application.amount_requested|floatformat:2 }}</span>
+                        <span class="info-value">KES {{ allocation.application.amount_requested|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
             </div>
@@ -1528,7 +1529,7 @@
                         {% for prev_allocation in history.allocations %}
                         <div class="history-item">
                             <div class="history-year">{{ prev_allocation.application.fiscal_year.name }}</div>
-                            <div class="history-amount">KES {{ prev_allocation.amount_allocated|floatformat:2 }}</div>
+                            <div class="history-amount">KES {{ prev_allocation.amount_allocated|floatformat:2|intcomma }}</div>
                             <div class="history-institution">{{ prev_allocation.application.institution.name }}</div>
                         </div>
                         {% endfor %}
@@ -1538,7 +1539,7 @@
                                 <i class="bi bi-sum"></i>
                                 Total Received
                             </span>
-                            <span class="info-value" style="color: #0369A1; font-size: 18px;">KES {{ history.total_received|floatformat:2 }}</span>
+                            <span class="info-value" style="color: #0369A1; font-size: 18px;">KES {{ history.total_received|floatformat:2|intcomma }}</span>
                         </div>
                     </div>
                     {% else %}

@@ -1,4 +1,5 @@
 {% extends 'admin_base.html' %}
+{% load humanize %}
 {% load static %}
 
 {% block title %}Allocations - Admin{% endblock %}
@@ -933,7 +934,7 @@
                     <i class="bi bi-cash-stack"></i>
                     Total Allocated
                 </div>
-                <div class="stat-value success">KES {{ stats.total_allocated|floatformat:0|default:"0" }}</div>
+                <div class="stat-value success">KES {{ stats.total_allocated|floatformat:0|default:"0"|intcomma }}</div>
                 <div class="stat-trend">Cumulative amount</div>
             </div>
 
@@ -960,7 +961,7 @@
                     <i class="bi bi-calculator"></i>
                     Average Amount
                 </div>
-                <div class="stat-value">KES {{ stats.avg_allocation|floatformat:0|default:"0" }}</div>
+                <div class="stat-value">KES {{ stats.avg_allocation|floatformat:0|default:"0"|intcomma }}</div>
                 <div class="stat-trend">Per allocation</div>
             </div>
         </div>
@@ -1212,7 +1213,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="amount">KES {{ allocation.amount_allocated|floatformat:2 }}</span>
+                            <span class="amount">KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</span>
                         </td>
                         <td>
                             <div class="date-info">
