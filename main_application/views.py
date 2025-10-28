@@ -1645,11 +1645,14 @@ def application_review(request, application_id):
             # Create allocation
             allocation = None
             if recommended_amount:
-                allocation = Allocation.objects.create(
-                    application=application,
-                    amount_allocated=recommended_amount,
-                    approved_by=request.user
-                )
+                if Allocation.objects.filter(application=application).exists():
+                    messages.error(request, "This application already has an allocation.")
+                else:
+                    allocation = Allocation.objects.create(
+                        application=application,
+                        amount_allocated=recommended_amount,
+                        approved_by=request.user
+                    )
             
             # Send approval notification
             send_approval_notification(application, allocation, user, comments)
