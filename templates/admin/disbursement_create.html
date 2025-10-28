@@ -1,10 +1,28 @@
 {% extends 'admin_base.html' %}
 {% load static %}
 
-{% block title %}Record Disbursement - Admin{% endblock %}
+{% block title %}AI-Powered Disbursement - Admin{% endblock %}
 
 {% block extra_css %}
 <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #F8FAFC;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .container-fluid {
+        padding: 24px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    /* Breadcrumb */
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -12,6 +30,7 @@
         list-style: none;
         display: flex;
         flex-wrap: wrap;
+        background: transparent;
     }
 
     .breadcrumb-item {
@@ -19,7 +38,7 @@
     }
 
     .breadcrumb-item + .breadcrumb-item::before {
-        content: "/ ";
+        content: "/";
         color: #94A3B8;
         padding: 0 8px;
     }
@@ -32,26 +51,20 @@
     .breadcrumb a {
         color: #3498db;
         text-decoration: none;
-        transition: color 0.3s ease;
     }
 
     .breadcrumb a:hover {
         color: #2980b9;
     }
 
-    .section-container {
-        background: white;
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
-        border: 1px solid #E2E8F0;
-    }
-
+    /* Page Header */
     .page-header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
         margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -59,22 +72,37 @@
         gap: 16px;
     }
 
+    .page-title-section {
+        flex: 1;
+    }
+
     .page-title {
-        font-size: 22px;
-        font-weight: 600;
+        font-size: 28px;
+        font-weight: 700;
         color: #1E293B;
-        margin: 0;
+        margin: 0 0 8px 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: #3498db;
+        font-size: 32px;
+    }
+
+    .page-subtitle {
+        font-size: 14px;
+        color: #64748B;
+        margin: 0;
     }
 
     .back-btn {
-        padding: 10px 20px;
+        padding: 12px 24px;
         background: white;
         color: #64748B;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
+        border: 2px solid #E2E8F0;
+        border-radius: 8px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
@@ -87,40 +115,310 @@
 
     .back-btn:hover {
         background: #F8FAFC;
-        border-color: #CBD5E1;
-        color: #64748B;
+        border-color: #3498db;
+        color: #3498db;
+        transform: translateY(-2px);
     }
 
-    .alert-info {
-        background: #EFF6FF;
-        border: 1px solid #BFDBFE;
-        border-left: 4px solid #3B82F6;
-        border-radius: 6px;
-        padding: 16px;
+    /* AI Recommendation Banner */
+    .ai-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 24px;
         margin-bottom: 24px;
-        display: flex;
-        align-items: start;
-        gap: 12px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
     }
 
-    .alert-info i {
-        color: #3B82F6;
-        font-size: 20px;
-        flex-shrink: 0;
-        margin-top: 2px;
+    .ai-banner::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
     }
 
-    .alert-info strong {
-        color: #1E40AF;
+    .ai-banner-content {
+        position: relative;
+        z-index: 1;
     }
 
-    .alert-info-text {
-        color: #1E40AF;
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+    }
+
+    .ai-amount {
+        font-size: 42px;
+        font-weight: 800;
+        margin: 12px 0;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .ai-score {
+        font-size: 16px;
+        opacity: 0.95;
+        margin-bottom: 16px;
+    }
+
+    .ai-reasoning {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 16px;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+    }
+
+    .ai-reasoning-title {
         font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ai-reasoning-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .ai-reasoning-list li {
+        padding: 6px 0;
+        padding-left: 24px;
+        position: relative;
+        font-size: 13px;
         line-height: 1.6;
     }
 
-    .form-section {
+    .ai-reasoning-list li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+    }
+
+    /* Red Flags Alert */
+    .red-flags-alert {
+        background: #FEF2F2;
+        border: 2px solid #FCA5A5;
+        border-left: 5px solid #DC2626;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: none;
+    }
+
+    .red-flags-alert.show {
+        display: block;
+    }
+
+    .red-flags-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .red-flags-icon {
+        width: 40px;
+        height: 40px;
+        background: #DC2626;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+    }
+
+    .red-flags-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #991B1B;
+        margin: 0;
+    }
+
+    .red-flag-item {
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        display: flex;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .red-flag-severity {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .red-flag-severity.high {
+        background: #DC2626;
+        color: white;
+    }
+
+    .red-flag-severity.medium {
+        background: #F59E0B;
+        color: white;
+    }
+
+    .red-flag-severity.low {
+        background: #FCD34D;
+        color: #92400E;
+    }
+
+    .red-flag-message {
+        color: #991B1B;
+        font-size: 14px;
+        flex: 1;
+    }
+
+    /* Score Cards */
+    .score-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .score-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border: 2px solid #E2E8F0;
+        transition: all 0.3s ease;
+    }
+
+    .score-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .score-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .score-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .score-icon.need { background: #DBEAFE; color: #1E40AF; }
+    .score-icon.vulnerability { background: #FEE2E2; color: #991B1B; }
+    .score-icon.merit { background: #D1FAE5; color: #065F46; }
+    .score-icon.equity { background: #FEF3C7; color: #92400E; }
+    .score-icon.category { background: #E0E7FF; color: #3730A3; }
+
+    .score-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .score-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .score-bar {
+        width: 100%;
+        height: 8px;
+        background: #E2E8F0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .score-bar-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1s ease;
+    }
+
+    .score-bar-fill.need { background: linear-gradient(90deg, #3B82F6, #1E40AF); }
+    .score-bar-fill.vulnerability { background: linear-gradient(90deg, #EF4444, #991B1B); }
+    .score-bar-fill.merit { background: linear-gradient(90deg, #10B981, #065F46); }
+    .score-bar-fill.equity { background: linear-gradient(90deg, #F59E0B, #92400E); }
+    .score-bar-fill.category { background: linear-gradient(90deg, #6366F1, #3730A3); }
+
+    /* Main Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 24px;
+    }
+
+    /* Section Container */
+    .section-container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        margin-bottom: 24px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    /* Form Styles */
+    .form-group {
         margin-bottom: 24px;
     }
 
@@ -131,32 +429,32 @@
         margin-bottom: 8px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
 
     .form-label i {
         color: #64748B;
-        font-size: 16px;
     }
 
-    .text-danger {
+    .required {
         color: #DC2626;
     }
 
     .form-control {
         width: 100%;
-        padding: 12px 14px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 14px;
+        padding: 14px 16px;
+        border: 2px solid #E2E8F0;
+        border-radius: 8px;
+        font-size: 15px;
         transition: all 0.3s ease;
         background: white;
+        font-family: inherit;
     }
 
     .form-control:focus {
         outline: none;
         border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
     }
 
     .form-control::placeholder {
@@ -165,190 +463,301 @@
 
     textarea.form-control {
         resize: vertical;
-        min-height: 100px;
+        min-height: 120px;
+        font-family: inherit;
     }
 
-    .form-text {
-        font-size: 12px;
+    .form-help {
+        font-size: 13px;
         color: #64748B;
-        margin-top: 6px;
+        margin-top: 8px;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
     }
 
-    .form-text i {
+    .form-help i {
         font-size: 14px;
     }
 
-    .confirmation-section {
-        background: #FEF3C7;
-        border: 1px solid #FCD34D;
-        border-left: 4px solid #F59E0B;
-        border-radius: 6px;
-        padding: 20px;
-        margin: 24px 0;
+    /* Amount Input Special */
+    .amount-input-wrapper {
+        position: relative;
     }
 
-    .confirmation-icon {
-        width: 48px;
-        height: 48px;
+    .amount-input-wrapper::before {
+        content: "KES";
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 700;
+        color: #64748B;
+        font-size: 15px;
+    }
+
+    .amount-input {
+        padding-left: 60px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .amount-suggestion {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 12px;
+        background: #F0F9FF;
+        border: 1px solid #BAE6FD;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #0369A1;
+    }
+
+    .amount-suggestion button {
+        margin-left: auto;
+        padding: 6px 14px;
+        background: #0EA5E9;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .amount-suggestion button:hover {
+        background: #0284C7;
+        transform: scale(1.05);
+    }
+
+    /* Override Section */
+    .override-section {
+        display: none;
+        padding: 20px;
         background: #FEF3C7;
-        border: 2px solid #F59E0B;
+        border: 2px solid #FCD34D;
+        border-radius: 10px;
+        margin-top: 16px;
+        animation: slideDown 0.3s ease;
+    }
+
+    .override-section.show {
+        display: block;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .override-warning {
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .override-icon {
+        font-size: 24px;
+        color: #F59E0B;
+        flex-shrink: 0;
+    }
+
+    .override-text {
+        color: #92400E;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .override-text strong {
+        font-weight: 700;
+    }
+
+    /* Confirmation Box */
+    .confirmation-box {
+        background: linear-gradient(135deg, #FEF3C7, #FED7AA);
+        border: 3px solid #F59E0B;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 24px 0;
+        text-align: center;
+    }
+
+    .confirmation-icon-wrapper {
+        width: 64px;
+        height: 64px;
+        background: white;
+        border: 3px solid #F59E0B;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 16px;
+        animation: pulse 2s infinite;
     }
 
-    .confirmation-icon i {
-        font-size: 24px;
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .confirmation-icon-wrapper i {
+        font-size: 32px;
         color: #F59E0B;
     }
 
-    .confirmation-section h5 {
-        font-size: 16px;
-        font-weight: 600;
+    .confirmation-title {
+        font-size: 20px;
+        font-weight: 700;
         color: #92400E;
-        text-align: center;
         margin-bottom: 12px;
     }
 
-    .confirmation-section p {
-        color: #92400E;
-        font-size: 14px;
-        text-align: center;
-        margin-bottom: 16px;
-        line-height: 1.6;
+    .confirmation-amount {
+        font-size: 36px;
+        font-weight: 900;
+        color: #78350F;
+        margin: 16px 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .form-check {
+    .confirmation-recipient {
+        font-size: 16px;
+        color: #92400E;
+        margin-bottom: 20px;
+    }
+
+    .form-check-wrapper {
         display: flex;
         align-items: center;
-        gap: 10px;
         justify-content: center;
+        gap: 12px;
+        padding: 16px;
+        background: white;
+        border-radius: 8px;
     }
 
     .form-check-input {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #F59E0B;
-        border-radius: 4px;
+        width: 24px;
+        height: 24px;
+        border: 3px solid #F59E0B;
+        border-radius: 6px;
         cursor: pointer;
         flex-shrink: 0;
     }
 
     .form-check-input:checked {
-        background-color: #F59E0B;
+        background: #F59E0B;
         border-color: #F59E0B;
     }
 
     .form-check-label {
-        color: #92400E;
-        font-size: 14px;
-        font-weight: 500;
+        color: #78350F;
+        font-size: 15px;
+        font-weight: 600;
         cursor: pointer;
-        margin: 0;
+        user-select: none;
     }
 
+    /* Action Buttons */
     .form-actions {
         display: flex;
         gap: 12px;
-        margin-top: 24px;
+        margin-top: 32px;
         padding-top: 24px;
-        border-top: 1px solid #F1F5F9;
+        border-top: 2px solid #F1F5F9;
     }
 
     .btn {
-        padding: 12px 24px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
+        padding: 14px 28px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.3s ease;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        border: 1px solid;
+        gap: 10px;
+        border: 2px solid;
+        flex: 1;
+        justify-content: center;
     }
 
     .btn-success {
-        background: #27ae60;
+        background: linear-gradient(135deg, #10B981, #059669);
         color: white;
-        border-color: #27ae60;
+        border-color: #10B981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
     .btn-success:hover:not(:disabled) {
-        background: #229954;
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
     }
 
     .btn-success:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+        transform: none;
     }
 
-    .btn-outline-secondary {
+    .btn-cancel {
         background: white;
         color: #64748B;
         border-color: #E2E8F0;
     }
 
-    .btn-outline-secondary:hover {
+    .btn-cancel:hover {
         background: #F8FAFC;
         border-color: #CBD5E1;
+        color: #475569;
     }
 
-    .btn-loading {
-        position: relative;
-        pointer-events: none;
-    }
-
-    .btn-loading::after {
-        content: "";
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        top: 50%;
-        left: 50%;
-        margin-left: -8px;
-        margin-top: -8px;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        border-top-color: transparent;
-        animation: spinner 0.6s linear infinite;
-    }
-
-    @keyframes spinner {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
+    /* Info Cards */
     .info-card {
         background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        margin-bottom: 24px;
+        border: 2px solid #E2E8F0;
+        border-radius: 12px;
+        margin-bottom: 20px;
         overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     .info-card-header {
-        background: #F8FAFC;
+        background: linear-gradient(135deg, #F8FAFC, #F1F5F9);
         padding: 16px 20px;
-        border-bottom: 1px solid #E2E8F0;
+        border-bottom: 2px solid #E2E8F0;
     }
 
     .info-card-title {
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
         color: #1E293B;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+    }
+
+    .info-card-title i {
+        color: #3498db;
     }
 
     .info-card-body {
@@ -362,6 +771,11 @@
         justify-content: space-between;
         align-items: start;
         gap: 16px;
+        transition: background 0.2s ease;
+    }
+
+    .info-item:hover {
+        background: #F8FAFC;
     }
 
     .info-item:last-child {
@@ -374,35 +788,144 @@
         color: #64748B;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         flex-shrink: 0;
     }
 
     .info-label i {
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .info-value {
         font-size: 14px;
         color: #1E293B;
-        font-weight: 500;
+        font-weight: 600;
         text-align: right;
     }
 
     .amount-highlight {
-        color: #27ae60;
-        font-weight: 700;
-        font-size: 16px;
+        color: #10B981;
+        font-weight: 800;
+        font-size: 18px;
     }
 
+    /* Applicant Header */
+    .applicant-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 2px solid #F1F5F9;
+        background: linear-gradient(135deg, #F0F9FF, #E0F2FE);
+    }
+
+    .applicant-avatar {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 800;
+        font-size: 24px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .applicant-details h6 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0 0 6px 0;
+    }
+
+    .applicant-meta {
+        font-size: 13px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* History Timeline */
+    .history-timeline {
+        padding: 20px;
+    }
+
+    .history-item {
+        padding: 16px;
+        background: #F8FAFC;
+        border-left: 4px solid #3498db;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+
+    .history-year {
+        font-size: 12px;
+        font-weight: 700;
+        color: #3498db;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    .history-amount {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .history-institution {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .history-empty {
+        text-align: center;
+        padding: 32px;
+        color: #94A3B8;
+        font-size: 14px;
+    }
+
+    /* Stats Card */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 8px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        font-weight: 600;
+    }
+
+    /* Status Badge */
     .status-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
         text-transform: uppercase;
     }
 
@@ -411,41 +934,15 @@
         color: #065F46;
     }
 
-    .applicant-header {
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        border-bottom: 1px solid #F1F5F9;
-    }
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
 
-    .applicant-avatar {
-        width: 56px;
-        height: 56px;
-        background: rgba(52, 152, 219, 0.1);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-weight: 600;
-        font-size: 18px;
-        color: #3498db;
-    }
-
-    .applicant-details h6 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1E293B;
-        margin: 0 0 4px 0;
-    }
-
-    .applicant-meta {
-        font-size: 13px;
-        color: #64748B;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        .score-cards {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
     }
 
     @media (max-width: 768px) {
@@ -458,18 +955,16 @@
             flex-direction: column;
         }
 
-        .btn {
-            width: 100%;
-            justify-content: center;
+        .ai-amount {
+            font-size: 32px;
         }
 
-        .info-item {
-            flex-direction: column;
-            gap: 8px;
+        .score-cards {
+            grid-template-columns: 1fr;
         }
 
-        .info-value {
-            text-align: left;
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -488,42 +983,214 @@
             <li class="breadcrumb-item">
                 <a href="{% url 'allocation_list' %}">Allocations</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">Record Disbursement</li>
+            <li class="breadcrumb-item active">AI-Powered Disbursement</li>
         </ol>
     </nav>
 
     <!-- Page Header -->
     <div class="page-header">
-        <h1 class="page-title">
-            <i class="bi bi-cash-coin"></i>
-            Record Disbursement
-        </h1>
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="bi bi-robot"></i>
+                AI-Powered Disbursement
+            </h1>
+            <p class="page-subtitle">Intelligent, fair, and transparent bursary allocation</p>
+        </div>
         <a href="{% url 'allocation_list' %}" class="back-btn">
             <i class="bi bi-arrow-left"></i>
             Back to Allocations
         </a>
     </div>
 
-    <div class="row">
-        <!-- Main Form Section -->
-        <div class="col-lg-8">
+    <!-- AI Recommendation Banner -->
+    <div class="ai-banner">
+        <div class="ai-banner-content">
+            <div class="ai-badge">
+                <i class="bi bi-cpu"></i>
+                AI RECOMMENDATION
+            </div>
+            <div class="ai-amount">
+                KES {{ suggestion.suggested_amount|floatformat:2 }}
+            </div>
+            <div class="ai-score">
+                Composite Need Score: <strong>{{ suggestion.scores.composite_score }}/100</strong>
+            </div>
+            <div class="ai-reasoning">
+                <div class="ai-reasoning-title">
+                    <i class="bi bi-lightbulb"></i>
+                    Why this amount?
+                </div>
+                <ul class="ai-reasoning-list">
+                    {% for reason in suggestion.reasoning %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Red Flags Alert -->
+    {% if red_flags %}
+    <div class="red-flags-alert show">
+        <div class="red-flags-header">
+            <div class="red-flags-icon">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <h5 class="red-flags-title">⚠️ Attention Required - {{ red_flags|length }} Flag(s) Detected</h5>
+        </div>
+        {% for flag in red_flags %}
+        <div class="red-flag-item">
+            <span class="red-flag-severity {{ flag.severity }}">{{ flag.severity }}</span>
+            <span class="red-flag-message">{{ flag.message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Score Cards -->
+    <div class="score-cards">
+        <div class="score-card">
+            <div class="score-card-header">
+                <div class="score-icon need">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <span class="score-label">Financial Need</span>
+            </div>
+            <div class="score-value">{{ suggestion.scores.need_score }}</div>
+            <div class="score-bar">
+                <div class="score-bar-fill need" style="width: {{ suggestion.scores.need_score }}%"></div>
+            </div>
+        </div>
+
+        <div class="score-card">
+            <div class="score-card-header">
+                <div class="score-icon vulnerability">
+                    <i class="bi bi-heart-pulse"></i>
+                </div>
+                <span class="score-label">Vulnerability</span>
+            </div>
+            <div class="score-value">{{ suggestion.scores.vulnerability_score }}</div>
+            <div class="score-bar">
+                <div class="score-bar-fill vulnerability" style="width: {{ suggestion.scores.vulnerability_score }}%"></div>
+            </div>
+        </div>
+
+        <div class="score-card">
+            <div class="score-card-header">
+                <div class="score-icon merit">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <span class="score-label">Academic Merit</span>
+            </div>
+            <div class="score-value">{{ suggestion.scores.academic_merit }}</div>
+            <div class="score-bar">
+                <div class="score-bar-fill merit" style="width: {{ suggestion.scores.academic_merit }}%"></div>
+            </div>
+        </div>
+
+        <div class="score-card">
+            <div class="score-card-header">
+                <div class="score-icon equity">
+                    <i class="bi bi-balance-scale"></i>
+                </div>
+                <span class="score-label">Equity Score</span>
+            </div>
+            <div class="score-value">{{ suggestion.scores.equity_score }}</div>
+            <div class="score-bar">
+                <div class="score-bar-fill equity" style="width: {{ suggestion.scores.equity_score }}%"></div>
+            </div>
+        </div>
+
+        <div class="score-card">
+            <div class="score-card-header">
+                <div class="score-icon category">
+                    <i class="bi bi-tags"></i>
+                </div>
+                <span class="score-label">Category Priority</span>
+            </div>
+            <div class="score-value">{{ suggestion.scores.category_priority }}</div>
+            <div class="score-bar">
+                <div class="score-bar-fill category" style="width: {{ suggestion.scores.category_priority }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column: Disbursement Form -->
+        <div>
             <div class="section-container">
-                <!-- Alert Info -->
-                <div class="alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    <div class="alert-info-text">
-                        <strong>Important:</strong> Once recorded, this disbursement cannot be undone. Please ensure all details are correct before proceeding.
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="bi bi-cash-coin"></i>
                     </div>
+                    <h2 class="section-title">Disbursement Details</h2>
                 </div>
 
                 <form method="post" id="disbursementForm">
                     {% csrf_token %}
                     
-                    <div class="form-section">
+                    <!-- Final Amount -->
+                    <div class="form-group">
+                        <label for="final_amount" class="form-label">
+                            <i class="bi bi-currency-dollar"></i>
+                            Final Disbursement Amount
+                            <span class="required">*</span>
+                        </label>
+                        <div class="amount-input-wrapper">
+                            <input type="number" 
+                                   class="form-control amount-input" 
+                                   name="final_amount" 
+                                   id="final_amount" 
+                                   step="0.01"
+                                   min="{{ allocation.application.bursary_category.min_amount_per_applicant }}"
+                                   max="{{ allocation.application.bursary_category.max_amount_per_applicant }}"
+                                   value="{{ suggestion.suggested_amount }}"
+                                   required
+                                   placeholder="0.00">
+                        </div>
+                        <div class="amount-suggestion">
+                            <i class="bi bi-magic"></i>
+                            <span>AI Suggested: <strong>KES {{ suggestion.suggested_amount|floatformat:2 }}</strong></span>
+                            <button type="button" onclick="useAISuggestion()">Use Suggestion</button>
+                        </div>
+                        <div class="form-help">
+                            <i class="bi bi-info-circle"></i>
+                            Valid range: KES {{ allocation.application.bursary_category.min_amount_per_applicant|floatformat:2 }} - KES {{ allocation.application.bursary_category.max_amount_per_applicant|floatformat:2 }}
+                        </div>
+                    </div>
+
+                    <!-- Override Reason (shown when amount differs from AI suggestion) -->
+                    <div class="override-section" id="overrideSection">
+                        <div class="override-warning">
+                            <div class="override-icon">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </div>
+                            <div class="override-text">
+                                <strong>Override Detected</strong><br>
+                                Your amount differs significantly from the AI recommendation. Please provide a detailed reason for this override. This ensures transparency and accountability in the disbursement process.
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="override_reason" class="form-label">
+                                <i class="bi bi-pen"></i>
+                                Override Reason
+                                <span class="required">*</span>
+                            </label>
+                            <textarea class="form-control" 
+                                      name="override_reason" 
+                                      id="override_reason" 
+                                      rows="4" 
+                                      placeholder="Explain why you are deviating from the AI recommendation..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Cheque Number -->
+                    <div class="form-group">
                         <label for="cheque_number" class="form-label">
                             <i class="bi bi-receipt"></i>
-                            Cheque Number 
-                            <span class="text-danger">*</span>
+                            Cheque Number
+                            <span class="required">*</span>
                         </label>
                         <input type="text" 
                                class="form-control" 
@@ -533,13 +1200,14 @@
                                placeholder="Enter cheque number (e.g., CHQ-001234)"
                                pattern="[A-Za-z0-9\-]+"
                                title="Please enter a valid cheque number">
-                        <div class="form-text">
+                        <div class="form-help">
                             <i class="bi bi-lightbulb"></i>
                             Enter the unique cheque number for this disbursement
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <!-- Disbursement Date -->
+                    <div class="form-group">
                         <label for="disbursement_date" class="form-label">
                             <i class="bi bi-calendar-event"></i>
                             Disbursement Date
@@ -550,113 +1218,99 @@
                                id="disbursement_date" 
                                value="{% now 'Y-m-d' %}"
                                max="{% now 'Y-m-d' %}">
-                        <div class="form-text">
+                        <div class="form-help">
                             <i class="bi bi-info-circle"></i>
                             Date when the disbursement was made
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <!-- Remarks -->
+                    <div class="form-group">
                         <label for="remarks" class="form-label">
                             <i class="bi bi-chat-text"></i>
-                            Remarks
+                            Additional Remarks
                         </label>
                         <textarea class="form-control" 
                                   name="remarks" 
                                   id="remarks" 
                                   rows="4" 
                                   placeholder="Enter any additional remarks about the disbursement (optional)..."></textarea>
-                        <div class="form-text">
+                        <div class="form-help">
                             <i class="bi bi-info-circle"></i>
                             Optional notes about this disbursement
                         </div>
                     </div>
 
-                    <!-- Confirmation Section -->
-                    <div class="confirmation-section">
-                        <div class="confirmation-icon">
+                    <!-- Confirmation Box -->
+                    <div class="confirmation-box">
+                        <div class="confirmation-icon-wrapper">
                             <i class="bi bi-exclamation-triangle"></i>
                         </div>
-                        <h5>Confirm Disbursement</h5>
-                        <p>
-                            You are about to disburse <strong>KES {{ allocation.amount_allocated|floatformat:2 }}</strong> 
-                            to <strong>{{ allocation.application.applicant.user.get_full_name }}</strong>
+                        <h5 class="confirmation-title">Confirm Disbursement</h5>
+                        <p class="confirmation-recipient">
+                            You are about to disburse to<br>
+                            <strong>{{ allocation.application.applicant.user.get_full_name }}</strong>
                         </p>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="confirmDisbursement" required>
+                        <div class="confirmation-amount" id="confirmAmount">
+                            KES {{ suggestion.suggested_amount|floatformat:2 }}
+                        </div>
+                        <div class="form-check-wrapper">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="confirmDisbursement" 
+                                   required>
                             <label class="form-check-label" for="confirmDisbursement">
                                 I confirm that this disbursement has been completed and all details are correct
                             </label>
                         </div>
                     </div>
 
+                    <!-- Form Actions -->
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-success" id="submitBtn">
+                        <button type="submit" class="btn btn-success" id="submitBtn" disabled>
                             <i class="bi bi-check-circle"></i>
                             Record Disbursement
                         </button>
-                        <a href="{% url 'allocation_list' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'allocation_list' %}" class="btn btn-cancel">
                             <i class="bi bi-x-circle"></i>
                             Cancel
                         </a>
                     </div>
                 </form>
             </div>
-        </div>
 
-        <!-- Sidebar with Details -->
-        <div class="col-lg-4">
-            <!-- Allocation Information -->
-            <div class="info-card">
-                <div class="info-card-header">
-                    <h5 class="info-card-title">
-                        <i class="bi bi-info-circle"></i>
-                        Allocation Details
-                    </h5>
+            <!-- Comparative Statistics -->
+            <div class="section-container">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h2 class="section-title">Comparative Statistics</h2>
                 </div>
-                <div class="info-card-body">
-                    <div class="info-item">
-                        <span class="info-label">
-                            <i class="bi bi-hash"></i>
-                            Application
-                        </span>
-                        <span class="info-value">{{ allocation.application.application_number }}</span>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">KES {{ stats.category.avg_amount|floatformat:2|default:"0.00" }}</div>
+                        <div class="stat-label">Category Average</div>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">
-                            <i class="bi bi-cash-stack"></i>
-                            Amount
-                        </span>
-                        <span class="info-value amount-highlight">KES {{ allocation.amount_allocated|floatformat:2 }}</span>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.category.total_beneficiaries|default:0 }}</div>
+                        <div class="stat-label">Category Beneficiaries</div>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">
-                            <i class="bi bi-calendar-check"></i>
-                            Approved On
-                        </span>
-                        <span class="info-value">{{ allocation.allocation_date|date:"M d, Y" }}</span>
+                    <div class="stat-item">
+                        <div class="stat-value">KES {{ stats.ward.avg_amount|floatformat:2|default:"0.00" }}</div>
+                        <div class="stat-label">Ward Average</div>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">
-                            <i class="bi bi-person-check"></i>
-                            Approved By
-                        </span>
-                        <span class="info-value">{{ allocation.approved_by.get_full_name|default:allocation.approved_by.username }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">
-                            <i class="bi bi-toggle-on"></i>
-                            Status
-                        </span>
-                        <span class="info-value">
-                            <span class="status-badge status-approved">
-                                <i class="bi bi-check-circle"></i>Approved
-                            </span>
-                        </span>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.ward.total_beneficiaries|default:0 }}</div>
+                        <div class="stat-label">Ward Beneficiaries</div>
                     </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Right Column: Applicant & History Info -->
+        <div>
             <!-- Applicant Information -->
             <div class="info-card">
                 <div class="info-card-header">
@@ -701,6 +1355,65 @@
                             Ward
                         </span>
                         <span class="info-value">{{ allocation.application.applicant.ward.name|default:"Not specified" }}</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-pin-map"></i>
+                            Constituency
+                        </span>
+                        <span class="info-value">{{ allocation.application.applicant.constituency.name|default:"Not specified" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Allocation Information -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-info-circle"></i>
+                        Allocation Details
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-hash"></i>
+                            Application
+                        </span>
+                        <span class="info-value">{{ allocation.application.application_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-cash-stack"></i>
+                            Allocated Amount
+                        </span>
+                        <span class="info-value amount-highlight">KES {{ allocation.amount_allocated|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-calendar-check"></i>
+                            Approved On
+                        </span>
+                        <span class="info-value">{{ allocation.allocation_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-person-check"></i>
+                            Approved By
+                        </span>
+                        <span class="info-value">{{ allocation.approved_by.get_full_name|default:allocation.approved_by.username }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-toggle-on"></i>
+                            Status
+                        </span>
+                        <span class="info-value">
+                            <span class="status-badge status-approved">
+                                <i class="bi bi-check-circle"></i>Approved
+                            </span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -760,6 +1473,83 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Financial Information -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-calculator"></i>
+                        Financial Summary
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-receipt"></i>
+                            Total Fees
+                        </span>
+                        <span class="info-value">KES {{ allocation.application.total_fees_payable|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-check2-square"></i>
+                            Fees Paid
+                        </span>
+                        <span class="info-value">KES {{ allocation.application.fees_paid|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-exclamation-circle"></i>
+                            Outstanding Balance
+                        </span>
+                        <span class="info-value" style="color: #DC2626; font-weight: 800;">KES {{ allocation.application.fees_balance|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            <i class="bi bi-hand-index"></i>
+                            Amount Requested
+                        </span>
+                        <span class="info-value">KES {{ allocation.application.amount_requested|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applicant History -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="info-card-title">
+                        <i class="bi bi-clock-history"></i>
+                        Previous Allocations
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    {% if history.allocations %}
+                    <div class="history-timeline">
+                        {% for prev_allocation in history.allocations %}
+                        <div class="history-item">
+                            <div class="history-year">{{ prev_allocation.application.fiscal_year.name }}</div>
+                            <div class="history-amount">KES {{ prev_allocation.amount_allocated|floatformat:2 }}</div>
+                            <div class="history-institution">{{ prev_allocation.application.institution.name }}</div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="info-item" style="margin-top: 16px; background: #F0F9FF;">
+                            <span class="info-label">
+                                <i class="bi bi-sum"></i>
+                                Total Received
+                            </span>
+                            <span class="info-value" style="color: #0369A1; font-size: 18px;">KES {{ history.total_received|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="history-empty">
+                        <i class="bi bi-inbox" style="font-size: 48px; margin-bottom: 12px; display: block;"></i>
+                        <p>No previous allocations found</p>
+                        <small>This is the applicant's first bursary</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -770,54 +1560,133 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('disbursementForm');
     const submitBtn = document.getElementById('submitBtn');
+    const amountInput = document.getElementById('final_amount');
     const chequeInput = document.getElementById('cheque_number');
     const confirmCheckbox = document.getElementById('confirmDisbursement');
+    const overrideSection = document.getElementById('overrideSection');
+    const overrideReasonInput = document.getElementById('override_reason');
+    const confirmAmountDisplay = document.getElementById('confirmAmount');
+    
+    const aiSuggestedAmount = parseFloat('{{ suggestion.suggested_amount }}');
+    const minAmount = parseFloat('{{ allocation.application.bursary_category.min_amount_per_applicant }}');
+    const maxAmount = parseFloat('{{ allocation.application.bursary_category.max_amount_per_applicant }}');
+
+    // Update confirmation amount display
+    function updateConfirmationAmount() {
+        const amount = parseFloat(amountInput.value) || 0;
+        confirmAmountDisplay.textContent = `KES ${amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+
+    // Check if override reason is needed
+    function checkOverrideNeeded() {
+        const currentAmount = parseFloat(amountInput.value) || 0;
+        const variance = Math.abs(currentAmount - aiSuggestedAmount);
+        const variancePercentage = aiSuggestedAmount > 0 ? (variance / aiSuggestedAmount * 100) : 0;
+        
+        if (variancePercentage > 20) {
+            overrideSection.classList.add('show');
+            overrideReasonInput.required = true;
+        } else {
+            overrideSection.classList.remove('show');
+            overrideReasonInput.required = false;
+            overrideReasonInput.value = '';
+        }
+    }
 
     // Form validation
     function validateForm() {
+        const amount = parseFloat(amountInput.value) || 0;
         const chequeNumber = chequeInput.value.trim();
         const isConfirmed = confirmCheckbox.checked;
         
-        return chequeNumber.length > 0 && isConfirmed;
+        // Check if amount is within valid range
+        if (amount < minAmount || amount > maxAmount) {
+            return false;
+        }
+        
+        // Check if cheque number is provided
+        if (chequeNumber.length === 0) {
+            return false;
+        }
+        
+        // Check if override reason is provided when needed
+        if (overrideSection.classList.contains('show') && overrideReasonInput.value.trim().length === 0) {
+            return false;
+        }
+        
+        // Check if confirmed
+        if (!isConfirmed) {
+            return false;
+        }
+        
+        return true;
     }
 
-    // Enable/disable submit button based on form validity
+    // Enable/disable submit button
     function toggleSubmitButton() {
         submitBtn.disabled = !validateForm();
     }
 
     // Add event listeners
+    amountInput.addEventListener('input', function() {
+        updateConfirmationAmount();
+        checkOverrideNeeded();
+        toggleSubmitButton();
+    });
+    
     chequeInput.addEventListener('input', toggleSubmitButton);
     confirmCheckbox.addEventListener('change', toggleSubmitButton);
+    overrideReasonInput.addEventListener('input', toggleSubmitButton);
 
-    // Initial validation
-    toggleSubmitButton();
+    // Cheque number formatting
+    chequeInput.addEventListener('input', function() {
+        let value = this.value.toUpperCase();
+        value = value.replace(/[^A-Z0-9\-]/g, '');
+        this.value = value;
+    });
 
     // Form submission
     form.addEventListener('submit', function(e) {
         if (!validateForm()) {
             e.preventDefault();
+            alert('Please fill in all required fields correctly.');
             return false;
         }
 
         // Show loading state
-        submitBtn.classList.add('btn-loading');
-        submitBtn.innerHTML = '<span style="opacity: 0;">Processing...</span>';
         submitBtn.disabled = true;
-
-        // Allow form submission to continue
+        submitBtn.innerHTML = '<span style="opacity: 0.7;">Processing...</span>';
     });
 
-    // Cheque number formatting
-    chequeInput.addEventListener('input', function() {
-        let value = this.value.toUpperCase();
-        // Remove any characters that aren't alphanumeric or hyphen
-        value = value.replace(/[^A-Z0-9\-]/g, '');
-        this.value = value;
-    });
+    // Initial validation
+    updateConfirmationAmount();
+    checkOverrideNeeded();
+    toggleSubmitButton();
 
-    // Auto-focus on cheque number input
-    chequeInput.focus();
+    // Auto-focus on amount input
+    amountInput.focus();
+    amountInput.select();
 });
+
+// Use AI Suggestion function
+function useAISuggestion() {
+    const amountInput = document.getElementById('final_amount');
+    const aiAmount = parseFloat('{{ suggestion.suggested_amount }}');
+    amountInput.value = aiAmount.toFixed(2);
+    
+    // Trigger input event to update all related elements
+    amountInput.dispatchEvent(new Event('input'));
+    
+    // Show feedback
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '✓ Applied';
+    btn.style.background = '#10B981';
+    
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '#0EA5E9';
+    }, 2000);
+}
 </script>
 {% endblock %}

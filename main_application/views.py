@@ -3623,19 +3623,346 @@ def export_allocations_to_excel(allocations, request):
     return response
 
 
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.utils import timezone
+from django.db.models import Sum, Avg, Count, Q
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from decimal import Decimal
+import requests
+from datetime import timedelta
+
+# Import your models
+from .models import (
+    Allocation, Application, Applicant, User, 
+    EmailLog, SMSLog, FiscalYear, WardAllocation,
+    BursaryCategory, AuditLog
+)
+
+
+def is_finance(user):
+    """Check if user is finance officer"""
+    return user.user_type == 'finance'
+
+
+class DisbursementCalculator:
+    """
+    Intelligent disbursement amount calculator based on multiple factors
+    Similar to HELB's needs-based assessment
+    """
+    
+    # Scoring weights (total = 100)
+    WEIGHTS = {
+        'need_score': 30,           # Financial need (30%)
+        'vulnerability_score': 25,   # Vulnerability factors (25%)
+        'academic_merit': 15,        # Academic performance (15%)
+        'equity_score': 15,          # Geographic/previous allocation equity (15%)
+        'category_priority': 15,     # Category-based priority (15%)
+    }
+    
+    @staticmethod
+    def calculate_need_score(application):
+        """
+        Calculate financial need score (0-100)
+        Based on: fees balance, family income, siblings in school
+        """
+        score = 0
+        
+        # 1. Fee balance severity (40 points)
+        if application.total_fees_payable > 0:
+            balance_ratio = float(application.fees_balance) / float(application.total_fees_payable)
+            if balance_ratio >= 0.8:  # Owes 80%+ of fees
+                score += 40
+            elif balance_ratio >= 0.6:  # Owes 60-80%
+                score += 30
+            elif balance_ratio >= 0.4:  # Owes 40-60%
+                score += 20
+            else:
+                score += 10
+        
+        # 2. Household income (30 points)
+        if application.household_monthly_income:
+            monthly_income = float(application.household_monthly_income)
+            if monthly_income < 10000:  # Below 10k
+                score += 30
+            elif monthly_income < 20000:  # 10k-20k
+                score += 25
+            elif monthly_income < 40000:  # 20k-40k
+                score += 15
+            elif monthly_income < 60000:  # 40k-60k
+                score += 10
+            else:
+                score += 5
+        else:
+            score += 20  # No income reported = high need
+        
+        # 3. Siblings in school (20 points)
+        if application.number_of_siblings_in_school >= 4:
+            score += 20
+        elif application.number_of_siblings_in_school >= 3:
+            score += 15
+        elif application.number_of_siblings_in_school >= 2:
+            score += 10
+        elif application.number_of_siblings_in_school >= 1:
+            score += 5
+        
+        # 4. Other bursaries received (10 points - inverse)
+        if application.other_bursaries:
+            if application.other_bursaries_amount < 10000:
+                score += 10
+            elif application.other_bursaries_amount < 20000:
+                score += 7
+            else:
+                score += 3
+        else:
+            score += 10
+        
+        return min(score, 100)
+    
+    @staticmethod
+    def calculate_vulnerability_score(application):
+        """
+        Calculate vulnerability score (0-100)
+        Based on: orphan status, disability, chronic illness, special needs
+        """
+        score = 0
+        
+        # Total orphan (both parents deceased)
+        if application.is_total_orphan:
+            score += 50
+        # Single orphan
+        elif application.is_orphan:
+            score += 35
+        
+        # Disability
+        if application.is_disabled or application.applicant.special_needs:
+            score += 30
+        
+        # Chronic illness
+        if application.has_chronic_illness:
+            score += 20
+        
+        return min(score, 100)
+    
+    @staticmethod
+    def calculate_academic_merit(application):
+        """
+        Calculate academic merit score (0-100)
+        Rewards good performance but doesn't overly penalize struggling students
+        """
+        if not application.previous_academic_year_average:
+            return 50  # Neutral score if no data
+        
+        average = float(application.previous_academic_year_average)
+        
+        if average >= 75:  # First Class/Distinction
+            return 100
+        elif average >= 65:  # Second Upper
+            return 85
+        elif average >= 55:  # Second Lower
+            return 70
+        elif average >= 50:  # Pass
+            return 60
+        else:  # Below 50 but still trying
+            return 40
+    
+    @staticmethod
+    def calculate_equity_score(application):
+        """
+        Calculate equity score (0-100)
+        Ensures fair distribution and prevents repeat large allocations
+        """
+        score = 100
+        
+        # Check previous allocations
+        if application.has_received_previous_allocation:
+            prev_amount = float(application.previous_allocation_amount)
+            
+            # Penalize heavily for large previous allocations
+            if prev_amount >= 50000:
+                score -= 50
+            elif prev_amount >= 30000:
+                score -= 35
+            elif prev_amount >= 20000:
+                score -= 25
+            elif prev_amount >= 10000:
+                score -= 15
+        else:
+            # Bonus for first-time applicants
+            score += 20
+        
+        # Ward allocation balance check
+        try:
+            ward_allocation = WardAllocation.objects.get(
+                fiscal_year=application.fiscal_year,
+                ward=application.applicant.ward
+            )
+            
+            # Calculate ward utilization
+            if ward_allocation.allocated_amount > 0:
+                utilization = float(ward_allocation.spent_amount) / float(ward_allocation.allocated_amount)
+                
+                # Favor wards with lower utilization
+                if utilization < 0.5:  # Less than 50% used
+                    score += 15
+                elif utilization < 0.7:  # 50-70% used
+                    score += 10
+                elif utilization < 0.9:  # 70-90% used
+                    score += 5
+                # No bonus if ward is almost exhausted
+        except WardAllocation.DoesNotExist:
+            pass
+        
+        return max(min(score, 100), 0)
+    
+    @staticmethod
+    def calculate_category_priority(application):
+        """
+        Calculate category-based priority (0-100)
+        Different categories have different urgency levels
+        """
+        category_type = application.bursary_category.category_type
+        
+        priority_map = {
+            'special_school': 100,      # Highest priority
+            'orphan': 95,
+            'needy': 90,
+            'freshers': 85,              # University freshers need support
+            'highschool': 80,
+            'technical': 75,
+            'university': 70,
+            'college': 70,
+            'merit': 60,                # Merit-based is lower priority
+        }
+        
+        return priority_map.get(category_type, 70)
+    
+    @classmethod
+    def calculate_composite_score(cls, application):
+        """
+        Calculate final composite score and suggested amount
+        """
+        # Calculate individual scores
+        need = cls.calculate_need_score(application)
+        vulnerability = cls.calculate_vulnerability_score(application)
+        merit = cls.calculate_academic_merit(application)
+        equity = cls.calculate_equity_score(application)
+        category = cls.calculate_category_priority(application)
+        
+        # Calculate weighted composite score
+        composite = (
+            (need * cls.WEIGHTS['need_score'] / 100) +
+            (vulnerability * cls.WEIGHTS['vulnerability_score'] / 100) +
+            (merit * cls.WEIGHTS['academic_merit'] / 100) +
+            (equity * cls.WEIGHTS['equity_score'] / 100) +
+            (category * cls.WEIGHTS['category_priority'] / 100)
+        )
+        
+        return {
+            'composite_score': round(composite, 2),
+            'need_score': round(need, 2),
+            'vulnerability_score': round(vulnerability, 2),
+            'academic_merit': round(merit, 2),
+            'equity_score': round(equity, 2),
+            'category_priority': round(category, 2),
+        }
+    
+    @classmethod
+    def suggest_amount(cls, application):
+        """
+        Suggest disbursement amount based on composite score
+        """
+        scores = cls.calculate_composite_score(application)
+        composite_score = scores['composite_score']
+        
+        # Get category limits
+        category = application.bursary_category
+        max_amount = float(category.max_amount_per_applicant)
+        min_amount = float(category.min_amount_per_applicant)
+        
+        # Calculate base suggested amount (percentage of max based on score)
+        score_percentage = composite_score / 100
+        base_amount = min_amount + (score_percentage * (max_amount - min_amount))
+        
+        # Adjust based on fees balance (don't exceed what's needed)
+        fees_balance = float(application.fees_balance)
+        suggested_amount = min(base_amount, fees_balance)
+        
+        # Ensure within category limits
+        suggested_amount = max(min_amount, min(suggested_amount, max_amount))
+        
+        # Round to nearest 1000
+        suggested_amount = round(suggested_amount / 1000) * 1000
+        
+        return {
+            'suggested_amount': Decimal(str(suggested_amount)),
+            'scores': scores,
+            'reasoning': cls._generate_reasoning(application, scores, suggested_amount)
+        }
+    
+    @staticmethod
+    def _generate_reasoning(application, scores, suggested_amount):
+        """
+        Generate human-readable reasoning for the suggestion
+        """
+        reasons = []
+        
+        # Need-based reasoning
+        if scores['need_score'] >= 80:
+            reasons.append("Very high financial need based on fee balance and family income")
+        elif scores['need_score'] >= 60:
+            reasons.append("Significant financial need evident")
+        
+        # Vulnerability reasoning
+        if scores['vulnerability_score'] >= 80:
+            reasons.append("High vulnerability status (orphan/disability/chronic illness)")
+        elif scores['vulnerability_score'] >= 50:
+            reasons.append("Moderate vulnerability factors present")
+        
+        # Merit reasoning
+        if scores['academic_merit'] >= 80:
+            reasons.append("Strong academic performance demonstrated")
+        elif scores['academic_merit'] >= 60:
+            reasons.append("Satisfactory academic progress")
+        
+        # Equity reasoning
+        if scores['equity_score'] >= 90:
+            reasons.append("First-time applicant - equity consideration")
+        elif scores['equity_score'] < 50:
+            reasons.append("Previous allocation received - equity adjustment applied")
+        
+        # Category reasoning
+        if scores['category_priority'] >= 90:
+            reasons.append("High priority category (special needs/orphan/needy)")
+        
+        # Fee coverage
+        fees_balance = float(application.fees_balance)
+        coverage = (suggested_amount / fees_balance * 100) if fees_balance > 0 else 0
+        reasons.append(f"Covers {coverage:.1f}% of outstanding fee balance")
+        
+        return reasons
+
+
 @login_required
-@user_passes_test(is_finance)
+@user_passes_test(is_admin)
 def disbursement_create(request, allocation_id):
     """
-    Enhanced disbursement recording with automatic email and SMS notifications
+    Enhanced disbursement recording with AI-powered amount suggestion
+    and comprehensive transparency features
     """
     allocation = get_object_or_404(
         Allocation.objects.select_related(
             'application__applicant__user',
             'application__applicant__ward',
+            'application__applicant__constituency',
             'application__institution',
             'application__fiscal_year',
-            'application__disbursement_round'
+            'application__disbursement_round',
+            'application__bursary_category'
         ),
         id=allocation_id
     )
@@ -3645,54 +3972,274 @@ def disbursement_create(request, allocation_id):
         messages.warning(request, 'This allocation has already been disbursed.')
         return redirect('allocation_list')
     
+    # Calculate AI suggestion
+    calculator = DisbursementCalculator()
+    suggestion = calculator.suggest_amount(allocation.application)
+    
+    # Get comparative statistics
+    stats = get_disbursement_statistics(allocation.application)
+    
+    # Get applicant's history
+    history = get_applicant_history(allocation.application.applicant)
+    
+    # Check for red flags
+    red_flags = check_red_flags(allocation.application)
+    
     if request.method == 'POST':
         cheque_number = request.POST.get('cheque_number', '').strip()
         disbursement_date = request.POST.get('disbursement_date')
+        final_amount = request.POST.get('final_amount', '').strip()
         remarks = request.POST.get('remarks', '').strip()
+        override_reason = request.POST.get('override_reason', '').strip()
         
         # Validation
         if not cheque_number:
             messages.error(request, 'Cheque number is required.')
-            return render(request, 'admin/disbursement_create.html', {'allocation': allocation})
+            return render(request, 'admin/disbursement_create.html', {
+                'allocation': allocation,
+                'suggestion': suggestion,
+                'stats': stats,
+                'history': history,
+                'red_flags': red_flags,
+            })
         
         # Check for duplicate cheque number
         if Allocation.objects.filter(cheque_number=cheque_number).exclude(id=allocation_id).exists():
             messages.error(request, 'This cheque number has already been used.')
-            return render(request, 'admin/disbursement_create.html', {'allocation': allocation})
+            return render(request, 'admin/disbursement_create.html', {
+                'allocation': allocation,
+                'suggestion': suggestion,
+                'stats': stats,
+                'history': history,
+                'red_flags': red_flags,
+            })
         
         try:
+            final_amount_decimal = Decimal(final_amount)
+            
+            # Validate amount against category limits
+            category = allocation.application.bursary_category
+            if final_amount_decimal < category.min_amount_per_applicant:
+                messages.error(request, f'Amount cannot be less than category minimum (KES {category.min_amount_per_applicant:,.2f})')
+                raise ValueError("Amount below minimum")
+            
+            if final_amount_decimal > category.max_amount_per_applicant:
+                messages.error(request, f'Amount cannot exceed category maximum (KES {category.max_amount_per_applicant:,.2f})')
+                raise ValueError("Amount above maximum")
+            
+            # Check if amount differs significantly from suggestion
+            suggested_amount = suggestion['suggested_amount']
+            variance = abs(final_amount_decimal - suggested_amount)
+            variance_percentage = (variance / suggested_amount * 100) if suggested_amount > 0 else 0
+            
+            # Require override reason if variance > 20%
+            if variance_percentage > 20 and not override_reason:
+                messages.error(request, 'Override reason required when deviating more than 20% from AI suggestion.')
+                raise ValueError("Override reason required")
+            
             # Update allocation
+            allocation.amount_allocated = final_amount_decimal
             allocation.cheque_number = cheque_number
             allocation.is_disbursed = True
             allocation.disbursement_date = disbursement_date or timezone.now().date()
             allocation.disbursed_by = request.user
-            allocation.remarks = remarks
+            
+            # Combine remarks with override reason if present
+            if override_reason:
+                allocation.remarks = f"OVERRIDE REASON: {override_reason}\n\n{remarks}"
+            else:
+                allocation.remarks = remarks
+            
             allocation.save()
             
             # Update application status
             allocation.application.status = 'disbursed'
             allocation.application.save()
             
+            # Update ward allocation spent amount
+            try:
+                ward_allocation = WardAllocation.objects.get(
+                    fiscal_year=allocation.application.fiscal_year,
+                    ward=allocation.application.applicant.ward
+                )
+                ward_allocation.spent_amount += final_amount_decimal
+                ward_allocation.beneficiaries_count += 1
+                ward_allocation.save()
+            except WardAllocation.DoesNotExist:
+                pass
+            
+            # Create audit log
+            AuditLog.objects.create(
+                user=request.user,
+                action='disburse',
+                table_affected='Allocation',
+                record_id=str(allocation.id),
+                description=f"Disbursed KES {final_amount_decimal:,.2f} to {allocation.application.applicant.user.get_full_name()} (App: {allocation.application.application_number})",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                new_values={
+                    'amount': str(final_amount_decimal),
+                    'cheque_number': cheque_number,
+                    'ai_suggested': str(suggested_amount),
+                    'variance_percentage': f"{variance_percentage:.2f}%",
+                    'override_reason': override_reason if override_reason else None,
+                }
+            )
+            
             # Send notifications
-            send_disbursement_notifications(allocation)
+            send_disbursement_notifications(allocation, suggestion)
             
             messages.success(
                 request, 
                 f'Disbursement recorded successfully for {allocation.application.applicant.user.get_full_name()}. '
-                f'Notifications have been sent.'
+                f'Amount: KES {final_amount_decimal:,.2f}. Notifications have been sent.'
             )
             return redirect('allocation_list')
             
-        except Exception as e:
-            messages.error(request, f'Error recording disbursement: {str(e)}')
+        except (ValueError, TypeError) as e:
+            messages.error(request, f'Invalid amount entered. Please enter a valid number.')
     
-    context = {'allocation': allocation}
+    context = {
+        'allocation': allocation,
+        'suggestion': suggestion,
+        'stats': stats,
+        'history': history,
+        'red_flags': red_flags,
+    }
     return render(request, 'admin/disbursement_create.html', context)
 
 
-def send_disbursement_notifications(allocation):
+def get_disbursement_statistics(application):
     """
-    Send email and SMS notifications after disbursement
+    Get comparative statistics for context
+    """
+    fiscal_year = application.fiscal_year
+    category = application.bursary_category
+    ward = application.applicant.ward
+    
+    # Category averages
+    category_stats = Allocation.objects.filter(
+        application__fiscal_year=fiscal_year,
+        application__bursary_category=category,
+        is_disbursed=True
+    ).aggregate(
+        avg_amount=Avg('amount_allocated'),
+        total_beneficiaries=Count('id'),
+        total_disbursed=Sum('amount_allocated')
+    )
+    
+    # Ward statistics
+    ward_stats = Allocation.objects.filter(
+        application__fiscal_year=fiscal_year,
+        application__applicant__ward=ward,
+        is_disbursed=True
+    ).aggregate(
+        avg_amount=Avg('amount_allocated'),
+        total_beneficiaries=Count('id'),
+        total_disbursed=Sum('amount_allocated')
+    )
+    
+    return {
+        'category': category_stats,
+        'ward': ward_stats,
+    }
+
+
+def get_applicant_history(applicant):
+    """
+    Get applicant's historical allocations
+    """
+    previous_allocations = Allocation.objects.filter(
+        application__applicant=applicant
+    ).exclude(
+        application__fiscal_year=applicant.applications.first().fiscal_year
+    ).select_related(
+        'application__fiscal_year',
+        'application__bursary_category',
+        'application__institution'
+    ).order_by('-allocation_date')[:5]
+    
+    total_received = previous_allocations.aggregate(
+        total=Sum('amount_allocated')
+    )['total'] or Decimal('0')
+    
+    return {
+        'allocations': previous_allocations,
+        'total_received': total_received,
+        'count': previous_allocations.count()
+    }
+
+
+def check_red_flags(application):
+    """
+    Check for potential red flags or issues
+    """
+    flags = []
+    
+    # 1. Check for duplicate applications in same fiscal year
+    duplicate_apps = Application.objects.filter(
+        applicant=application.applicant,
+        fiscal_year=application.fiscal_year
+    ).exclude(id=application.id)
+    
+    if duplicate_apps.exists():
+        flags.append({
+            'severity': 'high',
+            'message': f'Applicant has {duplicate_apps.count()} other application(s) in this fiscal year',
+            'type': 'duplicate'
+        })
+    
+    # 2. Check for suspiciously high previous allocations
+    if application.previous_allocation_amount > 100000:
+        flags.append({
+            'severity': 'medium',
+            'message': f'Previous allocation was very high (KES {application.previous_allocation_amount:,.2f})',
+            'type': 'high_previous'
+        })
+    
+    # 3. Check for unrealistic fee balance
+    if application.fees_balance > application.total_fees_payable:
+        flags.append({
+            'severity': 'high',
+            'message': 'Fee balance exceeds total fees payable - data inconsistency',
+            'type': 'data_error'
+        })
+    
+    # 4. Check for missing critical documents
+    critical_docs = ['fee_structure', 'admission_letter', 'id_card']
+    uploaded_docs = application.documents.values_list('document_type', flat=True)
+    missing_docs = [doc for doc in critical_docs if doc not in uploaded_docs]
+    
+    if missing_docs:
+        flags.append({
+            'severity': 'medium',
+            'message': f'Missing critical documents: {", ".join(missing_docs)}',
+            'type': 'missing_docs'
+        })
+    
+    # 5. Check if amount requested is excessive
+    if application.amount_requested > application.fees_balance * Decimal('1.2'):
+        flags.append({
+            'severity': 'low',
+            'message': 'Amount requested exceeds fee balance by more than 20%',
+            'type': 'excessive_request'
+        })
+    
+    return flags
+
+
+def get_client_ip(request):
+    """Get client IP address from request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def send_disbursement_notifications(allocation, suggestion):
+    """
+    Send comprehensive email and SMS notifications after disbursement
     """
     applicant = allocation.application.applicant
     user = applicant.user
@@ -3707,32 +4254,71 @@ def send_disbursement_notifications(allocation):
         'disbursement_date': allocation.disbursement_date,
         'institution_name': institution.name,
         'fiscal_year': allocation.application.fiscal_year.name,
+        'ai_score': suggestion['scores']['composite_score'],
+        'disbursed_by': allocation.disbursed_by.get_full_name(),
     }
+    
+    # Safe formatting of disbursement date - handle both string and date objects
+    disbursement_date = context['disbursement_date']
+    if disbursement_date:
+        if isinstance(disbursement_date, str):
+            # Already a string, use as-is or parse it
+            disbursement_date_str = disbursement_date
+        else:
+            # It's a date/datetime object, format it
+            disbursement_date_str = disbursement_date.strftime('%B %d, %Y')
+    else:
+        disbursement_date_str = 'Pending'
+    
+    # Prepare email content BEFORE try block
+    subject = f"Bursary Disbursement Confirmation - {allocation.application.application_number}"
+    
+    plain_message = f"""
+Dear {context['applicant_name']},
+
+BURSARY DISBURSEMENT CONFIRMATION
+
+We are pleased to inform you that your bursary application ({context['application_number']}) has been successfully processed and disbursed.
+
+DISBURSEMENT DETAILS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Amount Disbursed:    KES {context['amount']:,.2f}
+Cheque Number:       {context['cheque_number']}
+Disbursement Date:   {disbursement_date_str}
+Institution:         {context['institution_name']}
+Academic Year:       {context['fiscal_year']}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT HAPPENS NEXT:
+1. The payment has been sent directly to your institution
+2. Please visit your school's finance office within 7 days
+3. Ensure your fee balance is updated in the school system
+4. Keep this notification for your records
+
+IMPORTANT NOTES:
+- This disbursement is based on our AI-powered needs assessment
+- Your composite need score: {context['ai_score']:.2f}/100
+- Funds are sent directly to institutions to prevent misuse
+- Any unused funds will NOT be refunded to you personally
+
+For inquiries or issues with fee clearance, please contact:
+- Our office through the bursary portal
+- Your institution's finance office
+- Email: bursary@county.go.ke
+
+Thank you for your application. We wish you success in your studies!
+
+Best regards,
+County Bursary Management Committee
+{allocation.application.applicant.county.name} County
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This is an automated message. Please do not reply to this email.
+    """
     
     # Send Email
     try:
-        subject = f"Bursary Disbursement Confirmation - {allocation.application.application_number}"
-        
         html_message = render_to_string('emails/disbursement_notification.html', context)
-        plain_message = f"""
-Dear {context['applicant_name']},
-
-We are pleased to inform you that your bursary application ({context['application_number']}) has been successfully disbursed.
-
-Disbursement Details:
-- Amount: KES {context['amount']:,.2f}
-- Cheque Number: {context['cheque_number']}
-- Disbursement Date: {context['disbursement_date'].strftime('%B %d, %Y')}
-- Institution: {context['institution_name']}
-- Fiscal Year: {context['fiscal_year']}
-
-The payment has been sent directly to your institution. Please follow up with your school's finance office for fee clearance.
-
-For any inquiries, please contact our office or visit the bursary portal.
-
-Best regards,
-County Bursary Committee
-        """
         
         send_mail(
             subject=subject,
@@ -3756,25 +4342,29 @@ County Bursary Committee
         
     except Exception as e:
         print(f"Email sending failed: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        
         EmailLog.objects.create(
             recipient=user,
             email_address=user.email,
             subject=subject,
             message=plain_message,
             related_application=allocation.application,
-            status='failed'
+            status='failed',
         )
     
     # Send SMS
+    sms_message = None
     if user.phone_number:
         try:
             sms_message = (
-                f"Dear {user.first_name}, your bursary of KES {allocation.amount_allocated:,.2f} "
-                f"(Cheque: {allocation.cheque_number}) has been disbursed to {institution.name}. "
-                f"Application: {allocation.application.application_number}"
+                f"BURSARY DISBURSEMENT: Dear {user.first_name}, KES {allocation.amount_allocated:,.2f} "
+                f"has been disbursed to {institution.name}. Cheque: {allocation.cheque_number}. "
+                f"Visit school finance office. App: {allocation.application.application_number}"
             )
             
-            # SMS Gateway Integration (example using Africa's Talking)
+            # SMS Gateway Integration
             response = send_sms_via_gateway(user.phone_number, sms_message)
             
             # Log SMS
@@ -3790,23 +4380,23 @@ County Bursary Committee
             
         except Exception as e:
             print(f"SMS sending failed: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            
             SMSLog.objects.create(
                 recipient=user,
                 phone_number=user.phone_number,
-                message=sms_message,
+                message=sms_message or "SMS message creation failed",
                 related_application=allocation.application,
                 status='failed',
                 gateway_response=str(e)
             )
 
-
 def send_sms_via_gateway(phone_number, message):
     """
-    Send SMS via your preferred gateway (Africa's Talking example)
-    Configure your SMS gateway credentials in settings.py
+    Send SMS via Africa's Talking or other gateway
     """
     try:
-        # Example for Africa's Talking
         url = "https://api.africastalking.com/version1/messaging"
         
         headers = {
