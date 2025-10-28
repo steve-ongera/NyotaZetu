@@ -3282,56 +3282,560 @@ def bursary_category_summary_pdf(request, category_id):
     return response
 
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q, Sum, Count, Avg
+from django.http import HttpResponse
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from datetime import datetime
+import requests  # For SMS gateway integration
+
+from .models import (
+    Allocation, Application, FiscalYear, DisbursementRound, 
+    Ward, Institution, SMSLog, EmailLog
+)
+
+
+def is_admin(user):
+    return user.user_type in ['admin', 'county_admin', 'finance']
+
+
+def is_finance(user):
+    return user.user_type in ['admin', 'finance']
+
+
 @login_required
 @user_passes_test(is_admin)
 def allocation_list(request):
+    """
+    Enhanced allocation list with comprehensive filtering, search, and export
+    """
     allocations = Allocation.objects.all()\
-    .select_related('application__applicant__user', 'approved_by')\
-    .order_by('-allocation_date')
+        .select_related(
+            'application__applicant__user',
+            'application__applicant__ward',
+            'application__applicant__constituency',
+            'application__institution',
+            'application__fiscal_year',
+            'application__disbursement_round',
+            'approved_by',
+            'disbursed_by'
+        )\
+        .order_by('-allocation_date')
 
-    
-    # Filtering
+    # Search functionality
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        allocations = allocations.filter(
+            Q(application__application_number__icontains=search_query) |
+            Q(application__applicant__user__first_name__icontains=search_query) |
+            Q(application__applicant__user__last_name__icontains=search_query) |
+            Q(application__applicant__id_number__icontains=search_query) |
+            Q(cheque_number__icontains=search_query) |
+            Q(application__institution__name__icontains=search_query)
+        )
+
+    # Disbursement status filter
     disbursed = request.GET.get('disbursed')
     if disbursed == 'true':
         allocations = allocations.filter(is_disbursed=True)
     elif disbursed == 'false':
         allocations = allocations.filter(is_disbursed=False)
-    
+
+    # Fiscal year filter
+    fiscal_year_id = request.GET.get('fiscal_year')
+    if fiscal_year_id:
+        allocations = allocations.filter(application__fiscal_year_id=fiscal_year_id)
+
+    # Disbursement round filter
+    round_id = request.GET.get('disbursement_round')
+    if round_id:
+        allocations = allocations.filter(application__disbursement_round_id=round_id)
+
+    # Ward filter
+    ward_id = request.GET.get('ward')
+    if ward_id:
+        allocations = allocations.filter(application__applicant__ward_id=ward_id)
+
+    # Institution filter
+    institution_id = request.GET.get('institution')
+    if institution_id:
+        allocations = allocations.filter(application__institution_id=institution_id)
+
+    # Date range filter
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        allocations = allocations.filter(allocation_date__gte=date_from)
+    if date_to:
+        allocations = allocations.filter(allocation_date__lte=date_to)
+
+    # Amount range filter
+    amount_min = request.GET.get('amount_min')
+    amount_max = request.GET.get('amount_max')
+    if amount_min:
+        allocations = allocations.filter(amount_allocated__gte=amount_min)
+    if amount_max:
+        allocations = allocations.filter(amount_allocated__lte=amount_max)
+
+    # Export to Excel
+    if request.GET.get('export') == 'excel':
+        return export_allocations_to_excel(allocations, request)
+
+    # Calculate statistics
+    stats = allocations.aggregate(
+        total_allocated=Sum('amount_allocated'),
+        total_disbursed=Sum('amount_allocated', filter=Q(is_disbursed=True)),
+        count_total=Count('id'),
+        count_disbursed=Count('id', filter=Q(is_disbursed=True)),
+        count_pending=Count('id', filter=Q(is_disbursed=False)),
+        avg_allocation=Avg('amount_allocated')
+    )
+
+    # Pagination
     paginator = Paginator(allocations, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
+    # Get filter options
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    disbursement_rounds = DisbursementRound.objects.select_related('fiscal_year')\
+        .order_by('-fiscal_year__start_date', '-round_number')
+    wards = Ward.objects.select_related('constituency').order_by('name')
+    institutions = Institution.objects.filter(is_active=True).order_by('name')
+
     context = {
         'page_obj': page_obj,
+        'stats': stats,
+        'fiscal_years': fiscal_years,
+        'disbursement_rounds': disbursement_rounds,
+        'wards': wards,
+        'institutions': institutions,
         'current_disbursed': disbursed,
+        'current_fiscal_year': fiscal_year_id,
+        'current_round': round_id,
+        'current_ward': ward_id,
+        'current_institution': institution_id,
+        'search_query': search_query,
+        'date_from': date_from,
+        'date_to': date_to,
+        'amount_min': amount_min,
+        'amount_max': amount_max,
     }
     return render(request, 'admin/allocation_list.html', context)
+
+
+def export_allocations_to_excel(allocations, request):
+    """
+    Export allocations to a well-formatted Excel file
+    """
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Allocations Report"
+
+    # Define styles
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    cell_alignment = Alignment(horizontal="left", vertical="center")
+    number_alignment = Alignment(horizontal="right", vertical="center")
+    
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Add title and metadata
+    ws.merge_cells('A1:M1')
+    title_cell = ws['A1']
+    title_cell.value = "BURSARY ALLOCATIONS REPORT"
+    title_cell.font = Font(bold=True, size=16, color="1E293B")
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    ws.merge_cells('A2:M2')
+    metadata_cell = ws['A2']
+    metadata_cell.value = f"Generated on: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}"
+    metadata_cell.font = Font(size=10, color="64748B")
+    metadata_cell.alignment = Alignment(horizontal="center")
+
+    # Add filter information if applicable
+    current_row = 4
+    filters_applied = []
+    
+    if request.GET.get('fiscal_year'):
+        fy = FiscalYear.objects.filter(id=request.GET.get('fiscal_year')).first()
+        if fy:
+            filters_applied.append(f"Fiscal Year: {fy.name}")
+    
+    if request.GET.get('disbursement_round'):
+        dr = DisbursementRound.objects.filter(id=request.GET.get('disbursement_round')).first()
+        if dr:
+            filters_applied.append(f"Round: {dr.name}")
+    
+    if request.GET.get('disbursed') == 'true':
+        filters_applied.append("Status: Disbursed Only")
+    elif request.GET.get('disbursed') == 'false':
+        filters_applied.append("Status: Pending Only")
+    
+    if filters_applied:
+        ws.merge_cells(f'A{current_row}:M{current_row}')
+        filter_cell = ws[f'A{current_row}']
+        filter_cell.value = "Filters: " + " | ".join(filters_applied)
+        filter_cell.font = Font(italic=True, size=10, color="64748B")
+        current_row += 2
+
+    # Headers
+    headers = [
+        'No.',
+        'Application Number',
+        'Applicant Name',
+        'ID Number',
+        'Phone Number',
+        'Ward',
+        'Institution',
+        'Amount Allocated',
+        'Allocation Date',
+        'Approved By',
+        'Disbursement Status',
+        'Disbursement Date',
+        'Cheque Number'
+    ]
+
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=current_row, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Data rows
+    current_row += 1
+    start_data_row = current_row
+    
+    for idx, allocation in enumerate(allocations, 1):
+        applicant = allocation.application.applicant
+        user = applicant.user
+        
+        row_data = [
+            idx,
+            allocation.application.application_number,
+            f"{user.first_name} {user.last_name}",
+            applicant.id_number,
+            user.phone_number or 'N/A',
+            applicant.ward.name if applicant.ward else 'N/A',
+            allocation.application.institution.name,
+            float(allocation.amount_allocated),
+            allocation.allocation_date.strftime('%Y-%m-%d'),
+            allocation.approved_by.get_full_name() if allocation.approved_by else 'N/A',
+            'Disbursed' if allocation.is_disbursed else 'Pending',
+            allocation.disbursement_date.strftime('%Y-%m-%d') if allocation.disbursement_date else 'N/A',
+            allocation.cheque_number or 'N/A'
+        ]
+        
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=current_row, column=col_num)
+            cell.value = value
+            cell.border = border
+            
+            # Apply specific formatting
+            if col_num == 8:  # Amount column
+                cell.number_format = '#,##0.00'
+                cell.alignment = number_alignment
+            else:
+                cell.alignment = cell_alignment
+            
+            # Color code disbursement status
+            if col_num == 11:
+                if value == 'Disbursed':
+                    cell.fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
+                    cell.font = Font(color="065F46", bold=True)
+                else:
+                    cell.fill = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+                    cell.font = Font(color="92400E", bold=True)
+        
+        current_row += 1
+
+    # Add summary section
+    current_row += 2
+    ws.merge_cells(f'A{current_row}:G{current_row}')
+    summary_cell = ws[f'A{current_row}']
+    summary_cell.value = "SUMMARY"
+    summary_cell.font = Font(bold=True, size=12, color="1E293B")
+    
+    current_row += 1
+    
+    # Calculate totals
+    total_allocated = sum(float(a.amount_allocated) for a in allocations)
+    total_disbursed = sum(float(a.amount_allocated) for a in allocations if a.is_disbursed)
+    count_disbursed = sum(1 for a in allocations if a.is_disbursed)
+    count_pending = sum(1 for a in allocations if not a.is_disbursed)
+    
+    summary_data = [
+        ('Total Allocations:', len(allocations)),
+        ('Total Amount Allocated:', f'KES {total_allocated:,.2f}'),
+        ('Disbursed Count:', count_disbursed),
+        ('Total Disbursed:', f'KES {total_disbursed:,.2f}'),
+        ('Pending Count:', count_pending),
+        ('Pending Amount:', f'KES {total_allocated - total_disbursed:,.2f}'),
+    ]
+    
+    for label, value in summary_data:
+        ws.cell(row=current_row, column=1).value = label
+        ws.cell(row=current_row, column=1).font = Font(bold=True)
+        ws.cell(row=current_row, column=2).value = value
+        current_row += 1
+
+    # Adjust column widths
+    column_widths = {
+        'A': 6, 'B': 20, 'C': 25, 'D': 15, 'E': 15,
+        'F': 20, 'G': 30, 'H': 18, 'I': 15, 'J': 20,
+        'K': 18, 'L': 15, 'M': 18
+    }
+    
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    # Freeze panes (keep headers visible)
+    ws.freeze_panes = f'A{start_data_row}'
+
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"Allocations_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
+
 
 @login_required
 @user_passes_test(is_finance)
 def disbursement_create(request, allocation_id):
-    allocation = get_object_or_404(Allocation, id=allocation_id)
+    """
+    Enhanced disbursement recording with automatic email and SMS notifications
+    """
+    allocation = get_object_or_404(
+        Allocation.objects.select_related(
+            'application__applicant__user',
+            'application__applicant__ward',
+            'application__institution',
+            'application__fiscal_year',
+            'application__disbursement_round'
+        ),
+        id=allocation_id
+    )
+    
+    # Check if already disbursed
+    if allocation.is_disbursed:
+        messages.warning(request, 'This allocation has already been disbursed.')
+        return redirect('allocation_list')
     
     if request.method == 'POST':
-        cheque_number = request.POST['cheque_number']
-        remarks = request.POST.get('remarks', '')
+        cheque_number = request.POST.get('cheque_number', '').strip()
+        disbursement_date = request.POST.get('disbursement_date')
+        remarks = request.POST.get('remarks', '').strip()
         
-        allocation.cheque_number = cheque_number
-        allocation.is_disbursed = True
-        allocation.disbursement_date = timezone.now().date()
-        allocation.disbursed_by = request.user
-        allocation.remarks = remarks
-        allocation.save()
+        # Validation
+        if not cheque_number:
+            messages.error(request, 'Cheque number is required.')
+            return render(request, 'admin/disbursement_create.html', {'allocation': allocation})
         
-        # Update application status
-        allocation.application.status = 'disbursed'
-        allocation.application.save()
+        # Check for duplicate cheque number
+        if Allocation.objects.filter(cheque_number=cheque_number).exclude(id=allocation_id).exists():
+            messages.error(request, 'This cheque number has already been used.')
+            return render(request, 'admin/disbursement_create.html', {'allocation': allocation})
         
-        messages.success(request, 'Disbursement recorded successfully')
-        return redirect('allocation_list')
+        try:
+            # Update allocation
+            allocation.cheque_number = cheque_number
+            allocation.is_disbursed = True
+            allocation.disbursement_date = disbursement_date or timezone.now().date()
+            allocation.disbursed_by = request.user
+            allocation.remarks = remarks
+            allocation.save()
+            
+            # Update application status
+            allocation.application.status = 'disbursed'
+            allocation.application.save()
+            
+            # Send notifications
+            send_disbursement_notifications(allocation)
+            
+            messages.success(
+                request, 
+                f'Disbursement recorded successfully for {allocation.application.applicant.user.get_full_name()}. '
+                f'Notifications have been sent.'
+            )
+            return redirect('allocation_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error recording disbursement: {str(e)}')
     
     context = {'allocation': allocation}
     return render(request, 'admin/disbursement_create.html', context)
+
+
+def send_disbursement_notifications(allocation):
+    """
+    Send email and SMS notifications after disbursement
+    """
+    applicant = allocation.application.applicant
+    user = applicant.user
+    institution = allocation.application.institution
+    
+    # Prepare notification data
+    context = {
+        'applicant_name': user.get_full_name(),
+        'application_number': allocation.application.application_number,
+        'amount': allocation.amount_allocated,
+        'cheque_number': allocation.cheque_number,
+        'disbursement_date': allocation.disbursement_date,
+        'institution_name': institution.name,
+        'fiscal_year': allocation.application.fiscal_year.name,
+    }
+    
+    # Send Email
+    try:
+        subject = f"Bursary Disbursement Confirmation - {allocation.application.application_number}"
+        
+        html_message = render_to_string('emails/disbursement_notification.html', context)
+        plain_message = f"""
+Dear {context['applicant_name']},
+
+We are pleased to inform you that your bursary application ({context['application_number']}) has been successfully disbursed.
+
+Disbursement Details:
+- Amount: KES {context['amount']:,.2f}
+- Cheque Number: {context['cheque_number']}
+- Disbursement Date: {context['disbursement_date'].strftime('%B %d, %Y')}
+- Institution: {context['institution_name']}
+- Fiscal Year: {context['fiscal_year']}
+
+The payment has been sent directly to your institution. Please follow up with your school's finance office for fee clearance.
+
+For any inquiries, please contact our office or visit the bursary portal.
+
+Best regards,
+County Bursary Committee
+        """
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=plain_message,
+            related_application=allocation.application,
+            status='sent',
+            delivered_at=timezone.now()
+        )
+        
+    except Exception as e:
+        print(f"Email sending failed: {str(e)}")
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=plain_message,
+            related_application=allocation.application,
+            status='failed'
+        )
+    
+    # Send SMS
+    if user.phone_number:
+        try:
+            sms_message = (
+                f"Dear {user.first_name}, your bursary of KES {allocation.amount_allocated:,.2f} "
+                f"(Cheque: {allocation.cheque_number}) has been disbursed to {institution.name}. "
+                f"Application: {allocation.application.application_number}"
+            )
+            
+            # SMS Gateway Integration (example using Africa's Talking)
+            response = send_sms_via_gateway(user.phone_number, sms_message)
+            
+            # Log SMS
+            SMSLog.objects.create(
+                recipient=user,
+                phone_number=user.phone_number,
+                message=sms_message,
+                related_application=allocation.application,
+                status='sent' if response.get('success') else 'failed',
+                gateway_message_id=response.get('message_id'),
+                gateway_response=str(response)
+            )
+            
+        except Exception as e:
+            print(f"SMS sending failed: {str(e)}")
+            SMSLog.objects.create(
+                recipient=user,
+                phone_number=user.phone_number,
+                message=sms_message,
+                related_application=allocation.application,
+                status='failed',
+                gateway_response=str(e)
+            )
+
+
+def send_sms_via_gateway(phone_number, message):
+    """
+    Send SMS via your preferred gateway (Africa's Talking example)
+    Configure your SMS gateway credentials in settings.py
+    """
+    try:
+        # Example for Africa's Talking
+        url = "https://api.africastalking.com/version1/messaging"
+        
+        headers = {
+            'apiKey': settings.SMS_API_KEY,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        }
+        
+        data = {
+            'username': settings.SMS_USERNAME,
+            'to': phone_number,
+            'message': message,
+            'from': settings.SMS_SENDER_ID
+        }
+        
+        response = requests.post(url, headers=headers, data=data)
+        result = response.json()
+        
+        return {
+            'success': response.status_code == 200,
+            'message_id': result.get('SMSMessageData', {}).get('Recipients', [{}])[0].get('messageId'),
+            'response': result
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 # Institution Views
 # views.py
