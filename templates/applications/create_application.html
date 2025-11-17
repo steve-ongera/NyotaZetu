@@ -1,2361 +1,1470 @@
-{% extends "admin_base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Create Application{% endblock %}
+{% block title %}Create Application - Bursary System{% endblock %}
 
-{% block content %}
-
+{% block extra_css %}
 <style>
-    :root {
-        --primary-color: #3498db;
-        --secondary-color: #34495e;
-        --success-color: #27ae60;
-        --warning-color: #f39c12;
-        --danger-color: #e74c3c;
-        --light-bg: #f8f9fc;
-        --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        --border-radius: 0.35rem;
-        --transition: all 0.3s ease;
-    }
-
-    body {
-        background: var(--light-bg);
-        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        color: var(--secondary-color);
-    }
-
-    .page-header {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        color: white;
-        padding: 2rem 0;
-        margin-bottom: 2rem;
-        border-radius: var(--border-radius);
-        box-shadow: var(--card-shadow);
-    }
-
-    .page-header h1 {
-        margin: 0;
-        font-weight: 600;
-        font-size: 2.5rem;
-    }
-
-    .step-navigation {
+    .form-wizard {
         background: white;
-        border-radius: var(--border-radius);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--card-shadow);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin: 20px 0;
     }
-
-    .step-item {
+    
+    .wizard-header {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .wizard-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+    
+    .wizard-subtitle {
+        color: #64748b;
+        font-size: 14px;
+    }
+    
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    
+    .wizard-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+    
+    .wizard-step {
         flex: 1;
         text-align: center;
         position: relative;
-        padding: 1rem;
-        transition: var(--transition);
+        z-index: 1;
     }
-
-    .step-item:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        right: -1px;
-        width: 2px;
-        height: 60%;
-        background: #e3e6f0;
-        transform: translateY(-50%);
-    }
-
-    .step-item.active {
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 73, 94, 0.05));
-        border-radius: var(--border-radius);
-    }
-
-    .step-item.completed {
-        background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.05));
-        border-radius: var(--border-radius);
-    }
-
-    .step-number {
-        width: 3rem;
-        height: 3rem;
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        background: #e3e6f0;
-        color: #6c757d;
+        background: white;
+        border: 2px solid #e2e8f0;
+        margin: 0 auto 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        font-size: 1.1rem;
-        margin: 0 auto 0.5rem;
-        transition: var(--transition);
+        color: #94a3b8;
+        transition: all 0.3s;
     }
-
-    .step-item.active .step-number {
-        background: var(--primary-color);
+    
+    .wizard-step.active .step-circle {
+        background: #3498db;
+        border-color: #3498db;
         color: white;
     }
-
-    .step-item.completed .step-number {
-        background: var(--success-color);
+    
+    .wizard-step.completed .step-circle {
+        background: #10b981;
+        border-color: #10b981;
         color: white;
     }
-
-    .step-title {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
+    
+    .step-label {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
     }
-
-    .step-description {
-        font-size: 0.875rem;
-        color: #6c757d;
+    
+    .wizard-step.active .step-label {
+        color: #3498db;
     }
-
-    .form-card {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--card-shadow);
+    
+    .wizard-content {
+        min-height: 400px;
+    }
+    
+    .step-section {
         display: none;
     }
-
-    .form-card.active {
+    
+    .step-section.active {
         display: block;
-        animation: slideInUp 0.3s ease;
+        animation: fadeIn 0.3s;
     }
-
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-
-    .form-card h3 {
-        color: var(--secondary-color);
+    
+    .form-section {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section-title {
+        font-size: 16px;
         font-weight: 600;
-        margin-bottom: 1.5rem;
+        color: #1e293b;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 8px;
     }
-
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: var(--secondary-color);
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .form-control {
-        border: 1px solid #e3e6f0;
-        border-radius: var(--border-radius);
-        padding: 0.625rem 1rem;
-        font-size: 0.875rem;
-        transition: var(--transition);
-        background: #fff;
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        background: #fff;
-    }
-
-    .btn-modern {
-        border-radius: var(--border-radius);
-        font-weight: 600;
-        letter-spacing: 0.025em;
-        transition: var(--transition);
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: none;
-        padding: 0.75rem 1.5rem;
-    }
-
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-
-    .btn-primary {
-        background: linear-gradient(45deg, var(--primary-color), #5dade2);
-    }
-
-    .btn-secondary {
-        background: linear-gradient(45deg, #95a5a6, #bdc3c7);
-    }
-
-    .btn-success {
-        background: linear-gradient(45deg, var(--success-color), #58d68d);
-    }
-
-    .btn-warning {
-        background: linear-gradient(45deg, var(--warning-color), #f5b041);
-    }
-
-    .btn-danger {
-        background: linear-gradient(45deg, var(--danger-color), #ec7063);
-    }
-
-    .user-search-section {
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 73, 94, 0.05));
-        border-radius: var(--border-radius);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        border: 2px dashed var(--primary-color);
-    }
-
-    .user-search-results {
-        max-height: 300px;
-        overflow-y: auto;
-        margin-top: 1rem;
-    }
-
-    .user-result-item {
-        background: white;
-        border: 1px solid #e3e6f0;
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        margin-bottom: 0.5rem;
-        cursor: pointer;
-        transition: var(--transition);
-        display: flex;
-        justify-content: between;
-        align-items: center;
-    }
-
-    .user-result-item:hover {
-        border-color: var(--primary-color);
-        transform: translateY(-1px);
-        box-shadow: var(--card-shadow);
-    }
-
-    .user-tabs {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
-        border-bottom: 2px solid #e3e6f0;
-    }
-
-    .user-tab {
-        padding: 1rem 1.5rem;
-        background: none;
-        border: none;
-        color: #6c757d;
-        font-weight: 600;
-        cursor: pointer;
-        transition: var(--transition);
-        border-bottom: 3px solid transparent;
-    }
-
-    .user-tab.active {
-        color: var(--primary-color);
-        border-bottom-color: var(--primary-color);
-    }
-
-    .dynamic-list {
-        border: 1px solid #e3e6f0;
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        background: #f8f9fc;
-    }
-
-    .dynamic-item {
-        background: white;
-        border: 1px solid #e3e6f0;
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        margin-bottom: 1rem;
+    
+    .search-box {
         position: relative;
+        margin-bottom: 20px;
     }
-
-    .dynamic-item .remove-btn {
+    
+    .search-results {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        background: var(--danger-color);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 2rem;
-        height: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: var(--transition);
-    }
-
-    .dynamic-item .remove-btn:hover {
-        background: #c0392b;
-    }
-
-    .error {
-        color: var(--danger-color);
-        font-size: 0.75rem;
-        margin-top: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .navigation-buttons {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 2px solid #e3e6f0;
-    }
-
-    .selected-user-info {
-        background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.05));
-        border: 1px solid var(--success-color);
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .loading-overlay {
-        position: fixed;
-        top: 0;
+        top: 100%;
         left: 0;
         right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.9);
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(2px);
     }
-
+    
+    .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .search-result-item:hover {
+        background: #f8fafc;
+    }
+    
+    .search-result-name {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+    
+    .search-result-info {
+        font-size: 13px;
+        color: #64748b;
+    }
+    
+    .info-card {
+        background: #eff6ff;
+        border-left: 4px solid #3498db;
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .warning-card {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .success-card {
+        background: #d1fae5;
+        border-left: 4px solid #10b981;
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .error-card {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .dynamic-list {
+        margin-top: 15px;
+    }
+    
+    .dynamic-item {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+    
+    .remove-item-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #ef4444;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 20px;
+    }
+    
+    .btn-group-wizard {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .file-upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 10px;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #3498db;
+        background: #f8fafc;
+    }
+    
+    .file-upload-area.has-file {
+        border-color: #10b981;
+        background: #d1fae5;
+    }
+    
+    .file-name {
+        font-size: 13px;
+        color: #10b981;
+        margin-top: 8px;
+        font-weight: 500;
+    }
+    
+    .required-star {
+        color: #ef4444;
+        margin-left: 3px;
+    }
+    
     .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--primary-color);
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
         border-radius: 50%;
-        width: 3rem;
-        height: 3rem;
-        animation: spin 1s linear infinite;
+        animation: spin 0.8s linear infinite;
     }
-
+    
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .step-item {
-            padding: 0.5rem;
-        }
-        
-        .step-number {
-            width: 2.5rem;
-            height: 2.5rem;
-            font-size: 1rem;
-        }
-        
-        .form-card {
-            padding: 1rem;
-        }
-        
-        .navigation-buttons {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .user-tabs {
-            flex-direction: column;
-            gap: 0;
-        }
-        
-        .user-tab {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e3e6f0;
-            border-radius: 0;
-        }
-        
-        .user-tab.active {
-            border-bottom: 1px solid var(--primary-color);
-        }
+    
+    /* Modal Styles */
+    .modal-backdrop.show {
+        opacity: 0.5;
+    }
+    
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        border-bottom: none;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+    }
+    
+    .btn-close {
+        filter: brightness(0) invert(1);
     }
 </style>
+{% endblock %}
 
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="text-center">
-            <h1>
-                <i class="bi bi-file-earmark-plus me-3"></i>
-                Create New Application
-            </h1>
-            <p class="mb-0 opacity-75">Create bursary applications for students</p>
-        </div>
-    </div>
-
-    <!-- Step Navigation -->
-    <div class="step-navigation">
-        <div class="d-flex">
-            <div class="step-item active" id="step-1">
-                <div class="step-number">1</div>
-                <div class="step-title">User Selection</div>
-                <div class="step-description">Find or create user</div>
-            </div>
-            <div class="step-item" id="step-2">
-                <div class="step-number">2</div>
-                <div class="step-title">Personal Details</div>
-                <div class="step-description">Applicant information</div>
-            </div>
-            <div class="step-item" id="step-3">
-                <div class="step-number">3</div>
-                <div class="step-title">Family Information</div>
-                <div class="step-description">Guardians & siblings</div>
-            </div>
-            <div class="step-item" id="step-4">
-                <div class="step-number">4</div>
-                <div class="step-title">Application Details</div>
-                <div class="step-description">Academic & financial info</div>
-            </div>
-            <div class="step-item" id="step-5">
-                <div class="step-number">5</div>
-                <div class="step-title">Review & Submit</div>
-                <div class="step-description">Confirm details</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 1: User Selection -->
-    <div class="form-card active" id="form-step-1">
-        <h3><i class="bi bi-person-search me-2"></i>User Selection</h3>
-        
-        <!-- User Tabs -->
-        <div class="user-tabs">
-            <button class="user-tab active" data-tab="search">
-                <i class="bi bi-search me-2"></i>Search Existing User
-            </button>
-            <button class="user-tab" data-tab="create">
-                <i class="bi bi-person-plus me-2"></i>Create New User
-            </button>
-        </div>
-
-        <!-- Search User Tab -->
-        <div class="tab-content" id="search-user-tab">
-            <div class="user-search-section">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-search me-1"></i>Search for existing user
-                    </label>
-                    <input type="text" id="userSearchInput" class="form-control" placeholder="Search by username, name, email, or ID number...">
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="form-wizard">
+                <!-- Header -->
+                <div class="wizard-header">
+                    <h1 class="wizard-title">
+                        <i class="bi bi-file-earmark-plus me-2"></i>
+                        Create New Application
+                    </h1>
+                    <p class="wizard-subtitle">Fill in the student details and submit bursary application</p>
                 </div>
-                <button type="button" class="btn btn-modern btn-primary" onclick="searchUsers()">
-                    <i class="bi bi-search me-2"></i>Search Users
-                </button>
-            </div>
-            
-            <div class="user-search-results" id="userSearchResults"></div>
-            
-            <div class="selected-user-info" id="selectedUserInfo" style="display: none;">
-                <h5><i class="bi bi-check-circle me-2"></i>Selected User</h5>
-                <div id="selectedUserDetails"></div>
-            </div>
-        </div>
-
-        <!-- Create User Tab -->
-        <div class="tab-content" id="create-user-tab" style="display: none;">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-person me-1"></i>Username *
-                        </label>
-                        <input type="text" id="newUsername" class="form-control" required>
-                        <div class="error" id="newUsernameError"></div>
+                
+                <!-- Wizard Steps -->
+                <div class="wizard-steps">
+                    <div class="wizard-step active" data-step="1">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">Student Info</div>
+                    </div>
+                    <div class="wizard-step" data-step="2">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Guardians</div>
+                    </div>
+                    <div class="wizard-step" data-step="3">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Application</div>
+                    </div>
+                    <div class="wizard-step" data-step="4">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">Documents</div>
+                    </div>
+                    <div class="wizard-step" data-step="5">
+                        <div class="step-circle">5</div>
+                        <div class="step-label">Review</div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-envelope me-1"></i>Email *
-                        </label>
-                        <input type="email" id="newEmail" class="form-control" required>
-                        <div class="error" id="newEmailError"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-card-text me-1"></i>First Name *
-                        </label>
-                        <input type="text" id="newFirstName" class="form-control" required>
-                        <div class="error" id="newFirstNameError"></div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-card-text me-1"></i>Last Name *
-                        </label>
-                        <input type="text" id="newLastName" class="form-control" required>
-                        <div class="error" id="newLastNameError"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-telephone me-1"></i>Phone Number *
-                        </label>
-                        <input type="text" id="newPhoneNumber" class="form-control" placeholder="+254712345678" required>
-                        <div class="error" id="newPhoneNumberError"></div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-credit-card me-1"></i>ID Number *
-                        </label>
-                        <input type="text" id="newIdNumber" class="form-control" required>
-                        <div class="error" id="newIdNumberError"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="bi bi-key me-1"></i>Password (Leave empty to auto-generate)
-                </label>
-                <input type="password" id="newPassword" class="form-control" placeholder="Optional - will be auto-generated if left empty">
-                <div class="error" id="newPasswordError"></div>
-            </div>
-            
-            <button type="button" class="btn btn-modern btn-success" onclick="createUser()">
-                <i class="bi bi-person-plus me-2"></i>Create User
-            </button>
-        </div>
-
-        <div class="navigation-buttons">
-            <div></div>
-            <button type="button" class="btn btn-modern btn-primary" onclick="nextStep()" id="step1NextBtn" disabled>
-                Next Step <i class="bi bi-chevron-right ms-2"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Step 2: Personal Details -->
-    <div class="form-card" id="form-step-2">
-        <h3><i class="bi bi-person-badge me-2"></i>Personal Details</h3>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-gender-ambiguous me-1"></i>Gender *
-                    </label>
-                    <select id="applicantGender" class="form-control" required>
-                        <option value="">Select Gender</option>
-                        {% for value, display in gender_choices %}
-                            <option value="{{ value }}">{{ display }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="error" id="applicantGenderError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-calendar me-1"></i>Date of Birth *
-                    </label>
-                    <input type="date" id="applicantDateOfBirth" class="form-control" required>
-                    <div class="error" id="applicantDateOfBirthError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-geo-alt me-1"></i>Ward *
-                    </label>
-                    <select id="applicantWard" class="form-control" required onchange="loadLocations()">
-                        <option value="">Select Ward</option>
-                        {% for ward in wards %}
-                            <option value="{{ ward.id }}">{{ ward.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="error" id="applicantWardError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-geo me-1"></i>Location
-                    </label>
-                    <select id="applicantLocation" class="form-control" onchange="loadSublocations()">
-                        <option value="">Select Location</option>
-                    </select>
-                    <div class="error" id="applicantLocationError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-geo me-1"></i>Sub-location
-                    </label>
-                    <select id="applicantSublocation" class="form-control" onchange="loadVillages()">
-                        <option value="">Select Sub-location</option>
-                    </select>
-                    <div class="error" id="applicantSublocationError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-house me-1"></i>Village
-                    </label>
-                    <select id="applicantVillage" class="form-control">
-                        <option value="">Select Village</option>
-                    </select>
-                    <div class="error" id="applicantVillageError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-house-door me-1"></i>Physical Address *
-                    </label>
-                    <textarea id="applicantPhysicalAddress" class="form-control" rows="3" required></textarea>
-                    <div class="error" id="applicantPhysicalAddressError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-mailbox me-1"></i>Postal Address
-                    </label>
-                    <input type="text" id="applicantPostalAddress" class="form-control" placeholder="P.O. Box 123-10100">
-                    <div class="error" id="applicantPostalAddressError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <div class="form-check">
-                <input type="checkbox" id="applicantSpecialNeeds" class="form-check-input" onchange="toggleSpecialNeedsDescription()">
-                <label class="form-check-label" for="applicantSpecialNeeds">
-                    <i class="bi bi-universal-access me-1"></i>Has Special Needs
-                </label>
-            </div>
-        </div>
-        
-        <div class="form-group" id="specialNeedsDescriptionGroup" style="display: none;">
-            <label class="form-label">
-                <i class="bi bi-chat-text me-1"></i>Special Needs Description
-            </label>
-            <textarea id="applicantSpecialNeedsDescription" class="form-control" rows="3"></textarea>
-            <div class="error" id="applicantSpecialNeedsDescriptionError"></div>
-        </div>
-
-        <div class="navigation-buttons">
-            <button type="button" class="btn btn-modern btn-secondary" onclick="previousStep()">
-                <i class="bi bi-chevron-left me-2"></i>Previous
-            </button>
-            <button type="button" class="btn btn-modern btn-primary" onclick="nextStep()">
-                Next Step <i class="bi bi-chevron-right ms-2"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Step 3: Family Information -->
-    <div class="form-card" id="form-step-3">
-        <h3><i class="bi bi-people me-2"></i>Family Information</h3>
-        
-        <!-- Guardians Section -->
-        <h5><i class="bi bi-person-hearts me-2"></i>Guardians/Parents</h5>
-        <div class="dynamic-list" id="guardiansList">
-            <div class="dynamic-item" id="guardian-template" style="display: none;">
-                <button type="button" class="remove-btn" onclick="removeGuardian(this)">
-                    <i class="bi bi-x"></i>
-                </button>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-person me-1"></i>Name *
-                            </label>
-                            <input type="text" class="form-control guardian-name" required>
+                
+                <!-- Wizard Content -->
+                <form id="applicationForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" id="selectedUserId">
+                    
+                    <!-- Step 1: Student Search & Basic Info -->
+                    <div class="step-section active" data-step="1">
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-search"></i>
+                                Search Student
+                            </h3>
+                            
+                            <div class="search-box">
+                                <label class="form-label">Search by Name, Email, Username, or ID Number</label>
+                                <input type="text" class="form-control form-control-lg" id="studentSearch" 
+                                       placeholder="Type at least 3 characters to search...">
+                                <div class="search-results" id="searchResults"></div>
+                            </div>
+                            
+                            <div id="existingApplicationWarning" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="form-section" id="studentInfoSection" style="display: none;">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-person"></i>
+                                Student Information
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name <span class="required-star">*</span></label>
+                                    <input type="text" class="form-control" id="firstName" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Last Name <span class="required-star">*</span></label>
+                                    <input type="text" class="form-control" id="lastName" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email <span class="required-star">*</span></label>
+                                    <input type="email" class="form-control" id="email" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone Number <span class="required-star">*</span></label>
+                                    <input type="text" class="form-control" id="phoneNumber" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ID Number <span class="required-star">*</span></label>
+                                    <input type="text" class="form-control" name="id_number" id="idNumber" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Gender <span class="required-star">*</span></label>
+                                    <select class="form-select" name="gender" id="gender" required>
+                                        <option value="">Select Gender</option>
+                                        {% for value, label in gender_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Date of Birth <span class="required-star">*</span></label>
+                                    <input type="date" class="form-control" name="date_of_birth" id="dateOfBirth" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section" id="locationSection" style="display: none;">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-geo-alt"></i>
+                                Location Information
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Ward <span class="required-star">*</span></label>
+                                    <select class="form-select" name="ward_id" id="ward" required>
+                                        <option value="">Select Ward</option>
+                                        {% for ward in wards %}
+                                        <option value="{{ ward.id }}">{{ ward.name }} - {{ ward.constituency.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Location</label>
+                                    <select class="form-select" name="location_id" id="location">
+                                        <option value="">Select Location</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sub-location</label>
+                                    <select class="form-select" name="sublocation_id" id="sublocation">
+                                        <option value="">Select Sub-location</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Village</label>
+                                    <select class="form-select" name="village_id" id="village">
+                                        <option value="">Select Village</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Physical Address <span class="required-star">*</span></label>
+                                    <textarea class="form-control" name="physical_address" id="physicalAddress" rows="2" required></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Postal Address</label>
+                                    <input type="text" class="form-control" name="postal_address" id="postalAddress">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-heart me-1"></i>Relationship *
-                            </label>
-                            <select class="form-control guardian-relationship" required>
-                                <option value="">Select Relationship</option>
-                                {% for value, display in relationship_choices %}
-                                    <option value="{{ value }}">{{ display }}</option>
-                                {% endfor %}
-                            </select>
+                    
+                    <!-- Step 2: Guardians & Siblings -->
+                    <div class="step-section" data-step="2">
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-people"></i>
+                                Guardian/Parent Information
+                            </h3>
+                            
+                            <div id="guardiansList" class="dynamic-list"></div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="addGuardianBtn">
+                                <i class="bi bi-plus-circle me-1"></i> Add Guardian
+                            </button>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-person-lines-fill"></i>
+                                Siblings Information
+                            </h3>
+                            
+                            <div id="siblingsList" class="dynamic-list"></div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="addSiblingBtn">
+                                <i class="bi bi-plus-circle me-1"></i> Add Sibling
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-telephone me-1"></i>Phone Number
-                            </label>
-                            <input type="text" class="form-control guardian-phone" placeholder="+254712345678">
+                    
+                    <!-- Step 3: Application Details -->
+                    <div class="step-section" data-step="3">
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-calendar-check"></i>
+                                Academic Year & Category
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fiscal Year <span class="required-star">*</span></label>
+                                    <select class="form-select" name="fiscal_year_id" id="fiscalYear" required>
+                                        <option value="">Select Fiscal Year</option>
+                                        {% for fy in fiscal_years %}
+                                        <option value="{{ fy.id }}">{{ fy.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Bursary Category <span class="required-star">*</span></label>
+                                    <select class="form-select" name="bursary_category_id" id="bursaryCategory" required>
+                                        <option value="">Select Category</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-building"></i>
+                                Institution Information
+                            </h3>
+                            
+                            <div class="search-box mb-3">
+                                <label class="form-label">Search Institution <span class="required-star">*</span></label>
+                                <input type="text" class="form-control" id="institutionSearch" 
+                                       placeholder="Type institution name...">
+                                <div class="search-results" id="institutionResults"></div>
+                            </div>
+                            
+                            <input type="hidden" name="institution_id" id="selectedInstitutionId">
+                            <div id="selectedInstitutionInfo" style="display: none;" class="info-card">
+                                <strong id="selectedInstitutionName"></strong><br>
+                                <small id="selectedInstitutionDetails"></small>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Admission Number <span class="required-star">*</span></label>
+                                    <input type="text" class="form-control" name="admission_number" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Year of Study <span class="required-star">*</span></label>
+                                    <input type="number" class="form-control" name="year_of_study" min="1" max="7" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Course Name</label>
+                                    <input type="text" class="form-control" name="course_name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Expected Completion Date</label>
+                                    <input type="date" class="form-control" name="expected_completion_date">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-cash-stack"></i>
+                                Financial Information
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Total Fees Payable <span class="required-star">*</span></label>
+                                    <input type="number" class="form-control" name="total_fees_payable" 
+                                           id="totalFees" step="0.01" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Fees Paid <span class="required-star">*</span></label>
+                                    <input type="number" class="form-control" name="fees_paid" 
+                                           id="feesPaid" step="0.01" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Fees Balance</label>
+                                    <input type="number" class="form-control" name="fees_balance" 
+                                           id="feesBalance" step="0.01" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Amount Requested <span class="required-star">*</span></label>
+                                    <input type="number" class="form-control" name="amount_requested" 
+                                           step="0.01" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Household Monthly Income</label>
+                                    <input type="number" class="form-control" name="household_income" 
+                                           step="0.01">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="other_bursaries" 
+                                           id="otherBursaries" value="true">
+                                    <label class="form-check-label" for="otherBursaries">
+                                        Has received other bursaries
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="otherBursariesSection" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Other Bursaries Amount</label>
+                                        <input type="number" class="form-control" name="other_bursaries_amount" 
+                                               step="0.01">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Source of Other Bursaries</label>
+                                        <input type="text" class="form-control" name="other_bursaries_source">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-heart-pulse"></i>
+                                Special Circumstances
+                            </h3>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_orphan" 
+                                               id="isOrphan" value="true">
+                                        <label class="form-check-label" for="isOrphan">
+                                            Orphan (Single Parent)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_total_orphan" 
+                                               id="isTotalOrphan" value="true">
+                                        <label class="form-check-label" for="isTotalOrphan">
+                                            Total Orphan
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_disabled" 
+                                               id="isDisabled" value="true">
+                                        <label class="form-check-label" for="isDisabled">
+                                            Has Disability
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="has_chronic_illness" 
+                                               id="hasChronicIllness" value="true">
+                                        <label class="form-check-label" for="hasChronicIllness">
+                                            Chronic Illness
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="chronicIllnessSection" style="display: none;">
+                                <div class="mb-3">
+                                    <label class="form-label">Describe Chronic Illness</label>
+                                    <textarea class="form-control" name="chronic_illness_description" rows="2"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-envelope me-1"></i>Email
-                            </label>
-                            <input type="email" class="form-control guardian-email">
+                    
+                    <!-- Step 4: Documents -->
+                    <div class="step-section" data-step="4">
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-file-earmark-arrow-up"></i>
+                                Required Documents
+                            </h3>
+                            
+                            <div class="info-card mb-4">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Important:</strong> All documents should be clear, legible scans or photos. 
+                                Accepted formats: PDF, JPG, PNG (Max 5MB each)
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Fee Structure <span class="required-star">*</span>
+                                    </label>
+                                    <div class="file-upload-area" data-target="fee_structure">
+                                        <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+                                        <p class="mb-0 mt-2">Click to upload or drag and drop</p>
+                                        <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                                        <div class="file-name"></div>
+                                    </div>
+                                    <input type="file" name="fee_structure" id="fee_structure" 
+                                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Admission Letter <span class="required-star">*</span>
+                                    </label>
+                                    <div class="file-upload-area" data-target="admission_letter">
+                                        <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+                                        <p class="mb-0 mt-2">Click to upload or drag and drop</p>
+                                        <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                                        <div class="file-name"></div>
+                                    </div>
+                                    <input type="file" name="admission_letter" id="admission_letter" 
+                                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Fee Statement/Balance <span class="required-star">*</span>
+                                    </label>
+                                    <div class="file-upload-area" data-target="fee_statement">
+                                        <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+                                        <p class="mb-0 mt-2">Click to upload or drag and drop</p>
+                                        <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                                        <div class="file-name"></div>
+                                    </div>
+                                    <input type="file" name="fee_statement" id="fee_statement" 
+                                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Parent/Guardian ID <span class="required-star">*</span>
+                                    </label>
+                                    <div class="file-upload-area" data-target="parent_id">
+                                        <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+                                        <p class="mb-0 mt-2">Click to upload or drag and drop</p>
+                                        <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                                        <div class="file-name"></div>
+                                    </div>
+                                    <input type="file" name="parent_id" id="parent_id" 
+                                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" required>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-credit-card me-1"></i>ID Number
-                            </label>
-                            <input type="text" class="form-control guardian-id">
+                    
+                    <!-- Step 5: Review & Submit -->
+                    <div class="step-section" data-step="5">
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i class="bi bi-check-circle"></i>
+                                Review Application
+                            </h3>
+                            
+                            <div class="info-card mb-4">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Please review all information before submitting. Once submitted, 
+                                an email notification will be sent to the student.
+                            </div>
+                            
+                            <div id="reviewContent"></div>
                         </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-briefcase me-1"></i>Occupation
-                            </label>
-                            <input type="text" class="form-control guardian-occupation">
-                        </div>
+                    
+                    <!-- Navigation Buttons -->
+                    <div class="btn-group-wizard">
+                        <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">
+                            <i class="bi bi-arrow-left me-1"></i> Previous
+                        </button>
+                        <div></div>
+                        <button type="button" class="btn btn-primary" id="nextBtn">
+                            Next <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                            <i class="bi bi-check-circle me-1"></i> Submit Application
+                        </button>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-cash me-1"></i>Monthly Income (KES)
-                            </label>
-                            <input type="number" class="form-control guardian-income" min="0" step="0.01">
-                        </div>
-                    </div>
-                </div>
+                </form>
             </div>
-        </div>
-        <button type="button" class="btn btn-modern btn-primary mb-4" onclick="addGuardian()">
-            <i class="bi bi-plus-circle me-2"></i>Add Guardian
-        </button>
-        
-        <!-- Siblings Section -->
-        <h5><i class="bi bi-people me-2"></i>Siblings</h5>
-        <div class="dynamic-list" id="siblingsList">
-            <div class="dynamic-item" id="sibling-template" style="display: none;">
-                <button type="button" class="remove-btn" onclick="removeSibling(this)">
-                    <i class="bi bi-x"></i>
-                </button>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-person me-1"></i>Name *
-                            </label>
-                            <input type="text" class="form-control sibling-name" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-calendar me-1"></i>Age *
-                            </label>
-                            <input type="number" class="form-control sibling-age" min="1" max="100" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-mortarboard me-1"></i>Education Level
-                            </label>
-                            <input type="text" class="form-control sibling-education" placeholder="e.g., Form 2, University Year 1">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="bi bi-building me-1"></i>School Name
-                            </label>
-                            <input type="text" class="form-control sibling-school">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button type="button" class="btn btn-modern btn-primary mb-4" onclick="addSibling()">
-            <i class="bi bi-plus-circle me-2"></i>Add Sibling
-        </button>
-
-        <div class="navigation-buttons">
-            <button type="button" class="btn btn-modern btn-secondary" onclick="previousStep()">
-                <i class="bi bi-chevron-left me-2"></i>Previous
-            </button>
-            <button type="button" class="btn btn-modern btn-primary" onclick="nextStep()">
-                Next Step <i class="bi bi-chevron-right ms-2"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Step 4: Application Details -->
-    <div class="form-card" id="form-step-4">
-        <h3><i class="bi bi-file-earmark-text me-2"></i>Application Details</h3>
-        
-        <!-- Academic Information -->
-        <h5><i class="bi bi-mortarboard me-2"></i>Academic Information</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-calendar me-1"></i>Fiscal Year *
-                    </label>
-                    <select id="applicationFiscalYear" class="form-control" required onchange="loadBursaryCategories()">
-                        <option value="">Select Fiscal Year</option>
-                        {% for year in fiscal_years %}
-                            <option value="{{ year.id }}">{{ year.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="error" id="applicationFiscalYearError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-tags me-1"></i>Bursary Category *
-                    </label>
-                    <select id="applicationBursaryCategory" class="form-control" required>
-                        <option value="">Select Category</option>
-                    </select>
-                    <div class="error" id="applicationBursaryCategoryError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-building me-1"></i>Institution *
-                    </label>
-                    <select id="applicationInstitution" class="form-control" required>
-                        <option value="">Select Institution</option>
-                        {% for institution in institutions %}
-                            <option value="{{ institution.id }}">{{ institution.name }} ({{ institution.get_institution_type_display }})</option>
-                        {% endfor %}
-                    </select>
-                    <div class="error" id="applicationInstitutionError"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-card-text me-1"></i>Admission Number *
-                    </label>
-                    <input type="text" id="applicationAdmissionNumber" class="form-control" required>
-                    <div class="error" id="applicationAdmissionNumberError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-ladder me-1"></i>Year of Study *
-                    </label>
-                    <input type="number" id="applicationYearOfStudy" class="form-control" min="1" max="8" required>
-                    <div class="error" id="applicationYearOfStudyError"></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-book me-1"></i>Course Name
-                    </label>
-                    <input type="text" id="applicationCourseName" class="form-control" placeholder="For college/university students">
-                    <div class="error" id="applicationCourseNameError"></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-calendar-check me-1"></i>Expected Completion *
-                    </label>
-                    <input type="date" id="applicationCompletionDate" class="form-control" required>
-                    <div class="error" id="applicationCompletionDateError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Financial Information -->
-        <h5><i class="bi bi-cash-stack me-2"></i>Financial Information</h5>
-        <div class="row">
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-receipt me-1"></i>Total Fees (KES) *
-                    </label>
-                    <input type="number" id="applicationTotalFees" class="form-control" min="0" step="0.01" required onchange="calculateBalance()">
-                    <div class="error" id="applicationTotalFeesError"></div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-check-circle me-1"></i>Fees Paid (KES) *
-                    </label>
-                    <input type="number" id="applicationFeesPaid" class="form-control" min="0" step="0.01" required onchange="calculateBalance()">
-                    <div class="error" id="applicationFeesPaidError"></div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-exclamation-triangle me-1"></i>Fees Balance (KES) *
-                    </label>
-                    <input type="number" id="applicationFeesBalance" class="form-control" min="0" step="0.01" required readonly>
-                    <div class="error" id="applicationFeesBalanceError"></div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="bi bi-hand-thumbs-up me-1"></i>Amount Requested (KES) *
-                    </label>
-                    <input type="number" id="applicationAmountRequested" class="form-control" min="0" step="0.01" required>
-                    <div class="error" id="applicationAmountRequestedError"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Other Bursaries -->
-        <div class="form-group">
-            <div class="form-check">
-                <input type="checkbox" id="applicationOtherBursaries" class="form-check-input" onchange="toggleOtherBursaries()">
-                <label class="form-check-label" for="applicationOtherBursaries">
-                    <i class="bi bi-award me-1"></i>Received other bursaries/scholarships
-                </label>
-            </div>
-        </div>
-        
-        <div id="otherBursariesGroup" style="display: none;">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-cash me-1"></i>Amount Received (KES)
-                        </label>
-                        <input type="number" id="applicationOtherBursariesAmount" class="form-control" min="0" step="0.01">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-building me-1"></i>Source
-                        </label>
-                        <input type="text" id="applicationOtherBursariesSource" class="form-control" placeholder="e.g., County Government, NGO">
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Family Situation -->
-        <h5><i class="bi bi-house-heart me-2"></i>Family Situation</h5>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="applicationIsOrphan" class="form-check-input">
-                        <label class="form-check-label" for="applicationIsOrphan">
-                            <i class="bi bi-heart-break me-1"></i>Is an orphan
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="applicationIsDisabled" class="form-check-input">
-                        <label class="form-check-label" for="applicationIsDisabled">
-                            <i class="bi bi-universal-access me-1"></i>Has disability
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="applicationHasChronicIllness" class="form-check-input" onchange="toggleChronicIllnessDescription()">
-                        <label class="form-check-label" for="applicationHasChronicIllness">
-                            <i class="bi bi-heart-pulse me-1"></i>Has chronic illness
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group" id="chronicIllnessDescriptionGroup" style="display: none;">
-            <label class="form-label">
-                <i class="bi bi-file-medical me-1"></i>Chronic Illness Description
-            </label>
-            <textarea id="applicationChronicIllnessDescription" class="form-control" rows="3"></textarea>
-        </div>
-        
-        <!-- Previous Allocation -->
-        <div class="form-group">
-            <div class="form-check">
-                <input type="checkbox" id="applicationPreviousAllocation" class="form-check-input" onchange="togglePreviousAllocation()">
-                <label class="form-check-label" for="applicationPreviousAllocation">
-                    <i class="bi bi-arrow-repeat me-1"></i>Previously received bursary from this fund
-                </label>
-            </div>
-        </div>
-        
-        <div id="previousAllocationGroup" style="display: none;">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-calendar me-1"></i>Year Received
-                        </label>
-                        <input type="text" id="applicationPreviousAllocationYear" class="form-control" placeholder="e.g., 2023-2024">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="bi bi-cash me-1"></i>Amount Received (KES)
-                        </label>
-                        <input type="number" id="applicationPreviousAllocationAmount" class="form-control" min="0" step="0.01">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="navigation-buttons">
-            <button type="button" class="btn btn-modern btn-secondary" onclick="previousStep()">
-                <i class="bi bi-chevron-left me-2"></i>Previous
-            </button>
-            <button type="button" class="btn btn-modern btn-primary" onclick="nextStep()">
-                Next Step <i class="bi bi-chevron-right ms-2"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Step 5: Review & Submit -->
-    <div class="form-card" id="form-step-5">
-        <h3><i class="bi bi-check-circle me-2"></i>Review & Submit</h3>
-        
-        <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-            <i class="bi bi-info-circle me-2"></i>
-            <div>Please review all information before submitting the application.</div>
-        </div>
-        
-        <div id="reviewContent">
-            <!-- Review content will be populated by JavaScript -->
-        </div>
-
-        <div class="navigation-buttons">
-            <button type="button" class="btn btn-modern btn-secondary" onclick="previousStep()">
-                <i class="bi bi-chevron-left me-2"></i>Previous
-            </button>
-            <button type="button" class="btn btn-modern btn-success" onclick="submitApplication()">
-                <i class="bi bi-check-circle me-2"></i>Submit Application
-            </button>
         </div>
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="text-center">
-        <div class="spinner mb-3"></div>
-        <h5>Processing...</h5>
-        <p class="text-muted">Please wait while we process your request.</p>
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Application Submitted Successfully
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                <h4 class="mt-3 mb-2">Success!</h4>
+                <p class="text-muted mb-3">The application has been submitted successfully.</p>
+                <div class="alert alert-info">
+                    <strong>Application Number:</strong>
+                    <div class="fs-5 mt-2" id="modalApplicationNumber"></div>
+                </div>
+                <p class="small text-muted">
+                    <i class="bi bi-envelope me-1"></i>
+                    A confirmation email has been sent to the student.
+                </p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-primary" onclick="window.location.reload()">
+                    <i class="bi bi-plus-circle me-1"></i> Create Another Application
+                </button>
+                <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house me-1"></i> Go to Dashboard
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
-<!-- jQuery (must be loaded before using $) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Processing Application...</h5>
+                <p class="text-muted mb-0">Please wait while we submit your application</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-// Global variables
-let currentStep = 1;
-let selectedUser = null;
-let guardianCount = 0;
-let siblingCount = 0;
-
-// Initialize page
-$(document).ready(function() {
-    // Initialize first guardian and sibling
-    addGuardian();
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 5;
+    let guardianCount = 0;
+    let siblingCount = 0;
+    let selectedUser = null;
     
-    // Set up event listeners
-    $('.user-tab').on('click', function() {
-        const tabName = $(this).data('tab');
-        switchUserTab(tabName);
-    });
+    // CSRF Token
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    // Auto-calculate fees balance
-    $('#applicationTotalFees, #applicationFeesPaid').on('input', calculateBalance);
-    
-    // Initialize step navigation
-    updateStepNavigation();
-});
-
-// User tab switching
-function switchUserTab(tabName) {
-    $('.user-tab').removeClass('active');
-    $('.tab-content').hide();
-    
-    $(`.user-tab[data-tab="${tabName}"]`).addClass('active');
-    $(`#${tabName}-user-tab`).show();
-    
-    // Reset selected user when switching tabs
-    if (tabName === 'create') {
-        selectedUser = null;
-        $('#selectedUserInfo').hide();
-        $('#step1NextBtn').prop('disabled', true);
-    }
-}
-
-// User search functionality
-function searchUsers() {
-    const query = $('#userSearchInput').val().trim();
-    if (!query) {
-        showToast('Please enter a search query', 'warning');
-        return;
-    }
-    
-    showLoading();
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify({
-            action: 'search_user',
-            query: query
-        }),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
-            if (data.success) {
-                displayUserSearchResults(data.users);
-            } else {
-                showToast(data.message, 'error');
-            }
-        },
-        error: function(xhr) {
-            console.error('Search error:', xhr);
-            showToast('Error searching users', 'error');
-        },
-        complete: function() {
-            hideLoading();
-        }
-    });
-}
-
-function displayUserSearchResults(users) {
-    const resultsContainer = $('#userSearchResults');
-    resultsContainer.empty();
-    
-    if (users.length === 0) {
-        resultsContainer.html(`
-            <div class="text-center py-4 text-muted">
-                <i class="bi bi-inbox display-4 d-block mb-3"></i>
-                <h5>No users found</h5>
-                <p>Try adjusting your search terms or create a new user.</p>
-            </div>
-        `);
-        return;
-    }
-    
-    users.forEach(user => {
-        const hasProfile = user.has_applicant_profile ? 
-            '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Has Profile</span>' : 
-            '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>No Profile</span>';
+    // Step Navigation
+    function showStep(step) {
+        document.querySelectorAll('.step-section').forEach(section => {
+            section.classList.remove('active');
+        });
         
-        const userItem = $(`
-            <div class="user-result-item" data-user-id="${user.id}">
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="mb-1">
-                            <i class="bi bi-person me-2"></i>${user.full_name}
-                        </h6>
-                        ${hasProfile}
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="bi bi-at me-1"></i>Username: ${user.username}<br>
-                                <i class="bi bi-envelope me-1"></i>Email: ${user.email}
-                            </small>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="bi bi-telephone me-1"></i>Phone: ${user.phone_number}<br>
-                                <i class="bi bi-credit-card me-1"></i>ID: ${user.id_number}
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="ms-3">
-                    <button class="btn btn-modern btn-primary btn-sm" onclick="selectUser(${user.id})">
-                        <i class="bi bi-check-circle me-1"></i>Select
-                    </button>
-                </div>
-            </div>
-        `);
+        document.querySelector(`.step-section[data-step="${step}"]`).classList.add('active');
         
-        resultsContainer.append(userItem);
-    });
-}
-
-function selectUser(userId) {
-    const userItem = $(`.user-result-item[data-user-id="${userId}"]`);
-    const userData = {
-        id: userId,
-        full_name: userItem.find('h6').text().replace(/^\s*👤\s*/, '').trim(),
-        username: userItem.find('small:first').text().match(/Username: (.+)/)[1],
-        email: userItem.find('small:first').text().match(/Email: (.+)/)[1],
-        phone_number: userItem.find('small:last').text().match(/Phone: (.+)/)[1],
-        id_number: userItem.find('small:last').text().match(/ID: (.+)/)[1]
-    };
-    
-    selectedUser = userData;
-    
-    $('#selectedUserDetails').html(`
-        <div class="row">
-            <div class="col-md-6">
-                <strong><i class="bi bi-person me-1"></i>Name:</strong> ${userData.full_name}<br>
-                <strong><i class="bi bi-at me-1"></i>Username:</strong> ${userData.username}<br>
-                <strong><i class="bi bi-envelope me-1"></i>Email:</strong> ${userData.email}
-            </div>
-            <div class="col-md-6">
-                <strong><i class="bi bi-telephone me-1"></i>Phone:</strong> ${userData.phone_number}<br>
-                <strong><i class="bi bi-credit-card me-1"></i>ID Number:</strong> ${userData.id_number}
-            </div>
-        </div>
-    `);
-    
-    $('#selectedUserInfo').show();
-    $('#step1NextBtn').prop('disabled', false);
-}
-
-// Create new user
-function createUser() {
-    const userData = {
-        action: 'create_user',
-        username: $('#newUsername').val().trim(),
-        email: $('#newEmail').val().trim(),
-        first_name: $('#newFirstName').val().trim(),
-        last_name: $('#newLastName').val().trim(),
-        phone_number: $('#newPhoneNumber').val().trim(),
-        id_number: $('#newIdNumber').val().trim(),
-        password: $('#newPassword').val()
-    };
-    
-    // Clear previous errors
-    $('.error').text('');
-    $('.form-control').removeClass('is-invalid');
-    
-    showLoading();
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify(userData),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
-            if (data.success) {
-                selectedUser = data.user;
-                
-                $('#selectedUserDetails').html(`
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong><i class="bi bi-person me-1"></i>Name:</strong> ${data.user.full_name}<br>
-                            <strong><i class="bi bi-at me-1"></i>Username:</strong> ${data.user.username}<br>
-                            <strong><i class="bi bi-envelope me-1"></i>Email:</strong> ${data.user.email}
-                        </div>
-                        <div class="col-md-6">
-                            <strong><i class="bi bi-telephone me-1"></i>Phone:</strong> ${data.user.phone_number}<br>
-                            <strong><i class="bi bi-credit-card me-1"></i>ID Number:</strong> ${data.user.id_number}
-                        </div>
-                    </div>
-                `);
-                
-                $('#selectedUserInfo').show();
-                $('#step1NextBtn').prop('disabled', false);
-                
-                // Clear form
-                $('#create-user-tab input').val('');
-                
-                showToast('User created successfully!', 'success');
-                
-                // Switch to search tab to show selected user
-                switchUserTab('search');
-            } else {
-                displayFormErrors(data.errors || {message: data.message});
+        document.querySelectorAll('.wizard-step').forEach(stepEl => {
+            const stepNum = parseInt(stepEl.dataset.step);
+            stepEl.classList.remove('active', 'completed');
+            
+            if (stepNum === step) {
+                stepEl.classList.add('active');
+            } else if (stepNum < step) {
+                stepEl.classList.add('completed');
             }
-        },
-        error: function(xhr) {
-            console.error('Create user error:', xhr);
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.errors) {
-                    displayFormErrors(response.errors);
-                } else {
-                    showToast(response.message || 'Error creating user', 'error');
-                }
-            } catch (e) {
-                showToast('Error creating user', 'error');
-            }
-        },
-        complete: function() {
-            hideLoading();
+        });
+        
+        // Update buttons
+        document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'block';
+        document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'block';
+        document.getElementById('submitBtn').style.display = step === totalSteps ? 'block' : 'none';
+        
+        // Generate review content if on last step
+        if (step === totalSteps) {
+            generateReviewContent();
         }
-    });
-}
-
-// Step navigation
-function nextStep() {
-    if (validateCurrentStep()) {
-        if (currentStep < 5) {
+    }
+    
+    document.getElementById('nextBtn').addEventListener('click', function() {
+        if (validateStep(currentStep)) {
             currentStep++;
             showStep(currentStep);
         }
-    }
-}
-
-function previousStep() {
-    if (currentStep > 1) {
+    });
+    
+    document.getElementById('prevBtn').addEventListener('click', function() {
         currentStep--;
         showStep(currentStep);
-    }
-}
-
-function showStep(stepNumber) {
-    // Hide all form cards
-    $('.form-card').removeClass('active');
+    });
     
-    // Show current step
-    $(`#form-step-${stepNumber}`).addClass('active');
-    
-    // Update step navigation
-    updateStepNavigation();
-    
-    // Populate review if on last step
-    if (stepNumber === 5) {
-        populateReview();
-    }
-}
-
-function updateStepNavigation() {
-    $('.step-item').removeClass('active completed');
-    
-    // Mark completed steps
-    for (let i = 1; i < currentStep; i++) {
-        $(`#step-${i}`).addClass('completed');
-    }
-    
-    // Mark current step as active
-    $(`#step-${currentStep}`).addClass('active');
-}
-
-function validateCurrentStep() {
-    switch (currentStep) {
-        case 1:
-            if (!selectedUser) {
-                showToast('Please select or create a user', 'warning');
-                return false;
-            }
-            return true;
-        case 2:
-            return validatePersonalDetails();
-        case 3:
-            return validateFamilyInformation();
-        case 4:
-            return validateApplicationDetails();
-        default:
-            return true;
-    }
-}
-
-function validatePersonalDetails() {
-    let isValid = true;
-    const requiredFields = ['applicantGender', 'applicantDateOfBirth', 'applicantWard', 'applicantPhysicalAddress'];
-    
-    requiredFields.forEach(fieldId => {
-        const field = $(`#${fieldId}`);
-        if (!field.val().trim()) {
-            field.addClass('is-invalid');
-            $(`#${fieldId}Error`).text('This field is required');
-            isValid = false;
-        } else {
-            field.removeClass('is-invalid');
-            $(`#${fieldId}Error`).text('');
+    // Student Search
+    let searchTimeout;
+    document.getElementById('studentSearch').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        
+        if (query.length < 3) {
+            document.getElementById('searchResults').style.display = 'none';
+            return;
         }
+        
+        searchTimeout = setTimeout(() => {
+            searchStudent(query);
+        }, 500);
     });
     
-    return isValid;
-}
-
-function validateFamilyInformation() {
-    // At least one guardian is required
-    const guardians = $('.guardian-name').filter(function() {
-        return $(this).val().trim() !== '';
-    });
-    
-    if (guardians.length === 0) {
-        showToast('At least one guardian is required', 'warning');
-        return false;
-    }
-    
-    return true;
-}
-
-function validateApplicationDetails() {
-    let isValid = true;
-    const requiredFields = [
-        'applicationFiscalYear', 'applicationBursaryCategory', 'applicationInstitution',
-        'applicationAdmissionNumber', 'applicationYearOfStudy', 'applicationCompletionDate',
-        'applicationTotalFees', 'applicationFeesPaid', 'applicationAmountRequested'
-    ];
-    
-    requiredFields.forEach(fieldId => {
-        const field = $(`#${fieldId}`);
-        if (!field.val() || field.val().trim() === '') {
-            field.addClass('is-invalid');
-            $(`#${fieldId}Error`).text('This field is required');
-            isValid = false;
-        } else {
-            field.removeClass('is-invalid');
-            $(`#${fieldId}Error`).text('');
-        }
-    });
-    
-    // Validate that amount requested doesn't exceed balance
-    const balance = parseFloat($('#applicationFeesBalance').val()) || 0;
-    const requested = parseFloat($('#applicationAmountRequested').val()) || 0;
-    
-    if (requested > balance) {
-        $('#applicationAmountRequested').addClass('is-invalid');
-        $('#applicationAmountRequestedError').text('Amount requested cannot exceed fees balance');
-        isValid = false;
-    }
-    
-    return isValid;
-}
-
-// Dynamic guardian management
-function addGuardian() {
-    guardianCount++;
-    const template = $('#guardian-template').clone();
-    template.attr('id', `guardian-${guardianCount}`);
-    template.show();
-    
-    // Update field names for proper form handling
-    template.find('.guardian-name').attr('name', `guardian_${guardianCount}_name`);
-    template.find('.guardian-relationship').attr('name', `guardian_${guardianCount}_relationship`);
-    template.find('.guardian-phone').attr('name', `guardian_${guardianCount}_phone`);
-    template.find('.guardian-email').attr('name', `guardian_${guardianCount}_email`);
-    template.find('.guardian-id').attr('name', `guardian_${guardianCount}_id`);
-    template.find('.guardian-occupation').attr('name', `guardian_${guardianCount}_occupation`);
-    template.find('.guardian-income').attr('name', `guardian_${guardianCount}_income`);
-    
-    $('#guardiansList').append(template);
-}
-
-function removeGuardian(button) {
-    $(button).closest('.dynamic-item').remove();
-}
-
-// Dynamic sibling management
-function addSibling() {
-    siblingCount++;
-    const template = $('#sibling-template').clone();
-    template.attr('id', `sibling-${siblingCount}`);
-    template.show();
-    
-    // Update field names
-    template.find('.sibling-name').attr('name', `sibling_${siblingCount}_name`);
-    template.find('.sibling-age').attr('name', `sibling_${siblingCount}_age`);
-    template.find('.sibling-education').attr('name', `sibling_${siblingCount}_education`);
-    template.find('.sibling-school').attr('name', `sibling_${siblingCount}_school`);
-    
-    $('#siblingsList').append(template);
-}
-
-function removeSibling(button) {
-    $(button).closest('.dynamic-item').remove();
-}
-
-// Location management
-function loadLocations() {
-    const wardId = $('#applicantWard').val();
-    if (!wardId) return;
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify({
-            action: 'get_locations',
-            ward_id: wardId
-        }),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
+    function searchStudent(query) {
+        fetch('{% url "search_student_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
             if (data.success) {
-                const locationSelect = $('#applicantLocation');
-                locationSelect.empty().append('<option value="">Select Location</option>');
-                
-                data.locations.forEach(location => {
-                    locationSelect.append(`<option value="${location.id}">${location.name}</option>`);
+                displaySearchResults(data.results);
+            } else {
+                showError(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Failed to search students');
+        });
+    }
+    
+    function displaySearchResults(results) {
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-result-item text-center text-muted">No students found</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        
+        resultsDiv.innerHTML = results.map(user => `
+            <div class="search-result-item" data-user='${JSON.stringify(user)}'>
+                <div class="search-result-name">${user.full_name}</div>
+                <div class="search-result-info">
+                    <i class="bi bi-envelope me-2"></i>${user.email} &nbsp;
+                    <i class="bi bi-telephone me-2"></i>${user.phone_number} &nbsp;
+                    <i class="bi bi-card-text me-2"></i>${user.id_number || 'No ID'}
+                </div>
+            </div>
+        `).join('');
+        
+        resultsDiv.style.display = 'block';
+        
+        // Add click handlers
+        resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const userData = JSON.parse(this.dataset.user);
+                selectStudent(userData);
+            });
+        });
+    }
+    
+    function selectStudent(user) {
+        selectedUser = user;
+        document.getElementById('searchResults').style.display = 'none';
+        document.getElementById('studentSearch').value = user.full_name;
+        document.getElementById('selectedUserId').value = user.id;
+        
+        // Fill in basic info
+        document.getElementById('firstName').value = user.full_name.split(' ')[0];
+        document.getElementById('lastName').value = user.full_name.split(' ').slice(1).join(' ');
+        document.getElementById('email').value = user.email;
+        document.getElementById('phoneNumber').value = user.phone_number;
+        document.getElementById('idNumber').value = user.id_number || '';
+        
+        // Show student info section
+        document.getElementById('studentInfoSection').style.display = 'block';
+        document.getElementById('locationSection').style.display = 'block';
+        
+        // If user has profile, populate data
+        if (user.has_profile && user.profile) {
+            document.getElementById('gender').value = user.profile.gender || '';
+            document.getElementById('dateOfBirth').value = user.profile.date_of_birth || '';
+            document.getElementById('ward').value = user.profile.ward_id || '';
+            document.getElementById('physicalAddress').value = user.profile.physical_address || '';
+            document.getElementById('postalAddress').value = user.profile.postal_address || '';
+            
+            // Load locations if ward is selected
+            if (user.profile.ward_id) {
+                loadLocations(user.profile.ward_id, user.profile.location_id);
+            }
+            
+            // Populate guardians
+            if (user.guardians && user.guardians.length > 0) {
+                user.guardians.forEach(guardian => {
+                    addGuardian(guardian);
                 });
-                
-                // Clear dependent dropdowns
-                $('#applicantSublocation').empty().append('<option value="">Select Sub-location</option>');
-                $('#applicantVillage').empty().append('<option value="">Select Village</option>');
             }
-        }
-    });
-}
-
-function loadSublocations() {
-    const locationId = $('#applicantLocation').val();
-    if (!locationId) return;
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify({
-            action: 'get_sublocations',
-            location_id: locationId
-        }),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
-            if (data.success) {
-                const sublocationSelect = $('#applicantSublocation');
-                sublocationSelect.empty().append('<option value="">Select Sub-location</option>');
-                
-                data.sublocations.forEach(sublocation => {
-                    sublocationSelect.append(`<option value="${sublocation.id}">${sublocation.name}</option>`);
-                });
-                
-                // Clear dependent dropdown
-                $('#applicantVillage').empty().append('<option value="">Select Village</option>');
-            }
-        }
-    });
-}
-
-function loadVillages() {
-    const sublocationId = $('#applicantSublocation').val();
-    if (!sublocationId) return;
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify({
-            action: 'get_villages',
-            sublocation_id: sublocationId
-        }),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
-            if (data.success) {
-                const villageSelect = $('#applicantVillage');
-                villageSelect.empty().append('<option value="">Select Village</option>');
-                
-                data.villages.forEach(village => {
-                    villageSelect.append(`<option value="${village.id}">${village.name}</option>`);
+            
+            // Populate siblings
+            if (user.siblings && user.siblings.length > 0) {
+                user.siblings.forEach(sibling => {
+                    addSibling(sibling);
                 });
             }
         }
-    });
-}
-
-function loadBursaryCategories() {
-    const fiscalYearId = $('#applicationFiscalYear').val();
-    if (!fiscalYearId) return;
-    
-    const categorySelect = $('#applicationBursaryCategory');
-    categorySelect.empty().append('<option value="">Select Category</option>');
-    
-    {% for category in bursary_categories %}
-    if ({{ category.fiscal_year.id }} == fiscalYearId) {
-        categorySelect.append('<option value="{{ category.id }}">{{ category.name }} - Max: KES {{ category.max_amount_per_applicant }}</option>');
-    }
-    {% endfor %}
-}
-
-// Form helpers
-function toggleSpecialNeedsDescription() {
-    const checkbox = $('#applicantSpecialNeeds');
-    const descriptionGroup = $('#specialNeedsDescriptionGroup');
-    
-    if (checkbox.is(':checked')) {
-        descriptionGroup.slideDown();
-    } else {
-        descriptionGroup.slideUp();
-        $('#applicantSpecialNeedsDescription').val('');
-    }
-}
-
-function calculateBalance() {
-    const totalFees = parseFloat($('#applicationTotalFees').val()) || 0;
-    const feesPaid = parseFloat($('#applicationFeesPaid').val()) || 0;
-    const balance = totalFees - feesPaid;
-    
-    $('#applicationFeesBalance').val(balance.toFixed(2));
-}
-
-function toggleOtherBursaries() {
-    const checkbox = $('#applicationOtherBursaries');
-    const otherBursariesGroup = $('#otherBursariesGroup');
-    
-    if (checkbox.is(':checked')) {
-        otherBursariesGroup.slideDown();
-    } else {
-        otherBursariesGroup.slideUp();
-        $('#applicationOtherBursariesAmount').val('');
-        $('#applicationOtherBursariesSource').val('');
-    }
-}
-
-function toggleChronicIllnessDescription() {
-    const checkbox = $('#applicationHasChronicIllness');
-    const descriptionGroup = $('#chronicIllnessDescriptionGroup');
-    
-    if (checkbox.is(':checked')) {
-        descriptionGroup.slideDown();
-    } else {
-        descriptionGroup.slideUp();
-        $('#applicationChronicIllnessDescription').val('');
-    }
-}
-
-function togglePreviousAllocation() {
-    const checkbox = $('#applicationPreviousAllocation');
-    const previousAllocationGroup = $('#previousAllocationGroup');
-    
-    if (checkbox.is(':checked')) {
-        previousAllocationGroup.slideDown();
-    } else {
-        previousAllocationGroup.slideUp();
-        $('#applicationPreviousAllocationYear').val('');
-        $('#applicationPreviousAllocationAmount').val('');
-    }
-}
-
-// Review and submit
-function populateReview() {
-    let reviewHtml = '';
-    
-    // User Information
-    reviewHtml += `
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person me-2"></i>User Information</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Name:</strong> ${selectedUser.full_name}<br>
-                        <strong>Username:</strong> ${selectedUser.username}<br>
-                        <strong>Email:</strong> ${selectedUser.email}
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Phone:</strong> ${selectedUser.phone_number}<br>
-                        <strong>ID Number:</strong> ${selectedUser.id_number}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Personal Details
-    reviewHtml += `
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Personal Details</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Gender:</strong> ${$('#applicantGender option:selected').text()}<br>
-                        <strong>Date of Birth:</strong> ${$('#applicantDateOfBirth').val()}<br>
-                        <strong>Ward:</strong> ${$('#applicantWard option:selected').text()}
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Location:</strong> ${$('#applicantLocation option:selected').text() || 'Not specified'}<br>
-                        <strong>Sub-location:</strong> ${$('#applicantSublocation option:selected').text() || 'Not specified'}<br>
-                        <strong>Village:</strong> ${$('#applicantVillage option:selected').text() || 'Not specified'}
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <strong>Physical Address:</strong><br>
-                    ${$('#applicantPhysicalAddress').val()}
-                </div>
-                ${$('#applicantSpecialNeeds').is(':checked') ? `
-                <div class="mt-3">
-                    <strong>Special Needs:</strong> Yes<br>
-                    <strong>Description:</strong> ${$('#applicantSpecialNeedsDescription').val()}
-                </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-    
-    // Family Information
-    const guardians = [];
-    $('.guardian-name').each(function(index) {
-        const name = $(this).val();
-        if (name.trim()) {
-            const container = $(this).closest('.dynamic-item');
-            guardians.push({
-                name: name,
-                relationship: container.find('.guardian-relationship option:selected').text(),
-                phone: container.find('.guardian-phone').val(),
-                occupation: container.find('.guardian-occupation').val()
-            });
+        
+        // Check for existing application
+        const fiscalYearSelect = document.getElementById('fiscalYear');
+        if (fiscalYearSelect.value) {
+            checkExistingApplication(user.id, fiscalYearSelect.value);
         }
+    }
+    
+    // Check existing application
+    document.getElementById('fiscalYear').addEventListener('change', function() {
+        const userId = document.getElementById('selectedUserId').value;
+        if (userId) {
+            checkExistingApplication(userId, this.value);
+        }
+        
+        // Load bursary categories
+        loadBursaryCategories(this.value);
     });
     
-    const siblings = [];
-    $('.sibling-name').each(function(index) {
-        const name = $(this).val();
-        if (name.trim()) {
-            const container = $(this).closest('.dynamic-item');
-            siblings.push({
-                name: name,
-                age: container.find('.sibling-age').val(),
-                education: container.find('.sibling-education').val()
-            });
-        }
-    });
-    
-    reviewHtml += `
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-people me-2"></i>Family Information</h5>
-            </div>
-            <div class="card-body">
-                <h6>Guardians/Parents:</h6>
-                ${guardians.map(guardian => `
-                    <div class="mb-2">
-                        <strong>${guardian.name}</strong> (${guardian.relationship})
-                        ${guardian.phone ? ` - ${guardian.phone}` : ''}
-                        ${guardian.occupation ? ` - ${guardian.occupation}` : ''}
-                    </div>
-                `).join('')}
-                
-                ${siblings.length > 0 ? `
-                <h6 class="mt-3">Siblings:</h6>
-                ${siblings.map(sibling => `
-                    <div class="mb-2">
-                        <strong>${sibling.name}</strong> (Age: ${sibling.age})
-                        ${sibling.education ? ` - ${sibling.education}` : ''}
-                    </div>
-                `).join('')}
-                ` : ''}
-            </div>
-        </div>
-    `;
-    
-    // Application Details
-    reviewHtml += `
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Application Details</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Fiscal Year:</strong> ${$('#applicationFiscalYear option:selected').text()}<br>
-                        <strong>Category:</strong> ${$('#applicationBursaryCategory option:selected').text()}<br>
-                        <strong>Institution:</strong> ${$('#applicationInstitution option:selected').text()}<br>
-                        <strong>Admission Number:</strong> ${$('#applicationAdmissionNumber').val()}
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Year of Study:</strong> ${$('#applicationYearOfStudy').val()}<br>
-                        <strong>Course:</strong> ${$('#applicationCourseName').val() || 'N/A'}<br>
-                        <strong>Completion Date:</strong> ${$('#applicationCompletionDate').val()}
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-3">
-                        <strong>Total Fees:</strong><br>KES ${parseFloat($('#applicationTotalFees').val() || 0).toLocaleString()}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Fees Paid:</strong><br>KES ${parseFloat($('#applicationFeesPaid').val() || 0).toLocaleString()}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Balance:</strong><br>KES ${parseFloat($('#applicationFeesBalance').val() || 0).toLocaleString()}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Requested:</strong><br>KES ${parseFloat($('#applicationAmountRequested').val() || 0).toLocaleString()}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    $('#reviewContent').html(reviewHtml);
-}
-
-function submitApplication() {
-    if (!confirm('Are you sure you want to submit this application? This action cannot be undone.')) {
-        return;
-    }
-    
-    // Collect all form data
-    const guardians = [];
-    $('.guardian-name').each(function(index) {
-        const name = $(this).val().trim();
-        if (name) {
-            const container = $(this).closest('.dynamic-item');
-            guardians.push({
-                name: name,
-                relationship: container.find('.guardian-relationship').val(),
-                phone_number: container.find('.guardian-phone').val(),
-                email: container.find('.guardian-email').val(),
-                id_number: container.find('.guardian-id').val(),
-                occupation: container.find('.guardian-occupation').val(),
-                monthly_income: container.find('.guardian-income').val() || 0
-            });
-        }
-    });
-    
-    const siblings = [];
-    $('.sibling-name').each(function(index) {
-        const name = $(this).val().trim();
-        if (name) {
-            const container = $(this).closest('.dynamic-item');
-            siblings.push({
-                name: name,
-                age: container.find('.sibling-age').val(),
-                education_level: container.find('.sibling-education').val(),
-                school_name: container.find('.sibling-school').val()
-            });
-        }
-    });
-    
-    const applicationData = {
-        action: 'create_application',
-        user_id: selectedUser.id,
-        applicant: {
-            gender: $('#applicantGender').val(),
-            date_of_birth: $('#applicantDateOfBirth').val(),
-            id_number: selectedUser.id_number,
-            ward_id: $('#applicantWard').val(),
-            location_id: $('#applicantLocation').val() || null,
-            sublocation_id: $('#applicantSublocation').val() || null,
-            village_id: $('#applicantVillage').val() || null,
-            physical_address: $('#applicantPhysicalAddress').val(),
-            postal_address: $('#applicantPostalAddress').val(),
-            special_needs: $('#applicantSpecialNeeds').is(':checked'),
-            special_needs_description: $('#applicantSpecialNeedsDescription').val()
-        },
-        guardians: guardians,
-        siblings: siblings,
-        application: {
-            fiscal_year_id: $('#applicationFiscalYear').val(),
-            bursary_category_id: $('#applicationBursaryCategory').val(),
-            institution_id: $('#applicationInstitution').val(),
-            admission_number: $('#applicationAdmissionNumber').val(),
-            year_of_study: $('#applicationYearOfStudy').val(),
-            course_name: $('#applicationCourseName').val(),
-            expected_completion_date: $('#applicationCompletionDate').val(),
-            total_fees_payable: $('#applicationTotalFees').val(),
-            fees_paid: $('#applicationFeesPaid').val(),
-            fees_balance: $('#applicationFeesBalance').val(),
-            amount_requested: $('#applicationAmountRequested').val(),
-            other_bursaries: $('#applicationOtherBursaries').is(':checked'),
-            other_bursaries_amount: $('#applicationOtherBursariesAmount').val() || 0,
-            other_bursaries_source: $('#applicationOtherBursariesSource').val(),
-            is_orphan: $('#applicationIsOrphan').is(':checked'),
-            is_disabled: $('#applicationIsDisabled').is(':checked'),
-            has_chronic_illness: $('#applicationHasChronicIllness').is(':checked'),
-            chronic_illness_description: $('#applicationChronicIllnessDescription').val(),
-            previous_allocation: $('#applicationPreviousAllocation').is(':checked'),
-            previous_allocation_year: $('#applicationPreviousAllocationYear').val(),
-            previous_allocation_amount: $('#applicationPreviousAllocationAmount').val() || 0
-        }
-    };
-    
-    showLoading();
-    
-    $.ajax({
-        url: window.location.href,
-        method: 'POST',
-        data: JSON.stringify(applicationData),
-        contentType: 'application/json',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        success: function(data) {
-            if (data.success) {
-                showToast('Application submitted successfully!', 'success');
-                
-                // Show success message
-                const successHtml = `
-                    <div class="alert alert-success text-center py-4" role="alert">
-                        <i class="bi bi-check-circle display-4 text-success mb-3"></i>
-                        <h4 class="alert-heading">Application Submitted Successfully!</h4>
-                        <p class="mb-3">The application has been created with the following details:</p>
-                        <div class="row">
-                            <div class="col-md-6 mx-auto">
-                                <strong>Application Number:</strong> ${data.application.application_number}<br>
-                                <strong>Status:</strong> ${data.application.status}<br>
-                                <strong>Applicant:</strong> ${selectedUser.full_name}
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="d-flex gap-3 justify-content-center mt-4">
-                            <button class="btn btn-modern btn-primary" onclick="createNewApplication()">
-                                <i class="bi bi-plus-circle me-2"></i>Create Another Application
-                            </button>
-                            <a href="/applications/" class="btn btn-modern btn-secondary">
-                                <i class="bi bi-list me-2"></i>View All Applications
-                            </a>
-                        </div>
+    function checkExistingApplication(userId, fiscalYearId) {
+        fetch('{% url "check_existing_application_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ 
+                user_id: userId,
+                fiscal_year_id: fiscalYearId 
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const warningDiv = document.getElementById('existingApplicationWarning');
+            
+            if (data.success && data.has_application) {
+                warningDiv.innerHTML = `
+                    <div class="warning-card">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This student already has an application for this fiscal year.<br>
+                        <small>
+                            Application #: ${data.application.application_number} | 
+                            Status: ${data.application.status} | 
+                            Date: ${data.application.date_submitted}
+                        </small>
                     </div>
                 `;
-                
-                $('.form-card.active').html(successHtml);
-                $('.step-item').removeClass('active').addClass('completed');
-                
+                warningDiv.style.display = 'block';
             } else {
-                showToast(data.message || 'Error submitting application', 'error');
+                warningDiv.style.display = 'none';
             }
-        },
-        error: function(xhr) {
-            console.error('Submit application error:', xhr);
-            try {
-                const response = JSON.parse(xhr.responseText);
-                showToast(response.message || 'Error submitting application', 'error');
-            } catch (e) {
-                showToast('Error submitting application', 'error');
-            }
-        },
-        complete: function() {
-            hideLoading();
-        }
-    });
-}
-
-function createNewApplication() {
-    location.reload();
-}
-
-// Utility functions
-function displayFormErrors(errors) {
-    Object.keys(errors).forEach(field => {
-        let fieldName = field;
-        // Map field names to form element IDs
-        const fieldMap = {
-            'username': 'newUsername',
-            'email': 'newEmail',
-            'first_name': 'newFirstName',
-            'last_name': 'newLastName',
-            'phone_number': 'newPhoneNumber',
-            'id_number': 'newIdNumber',
-            'password': 'newPassword'
-        };
-        
-        if (fieldMap[field]) {
-            fieldName = fieldMap[field];
-        }
-        
-        const errorElement = $(`#${fieldName}Error`);
-        if (errorElement.length) {
-            errorElement.html(`<i class="bi bi-exclamation-circle me-1"></i>${errors[field]}`);
-            $(`#${fieldName}`).addClass('is-invalid');
-        }
-    });
-}
-
-function showLoading() {
-    $('#loadingOverlay').show();
-}
-
-function hideLoading() {
-    $('#loadingOverlay').hide();
-}
-
-function showToast(message, type = 'info') {
-    const toastId = 'toast-' + Date.now();
-    let bgGradient, icon, borderColor;
-    
-    switch(type) {
-        case 'success':
-            bgGradient = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-            icon = 'bi-check-circle';
-            borderColor = '#27ae60';
-            break;
-        case 'error':
-            bgGradient = 'linear-gradient(135deg, #e74c3c, #c0392b)';
-            icon = 'bi-exclamation-triangle';
-            borderColor = '#e74c3c';
-            break;
-        case 'warning':
-            bgGradient = 'linear-gradient(135deg, #f39c12, #e67e22)';
-            icon = 'bi-exclamation-circle';
-            borderColor = '#f39c12';
-            break;
-        default:
-            bgGradient = 'linear-gradient(135deg, #3498db, #2980b9)';
-            icon = 'bi-info-circle';
-            borderColor = '#3498db';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
     }
     
-    const toast = `
-        <div id="${toastId}" class="toast-item" style="
-            background: ${bgGradient}; 
-            color: white; 
-            padding: 1rem 1.25rem; 
-            margin-bottom: 0.75rem; 
-            border-radius: var(--border-radius); 
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.2);
-            animation: slideInRight 0.3s ease;
-            max-width: 400px;
-            position: relative;
-            border-left: 4px solid ${borderColor};
-        ">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i class="${icon} me-2"></i>
-                    <span>${escapeHtml(message)}</span>
-                </div>
-                <button onclick="removeToast('${toastId}')" style="
-                    background: rgba(255, 255, 255, 0.2); 
-                    border: none; 
-                    color: white; 
-                    font-size: 1.25rem; 
-                    cursor: pointer; 
-                    margin-left: 1rem;
-                    width: 2rem;
-                    height: 2rem;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: var(--transition);
-                " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                    <i class="bi bi-x"></i>
+    // Load bursary categories
+    function loadBursaryCategories(fiscalYearId) {
+        fetch('{% url "get_bursary_categories_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ fiscal_year_id: fiscalYearId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('bursaryCategory');
+            select.innerHTML = '<option value="">Select Category</option>';
+            
+            if (data.success) {
+                data.categories.forEach(cat => {
+                    select.innerHTML += `
+                        <option value="${cat.id}" data-max="${cat.max_amount}" data-min="${cat.min_amount}">
+                            ${cat.name} (${cat.category_type}) - Min: KES ${cat.min_amount} | Max: KES ${cat.max_amount}
+                        </option>
+                    `;
+                });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    // Location cascading dropdowns
+    document.getElementById('ward').addEventListener('change', function() {
+        loadLocations(this.value);
+    });
+    
+    function loadLocations(wardId, selectedLocationId = null) {
+        fetch('{% url "get_locations_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ ward_id: wardId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('location');
+            select.innerHTML = '<option value="">Select Location</option>';
+            
+            if (data.success) {
+                data.locations.forEach(loc => {
+                    select.innerHTML += `<option value="${loc.id}" ${loc.id == selectedLocationId ? 'selected' : ''}>${loc.name}</option>`;
+                });
+            }
+            
+            // Clear dependent dropdowns
+            document.getElementById('sublocation').innerHTML = '<option value="">Select Sub-location</option>';
+            document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    document.getElementById('location').addEventListener('change', function() {
+        loadSublocations(this.value);
+    });
+    
+    function loadSublocations(locationId, selectedSublocationId = null) {
+        fetch('{% url "get_sublocations_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ location_id: locationId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('sublocation');
+            select.innerHTML = '<option value="">Select Sub-location</option>';
+            
+            if (data.success) {
+                data.sublocations.forEach(sub => {
+                    select.innerHTML += `<option value="${sub.id}" ${sub.id == selectedSublocationId ? 'selected' : ''}>${sub.name}</option>`;
+                });
+            }
+            
+            document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    document.getElementById('sublocation').addEventListener('change', function() {
+        loadVillages(this.value);
+    });
+    
+    function loadVillages(sublocationId) {
+        fetch('{% url "get_villages_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ sublocation_id: sublocationId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('village');
+            select.innerHTML = '<option value="">Select Village</option>';
+            
+            if (data.success) {
+                data.villages.forEach(vil => {
+                    select.innerHTML += `<option value="${vil.id}">${vil.name}</option>`;
+                });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    // Guardian Management
+    document.getElementById('addGuardianBtn').addEventListener('click', function() {
+        addGuardian();
+    });
+    
+    function addGuardian(data = null) {
+        const guardianHtml = `
+            <div class="dynamic-item" data-index="${guardianCount}">
+                <button type="button" class="remove-item-btn" onclick="this.parentElement.remove()">
+                    <i class="bi bi-x-circle"></i>
                 </button>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Name <span class="required-star">*</span></label>
+                        <input type="text" class="form-control" name="guardian_name_${guardianCount}" 
+                               value="${data ? data.name : ''}" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Relationship <span class="required-star">*</span></label>
+                        <select class="form-select" name="guardian_relationship_${guardianCount}" required>
+                            <option value="">Select</option>
+                            {% for value, label in relationship_choices %}
+                            <option value="{{ value }}" ${data && data.relationship === '{{ value }}' ? 'selected' : ''}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" name="guardian_phone_${guardianCount}" 
+                               value="${data ? data.phone_number : ''}">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="guardian_email_${guardianCount}" 
+                               value="${data ? data.email : ''}">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">ID Number</label>
+                        <input type="text" class="form-control" name="guardian_id_${guardianCount}" 
+                               value="${data ? data.id_number : ''}">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Employment Status</label>
+                        <select class="form-select" name="guardian_employment_${guardianCount}">
+                            {% for value, label in employment_status %}
+                            <option value="{{ value }}" ${data && data.employment_status === '{{ value }}' ? 'selected' : ''}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Occupation</label>
+                        <input type="text" class="form-control" name="guardian_occupation_${guardianCount}" 
+                               value="${data ? data.occupation : ''}">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Monthly Income (KES)</label>
+                        <input type="number" class="form-control" name="guardian_income_${guardianCount}" 
+                               step="0.01" value="${data ? data.monthly_income : ''}">
+                    </div>
+                </div>
             </div>
-        </div>
-    `;
-    
-    $('#toast-container').append(toast);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => removeToast(toastId), 5000);
-}
-
-function removeToast(toastId) {
-    const toast = $('#' + toastId);
-    if (toast.length) {
-        toast.css('animation', 'slideOutRight 0.3s ease');
-        setTimeout(() => toast.remove(), 300);
-    }
-}
-
-function escapeHtml(text) {
-    var map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Keyboard shortcuts
-$(document).keydown(function(e) {
-    // Escape key to go back
-    if (e.key === 'Escape' && currentStep > 1) {
-        e.preventDefault();
-        previousStep();
+        `;
+        
+        document.getElementById('guardiansList').insertAdjacentHTML('beforeend', guardianHtml);
+        guardianCount++;
+        
+        // Update hidden count field
+        updateGuardianCount();
     }
     
-    // Ctrl+Enter to proceed to next step
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (currentStep < 5) {
-            nextStep();
-        } else {
-            submitApplication();
+    function updateGuardianCount() {
+        let count = document.getElementById('guardiansList').querySelectorAll('.dynamic-item').length;
+        let countInput = document.querySelector('input[name="guardian_count"]');
+        if (!countInput) {
+            countInput = document.createElement('input');
+            countInput.type = 'hidden';
+            countInput.name = 'guardian_count';
+            document.getElementById('applicationForm').appendChild(countInput);
         }
+        countInput.value = count;
     }
-});
-
-// Add CSS for toast animations
-const toastStyles = `
-    <style>
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+    
+    // Sibling Management
+    document.getElementById('addSiblingBtn').addEventListener('click', function() {
+        addSibling();
+    });
+    
+    function addSibling(data = null) {
+        const siblingHtml = `
+            <div class="dynamic-item" data-index="${siblingCount}">
+                <button type="button" class="remove-item-btn" onclick="this.parentElement.remove()">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Name <span class="required-star">*</span></label>
+                        <input type="text" class="form-control" name="sibling_name_${siblingCount}" 
+                               value="${data ? data.name : ''}" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" name="sibling_age_${siblingCount}" 
+                               min="1" max="30" value="${data ? data.age : ''}">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Education Level</label>
+                        <input type="text" class="form-control" name="sibling_education_${siblingCount}" 
+                               value="${data ? data.education_level : ''}">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">School Name</label>
+                        <input type="text" class="form-control" name="sibling_school_${siblingCount}" 
+                               value="${data ? data.school_name : ''}">
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('siblingsList').insertAdjacentHTML('beforeend', siblingHtml);
+        siblingCount++;
+        
+        updateSiblingCount();
+    }
+    
+    function updateSiblingCount() {
+        let count = document.getElementById('siblingsList').querySelectorAll('.dynamic-item').length;
+        let countInput = document.querySelector('input[name="sibling_count"]');
+        if (!countInput) {
+            countInput = document.createElement('input');
+            countInput.type = 'hidden';
+            countInput.name = 'sibling_count';
+            document.getElementById('applicationForm').appendChild(countInput);
+        }
+        countInput.value = count;
+    }
+    
+    // Institution Search
+    let institutionTimeout;
+    document.getElementById('institutionSearch').addEventListener('input', function(e) {
+        clearTimeout(institutionTimeout);
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            document.getElementById('institutionResults').style.display = 'none';
+            return;
         }
         
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        
-        .toast-item {
-            border-left: 4px solid;
-            border-radius: var(--border-radius);
-            animation: slideInRight 0.3s ease;
-        }
-        
-        /* Enhanced form validation styles */
-        .form-control.is-invalid {
-            border-color: var(--danger-color);
-            box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
-        }
-        
-        .form-control.is-valid {
-            border-color: var(--success-color);
-            box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25);
-        }
-        
-        /* Loading animation enhancements */
-        .loading-overlay {
-            backdrop-filter: blur(5px);
-        }
-        
-        .loading-overlay .spinner {
-            box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
-        }
-        
-        /* Enhanced card styles */
-        .card {
-            border: none;
-            border-radius: var(--border-radius);
-            box-shadow: var(--card-shadow);
-            transition: var(--transition);
-        }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.1);
-        }
-        
-        .card-header {
-            border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
-            font-weight: 600;
-        }
-        
-        /* Dynamic item animations */
-        .dynamic-item {
-            animation: slideInUp 0.3s ease;
-        }
-        
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+        institutionTimeout = setTimeout(() => {
+            searchInstitution(query);
+        }, 500);
+    });
+    
+    function searchInstitution(query) {
+        fetch('{% url "search_institution_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayInstitutionResults(data.results);
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    function displayInstitutionResults(results) {
+        const resultsDiv = document.getElementById('institutionResults');
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-result-item text-center text-muted">No institutions found</div>';
+            resultsDiv.style.display = 'block';
+            return;
         }
         
-        /* Progress indicators */
-        .step-item.completed .step-number::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1rem;
-            font-weight: bold;
-        }
+        resultsDiv.innerHTML = results.map(inst => `
+            <div class="search-result-item" data-institution='${JSON.stringify(inst)}'>
+                <div class="search-result-name">${inst.name}</div>
+                <div class="search-result-info">
+                    ${inst.institution_type} - ${inst.county}
+                </div>
+            </div>
+        `).join('');
         
-        /* Badge enhancements */
-        .badge {
-            font-size: 0.75rem;
-            border-radius: 2rem;
-            padding: 0.35rem 0.75rem;
-        }
+        resultsDiv.style.display = 'block';
         
-        /* Alert enhancements */
-        .alert {
-            border: none;
-            border-radius: var(--border-radius);
-            border-left: 4px solid;
-        }
+        resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const instData = JSON.parse(this.dataset.institution);
+                selectInstitution(instData);
+            });
+        });
+    }
+    
+    function selectInstitution(institution) {
+        document.getElementById('institutionResults').style.display = 'none';
+        document.getElementById('institutionSearch').value = institution.name;
+        document.getElementById('selectedInstitutionId').value = institution.id;
         
-        .alert-info {
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
-            border-left-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-        
-        .alert-success {
-            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
-            border-left-color: var(--success-color);
-            color: var(--success-color);
-        }
-        
-        /* Responsive enhancements */
-        @media (max-width: 768px) {
-            .form-card {
-                padding: 1rem;
-            }
+        document.getElementById('selectedInstitutionName').textContent = institution.name;
+        document.getElementById('selectedInstitutionDetails').textContent = 
+            `${institution.institution_type} | ${institution.county}`;
+        document.getElementById('selectedInstitutionInfo').style.display = 'block';
+    }
+    
+    // Calculate fees balance
+    document.getElementById('totalFees').addEventListener('input', calculateBalance);
+    document.getElementById('feesPaid').addEventListener('input', calculateBalance);
+    
+    function calculateBalance() {
+        const total = parseFloat(document.getElementById('totalFees').value) || 0;
+        const paid = parseFloat(document.getElementById('feesPaid').value) || 0;
+        document.getElementById('feesBalance').value = (total - paid).toFixed(2);
+    }
+    
+    // Toggle other bursaries section
+    document.getElementById('otherBursaries').addEventListener('change', function() {
+        document.getElementById('otherBursariesSection').style.display = 
+            this.checked ? 'block' : 'none';
+    });
+    
+    // Toggle chronic illness section
+    document.getElementById('hasChronicIllness').addEventListener('change', function() {
+        document.getElementById('chronicIllnessSection').style.display = 
+            this.checked ? 'block' : 'none';
+    });
+    
+    // File Upload Handling
+    document.querySelectorAll('.file-upload-area').forEach(area => {
+        area.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            document.getElementById(targetId).click();
+        });
+    });
+    
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const area = document.querySelector(`[data-target="${this.id}"]`);
+            const fileName = area.querySelector('.file-name');
             
-            .navigation-buttons {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: white;
-                border-top: 2px solid #e3e6f0;
-                padding: 1rem;
-                z-index: 1000;
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                fileName.textContent = `✓ ${file.name}`;
+                area.classList.add('has-file');
+            } else {
+                fileName.textContent = '';
+                area.classList.remove('has-file');
             }
-            
-            body {
-                padding-bottom: 80px;
+        });
+    });
+    
+    // Validation
+    function validateStep(step) {
+        if (step === 1) {
+            if (!document.getElementById('selectedUserId').value) {
+                showError('Please select a student');
+                return false;
             }
-            
-            .step-navigation {
-                position: sticky;
-                top: 0;
-                z-index: 999;
-                background: white;
-                margin-bottom: 1rem;
+            if (!document.getElementById('gender').value || !document.getElementById('dateOfBirth').value ||
+                !document.getElementById('ward').value) {
+                showError('Please fill in all required fields');
+                return false;
             }
         }
-    </style>
-`;
-
-$('head').append(toastStyles);
-
-// Initialize search on Enter key
-$('#userSearchInput').on('keypress', function(e) {
-    if (e.which === 13) {
-        e.preventDefault();
-        searchUsers();
-    }
-});
-
-// Real-time validation
-$('.form-control').on('blur', function() {
-    const field = $(this);
-    const value = field.val().trim();
-    
-    if (field.prop('required') && !value) {
-        field.addClass('is-invalid').removeClass('is-valid');
-    } else if (value) {
-        field.addClass('is-valid').removeClass('is-invalid');
-    }
-});
-
-// Auto-save functionality (optional)
-function autoSave() {
-    const formData = {
-        step: currentStep,
-        selectedUser: selectedUser,
-        // Add other form data as needed
-    };
-    
-    localStorage.setItem('applicationDraft', JSON.stringify(formData));
-}
-
-// Load saved draft (optional)
-function loadDraft() {
-    const draft = localStorage.getItem('applicationDraft');
-    if (draft) {
-        try {
-            const data = JSON.parse(draft);
-            if (data.selectedUser) {
-                selectedUser = data.selectedUser;
-                // Restore form state
+        
+        if (step === 3) {
+            if (!document.getElementById('fiscalYear').value || !document.getElementById('bursaryCategory').value ||
+                !document.getElementById('selectedInstitutionId').value) {
+                showError('Please fill in all required application fields');
+                return false;
             }
-        } catch (e) {
-            console.error('Error loading draft:', e);
         }
+        
+        if (step === 4) {
+            const requiredDocs = ['fee_structure', 'admission_letter', 'fee_statement', 'parent_id'];
+            for (let doc of requiredDocs) {
+                if (!document.getElementById(doc).files.length) {
+                    showError(`Please upload ${doc.replace('_', ' ')}`);
+                    return false;
+                }
+            }
+        }
+        
+        return true;
     }
-}
-
-// Clear draft after successful submission
-function clearDraft() {
-    localStorage.removeItem('applicationDraft');
-}
-
-// Initialize auto-save
-setInterval(autoSave, 30000); // Auto-save every 30 seconds
-</script>
-
-{% endblock %}
+    
+    // Generate Review Content
+    function generateReviewContent() {
+        const reviewHtml = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Student Information</h6>
+                    <p><strong>Name:</strong> ${document.getElementById('firstName').value} ${document.getElementById('lastName').
+                    

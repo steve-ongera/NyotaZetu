@@ -6761,7 +6761,6 @@ def announcements_view(request):
     return render(request, 'students/announcements.html', context)
 
 
-
 # views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
@@ -6769,346 +6768,532 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from django.views.generic import View
-from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.db.models import Q
 import json
 import uuid
 from decimal import Decimal
+from datetime import datetime
 
 from .models import (
     User, Applicant, Application, Ward, Location, SubLocation, Village,
-    Institution, FiscalYear, BursaryCategory, Guardian, SiblingInformation
+    Institution, FiscalYear, BursaryCategory, Guardian, SiblingInformation,
+    Document, Notification
 )
+
+User = get_user_model()
 
 def is_admin_or_reviewer(user):
     """Check if user is admin or reviewer"""
-    return user.is_authenticated and user.user_type in ['admin', 'reviewer']
+    return user.is_authenticated and user.user_type in ['admin', 'reviewer', 'county_admin', 'ward_admin']
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(user_passes_test(is_admin_or_reviewer), name='dispatch')
-class CreateApplicationView(View):
-    template_name = 'applications/create_application.html'
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def create_application_view(request):
+    """Main view for creating applications"""
+    context = {
+        'wards': Ward.objects.filter(is_active=True).select_related('constituency').order_by('name'),
+        'fiscal_years': FiscalYear.objects.filter(is_active=True, application_open=True).order_by('-start_date'),
+        'relationship_choices': Guardian.RELATIONSHIP_CHOICES,
+        'employment_status': Guardian.EMPLOYMENT_STATUS,
+        'gender_choices': Applicant.GENDER_CHOICES,
+        'institution_types': Institution.INSTITUTION_TYPES,
+    }
+    return render(request, 'applications/create_application.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def search_student_ajax(request):
+    """AJAX endpoint to search for students"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
     
-    def get(self, request):
-        """Display the application creation form"""
-        context = self.get_context_data()
-        return render(request, self.template_name, context)
-    
-    def post(self, request):
-        """Handle form submission"""
-        try:
-            data = json.loads(request.body)
-            action = data.get('action')
-            
-            if action == 'create_user':
-                return self.create_user(request, data)
-            elif action == 'search_user':
-                return self.search_user(request, data)
-            elif action == 'create_application':
-                return self.create_application(request, data)
-            elif action == 'get_locations':
-                return self.get_locations(request, data)
-            elif action == 'get_sublocations':
-                return self.get_sublocations(request, data)
-            elif action == 'get_villages':
-                return self.get_villages(request, data)
-            else:
-                return JsonResponse({'success': False, 'message': 'Invalid action'})
-                
-        except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'message': 'Invalid JSON data'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
-    
-    def get_context_data(self):
-        """Get context data for the template"""
-        return {
-            'wards': Ward.objects.all().order_by('name'),
-            'institutions': Institution.objects.all().order_by('name'),
-            'fiscal_years': FiscalYear.objects.filter(is_active=True).order_by('-start_date'),
-            'bursary_categories': BursaryCategory.objects.select_related('fiscal_year').order_by('name'),
-            'user_types': User.USER_TYPES,
-            'gender_choices': Applicant.GENDER_CHOICES,
-            'relationship_choices': Guardian.RELATIONSHIP_CHOICES,
-            'institution_types': Institution.INSTITUTION_TYPES,
-        }
-    
-    def create_user(self, request, data):
-        """Create a new user account"""
-        try:
-            with transaction.atomic():
-                # Validate required fields
-                required_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'id_number']
-                for field in required_fields:
-                    if not data.get(field, '').strip():
-                        return JsonResponse({
-                            'success': False, 
-                            'message': f'{field.replace("_", " ").title()} is required'
-                        })
-                
-                # Check if username or email already exists
-                if User.objects.filter(username=data['username']).exists():
-                    return JsonResponse({
-                        'success': False, 
-                        'message': 'Username already exists'
-                    })
-                
-                if User.objects.filter(email=data['email']).exists():
-                    return JsonResponse({
-                        'success': False, 
-                        'message': 'Email already exists'
-                    })
-                
-                # Create user
-                user = User.objects.create_user(
-                    username=data['username'],
-                    email=data['email'],
-                    first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    user_type='applicant',
-                    phone_number=data['phone_number'],
-                    id_number=data['id_number']
-                )
-                
-                # Set password
-                if data.get('password'):
-                    user.set_password(data['password'])
-                else:
-                    # Generate random password
-                    password = uuid.uuid4().hex[:12]
-                    user.set_password(password)
-                
-                user.save()
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'User created successfully',
-                    'user': {
-                        'id': user.id,
-                        'username': user.username,
-                        'full_name': f"{user.first_name} {user.last_name}",
-                        'email': user.email,
-                        'phone_number': user.phone_number,
-                        'id_number': user.id_number
-                    }
-                })
-                
-        except ValidationError as e:
-            return JsonResponse({
-                'success': False,
-                'message': str(e)
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Error creating user: {str(e)}'
-            })
-    
-    def search_user(self, request, data):
-        """Search for existing users"""
+    try:
+        data = json.loads(request.body)
         query = data.get('query', '').strip()
-        if not query:
-            return JsonResponse({'success': False, 'message': 'Search query required'})
         
+        if not query or len(query) < 3:
+            return JsonResponse({
+                'success': False,
+                'message': 'Please enter at least 3 characters'
+            })
+        
+        # Search users by username, email, first name, last name, or ID number
         users = User.objects.filter(
             user_type='applicant'
         ).filter(
-            models.Q(username__icontains=query) |
-            models.Q(first_name__icontains=query) |
-            models.Q(last_name__icontains=query) |
-            models.Q(email__icontains=query) |
-            models.Q(id_number__icontains=query)
-        )[:10]  # Limit results
+            Q(username__icontains=query) |
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(id_number__icontains=query)
+        ).select_related('applicant_profile')[:10]
         
-        user_list = []
+        results = []
         for user in users:
-            user_list.append({
+            user_data = {
                 'id': user.id,
                 'username': user.username,
-                'full_name': f"{user.first_name} {user.last_name}",
                 'email': user.email,
+                'full_name': f"{user.first_name} {user.last_name}",
                 'phone_number': user.phone_number,
                 'id_number': user.id_number,
-                'has_applicant_profile': hasattr(user, 'applicant_profile')
+                'has_profile': hasattr(user, 'applicant_profile')
+            }
+            
+            # If user has applicant profile, include that data
+            if hasattr(user, 'applicant_profile'):
+                profile = user.applicant_profile
+                user_data['profile'] = {
+                    'gender': profile.gender,
+                    'date_of_birth': profile.date_of_birth.strftime('%Y-%m-%d') if profile.date_of_birth else '',
+                    'ward_id': profile.ward_id,
+                    'ward_name': profile.ward.name if profile.ward else '',
+                    'location_id': profile.location_id,
+                    'sublocation_id': profile.sublocation_id,
+                    'village_id': profile.village_id,
+                    'physical_address': profile.physical_address,
+                    'postal_address': profile.postal_address,
+                    'special_needs': profile.special_needs,
+                    'special_needs_description': profile.special_needs_description
+                }
+                
+                # Get guardians
+                user_data['guardians'] = list(profile.guardians.values(
+                    'id', 'name', 'relationship', 'phone_number', 'email',
+                    'occupation', 'monthly_income', 'employment_status'
+                ))
+                
+                # Get siblings
+                user_data['siblings'] = list(profile.siblings.values(
+                    'id', 'name', 'age', 'education_level', 'school_name'
+                ))
+            
+            results.append(user_data)
+        
+        return JsonResponse({
+            'success': True,
+            'results': results
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error searching students: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def check_existing_application_ajax(request):
+    """Check if student has already applied for active fiscal year"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+        fiscal_year_id = data.get('fiscal_year_id')
+        
+        if not user_id or not fiscal_year_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'User ID and Fiscal Year ID required'
+            })
+        
+        user = get_object_or_404(User, id=user_id)
+        
+        if not hasattr(user, 'applicant_profile'):
+            return JsonResponse({
+                'success': True,
+                'has_application': False
+            })
+        
+        # Check for existing application
+        existing_app = Application.objects.filter(
+            applicant=user.applicant_profile,
+            fiscal_year_id=fiscal_year_id
+        ).first()
+        
+        if existing_app:
+            return JsonResponse({
+                'success': True,
+                'has_application': True,
+                'application': {
+                    'application_number': existing_app.application_number,
+                    'status': existing_app.get_status_display(),
+                    'date_submitted': existing_app.date_submitted.strftime('%Y-%m-%d %H:%M') if existing_app.date_submitted else 'Draft',
+                    'amount_requested': str(existing_app.amount_requested)
+                }
             })
         
         return JsonResponse({
             'success': True,
-            'users': user_list
+            'has_application': False
         })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error checking application: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def search_institution_ajax(request):
+    """AJAX endpoint to search institutions"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
     
-    def create_application(self, request, data):
-        """Create new application with applicant profile"""
-        try:
-            with transaction.atomic():
-                user_id = data.get('user_id')
-                if not user_id:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'User ID is required'
-                    })
-                
-                user = get_object_or_404(User, id=user_id)
-                
-                # Create or get applicant profile
-                applicant_data = data.get('applicant', {})
-                if hasattr(user, 'applicant_profile'):
-                    applicant = user.applicant_profile
-                    # Update existing applicant data
-                    for field, value in applicant_data.items():
-                        if field in ['ward_id', 'location_id', 'sublocation_id', 'village_id']:
-                            if value:
-                                related_field = field.replace('_id', '')
-                                model_map = {
-                                    'ward': Ward,
-                                    'location': Location,
-                                    'sublocation': SubLocation,
-                                    'village': Village
-                                }
-                                setattr(applicant, related_field, model_map[related_field].objects.get(id=value))
-                        else:
-                            setattr(applicant, field, value)
-                    applicant.save()
-                else:
-                    # Create new applicant profile
-                    applicant = Applicant.objects.create(
-                        user=user,
-                        gender=applicant_data.get('gender'),
-                        date_of_birth=applicant_data.get('date_of_birth'),
-                        id_number=applicant_data.get('id_number', user.id_number),
-                        ward_id=applicant_data.get('ward_id'),
-                        location_id=applicant_data.get('location_id'),
-                        sublocation_id=applicant_data.get('sublocation_id'),
-                        village_id=applicant_data.get('village_id'),
-                        physical_address=applicant_data.get('physical_address', ''),
-                        postal_address=applicant_data.get('postal_address', ''),
-                        special_needs=applicant_data.get('special_needs', False),
-                        special_needs_description=applicant_data.get('special_needs_description', '')
-                    )
-                
-                # Create guardians
-                guardians_data = data.get('guardians', [])
-                # Clear existing guardians
-                applicant.guardians.all().delete()
-                for guardian_data in guardians_data:
-                    if guardian_data.get('name'):
-                        Guardian.objects.create(
-                            applicant=applicant,
-                            name=guardian_data.get('name'),
-                            relationship=guardian_data.get('relationship'),
-                            phone_number=guardian_data.get('phone_number', ''),
-                            email=guardian_data.get('email', ''),
-                            occupation=guardian_data.get('occupation', ''),
-                            monthly_income=guardian_data.get('monthly_income', 0),
-                            id_number=guardian_data.get('id_number', '')
-                        )
-                
-                # Create siblings
-                siblings_data = data.get('siblings', [])
-                # Clear existing siblings
-                applicant.siblings.all().delete()
-                for sibling_data in siblings_data:
-                    if sibling_data.get('name'):
-                        SiblingInformation.objects.create(
-                            applicant=applicant,
-                            name=sibling_data.get('name'),
-                            age=sibling_data.get('age', 0),
-                            education_level=sibling_data.get('education_level', ''),
-                            school_name=sibling_data.get('school_name', '')
-                        )
-                
-                # Create application
-                application_data = data.get('application', {})
-                fiscal_year = get_object_or_404(FiscalYear, id=application_data.get('fiscal_year_id'))
-                bursary_category = get_object_or_404(BursaryCategory, id=application_data.get('bursary_category_id'))
-                institution = get_object_or_404(Institution, id=application_data.get('institution_id'))
-                
-                application = Application.objects.create(
-                    applicant=applicant,
-                    fiscal_year=fiscal_year,
-                    bursary_category=bursary_category,
-                    institution=institution,
-                    admission_number=application_data.get('admission_number'),
-                    year_of_study=application_data.get('year_of_study'),
-                    course_name=application_data.get('course_name', ''),
-                    expected_completion_date=application_data.get('expected_completion_date'),
-                    total_fees_payable=Decimal(str(application_data.get('total_fees_payable', '0'))),
-                    fees_paid=Decimal(str(application_data.get('fees_paid', '0'))),
-                    fees_balance=Decimal(str(application_data.get('fees_balance', '0'))),
-                    amount_requested=Decimal(str(application_data.get('amount_requested', '0'))),
-                    other_bursaries=application_data.get('other_bursaries', False),
-                    other_bursaries_amount=Decimal(str(application_data.get('other_bursaries_amount', '0'))),
-                    other_bursaries_source=application_data.get('other_bursaries_source', ''),
-                    is_orphan=application_data.get('is_orphan', False),
-                    is_disabled=application_data.get('is_disabled', False),
-                    has_chronic_illness=application_data.get('has_chronic_illness', False),
-                    chronic_illness_description=application_data.get('chronic_illness_description', ''),
-                    previous_allocation=application_data.get('previous_allocation', False),
-                    previous_allocation_year=application_data.get('previous_allocation_year', ''),
-                    previous_allocation_amount=Decimal(str(application_data.get('previous_allocation_amount', '0'))),
-                    status='submitted'
-                )
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Application created successfully',
-                    'application': {
-                        'id': application.id,
-                        'application_number': application.application_number,
-                        'status': application.status
-                    }
-                })
-                
-        except Exception as e:
+    try:
+        data = json.loads(request.body)
+        query = data.get('query', '').strip()
+        institution_type = data.get('institution_type', '')
+        
+        if not query or len(query) < 2:
             return JsonResponse({
                 'success': False,
-                'message': f'Error creating application: {str(e)}'
+                'message': 'Please enter at least 2 characters'
             })
+        
+        # Build query
+        institutions = Institution.objects.filter(
+            is_active=True,
+            name__icontains=query
+        )
+        
+        if institution_type:
+            institutions = institutions.filter(institution_type=institution_type)
+        
+        institutions = institutions.order_by('name')[:15]
+        
+        results = [{
+            'id': inst.id,
+            'name': inst.name,
+            'institution_type': inst.get_institution_type_display(),
+            'county': inst.county.name if inst.county else '',
+            'postal_address': inst.postal_address or '',
+            'phone_number': inst.phone_number or '',
+            'email': inst.email or '',
+            'bank_name': inst.bank_name or '',
+            'account_number': inst.account_number or ''
+        } for inst in institutions]
+        
+        return JsonResponse({
+            'success': True,
+            'results': results
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error searching institutions: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def get_locations_ajax(request):
+    """Get locations for selected ward"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
     
-    def get_locations(self, request, data):
-        """Get locations for a specific ward"""
+    try:
+        data = json.loads(request.body)
         ward_id = data.get('ward_id')
+        
         if not ward_id:
             return JsonResponse({'success': False, 'message': 'Ward ID required'})
         
-        locations = Location.objects.filter(ward_id=ward_id).order_by('name')
-        location_list = [{'id': loc.id, 'name': loc.name} for loc in locations]
+        locations = Location.objects.filter(
+            ward_id=ward_id
+        ).order_by('name').values('id', 'name')
         
         return JsonResponse({
             'success': True,
-            'locations': location_list
+            'locations': list(locations)
         })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error fetching locations: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def get_sublocations_ajax(request):
+    """Get sublocations for selected location"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
     
-    def get_sublocations(self, request, data):
-        """Get sublocations for a specific location"""
+    try:
+        data = json.loads(request.body)
         location_id = data.get('location_id')
+        
         if not location_id:
             return JsonResponse({'success': False, 'message': 'Location ID required'})
         
-        sublocations = SubLocation.objects.filter(location_id=location_id).order_by('name')
-        sublocation_list = [{'id': sub.id, 'name': sub.name} for sub in sublocations]
+        sublocations = SubLocation.objects.filter(
+            location_id=location_id
+        ).order_by('name').values('id', 'name')
         
         return JsonResponse({
             'success': True,
-            'sublocations': sublocation_list
+            'sublocations': list(sublocations)
         })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error fetching sublocations: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def get_villages_ajax(request):
+    """Get villages for selected sublocation"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
     
-    def get_villages(self, request, data):
-        """Get villages for a specific sublocation"""
+    try:
+        data = json.loads(request.body)
         sublocation_id = data.get('sublocation_id')
+        
         if not sublocation_id:
             return JsonResponse({'success': False, 'message': 'Sublocation ID required'})
         
-        villages = Village.objects.filter(sublocation_id=sublocation_id).order_by('name')
-        village_list = [{'id': vil.id, 'name': vil.name} for vil in villages]
+        villages = Village.objects.filter(
+            sublocation_id=sublocation_id
+        ).order_by('name').values('id', 'name')
         
         return JsonResponse({
             'success': True,
-            'villages': village_list
+            'villages': list(villages)
         })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error fetching villages: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def get_bursary_categories_ajax(request):
+    """Get bursary categories for selected fiscal year"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        data = json.loads(request.body)
+        fiscal_year_id = data.get('fiscal_year_id')
+        
+        if not fiscal_year_id:
+            return JsonResponse({'success': False, 'message': 'Fiscal Year ID required'})
+        
+        categories = BursaryCategory.objects.filter(
+            fiscal_year_id=fiscal_year_id,
+            is_active=True
+        ).order_by('name')
+        
+        results = [{
+            'id': cat.id,
+            'name': cat.name,
+            'category_type': cat.get_category_type_display(),
+            'max_amount': str(cat.max_amount_per_applicant),
+            'min_amount': str(cat.min_amount_per_applicant)
+        } for cat in categories]
+        
+        return JsonResponse({
+            'success': True,
+            'categories': results
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error fetching categories: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(is_admin_or_reviewer)
+def submit_application_ajax(request):
+    """Handle complete application submission with documents"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        # Get form data
+        user_id = request.POST.get('user_id')
+        fiscal_year_id = request.POST.get('fiscal_year_id')
+        
+        if not user_id or not fiscal_year_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'User and Fiscal Year are required'
+            })
+        
+        with transaction.atomic():
+            user = get_object_or_404(User, id=user_id)
+            fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+            
+            # Create or update applicant profile
+            if hasattr(user, 'applicant_profile'):
+                applicant = user.applicant_profile
+            else:
+                applicant = Applicant(user=user)
+            
+            # Update applicant data
+            applicant.gender = request.POST.get('gender')
+            applicant.date_of_birth = request.POST.get('date_of_birth')
+            applicant.id_number = request.POST.get('id_number', user.id_number)
+            applicant.ward_id = request.POST.get('ward_id')
+            applicant.location_id = request.POST.get('location_id') or None
+            applicant.sublocation_id = request.POST.get('sublocation_id') or None
+            applicant.village_id = request.POST.get('village_id') or None
+            applicant.physical_address = request.POST.get('physical_address', '')
+            applicant.postal_address = request.POST.get('postal_address', '')
+            applicant.special_needs = request.POST.get('special_needs') == 'true'
+            applicant.special_needs_description = request.POST.get('special_needs_description', '')
+            applicant.save()
+            
+            # Handle guardians
+            guardian_count = int(request.POST.get('guardian_count', 0))
+            applicant.guardians.all().delete()  # Clear existing
+            
+            for i in range(guardian_count):
+                guardian_name = request.POST.get(f'guardian_name_{i}')
+                if guardian_name:
+                    Guardian.objects.create(
+                        applicant=applicant,
+                        name=guardian_name,
+                        relationship=request.POST.get(f'guardian_relationship_{i}'),
+                        phone_number=request.POST.get(f'guardian_phone_{i}', ''),
+                        email=request.POST.get(f'guardian_email_{i}', ''),
+                        id_number=request.POST.get(f'guardian_id_{i}', ''),
+                        employment_status=request.POST.get(f'guardian_employment_{i}', 'unemployed'),
+                        occupation=request.POST.get(f'guardian_occupation_{i}', ''),
+                        monthly_income=Decimal(request.POST.get(f'guardian_income_{i}', '0') or '0')
+                    )
+            
+            # Handle siblings
+            sibling_count = int(request.POST.get('sibling_count', 0))
+            applicant.siblings.all().delete()  # Clear existing
+            
+            for i in range(sibling_count):
+                sibling_name = request.POST.get(f'sibling_name_{i}')
+                if sibling_name:
+                    SiblingInformation.objects.create(
+                        applicant=applicant,
+                        name=sibling_name,
+                        age=int(request.POST.get(f'sibling_age_{i}', 0)),
+                        education_level=request.POST.get(f'sibling_education_{i}', ''),
+                        school_name=request.POST.get(f'sibling_school_{i}', ''),
+                        is_in_school=request.POST.get(f'sibling_in_school_{i}') == 'true'
+                    )
+            
+            # Create application
+            application = Application.objects.create(
+                applicant=applicant,
+                fiscal_year=fiscal_year,
+                bursary_category_id=request.POST.get('bursary_category_id'),
+                institution_id=request.POST.get('institution_id'),
+                admission_number=request.POST.get('admission_number'),
+                year_of_study=int(request.POST.get('year_of_study', 1)),
+                course_name=request.POST.get('course_name', ''),
+                expected_completion_date=request.POST.get('expected_completion_date'),
+                total_fees_payable=Decimal(request.POST.get('total_fees_payable', '0')),
+                fees_paid=Decimal(request.POST.get('fees_paid', '0')),
+                fees_balance=Decimal(request.POST.get('fees_balance', '0')),
+                amount_requested=Decimal(request.POST.get('amount_requested', '0')),
+                other_bursaries=request.POST.get('other_bursaries') == 'true',
+                other_bursaries_amount=Decimal(request.POST.get('other_bursaries_amount', '0') or '0'),
+                other_bursaries_source=request.POST.get('other_bursaries_source', ''),
+                is_orphan=request.POST.get('is_orphan') == 'true',
+                is_total_orphan=request.POST.get('is_total_orphan') == 'true',
+                is_disabled=request.POST.get('is_disabled') == 'true',
+                has_chronic_illness=request.POST.get('has_chronic_illness') == 'true',
+                chronic_illness_description=request.POST.get('chronic_illness_description', ''),
+                number_of_siblings=sibling_count,
+                number_of_siblings_in_school=int(request.POST.get('siblings_in_school', 0)),
+                household_monthly_income=Decimal(request.POST.get('household_income', '0') or '0'),
+                has_received_previous_allocation=request.POST.get('previous_allocation') == 'true',
+                previous_allocation_year=request.POST.get('previous_allocation_year', ''),
+                previous_allocation_amount=Decimal(request.POST.get('previous_allocation_amount', '0') or '0'),
+                status='submitted',
+                date_submitted=timezone.now()
+            )
+            
+            # Handle document uploads
+            document_types = ['fee_structure', 'admission_letter', 'fee_statement', 'parent_id']
+            for doc_type in document_types:
+                if doc_type in request.FILES:
+                    Document.objects.create(
+                        application=application,
+                        document_type=doc_type,
+                        file=request.FILES[doc_type],
+                        description=f"{doc_type.replace('_', ' ').title()}"
+                    )
+            
+            # Create notification for applicant
+            Notification.objects.create(
+                user=user,
+                notification_type='application_status',
+                title='Application Submitted Successfully',
+                message=f'Your bursary application ({application.application_number}) has been submitted successfully and is under review.',
+                related_application=application
+            )
+            
+            # Send email notification
+            send_application_email(user, application)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Application submitted successfully!',
+                'application_number': application.application_number,
+                'application_id': application.id
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error submitting application: {str(e)}'
+        })
+
+
+def send_application_email(user, application):
+    """Send email notification to student"""
+    try:
+        subject = f'Bursary Application Submitted - {application.application_number}'
+        
+        html_message = render_to_string('emails/application_submitted.html', {
+            'user': user,
+            'application': application
+        })
+        
+        send_mail(
+            subject=subject,
+            message='',  # Plain text version
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=True
+        )
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+
 
 
 #security views for admin and reviewers
