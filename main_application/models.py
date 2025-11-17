@@ -1691,6 +1691,181 @@ class UserURLVisit(models.Model):
     
     def __str__(self):
         return f"{self.user.username} visited {self.url_visit.url_path}"
+    
+    
+class SecurityThreat(models.Model):
+    """
+    Log detected security threats
+    """
+    THREAT_TYPES = (
+        ('sql_injection', 'SQL Injection'),
+        ('xss', 'Cross-Site Scripting (XSS)'),
+        ('path_traversal', 'Path Traversal'),
+        ('code_injection', 'Code Injection'),
+        ('brute_force', 'Brute Force Attack'),
+        ('credential_stuffing', 'Credential Stuffing'),
+        ('rate_limit', 'Rate Limit Exceeded'),
+        ('suspicious_agent', 'Suspicious User Agent'),
+        ('phishing', 'Phishing Attempt'),
+        ('malware', 'Malware Detection'),
+        ('ddos', 'DDoS Attack'),
+        ('other', 'Other'),
+    )
+    
+    SEVERITY_LEVELS = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    )
+    
+    threat_type = models.CharField(max_length=30, choices=THREAT_TYPES)
+    severity = models.CharField(max_length=10, choices=SEVERITY_LEVELS, default='medium')
+    
+    ip_address = models.GenericIPAddressField()
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='security_threats'
+    )
+    
+    description = models.TextField()
+    request_path = models.CharField(max_length=500)
+    request_method = models.CharField(max_length=10)
+    user_agent = models.TextField(blank=True, null=True)
+    request_data = models.JSONField(blank=True, null=True)
+    
+    # Response actions
+    blocked = models.BooleanField(default=False)
+    resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_threats'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_notes = models.TextField(blank=True, null=True)
+    
+    detected_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-detected_at']
+        indexes = [
+            models.Index(fields=['-detected_at']),
+            models.Index(fields=['severity', '-detected_at']),
+            models.Index(fields=['ip_address', '-detected_at']),
+            models.Index(fields=['resolved', '-detected_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_threat_type_display()} - {self.severity} ({self.detected_at})"
+
+
+class UserSession(models.Model):
+    """
+    Track active user sessions for real-time monitoring
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=40, unique=True)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True, null=True)
+    
+    # Session details
+    login_time = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    logout_time = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Device info
+    device_type = models.CharField(max_length=50, blank=True, null=True)  # Mobile, Desktop, Tablet
+    browser = models.CharField(max_length=100, blank=True, null=True)
+    os = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Location (if available)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-last_activity']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['-last_activity']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.ip_address} ({self.login_time})"
+    
+    def is_expired(self):
+        """Check if session has been inactive for more than 30 minutes"""
+        if not self.is_active:
+            return True
+        time_diff = timezone.now() - self.last_activity
+        return time_diff > timedelta(minutes=30)
+
+
+class SuspiciousActivity(models.Model):
+    """
+    Track suspicious user activities that might indicate phishing or compromise
+    """
+    ACTIVITY_TYPES = (
+        ('unusual_access_pattern', 'Unusual Access Pattern'),
+        ('rapid_data_access', 'Rapid Data Access'),
+        ('failed_authorization', 'Multiple Failed Authorization Attempts'),
+        ('data_exfiltration', 'Possible Data Exfiltration'),
+        ('privilege_escalation', 'Privilege Escalation Attempt'),
+        ('unusual_location', 'Access from Unusual Location'),
+        ('unusual_time', 'Access at Unusual Time'),
+        ('multiple_devices', 'Multiple Devices Simultaneously'),
+        ('phishing_link_click', 'Phishing Link Click'),
+        ('account_sharing', 'Possible Account Sharing'),
+    )
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='suspicious_activities')
+    activity_type = models.CharField(max_length=30, choices=ACTIVITY_TYPES)
+    description = models.TextField()
+    
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True, null=True)
+    
+    # Risk scoring
+    risk_score = models.PositiveIntegerField(default=0)  # 0-100
+    confidence = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # 0-100%
+    
+    # Evidence
+    evidence = models.JSONField(blank=True, null=True)
+    
+    # Investigation
+    investigated = models.BooleanField(default=False)
+    investigated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='investigated_activities'
+    )
+    investigated_at = models.DateTimeField(null=True, blank=True)
+    investigation_notes = models.TextField(blank=True, null=True)
+    
+    is_false_positive = models.BooleanField(default=False)
+    action_taken = models.TextField(blank=True, null=True)
+    
+    detected_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-detected_at']
+        verbose_name_plural = "Suspicious Activities"
+        indexes = [
+            models.Index(fields=['-detected_at']),
+            models.Index(fields=['user', '-detected_at']),
+            models.Index(fields=['investigated', '-detected_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_activity_type_display()}"
 
 # UPDATE YOUR EXISTING ALLOCATION MODEL
 # Add these fields to your existing Allocation model if they don't exist:
