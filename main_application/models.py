@@ -1664,6 +1664,34 @@ class Disbursement(models.Model):
         self.save()
 
 
+class URLVisit(models.Model):
+    url_path = models.CharField(max_length=500, unique=True)
+    url_name = models.CharField(max_length=200, blank=True, null=True)
+    view_name = models.CharField(max_length=200, blank=True, null=True)
+    visit_count = models.PositiveIntegerField(default=0)
+    last_visited = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-visit_count']
+    
+    def __str__(self):
+        return f"{self.url_path} ({self.visit_count} visits)"
+
+
+class UserURLVisit(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='url_visits')
+    url_visit = models.ForeignKey(URLVisit, on_delete=models.CASCADE, related_name='user_visits')
+    visited_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-visited_at']
+    
+    def __str__(self):
+        return f"{self.user.username} visited {self.url_visit.url_path}"
+
 # UPDATE YOUR EXISTING ALLOCATION MODEL
 # Add these fields to your existing Allocation model if they don't exist:
 
