@@ -17,6 +17,16 @@ urlpatterns = [
     path('applications/create/', views.create_application_view , name='create_application'), #by admin
     path('applications/<int:application_id>/', views.application_detail, name='application_detail'),
     path('applications/<int:application_id>/review/', views.application_review, name='application_review'),
+    
+    # AJAX endpoints for application creation
+    path('ajax/search-student/', views.search_student_ajax, name='search_student_ajax'),
+    path('ajax/check-existing-application/', views.check_existing_application_ajax, name='check_existing_application_ajax'),
+    path('ajax/search-institution/', views.search_institution_ajax, name='search_institution_ajax'),
+    path('ajax/get-locations/', views.get_locations_ajax, name='get_locations_ajax'),
+    path('ajax/get-sublocations/', views.get_sublocations_ajax, name='get_sublocations_ajax'),
+    path('ajax/get-villages/', views.get_villages_ajax, name='get_villages_ajax'),
+    path('ajax/get-bursary-categories/', views.get_bursary_categories_ajax, name='get_bursary_categories_ajax'),
+    path('ajax/submit-application/', views.submit_application_ajax, name='submit_application_ajax'),
 
     # PDF document serving URLs
     path('application/<int:application_id>/document/<int:document_id>/serve/',  views.serve_pdf_document,  name='serve_pdf_document'),

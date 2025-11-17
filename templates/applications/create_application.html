@@ -1,9 +1,15 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load static %}
 
 {% block title %}Create Application - Bursary System{% endblock %}
 
-{% block extra_css %}
+{% block content %}
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Bootstrap Icons (optional) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
 <style>
     .form-wizard {
         background: white;
@@ -306,9 +312,7 @@
         filter: brightness(0) invert(1);
     }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -829,6 +833,7 @@
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -841,13 +846,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // CSRF Token
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
+    // Initialize Bootstrap modals
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
     // Step Navigation
     function showStep(step) {
         document.querySelectorAll('.step-section').forEach(section => {
             section.classList.remove('active');
         });
         
-        document.querySelector(`.step-section[data-step="${step}"]`).classList.add('active');
+        const targetSection = document.querySelector(`.step-section[data-step="${step}"]`);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
         
         document.querySelectorAll('.wizard-step').forEach(stepEl => {
             const stepNum = parseInt(stepEl.dataset.step);
@@ -861,9 +873,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update buttons
-        document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'block';
-        document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'block';
-        document.getElementById('submitBtn').style.display = step === totalSteps ? 'block' : 'none';
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (prevBtn) prevBtn.style.display = step === 1 ? 'none' : 'block';
+        if (nextBtn) nextBtn.style.display = step === totalSteps ? 'none' : 'block';
+        if (submitBtn) submitBtn.style.display = step === totalSteps ? 'block' : 'none';
         
         // Generate review content if on last step
         if (step === totalSteps) {
@@ -871,33 +887,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    document.getElementById('nextBtn').addEventListener('click', function() {
-        if (validateStep(currentStep)) {
-            currentStep++;
-            showStep(currentStep);
-        }
-    });
+    // Navigation event listeners
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
     
-    document.getElementById('prevBtn').addEventListener('click', function() {
-        currentStep--;
-        showStep(currentStep);
-    });
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+            if (validateStep(currentStep)) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+            currentStep--;
+            showStep(currentStep);
+        });
+    }
     
     // Student Search
     let searchTimeout;
-    document.getElementById('studentSearch').addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
-        
-        if (query.length < 3) {
-            document.getElementById('searchResults').style.display = 'none';
-            return;
-        }
-        
-        searchTimeout = setTimeout(() => {
-            searchStudent(query);
-        }, 500);
-    });
+    const studentSearch = document.getElementById('studentSearch');
+    if (studentSearch) {
+        studentSearch.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 3) {
+                const searchResults = document.getElementById('searchResults');
+                if (searchResults) searchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchStudent(query);
+            }, 500);
+        });
+    }
     
     function searchStudent(query) {
         fetch('{% url "search_student_ajax" %}', {
@@ -913,7 +941,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 displaySearchResults(data.results);
             } else {
-                showError(data.message);
+                showError(data.message || 'Failed to search students');
             }
         })
         .catch(error => {
@@ -924,6 +952,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displaySearchResults(results) {
         const resultsDiv = document.getElementById('searchResults');
+        if (!resultsDiv) return;
         
         if (results.length === 0) {
             resultsDiv.innerHTML = '<div class="search-result-item text-center text-muted">No students found</div>';
@@ -932,11 +961,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         resultsDiv.innerHTML = results.map(user => `
-            <div class="search-result-item" data-user='${JSON.stringify(user)}'>
-                <div class="search-result-name">${user.full_name}</div>
+            <div class="search-result-item" data-user='${JSON.stringify(user).replace(/'/g, "&apos;")}'>
+                <div class="search-result-name">${user.full_name || 'No Name'}</div>
                 <div class="search-result-info">
-                    <i class="bi bi-envelope me-2"></i>${user.email} &nbsp;
-                    <i class="bi bi-telephone me-2"></i>${user.phone_number} &nbsp;
+                    <i class="bi bi-envelope me-2"></i>${user.email || 'No Email'} &nbsp;
+                    <i class="bi bi-telephone me-2"></i>${user.phone_number || 'No Phone'} &nbsp;
                     <i class="bi bi-card-text me-2"></i>${user.id_number || 'No ID'}
                 </div>
             </div>
@@ -947,7 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add click handlers
         resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', function() {
-                const userData = JSON.parse(this.dataset.user);
+                const userData = JSON.parse(this.dataset.user.replace(/&apos;/g, "'"));
                 selectStudent(userData);
             });
         });
@@ -955,15 +984,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function selectStudent(user) {
         selectedUser = user;
-        document.getElementById('searchResults').style.display = 'none';
-        document.getElementById('studentSearch').value = user.full_name;
+        const searchResults = document.getElementById('searchResults');
+        const studentSearch = document.getElementById('studentSearch');
+        
+        if (searchResults) searchResults.style.display = 'none';
+        if (studentSearch) studentSearch.value = user.full_name || '';
+        
         document.getElementById('selectedUserId').value = user.id;
         
         // Fill in basic info
-        document.getElementById('firstName').value = user.full_name.split(' ')[0];
-        document.getElementById('lastName').value = user.full_name.split(' ').slice(1).join(' ');
-        document.getElementById('email').value = user.email;
-        document.getElementById('phoneNumber').value = user.phone_number;
+        const nameParts = (user.full_name || '').split(' ');
+        document.getElementById('firstName').value = nameParts[0] || '';
+        document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('phoneNumber').value = user.phone_number || '';
         document.getElementById('idNumber').value = user.id_number || '';
         
         // Show student info section
@@ -982,41 +1016,32 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user.profile.ward_id) {
                 loadLocations(user.profile.ward_id, user.profile.location_id);
             }
-            
-            // Populate guardians
-            if (user.guardians && user.guardians.length > 0) {
-                user.guardians.forEach(guardian => {
-                    addGuardian(guardian);
-                });
-            }
-            
-            // Populate siblings
-            if (user.siblings && user.siblings.length > 0) {
-                user.siblings.forEach(sibling => {
-                    addSibling(sibling);
-                });
-            }
         }
         
         // Check for existing application
         const fiscalYearSelect = document.getElementById('fiscalYear');
-        if (fiscalYearSelect.value) {
+        if (fiscalYearSelect && fiscalYearSelect.value) {
             checkExistingApplication(user.id, fiscalYearSelect.value);
         }
     }
     
     // Check existing application
-    document.getElementById('fiscalYear').addEventListener('change', function() {
-        const userId = document.getElementById('selectedUserId').value;
-        if (userId) {
-            checkExistingApplication(userId, this.value);
-        }
-        
-        // Load bursary categories
-        loadBursaryCategories(this.value);
-    });
+    const fiscalYearSelect = document.getElementById('fiscalYear');
+    if (fiscalYearSelect) {
+        fiscalYearSelect.addEventListener('change', function() {
+            const userId = document.getElementById('selectedUserId').value;
+            if (userId) {
+                checkExistingApplication(userId, this.value);
+            }
+            
+            // Load bursary categories
+            loadBursaryCategories(this.value);
+        });
+    }
     
     function checkExistingApplication(userId, fiscalYearId) {
+        if (!userId || !fiscalYearId) return;
+        
         fetch('{% url "check_existing_application_ajax" %}', {
             method: 'POST',
             headers: {
@@ -1031,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const warningDiv = document.getElementById('existingApplicationWarning');
+            if (!warningDiv) return;
             
             if (data.success && data.has_application) {
                 warningDiv.innerHTML = `
@@ -1056,6 +1082,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load bursary categories
     function loadBursaryCategories(fiscalYearId) {
+        if (!fiscalYearId) return;
+        
         fetch('{% url "get_bursary_categories_ajax" %}', {
             method: 'POST',
             headers: {
@@ -1067,6 +1095,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('bursaryCategory');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Select Category</option>';
             
             if (data.success) {
@@ -1083,11 +1113,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Location cascading dropdowns
-    document.getElementById('ward').addEventListener('change', function() {
-        loadLocations(this.value);
-    });
+    const wardSelect = document.getElementById('ward');
+    if (wardSelect) {
+        wardSelect.addEventListener('change', function() {
+            loadLocations(this.value);
+        });
+    }
     
     function loadLocations(wardId, selectedLocationId = null) {
+        if (!wardId) return;
+        
         fetch('{% url "get_locations_ajax" %}', {
             method: 'POST',
             headers: {
@@ -1099,6 +1134,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('location');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Select Location</option>';
             
             if (data.success) {
@@ -1108,17 +1145,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Clear dependent dropdowns
-            document.getElementById('sublocation').innerHTML = '<option value="">Select Sub-location</option>';
-            document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            const sublocation = document.getElementById('sublocation');
+            const village = document.getElementById('village');
+            if (sublocation) sublocation.innerHTML = '<option value="">Select Sub-location</option>';
+            if (village) village.innerHTML = '<option value="">Select Village</option>';
         })
         .catch(error => console.error('Error:', error));
     }
     
-    document.getElementById('location').addEventListener('change', function() {
-        loadSublocations(this.value);
-    });
+    const locationSelect = document.getElementById('location');
+    if (locationSelect) {
+        locationSelect.addEventListener('change', function() {
+            loadSublocations(this.value);
+        });
+    }
     
     function loadSublocations(locationId, selectedSublocationId = null) {
+        if (!locationId) return;
+        
         fetch('{% url "get_sublocations_ajax" %}', {
             method: 'POST',
             headers: {
@@ -1130,6 +1174,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('sublocation');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Select Sub-location</option>';
             
             if (data.success) {
@@ -1138,16 +1184,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            const village = document.getElementById('village');
+            if (village) village.innerHTML = '<option value="">Select Village</option>';
         })
         .catch(error => console.error('Error:', error));
     }
     
-    document.getElementById('sublocation').addEventListener('change', function() {
-        loadVillages(this.value);
-    });
+    const sublocationSelect = document.getElementById('sublocation');
+    if (sublocationSelect) {
+        sublocationSelect.addEventListener('change', function() {
+            loadVillages(this.value);
+        });
+    }
     
     function loadVillages(sublocationId) {
+        if (!sublocationId) return;
+        
         fetch('{% url "get_villages_ajax" %}', {
             method: 'POST',
             headers: {
@@ -1159,6 +1211,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('village');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Select Village</option>';
             
             if (data.success) {
@@ -1171,11 +1225,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Guardian Management
-    document.getElementById('addGuardianBtn').addEventListener('click', function() {
-        addGuardian();
-    });
+    const addGuardianBtn = document.getElementById('addGuardianBtn');
+    if (addGuardianBtn) {
+        addGuardianBtn.addEventListener('click', function() {
+            addGuardian();
+        });
+    }
     
     function addGuardian(data = null) {
+        const guardiansList = document.getElementById('guardiansList');
+        if (!guardiansList) return;
+        
         const guardianHtml = `
             <div class="dynamic-item" data-index="${guardianCount}">
                 <button type="button" class="remove-item-btn" onclick="this.parentElement.remove()">
@@ -1233,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        document.getElementById('guardiansList').insertAdjacentHTML('beforeend', guardianHtml);
+        guardiansList.insertAdjacentHTML('beforeend', guardianHtml);
         guardianCount++;
         
         // Update hidden count field
@@ -1241,7 +1301,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateGuardianCount() {
-        let count = document.getElementById('guardiansList').querySelectorAll('.dynamic-item').length;
+        const guardiansList = document.getElementById('guardiansList');
+        if (!guardiansList) return;
+        
+        let count = guardiansList.querySelectorAll('.dynamic-item').length;
         let countInput = document.querySelector('input[name="guardian_count"]');
         if (!countInput) {
             countInput = document.createElement('input');
@@ -1253,11 +1316,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Sibling Management
-    document.getElementById('addSiblingBtn').addEventListener('click', function() {
-        addSibling();
-    });
+    const addSiblingBtn = document.getElementById('addSiblingBtn');
+    if (addSiblingBtn) {
+        addSiblingBtn.addEventListener('click', function() {
+            addSibling();
+        });
+    }
     
     function addSibling(data = null) {
+        const siblingsList = document.getElementById('siblingsList');
+        if (!siblingsList) return;
+        
         const siblingHtml = `
             <div class="dynamic-item" data-index="${siblingCount}">
                 <button type="button" class="remove-item-btn" onclick="this.parentElement.remove()">
@@ -1288,14 +1357,17 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        document.getElementById('siblingsList').insertAdjacentHTML('beforeend', siblingHtml);
+        siblingsList.insertAdjacentHTML('beforeend', siblingHtml);
         siblingCount++;
         
         updateSiblingCount();
     }
     
     function updateSiblingCount() {
-        let count = document.getElementById('siblingsList').querySelectorAll('.dynamic-item').length;
+        const siblingsList = document.getElementById('siblingsList');
+        if (!siblingsList) return;
+        
+        let count = siblingsList.querySelectorAll('.dynamic-item').length;
         let countInput = document.querySelector('input[name="sibling_count"]');
         if (!countInput) {
             countInput = document.createElement('input');
@@ -1308,19 +1380,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Institution Search
     let institutionTimeout;
-    document.getElementById('institutionSearch').addEventListener('input', function(e) {
-        clearTimeout(institutionTimeout);
-        const query = e.target.value.trim();
-        
-        if (query.length < 2) {
-            document.getElementById('institutionResults').style.display = 'none';
-            return;
-        }
-        
-        institutionTimeout = setTimeout(() => {
-            searchInstitution(query);
-        }, 500);
-    });
+    const institutionSearch = document.getElementById('institutionSearch');
+    if (institutionSearch) {
+        institutionSearch.addEventListener('input', function(e) {
+            clearTimeout(institutionTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                const institutionResults = document.getElementById('institutionResults');
+                if (institutionResults) institutionResults.style.display = 'none';
+                return;
+            }
+            
+            institutionTimeout = setTimeout(() => {
+                searchInstitution(query);
+            }, 500);
+        });
+    }
     
     function searchInstitution(query) {
         fetch('{% url "search_institution_ajax" %}', {
@@ -1342,6 +1418,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayInstitutionResults(results) {
         const resultsDiv = document.getElementById('institutionResults');
+        if (!resultsDiv) return;
         
         if (results.length === 0) {
             resultsDiv.innerHTML = '<div class="search-result-item text-center text-muted">No institutions found</div>';
@@ -1350,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         resultsDiv.innerHTML = results.map(inst => `
-            <div class="search-result-item" data-institution='${JSON.stringify(inst)}'>
+            <div class="search-result-item" data-institution='${JSON.stringify(inst).replace(/'/g, "&apos;")}'>
                 <div class="search-result-name">${inst.name}</div>
                 <div class="search-result-info">
                     ${inst.institution_type} - ${inst.county}
@@ -1362,64 +1439,91 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', function() {
-                const instData = JSON.parse(this.dataset.institution);
+                const instData = JSON.parse(this.dataset.institution.replace(/&apos;/g, "'"));
                 selectInstitution(instData);
             });
         });
     }
     
     function selectInstitution(institution) {
-        document.getElementById('institutionResults').style.display = 'none';
-        document.getElementById('institutionSearch').value = institution.name;
+        const institutionResults = document.getElementById('institutionResults');
+        const institutionSearch = document.getElementById('institutionSearch');
+        
+        if (institutionResults) institutionResults.style.display = 'none';
+        if (institutionSearch) institutionSearch.value = institution.name;
+        
         document.getElementById('selectedInstitutionId').value = institution.id;
         
-        document.getElementById('selectedInstitutionName').textContent = institution.name;
-        document.getElementById('selectedInstitutionDetails').textContent = 
+        const selectedInstitutionName = document.getElementById('selectedInstitutionName');
+        const selectedInstitutionDetails = document.getElementById('selectedInstitutionDetails');
+        const selectedInstitutionInfo = document.getElementById('selectedInstitutionInfo');
+        
+        if (selectedInstitutionName) selectedInstitutionName.textContent = institution.name;
+        if (selectedInstitutionDetails) selectedInstitutionDetails.textContent = 
             `${institution.institution_type} | ${institution.county}`;
-        document.getElementById('selectedInstitutionInfo').style.display = 'block';
+        if (selectedInstitutionInfo) selectedInstitutionInfo.style.display = 'block';
     }
     
     // Calculate fees balance
-    document.getElementById('totalFees').addEventListener('input', calculateBalance);
-    document.getElementById('feesPaid').addEventListener('input', calculateBalance);
+    const totalFees = document.getElementById('totalFees');
+    const feesPaid = document.getElementById('feesPaid');
+    
+    if (totalFees) totalFees.addEventListener('input', calculateBalance);
+    if (feesPaid) feesPaid.addEventListener('input', calculateBalance);
     
     function calculateBalance() {
-        const total = parseFloat(document.getElementById('totalFees').value) || 0;
-        const paid = parseFloat(document.getElementById('feesPaid').value) || 0;
-        document.getElementById('feesBalance').value = (total - paid).toFixed(2);
+        const total = parseFloat(document.getElementById('totalFees')?.value) || 0;
+        const paid = parseFloat(document.getElementById('feesPaid')?.value) || 0;
+        const balanceInput = document.getElementById('feesBalance');
+        if (balanceInput) {
+            balanceInput.value = (total - paid).toFixed(2);
+        }
     }
     
     // Toggle other bursaries section
-    document.getElementById('otherBursaries').addEventListener('change', function() {
-        document.getElementById('otherBursariesSection').style.display = 
-            this.checked ? 'block' : 'none';
-    });
+    const otherBursaries = document.getElementById('otherBursaries');
+    if (otherBursaries) {
+        otherBursaries.addEventListener('change', function() {
+            const otherBursariesSection = document.getElementById('otherBursariesSection');
+            if (otherBursariesSection) {
+                otherBursariesSection.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
     
     // Toggle chronic illness section
-    document.getElementById('hasChronicIllness').addEventListener('change', function() {
-        document.getElementById('chronicIllnessSection').style.display = 
-            this.checked ? 'block' : 'none';
-    });
+    const hasChronicIllness = document.getElementById('hasChronicIllness');
+    if (hasChronicIllness) {
+        hasChronicIllness.addEventListener('change', function() {
+            const chronicIllnessSection = document.getElementById('chronicIllnessSection');
+            if (chronicIllnessSection) {
+                chronicIllnessSection.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
     
     // File Upload Handling
     document.querySelectorAll('.file-upload-area').forEach(area => {
         area.addEventListener('click', function() {
             const targetId = this.dataset.target;
-            document.getElementById(targetId).click();
+            const fileInput = document.getElementById(targetId);
+            if (fileInput) fileInput.click();
         });
     });
     
     document.querySelectorAll('input[type="file"]').forEach(input => {
         input.addEventListener('change', function() {
             const area = document.querySelector(`[data-target="${this.id}"]`);
+            if (!area) return;
+            
             const fileName = area.querySelector('.file-name');
             
             if (this.files.length > 0) {
                 const file = this.files[0];
-                fileName.textContent = `✓ ${file.name}`;
+                if (fileName) fileName.textContent = `✓ ${file.name}`;
                 area.classList.add('has-file');
             } else {
-                fileName.textContent = '';
+                if (fileName) fileName.textContent = '';
                 area.classList.remove('has-file');
             }
         });
@@ -1428,20 +1532,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Validation
     function validateStep(step) {
         if (step === 1) {
-            if (!document.getElementById('selectedUserId').value) {
+            if (!document.getElementById('selectedUserId')?.value) {
                 showError('Please select a student');
                 return false;
             }
-            if (!document.getElementById('gender').value || !document.getElementById('dateOfBirth').value ||
-                !document.getElementById('ward').value) {
+            if (!document.getElementById('gender')?.value || !document.getElementById('dateOfBirth')?.value ||
+                !document.getElementById('ward')?.value) {
                 showError('Please fill in all required fields');
                 return false;
             }
         }
         
         if (step === 3) {
-            if (!document.getElementById('fiscalYear').value || !document.getElementById('bursaryCategory').value ||
-                !document.getElementById('selectedInstitutionId').value) {
+            if (!document.getElementById('fiscalYear')?.value || !document.getElementById('bursaryCategory')?.value ||
+                !document.getElementById('selectedInstitutionId')?.value) {
                 showError('Please fill in all required application fields');
                 return false;
             }
@@ -1450,7 +1554,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (step === 4) {
             const requiredDocs = ['fee_structure', 'admission_letter', 'fee_statement', 'parent_id'];
             for (let doc of requiredDocs) {
-                if (!document.getElementById(doc).files.length) {
+                const fileInput = document.getElementById(doc);
+                if (!fileInput || !fileInput.files.length) {
                     showError(`Please upload ${doc.replace('_', ' ')}`);
                     return false;
                 }
@@ -1460,11 +1565,305 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
     
-    // Generate Review Content
+    // Generate review content
     function generateReviewContent() {
+        const reviewContent = document.getElementById('reviewContent');
+        if (!reviewContent) return;
+        
         const reviewHtml = `
             <div class="row">
                 <div class="col-md-6">
-                    <h6>Student Information</h6>
-                    <p><strong>Name:</strong> ${document.getElementById('firstName').value} ${document.getElementById('lastName').
-                    
+                    <h6 class="mb-3"><i class="bi bi-person-circle me-2"></i>Student Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Name:</strong></td><td>${document.getElementById('firstName')?.value || ''} ${document.getElementById('lastName')?.value || ''}</td></tr>
+                        <tr><td><strong>Email:</strong></td><td>${document.getElementById('email')?.value || ''}</td></tr>
+                        <tr><td><strong>Phone:</strong></td><td>${document.getElementById('phoneNumber')?.value || ''}</td></tr>
+                        <tr><td><strong>ID Number:</strong></td><td>${document.getElementById('idNumber')?.value || ''}</td></tr>
+                        <tr><td><strong>Gender:</strong></td><td>${document.getElementById('gender')?.options[document.getElementById('gender')?.selectedIndex]?.text || ''}</td></tr>
+                        <tr><td><strong>Date of Birth:</strong></td><td>${document.getElementById('dateOfBirth')?.value || ''}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="bi bi-geo-alt me-2"></i>Location Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Ward:</strong></td><td>${document.getElementById('ward')?.options[document.getElementById('ward')?.selectedIndex]?.text || ''}</td></tr>
+                        <tr><td><strong>Location:</strong></td><td>${document.getElementById('location')?.value ? document.getElementById('location')?.options[document.getElementById('location')?.selectedIndex]?.text : 'N/A'}</td></tr>
+                        <tr><td><strong>Physical Address:</strong></td><td>${document.getElementById('physicalAddress')?.value || ''}</td></tr>
+                        <tr><td><strong>Postal Address:</strong></td><td>${document.getElementById('postalAddress')?.value || 'N/A'}</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="mb-3"><i class="bi bi-people me-2"></i>Guardians</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Relationship</th>
+                                    <th>Phone</th>
+                                    <th>Occupation</th>
+                                    <th>Monthly Income</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewGuardians">
+                                ${getGuardiansReviewRows()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="mb-3"><i class="bi bi-person-lines-fill me-2"></i>Siblings</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Age</th>
+                                    <th>Education Level</th>
+                                    <th>School</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewSiblings">
+                                ${getSiblingsReviewRows()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Application Details</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Fiscal Year:</strong></td><td>${document.getElementById('fiscalYear')?.options[document.getElementById('fiscalYear')?.selectedIndex]?.text || ''}</td></tr>
+                        <tr><td><strong>Bursary Category:</strong></td><td>${document.getElementById('bursaryCategory')?.options[document.getElementById('bursaryCategory')?.selectedIndex]?.text || ''}</td></tr>
+                        <tr><td><strong>Institution:</strong></td><td>${document.getElementById('selectedInstitutionName')?.textContent || ''}</td></tr>
+                        <tr><td><strong>Admission Number:</strong></td><td>${document.querySelector('input[name="admission_number"]')?.value || ''}</td></tr>
+                        <tr><td><strong>Year of Study:</strong></td><td>${document.querySelector('input[name="year_of_study"]')?.value || ''}</td></tr>
+                        <tr><td><strong>Course:</strong></td><td>${document.querySelector('input[name="course_name"]')?.value || 'N/A'}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3"><i class="bi bi-cash-stack me-2"></i>Financial Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Total Fees:</strong></td><td>KES ${parseFloat(document.getElementById('totalFees')?.value || 0).toLocaleString()}</td></tr>
+                        <tr><td><strong>Fees Paid:</strong></td><td>KES ${parseFloat(document.getElementById('feesPaid')?.value || 0).toLocaleString()}</td></tr>
+                        <tr><td><strong>Balance:</strong></td><td>KES ${parseFloat(document.getElementById('feesBalance')?.value || 0).toLocaleString()}</td></tr>
+                        <tr><td><strong>Amount Requested:</strong></td><td>KES ${parseFloat(document.querySelector('input[name="amount_requested"]')?.value || 0).toLocaleString()}</td></tr>
+                        <tr><td><strong>Household Income:</strong></td><td>KES ${parseFloat(document.querySelector('input[name="household_income"]')?.value || 0).toLocaleString()}</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="mb-3"><i class="bi bi-file-earmark-check me-2"></i>Documents Uploaded</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Fee Structure
+                            <span class="badge bg-success">${document.getElementById('fee_structure')?.files.length > 0 ? '✓ Uploaded' : '✗ Missing'}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Admission Letter
+                            <span class="badge bg-success">${document.getElementById('admission_letter')?.files.length > 0 ? '✓ Uploaded' : '✗ Missing'}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Fee Statement
+                            <span class="badge bg-success">${document.getElementById('fee_statement')?.files.length > 0 ? '✓ Uploaded' : '✗ Missing'}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Parent/Guardian ID
+                            <span class="badge bg-success">${document.getElementById('parent_id')?.files.length > 0 ? '✓ Uploaded' : '✗ Missing'}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="mb-3"><i class="bi bi-heart-pulse me-2"></i>Special Circumstances</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${document.getElementById('isOrphan')?.checked ? '<span class="badge bg-warning">Orphan (Single Parent)</span>' : ''}
+                        ${document.getElementById('isTotalOrphan')?.checked ? '<span class="badge bg-danger">Total Orphan</span>' : ''}
+                        ${document.getElementById('isDisabled')?.checked ? '<span class="badge bg-info">Has Disability</span>' : ''}
+                        ${document.getElementById('hasChronicIllness')?.checked ? '<span class="badge bg-secondary">Chronic Illness</span>' : ''}
+                        ${document.getElementById('otherBursaries')?.checked ? '<span class="badge bg-primary">Other Bursaries Received</span>' : ''}
+                        ${!document.getElementById('isOrphan')?.checked && !document.getElementById('isTotalOrphan')?.checked && !document.getElementById('isDisabled')?.checked && !document.getElementById('hasChronicIllness')?.checked && !document.getElementById('otherBursaries')?.checked ? '<span class="text-muted">None</span>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        reviewContent.innerHTML = reviewHtml;
+    }
+
+    function getGuardiansReviewRows() {
+        const guardiansList = document.getElementById('guardiansList');
+        if (!guardiansList) return '<tr><td colspan="5" class="text-center text-muted">No guardians added</td></tr>';
+        
+        const guardians = guardiansList.querySelectorAll('.dynamic-item');
+        if (guardians.length === 0) {
+            return '<tr><td colspan="5" class="text-center text-muted">No guardians added</td></tr>';
+        }
+        
+        let rows = '';
+        guardians.forEach((guardian, index) => {
+            const nameInput = guardian.querySelector(`input[name="guardian_name_${index}"]`);
+            const relationshipSelect = guardian.querySelector(`select[name="guardian_relationship_${index}"]`);
+            const phoneInput = guardian.querySelector(`input[name="guardian_phone_${index}"]`);
+            const occupationInput = guardian.querySelector(`input[name="guardian_occupation_${index}"]`);
+            const incomeInput = guardian.querySelector(`input[name="guardian_income_${index}"]`);
+            
+            const name = nameInput?.value || '';
+            const relationship = relationshipSelect?.options[relationshipSelect?.selectedIndex]?.text || '';
+            const phone = phoneInput?.value || 'N/A';
+            const occupation = occupationInput?.value || 'N/A';
+            const income = incomeInput?.value || '0';
+            
+            rows += `
+                <tr>
+                    <td>${name}</td>
+                    <td>${relationship}</td>
+                    <td>${phone}</td>
+                    <td>${occupation}</td>
+                    <td>KES ${parseFloat(income).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        
+        return rows;
+    }
+
+    function getSiblingsReviewRows() {
+        const siblingsList = document.getElementById('siblingsList');
+        if (!siblingsList) return '<tr><td colspan="4" class="text-center text-muted">No siblings added</td></tr>';
+        
+        const siblings = siblingsList.querySelectorAll('.dynamic-item');
+        if (siblings.length === 0) {
+            return '<tr><td colspan="4" class="text-center text-muted">No siblings added</td></tr>';
+        }
+        
+        let rows = '';
+        siblings.forEach((sibling, index) => {
+            const nameInput = sibling.querySelector(`input[name="sibling_name_${index}"]`);
+            const ageInput = sibling.querySelector(`input[name="sibling_age_${index}"]`);
+            const educationInput = sibling.querySelector(`input[name="sibling_education_${index}"]`);
+            const schoolInput = sibling.querySelector(`input[name="sibling_school_${index}"]`);
+            
+            const name = nameInput?.value || '';
+            const age = ageInput?.value || 'N/A';
+            const education = educationInput?.value || 'N/A';
+            const school = schoolInput?.value || 'N/A';
+            
+            rows += `
+                <tr>
+                    <td>${name}</td>
+                    <td>${age}</td>
+                    <td>${education}</td>
+                    <td>${school}</td>
+                </tr>
+            `;
+        });
+        
+        return rows;
+    }
+
+    // Form Submission
+    const applicationForm = document.getElementById('applicationForm');
+    if (applicationForm) {
+        applicationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading modal
+            loadingModal.show();
+            
+            // Prepare form data
+            const formData = new FormData(this);
+            
+            // Update counts before submission
+            updateGuardianCount();
+            updateSiblingCount();
+            
+            // Submit the form
+            fetch('/ajax/submit-application/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingModal.hide();
+                
+                if (data.success) {
+                    // Show success modal
+                    document.getElementById('modalApplicationNumber').textContent = data.application_number;
+                    successModal.show();
+                } else {
+                    showError(data.message || 'An error occurred while submitting the application.');
+                }
+            })
+            .catch(error => {
+                loadingModal.hide();
+                console.error('Error:', error);
+                showError('An error occurred while submitting the application. Please try again.');
+            });
+        });
+    }
+
+    // Error notification function
+    function showError(message) {
+        // Create a toast notification
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', toastHtml);
+        const toastElement = document.body.lastElementChild;
+        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        toast.show();
+        
+        // Remove toast after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    }
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-box')) {
+            document.querySelectorAll('.search-results').forEach(results => {
+                results.style.display = 'none';
+            });
+        }
+    });
+
+    // Initialize
+    showStep(1);
+});
+</script>
+{% endblock %}
