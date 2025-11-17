@@ -11819,3 +11819,679 @@ def get_wards_by_constituency(request, constituency_id):
         'success': True,
         'wards': list(wards)
     })
+    
+    
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.core.paginator import Paginator
+from django.db.models import Q, Count
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from datetime import timedelta
+import json
+
+from .models import (
+    Notification, SMSLog, EmailLog, User, Application, 
+    Applicant, Ward, Constituency, County, FiscalYear
+)
+from .views import admin_required
+
+
+# ============= ALL NOTIFICATIONS VIEW =============
+
+@login_required
+@admin_required
+def all_notifications(request):
+    """
+    View all system notifications with filtering and statistics
+    """
+    # Get all notifications
+    notifications = Notification.objects.select_related(
+        'user',
+        'related_application',
+        'related_application__applicant',
+        'related_application__applicant__user'
+    ).order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        notifications = notifications.filter(
+            Q(title__icontains=search_query) |
+            Q(message__icontains=search_query) |
+            Q(user__username__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query)
+        )
+    
+    # Filter by type
+    notification_type = request.GET.get('type', '')
+    if notification_type:
+        notifications = notifications.filter(notification_type=notification_type)
+    
+    # Filter by read status
+    read_status = request.GET.get('read_status', '')
+    if read_status == 'read':
+        notifications = notifications.filter(is_read=True)
+    elif read_status == 'unread':
+        notifications = notifications.filter(is_read=False)
+    
+    # Filter by date range
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        notifications = notifications.filter(created_at__gte=date_from)
+    if date_to:
+        notifications = notifications.filter(created_at__lte=date_to)
+    
+    # Statistics
+    total_notifications = Notification.objects.count()
+    unread_count = Notification.objects.filter(is_read=False).count()
+    read_count = Notification.objects.filter(is_read=True).count()
+    today_count = Notification.objects.filter(
+        created_at__gte=timezone.now().date()
+    ).count()
+    
+    # Notifications by type
+    type_stats = Notification.objects.values('notification_type').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    stats = {
+        'total': total_notifications,
+        'unread': unread_count,
+        'read': read_count,
+        'today': today_count,
+        'by_type': list(type_stats)
+    }
+    
+    # Pagination
+    paginator = Paginator(notifications, 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get notification type choices
+    notification_types = Notification.NOTIFICATION_TYPES
+    
+    context = {
+        'page_obj': page_obj,
+        'notifications': page_obj.object_list,
+        'stats': stats,
+        'notification_types': notification_types,
+        'search_query': search_query,
+        'notification_type': notification_type,
+        'read_status': read_status,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    
+    return render(request, 'admin/notifications/all_notifications.html', context)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def mark_notification_read(request, notification_id):
+    """
+    Mark a notification as read
+    """
+    try:
+        notification = get_object_or_404(Notification, id=notification_id)
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notification marked as read'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def mark_all_read(request):
+    """
+    Mark all notifications as read
+    """
+    try:
+        count = Notification.objects.filter(is_read=False).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{count} notifications marked as read'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+@require_http_methods(["DELETE", "POST"])
+def delete_notification(request, notification_id):
+    """
+    Delete a notification
+    """
+    try:
+        notification = get_object_or_404(Notification, id=notification_id)
+        notification.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notification deleted successfully'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+# ============= BULK SMS VIEWS =============
+
+@login_required
+@admin_required
+def bulk_sms(request):
+    """
+    Bulk SMS sending interface
+    """
+    # Get SMS statistics
+    total_sent = SMSLog.objects.count()
+    today_sent = SMSLog.objects.filter(
+        sent_at__gte=timezone.now().date()
+    ).count()
+    delivered = SMSLog.objects.filter(status='delivered').count()
+    failed = SMSLog.objects.filter(status='failed').count()
+    pending = SMSLog.objects.filter(status='pending').count()
+    
+    # Recent SMS logs
+    recent_sms = SMSLog.objects.select_related(
+        'recipient',
+        'related_application'
+    ).order_by('-sent_at')[:10]
+    
+    # SMS by status
+    status_breakdown = SMSLog.objects.values('status').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    stats = {
+        'total_sent': total_sent,
+        'today_sent': today_sent,
+        'delivered': delivered,
+        'failed': failed,
+        'pending': pending,
+        'status_breakdown': list(status_breakdown)
+    }
+    
+    # Get filter options
+    wards = Ward.objects.filter(is_active=True).select_related(
+        'constituency', 'constituency__county'
+    ).order_by('constituency__county__name', 'constituency__name', 'name')
+    
+    constituencies = Constituency.objects.filter(
+        is_active=True
+    ).select_related('county').order_by('county__name', 'name')
+    
+    counties = County.objects.filter(is_active=True).order_by('name')
+    
+    fiscal_years = FiscalYear.objects.order_by('-start_date')
+    
+    # Get application statuses
+    application_statuses = Application.APPLICATION_STATUS
+    
+    context = {
+        'stats': stats,
+        'recent_sms': recent_sms,
+        'wards': wards,
+        'constituencies': constituencies,
+        'counties': counties,
+        'fiscal_years': fiscal_years,
+        'application_statuses': application_statuses,
+    }
+    
+    return render(request, 'admin/notifications/bulk_sms.html', context)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def send_bulk_sms(request):
+    """
+    Send bulk SMS to filtered recipients
+    """
+    try:
+        data = json.loads(request.body)
+        
+        # Validate message
+        message = data.get('message', '').strip()
+        if not message:
+            return JsonResponse({
+                'success': False,
+                'message': 'Message is required'
+            }, status=400)
+        
+        if len(message) > 480:
+            return JsonResponse({
+                'success': False,
+                'message': 'Message too long. Maximum 480 characters.'
+            }, status=400)
+        
+        # Get recipient filter criteria
+        recipient_type = data.get('recipient_type', 'all_applicants')
+        ward_id = data.get('ward')
+        constituency_id = data.get('constituency')
+        county_id = data.get('county')
+        fiscal_year_id = data.get('fiscal_year')
+        application_status = data.get('application_status')
+        
+        # Build recipient query based on filters
+        users = User.objects.filter(user_type='applicant')
+        
+        if recipient_type == 'by_ward' and ward_id:
+            users = users.filter(applicant_profile__ward_id=ward_id)
+        elif recipient_type == 'by_constituency' and constituency_id:
+            users = users.filter(applicant_profile__ward__constituency_id=constituency_id)
+        elif recipient_type == 'by_county' and county_id:
+            users = users.filter(applicant_profile__county_id=county_id)
+        elif recipient_type == 'by_application_status' and application_status:
+            users = users.filter(
+                applicant_profile__applications__status=application_status
+            ).distinct()
+            if fiscal_year_id:
+                users = users.filter(
+                    applicant_profile__applications__fiscal_year_id=fiscal_year_id
+                )
+        
+        # Get users with valid phone numbers
+        valid_recipients = []
+        for user in users:
+            if user.phone_number and user.phone_number.startswith('+254'):
+                valid_recipients.append(user)
+        
+        if not valid_recipients:
+            return JsonResponse({
+                'success': False,
+                'message': 'No valid recipients found with the selected criteria'
+            }, status=400)
+        
+        # Create SMS logs for each recipient
+        sms_logs = []
+        for user in valid_recipients:
+            sms_log = SMSLog(
+                recipient=user,
+                phone_number=user.phone_number,
+                message=message,
+                status='pending'
+            )
+            sms_logs.append(sms_log)
+        
+        # Bulk create SMS logs
+        SMSLog.objects.bulk_create(sms_logs)
+        
+        # Here you would integrate with your SMS gateway
+        # For now, we'll just mark them as sent
+        # Example integration points:
+        # - Africa's Talking
+        # - Twilio
+        # - Custom SMS Gateway
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'SMS queued successfully to {len(valid_recipients)} recipients',
+            'recipient_count': len(valid_recipients)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error sending SMS: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+def sms_logs(request):
+    """
+    View SMS sending history
+    """
+    logs = SMSLog.objects.select_related(
+        'recipient',
+        'related_application'
+    ).order_by('-sent_at')
+    
+    # Search
+    search_query = request.GET.get('search', '')
+    if search_query:
+        logs = logs.filter(
+            Q(phone_number__icontains=search_query) |
+            Q(message__icontains=search_query) |
+            Q(recipient__username__icontains=search_query)
+        )
+    
+    # Filter by status
+    status = request.GET.get('status', '')
+    if status:
+        logs = logs.filter(status=status)
+    
+    # Filter by date
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        logs = logs.filter(sent_at__gte=date_from)
+    if date_to:
+        logs = logs.filter(sent_at__lte=date_to)
+    
+    # Pagination
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'logs': page_obj.object_list,
+        'search_query': search_query,
+        'status': status,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    
+    return render(request, 'admin/notifications/sms_logs.html', context)
+
+
+# ============= BULK EMAIL VIEWS =============
+
+@login_required
+@admin_required
+def bulk_email(request):
+    """
+    Bulk email sending interface
+    """
+    # Get email statistics
+    total_sent = EmailLog.objects.count()
+    today_sent = EmailLog.objects.filter(
+        sent_at__gte=timezone.now().date()
+    ).count()
+    delivered = EmailLog.objects.filter(status='delivered').count()
+    failed = EmailLog.objects.filter(status='failed').count()
+    pending = EmailLog.objects.filter(status='pending').count()
+    
+    # Recent emails
+    recent_emails = EmailLog.objects.select_related(
+        'recipient',
+        'related_application'
+    ).order_by('-sent_at')[:10]
+    
+    # Email by status
+    status_breakdown = EmailLog.objects.values('status').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    stats = {
+        'total_sent': total_sent,
+        'today_sent': today_sent,
+        'delivered': delivered,
+        'failed': failed,
+        'pending': pending,
+        'status_breakdown': list(status_breakdown)
+    }
+    
+    # Get filter options
+    wards = Ward.objects.filter(is_active=True).select_related(
+        'constituency', 'constituency__county'
+    ).order_by('constituency__county__name', 'constituency__name', 'name')
+    
+    constituencies = Constituency.objects.filter(
+        is_active=True
+    ).select_related('county').order_by('county__name', 'name')
+    
+    counties = County.objects.filter(is_active=True).order_by('name')
+    
+    fiscal_years = FiscalYear.objects.order_by('-start_date')
+    
+    # Get application statuses
+    application_statuses = Application.APPLICATION_STATUS
+    
+    context = {
+        'stats': stats,
+        'recent_emails': recent_emails,
+        'wards': wards,
+        'constituencies': constituencies,
+        'counties': counties,
+        'fiscal_years': fiscal_years,
+        'application_statuses': application_statuses,
+    }
+    
+    return render(request, 'admin/notifications/bulk_email.html', context)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def send_bulk_email(request):
+    """
+    Send bulk email to filtered recipients
+    """
+    try:
+        data = json.loads(request.body)
+        
+        # Validate subject and message
+        subject = data.get('subject', '').strip()
+        message = data.get('message', '').strip()
+        
+        if not subject:
+            return JsonResponse({
+                'success': False,
+                'message': 'Subject is required'
+            }, status=400)
+        
+        if not message:
+            return JsonResponse({
+                'success': False,
+                'message': 'Message is required'
+            }, status=400)
+        
+        # Get recipient filter criteria
+        recipient_type = data.get('recipient_type', 'all_applicants')
+        ward_id = data.get('ward')
+        constituency_id = data.get('constituency')
+        county_id = data.get('county')
+        fiscal_year_id = data.get('fiscal_year')
+        application_status = data.get('application_status')
+        
+        # Build recipient query based on filters
+        users = User.objects.filter(user_type='applicant')
+        
+        if recipient_type == 'by_ward' and ward_id:
+            users = users.filter(applicant_profile__ward_id=ward_id)
+        elif recipient_type == 'by_constituency' and constituency_id:
+            users = users.filter(applicant_profile__ward__constituency_id=constituency_id)
+        elif recipient_type == 'by_county' and county_id:
+            users = users.filter(applicant_profile__county_id=county_id)
+        elif recipient_type == 'by_application_status' and application_status:
+            users = users.filter(
+                applicant_profile__applications__status=application_status
+            ).distinct()
+            if fiscal_year_id:
+                users = users.filter(
+                    applicant_profile__applications__fiscal_year_id=fiscal_year_id
+                )
+        
+        # Get users with valid email addresses
+        valid_recipients = []
+        for user in users:
+            if user.email and '@' in user.email:
+                valid_recipients.append(user)
+        
+        if not valid_recipients:
+            return JsonResponse({
+                'success': False,
+                'message': 'No valid recipients found with the selected criteria'
+            }, status=400)
+        
+        # Create email logs for each recipient
+        email_logs = []
+        for user in valid_recipients:
+            email_log = EmailLog(
+                recipient=user,
+                email_address=user.email,
+                subject=subject,
+                message=message,
+                status='pending'
+            )
+            email_logs.append(email_log)
+        
+        # Bulk create email logs
+        EmailLog.objects.bulk_create(email_logs)
+        
+        # Here you would integrate with your email service
+        # For now, we'll just mark them as sent
+        # Example integration points:
+        # - Django's built-in email system
+        # - SendGrid
+        # - Mailgun
+        # - Amazon SES
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Emails queued successfully to {len(valid_recipients)} recipients',
+            'recipient_count': len(valid_recipients)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error sending email: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+def email_logs(request):
+    """
+    View email sending history
+    """
+    logs = EmailLog.objects.select_related(
+        'recipient',
+        'related_application'
+    ).order_by('-sent_at')
+    
+    # Search
+    search_query = request.GET.get('search', '')
+    if search_query:
+        logs = logs.filter(
+            Q(email_address__icontains=search_query) |
+            Q(subject__icontains=search_query) |
+            Q(message__icontains=search_query) |
+            Q(recipient__username__icontains=search_query)
+        )
+    
+    # Filter by status
+    status = request.GET.get('status', '')
+    if status:
+        logs = logs.filter(status=status)
+    
+    # Filter by date
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        logs = logs.filter(sent_at__gte=date_from)
+    if date_to:
+        logs = logs.filter(sent_at__lte=date_to)
+    
+    # Pagination
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'logs': page_obj.object_list,
+        'search_query': search_query,
+        'status': status,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    
+    return render(request, 'admin/notifications/email_logs.html', context)
+
+
+# ============= UTILITY VIEWS =============
+
+@login_required
+@admin_required
+def get_recipient_count(request):
+    """
+    Get count of recipients based on filter criteria (AJAX)
+    """
+    try:
+        recipient_type = request.GET.get('recipient_type', 'all_applicants')
+        ward_id = request.GET.get('ward')
+        constituency_id = request.GET.get('constituency')
+        county_id = request.GET.get('county')
+        fiscal_year_id = request.GET.get('fiscal_year')
+        application_status = request.GET.get('application_status')
+        
+        # Build query
+        users = User.objects.filter(user_type='applicant')
+        
+        if recipient_type == 'by_ward' and ward_id:
+            users = users.filter(applicant_profile__ward_id=ward_id)
+        elif recipient_type == 'by_constituency' and constituency_id:
+            users = users.filter(applicant_profile__ward__constituency_id=constituency_id)
+        elif recipient_type == 'by_county' and county_id:
+            users = users.filter(applicant_profile__county_id=county_id)
+        elif recipient_type == 'by_application_status' and application_status:
+            users = users.filter(
+                applicant_profile__applications__status=application_status
+            ).distinct()
+            if fiscal_year_id:
+                users = users.filter(
+                    applicant_profile__applications__fiscal_year_id=fiscal_year_id
+                )
+        
+        count = users.count()
+        
+        # Count with valid phone numbers
+        phone_count = users.filter(
+            phone_number__startswith='+254'
+        ).count()
+        
+        # Count with valid emails
+        email_count = users.exclude(email='').exclude(email__isnull=True).count()
+        
+        return JsonResponse({
+            'success': True,
+            'total_count': count,
+            'phone_count': phone_count,
+            'email_count': email_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)

@@ -236,4 +236,20 @@ urlpatterns = [
     path('api/constituencies/by-county/<int:county_id>/', views.get_constituencies_by_county, name='get_constituencies_by_county'),
     path('api/wards/by-constituency/<int:constituency_id>/', views.get_wards_by_constituency, name='get_wards_by_constituency'),
     
+    # ============= NOTIFICATION URLS =============
+    path('admin-notifications/all/', views.all_notifications, name='all_notifications'),
+    path('admin-notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('admin-notifications/mark-all-read/', views.mark_all_read, name='mark_all_read'),
+    path('admin-notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
+    
+    # ============= BULK SMS URLS =============
+    path('admin-notifications/bulk-sms/', views.bulk_sms, name='bulk_sms'),
+    path('admin-notifications/send-bulk-sms/', views.send_bulk_sms, name='send_bulk_sms'),
+    path('admin-notifications/sms-logs/',  views.sms_logs, name='sms_logs'),
+    # ============= BULK EMAIL URLS =============
+    path('admin-notifications/bulk-email/',  views.bulk_email, name='bulk_email'),
+    path('admin-notifications/send-bulk-email/', views.send_bulk_email, name='send_bulk_email'),  
+    path('admin-notifications/email-logs/', views.email_logs, name='email_logs'),
+    path('api/notifications/recipient-count/', views.get_recipient_count, name='get_recipient_count'),
+    
 ]

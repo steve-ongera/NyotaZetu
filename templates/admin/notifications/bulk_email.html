@@ -1,0 +1,855 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Bulk Email - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Reuse the same CSS from bulk_sms.html with minor adjustments */
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .stat-card.primary::before {
+        background: linear-gradient(180deg, #3498db, #2980b9);
+    }
+
+    .stat-card.success::before {
+        background: linear-gradient(180deg, #27ae60, #229954);
+    }
+
+    .stat-card.danger::before {
+        background: linear-gradient(180deg, #e74c3c, #c0392b);
+    }
+
+    .stat-card.warning::before {
+        background: linear-gradient(180deg, #f39c12, #e67e22);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        line-height: 1;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 992px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label.required::after {
+        content: "*";
+        color: #e74c3c;
+        margin-left: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-control:disabled {
+        background: #F1F5F9;
+        cursor: not-allowed;
+    }
+
+    .recipient-count-box {
+        background: #E0F2FE;
+        border: 1px solid #7DD3FC;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .recipient-count-box i {
+        font-size: 24px;
+        color: #0284C7;
+    }
+
+    .recipient-count-text {
+        flex: 1;
+    }
+
+    .recipient-count-label {
+        font-size: 12px;
+        color: #0369A1;
+        margin-bottom: 4px;
+    }
+
+    .recipient-count-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0C4A6E;
+    }
+
+    .btn-primary-custom {
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-primary-custom:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-primary-custom:disabled {
+        background: #94A3B8;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        padding: 12px 24px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .recent-email-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .email-item {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .email-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .email-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .email-address {
+        font-weight: 600;
+        color: #1E293B;
+        font-size: 14px;
+    }
+
+    .email-status {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .email-status.sent {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .email-status.delivered {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .email-status.failed {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .email-status.pending {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .email-status.bounced {
+        background: #FED7AA;
+        color: #9A3412;
+    }
+
+    .email-subject {
+        font-weight: 600;
+        color: #1E293B;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .email-message {
+        font-size: 13px;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .email-time {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .alert-info {
+        background: #E0F2FE;
+        border: 1px solid #7DD3FC;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .alert-info i {
+        color: #0284C7;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        color: #0C4A6E;
+        margin-bottom: 4px;
+    }
+
+    .alert-text {
+        font-size: 14px;
+        color: #0369A1;
+        line-height: 1.5;
+    }
+
+    .editor-toolbar {
+        display: flex;
+        gap: 4px;
+        padding: 8px;
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        border-bottom: none;
+        border-radius: 6px 6px 0 0;
+    }
+
+    .editor-btn {
+        padding: 6px 10px;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .editor-btn:hover {
+        background: #E2E8F0;
+        color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">Notifications</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Bulk Email</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-envelope"></i>
+                Bulk Email
+            </h1>
+            <p class="page-subtitle">
+                Send email messages to multiple recipients
+            </p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-label">
+                    <i class="bi bi-envelope"></i>
+                    Total Sent
+                </div>
+                <div class="stat-value">{{ stats.total_sent|default:0 }}</div>
+            </div>
+
+            <div class="stat-card success">
+                <div class="stat-label">
+                    <i class="bi bi-check-circle"></i>
+                    Delivered
+                </div>
+                <div class="stat-value">{{ stats.delivered|default:0 }}</div>
+            </div>
+
+            <div class="stat-card danger">
+                <div class="stat-label">
+                    <i class="bi bi-x-circle"></i>
+                    Failed
+                </div>
+                <div class="stat-value">{{ stats.failed|default:0 }}</div>
+            </div>
+
+            <div class="stat-card warning">
+                <div class="stat-label">
+                    <i class="bi bi-clock"></i>
+                    Pending
+                </div>
+                <div class="stat-value">{{ stats.pending|default:0 }}</div>
+            </div>
+        </div>
+
+        <!-- Alert -->
+        <div class="alert-info">
+            <i class="bi bi-info-circle"></i>
+            <div class="alert-content">
+                <div class="alert-title">Email Service Integration</div>
+                <div class="alert-text">
+                    Emails will be sent through your configured email service provider. Ensure your service has sufficient quota before sending bulk emails.
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Compose Email Form -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-pencil-square"></i>
+                    Compose Email
+                </h3>
+
+                <form id="emailForm">
+                    <div class="form-group">
+                        <label class="form-label required">Select Recipients</label>
+                        <select class="form-control" id="recipient_type" name="recipient_type" onchange="updateRecipientOptions()">
+                            <option value="all_applicants">All Applicants</option>
+                            <option value="by_ward">By Ward</option>
+                            <option value="by_constituency">By Constituency</option>
+                            <option value="by_county">By County</option>
+                            <option value="by_application_status">By Application Status</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="ward_group" style="display: none;">
+                        <label class="form-label">Select Ward</label>
+                        <select class="form-control" id="ward" name="ward" onchange="updateRecipientCount()">
+                            <option value="">Select Ward</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}">{{ ward.name }} - {{ ward.constituency.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="constituency_group" style="display: none;">
+                        <label class="form-label">Select Constituency</label>
+                        <select class="form-control" id="constituency" name="constituency" onchange="updateRecipientCount()">
+                            <option value="">Select Constituency</option>
+                            {% for constituency in constituencies %}
+                            <option value="{{ constituency.id }}">{{ constituency.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="county_group" style="display: none;">
+                        <label class="form-label">Select County</label>
+                        <select class="form-control" id="county" name="county" onchange="updateRecipientCount()">
+                            <option value="">Select County</option>
+                            {% for county in counties %}
+                            <option value="{{ county.id }}">{{ county.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="status_group" style="display: none;">
+                        <label class="form-label">Select Application Status</label>
+                        <select class="form-control" id="application_status" name="application_status" onchange="updateRecipientCount()">
+                            <option value="">Select Status</option>
+                            {% for value, label in application_statuses %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="fiscal_year_group" style="display: none;">
+                        <label class="form-label">Fiscal Year (Optional)</label>
+                        <select class="form-control" id="fiscal_year" name="fiscal_year" onchange="updateRecipientCount()">
+                            <option value="">All Years</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}">{{ fy.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Subject</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="subject" 
+                            name="subject" 
+                            placeholder="Email subject"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Message</label>
+                        <textarea 
+                            class="form-control" 
+                            id="message" 
+                            name="message" 
+                            rows="10" 
+                            placeholder="Type your email message here..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="recipient-count-box" id="recipientCountBox" style="display: none;">
+                        <i class="bi bi-people-fill"></i>
+                        <div class="recipient-count-text">
+                            <div class="recipient-count-label">Estimated Recipients</div>
+                            <div class="recipient-count-value" id="recipientCount">0</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; display: flex; gap: 12px;">
+                        <button type="button" class="btn-primary-custom" onclick="sendBulkEmail()" id="sendBtn">
+                            <i class="bi bi-send"></i>
+                            Send Email
+                        </button>
+                        <button type="reset" class="btn-secondary" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Recent Emails -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Emails
+                </h3>
+
+                <div class="recent-email-list">
+                    {% for email in recent_emails %}
+                    <div class="email-item">
+                        <div class="email-header">
+                            <span class="email-address">{{ email.email_address }}</span>
+                            <span class="email-status {{ email.status }}">{{ email.status }}</span>
+                        </div>
+                        <div class="email-subject">{{ email.subject }}</div>
+                        <div class="email-message">{{ email.message }}</div>
+                        <div class="email-time">
+                            <i class="bi bi-clock"></i>
+                            {{ email.sent_at|naturaltime }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="text-align: center; padding: 40px 20px; color: #94A3B8;">
+                        <i class="bi bi-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                        <p>No recent emails</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'email_logs' %}" class="btn-secondary" style="margin-top: 16px;">
+                    <i class="bi bi-list-ul"></i>
+                    View All Email Logs
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function updateRecipientOptions() {
+        const recipientType = document.getElementById('recipient_type').value;
+        
+        // Hide all optional groups
+        document.getElementById('ward_group').style.display = 'none';
+        document.getElementById('constituency_group').style.display = 'none';
+        document.getElementById('county_group').style.display = 'none';
+        document.getElementById('status_group').style.display = 'none';
+        document.getElementById('fiscal_year_group').style.display = 'none';
+
+        // Show relevant group
+        if (recipientType === 'by_ward') {
+            document.getElementById('ward_group').style.display = 'block';
+        } else if (recipientType === 'by_constituency') {
+            document.getElementById('constituency_group').style.display = 'block';
+        } else if (recipientType === 'by_county') {
+            document.getElementById('county_group').style.display = 'block';
+        } else if (recipientType === 'by_application_status') {
+            document.getElementById('status_group').style.display = 'block';
+            document.getElementById('fiscal_year_group').style.display = 'block';
+        }
+
+        updateRecipientCount();
+    }
+
+    async function updateRecipientCount() {
+        const recipientType = document.getElementById('recipient_type').value;
+        const ward = document.getElementById('ward').value;
+        const constituency = document.getElementById('constituency').value;
+        const county = document.getElementById('county').value;
+        const applicationStatus = document.getElementById('application_status').value;
+        const fiscalYear = document.getElementById('fiscal_year').value;
+
+        const params = new URLSearchParams({
+            recipient_type: recipientType,
+            ward: ward,
+            constituency: constituency,
+            county: county,
+            application_status: applicationStatus,
+            fiscal_year: fiscalYear
+        });
+
+        try {
+            const response = await fetch(`/api/notifications/recipient-count/?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('recipientCount').textContent = result.email_count;
+                document.getElementById('recipientCountBox').style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function sendBulkEmail() {
+        const subject = document.getElementById('subject').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        if (!subject) {
+            showNotification('Please enter a subject', 'error');
+            return;
+        }
+
+        if (!message) {
+            showNotification('Please enter a message', 'error');
+            return;
+        }
+
+        const recipientCount = document.getElementById('recipientCount').textContent;
+        if (recipientCount === '0') {
+            showNotification('No recipients selected', 'error');
+            return;
+        }
+
+        if (!confirm(`Send email to ${recipientCount} recipients?`)) {
+            return;
+        }
+
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+
+        const data = {
+            subject: subject,
+            message: message,
+            recipient_type: document.getElementById('recipient_type').value,
+            ward: document.getElementById('ward').value,
+            constituency: document.getElementById('constituency').value,
+            county: document.getElementById('county').value,
+            application_status: document.getElementById('application_status').value,
+            fiscal_year: document.getElementById('fiscal_year').value
+        };
+
+        try {
+            const response = await fetch('/admin/notifications/send-bulk-email/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(result.message, 'success');
+                document.getElementById('emailForm').reset();
+                document.getElementById('recipientCountBox').style.display = 'none';
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showNotification(result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('An error occurred. Please try again.', 'error');
+            console.error('Error:', error);
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send"></i> Send Email';
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('recipientCountBox').style.display = 'none';
+        updateRecipientOptions();
+    }
+
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: ${type === 'success' ? '#27ae60' : '#e74c3c'};
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'}" style="font-size: 20px;"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateRecipientCount();
+    });
+</script>
+{% endblock %}
