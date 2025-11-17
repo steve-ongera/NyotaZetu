@@ -115,18 +115,21 @@ class SessionWarningMiddleware:
         response = self.get_response(request)
         return response
     
+
 """
 Security and Audit Middleware for tracking user activities and security threats
+Place this file at: your_app/middleware.py
 """
 from django.utils import timezone
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.dispatch import receiver
 from django.db.models import Count, Q
+from django.http import HttpResponseForbidden
 from datetime import timedelta
 import json
 import re
 from collections import defaultdict
-from .models import UserURLVisit
+from .models import *
 
 
 class SecurityMonitoringMiddleware:

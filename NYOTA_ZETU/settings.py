@@ -74,6 +74,10 @@ MIDDLEWARE = [
     'main_application.middleware.SessionTimeoutMiddleware',  # Custom session timeout middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # Add custom security middleware
+    'main_application.middleware.SecurityMonitoringMiddleware',
+    'main_application.middleware.URLTrackingMiddleware',
 ]
 
 ROOT_URLCONF = 'NYOTA_ZETU.urls'
@@ -88,9 +92,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # Add custom security middleware
-                'main_application.middleware.SecurityMonitoringMiddleware',
-                'main_application.middleware.URLTrackingMiddleware',
+                
             ],
         },
     },

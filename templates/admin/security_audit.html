@@ -67,6 +67,12 @@
         gap: 12px;
     }
 
+    .chart-container canvas {
+        max-width: 100% !important;
+        height: 250px !important;
+    }
+
+
     .live-indicator {
         display: inline-flex;
         align-items: center;
@@ -579,7 +585,7 @@
                     <button class="chart-btn" onclick="loadActivityChart(6)" data-hours="6">6h</button>
                 </div>
             </div>
-            <canvas id="activityChart" height="250"></canvas>
+            <canvas id="activityChart" style="width: 500px; height: 250px;"></canvas>
         </div>
 
         <!-- Login Attempts Chart -->
@@ -595,7 +601,7 @@
                     <button class="chart-btn" onclick="loadLoginChart(30)" data-days="30">30d</button>
                 </div>
             </div>
-            <canvas id="loginChart" height="250"></canvas>
+            <canvas id="loginChart" style="width: 500px; height: 250px;"></canvas>
         </div>
     </div>
 
