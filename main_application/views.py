@@ -1644,15 +1644,16 @@ def application_review(request, application_id):
             
             # Create allocation
             allocation = None
+            recommended_amount = request.POST.get('recommended_amount')
+
+            # Convert to float if provided
             if recommended_amount:
-                if Allocation.objects.filter(application=application).exists():
-                    messages.error(request, "This application already has an allocation.")
-                else:
-                    allocation = Allocation.objects.create(
-                        application=application,
-                        amount_allocated=recommended_amount,
-                        approved_by=request.user
-                    )
+                try:
+                    recommended_amount = float(recommended_amount)
+                except ValueError:
+                    messages.error(request, "Invalid recommended amount.")
+                    return redirect('application_review', application_id=application.id)
+
             
             # Send approval notification
             send_approval_notification(application, allocation, user, comments)
@@ -9590,3 +9591,4 @@ def export_disbursement_round_applications(request, round_id):
     This is a convenience wrapper that calls the main export function
     """
     return export_applicants_to_excel(request, round_id=round_id)
+

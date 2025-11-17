@@ -23,18 +23,21 @@ class UserAdmin(BaseUserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'user_type', 'is_active', 'date_joined']
     list_filter = ['user_type', 'is_active', 'is_staff', 'date_joined']
     search_fields = ['username', 'email', 'first_name', 'last_name', 'id_number', 'phone_number']
-    
-    fieldsets = BaseUserAdmin.fieldsets + (
+
+    # FIX: Convert existing fieldsets to list
+    fieldsets = list(BaseUserAdmin.fieldsets) + [
         ('Additional Info', {
-            'fields': ('user_type', 'id_number', 'phone_number')
+            'fields': ('user_type', 'id_number', 'phone_number'),
         }),
-    )
-    
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+    ]
+
+    # FIX: Convert existing add_fieldsets to list
+    add_fieldsets = list(BaseUserAdmin.add_fieldsets) + [
         ('Additional Info', {
-            'fields': ('user_type', 'id_number', 'phone_number', 'email', 'first_name', 'last_name')
+            'fields': ('user_type', 'id_number', 'phone_number', 'email', 'first_name', 'last_name'),
         }),
-    )
+    ]
+
 
 
 # ============= SECURITY MODELS ADMIN =============
