@@ -221,4 +221,19 @@ urlpatterns = [
     path("system-status/", views.system_status_view, name="system_status"),
     path('admin-proposals/', views.proposal_management_view, name='proposal_management'),
     
+    # ============= CONSTITUENCY URLS =============
+    path('admin-geography/constituencies/', views.constituency_management, name='constituency_management'),
+    path('admin-geography/constituencies/create/',  views.constituency_create,  name='constituency_create'),
+    path('admin-geography/constituencies/<int:constituency_id>/',  views.constituency_detail,  name='constituency_detail'),
+    path('admin-geography/constituencies/<int:constituency_id>/update/',  views.constituency_update,  name='constituency_update'),
+    path('admin-geography/constituencies/<int:constituency_id>/delete/',  views.constituency_delete,   name='constituency_delete'),
+    # ============= WARD URLS =============
+    path('admin-geography/wards/',  views.ward_management,   name='ward_management'),
+    path('admin-geography/wards/create/',  views.ward_create,  name='ward_create'),
+    path('admin-geography/wards/<int:ward_id>/',  views.ward_detail,  name='ward_detail'),
+    path('admin-geography/wards/<int:ward_id>/update/', views.ward_update, name='ward_update'),
+    path('admin-geography/wards/<int:ward_id>/delete/',  views.ward_delete,  name='ward_delete'),
+    path('api/constituencies/by-county/<int:county_id>/', views.get_constituencies_by_county, name='get_constituencies_by_county'),
+    path('api/wards/by-constituency/<int:constituency_id>/', views.get_wards_by_constituency, name='get_wards_by_constituency'),
+    
 ]

@@ -1,0 +1,1155 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Constituency Management - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-primary-custom {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary-custom:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #3498db, #2980b9);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        line-height: 1;
+    }
+
+    .search-section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        flex: 1;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94A3B8;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #F8FAFC;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        background: white;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .data-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .data-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-inactive {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background-color: transparent;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-action:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-view {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-view:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-edit {
+        color: #f39c12;
+        border-color: #f39c12;
+    }
+
+    .btn-edit:hover {
+        background: #f39c12;
+        color: white;
+    }
+
+    .btn-delete {
+        color: #e74c3c;
+        border-color: #e74c3c;
+    }
+
+    .btn-delete:hover {
+        background: #e74c3c;
+        color: white;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideDown 0.3s ease;
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #94A3B8;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+        background: #F1F5F9;
+        color: #64748B;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label.required::after {
+        content: "*";
+        color: #e74c3c;
+        margin-left: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #F8FAFC;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        background: white;
+    }
+
+    .form-control.is-invalid {
+        border-color: #e74c3c;
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: #e74c3c;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .btn-secondary {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">Geographic Setup</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Constituencies</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-map"></i>
+                    Constituency Management
+                </h1>
+                <p class="page-subtitle">
+                    Manage parliamentary constituencies and their details
+                </p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-primary-custom" onclick="openCreateModal()">
+                    <i class="bi bi-plus-circle"></i>
+                    Add New Constituency
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-map"></i>
+                    Total Constituencies
+                </div>
+                <div class="stat-value">{{ stats.total_constituencies|default:0 }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-check-circle"></i>
+                    Active
+                </div>
+                <div class="stat-value" style="color: #27ae60;">{{ stats.active_constituencies|default:0 }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-geo-alt"></i>
+                    Total Wards
+                </div>
+                <div class="stat-value">{{ stats.total_wards|default:0 }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-cash-stack"></i>
+                    Total CDF Allocation
+                </div>
+                <div class="stat-value" style="font-size: 20px;">KES {{ stats.total_cdf_allocation|floatformat:0|intcomma }}</div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <form method="get" style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                <div class="search-input-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        name="search" 
+                        class="search-input" 
+                        placeholder="Search by name, code, MP, or county..."
+                        value="{{ search_query }}"
+                    >
+                </div>
+                
+                <select name="county" class="form-control" style="width: auto;">
+                    <option value="">All Counties</option>
+                    {% for county in counties %}
+                    <option value="{{ county.id }}" {% if county_filter == county.id|stringformat:"s" %}selected{% endif %}>
+                        {{ county.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" class="form-control" style="width: auto;">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                
+                <button type="submit" class="btn-primary-custom">
+                    <i class="bi bi-search"></i>
+                    Search
+                </button>
+            </form>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>County</th>
+                        <th>Current MP</th>
+                        <th>Wards</th>
+                        <th>CDF Allocation</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for constituency in constituencies %}
+                    <tr>
+                        <td><strong>{{ constituency.code }}</strong></td>
+                        <td>{{ constituency.name }}</td>
+                        <td>{{ constituency.county.name }}</td>
+                        <td>
+                            {% if constituency.current_mp %}
+                                {{ constituency.current_mp }}
+                                {% if constituency.mp_party %}
+                                    <span class="badge bg-info">{{ constituency.mp_party }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-primary">{{ constituency.ward_count }}</span></td>
+                        <td><strong>KES {{ constituency.cdf_bursary_allocation|floatformat:0|intcomma }}</strong></td>
+                        <td>
+                            <span class="status-badge {% if constituency.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                <i class="bi bi-{% if constituency.is_active %}check-circle{% else %}x-circle{% endif %}"></i>
+                                {% if constituency.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-view" 
+                                        onclick="viewConstituency({{ constituency.id }})" 
+                                        title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn-action btn-edit" 
+                                        onclick="editConstituency({{ constituency.id }})" 
+                                        title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn-action btn-delete" 
+                                        onclick="deleteConstituency({{ constituency.id }}, '{{ constituency.name }}')" 
+                                        title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Constituencies Found</h3>
+                                <p>Start by adding your first constituency.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div>
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+            </div>
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="constituencyModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">
+                <i class="bi bi-plus-circle"></i>
+                Add New Constituency
+            </h5>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="constituencyForm">
+                <input type="hidden" id="constituencyId" name="id">
+                
+                <div class="form-group">
+                    <label class="form-label required" for="name">Constituency Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required" for="code">Code</label>
+                    <input type="text" class="form-control" id="code" name="code" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required" for="county">County</label>
+                    <select class="form-control" id="county" name="county" required>
+                        <option value="">Select County</option>
+                        {% for county in counties %}
+                        <option value="{{ county.id }}">{{ county.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="current_mp">Current MP</label>
+                    <input type="text" class="form-control" id="current_mp" name="current_mp">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="mp_party">MP's Party</label>
+                    <input type="text" class="form-control" id="mp_party" name="mp_party">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cdf_office_location">CDF Office Location</label>
+                    <input type="text" class="form-control" id="cdf_office_location" name="cdf_office_location">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cdf_office_email">CDF Office Email</label>
+                    <input type="email" class="form-control" id="cdf_office_email" name="cdf_office_email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cdf_office_phone">CDF Office Phone</label>
+                    <input type="tel" class="form-control" id="cdf_office_phone" name="cdf_office_phone">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="annual_cdf_allocation">Annual CDF Allocation (KES)</label>
+                    <input type="number" class="form-control" id="annual_cdf_allocation" name="annual_cdf_allocation" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cdf_bursary_allocation">CDF Bursary Allocation (KES)</label>
+                    <input type="number" class="form-control" id="cdf_bursary_allocation" name="cdf_bursary_allocation" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="population">Population</label>
+                    <input type="number" class="form-control" id="population" name="population">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="is_active" name="is_active" checked>
+                        Active
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn-primary-custom" onclick="saveConstituency()">
+                <i class="bi bi-check-circle"></i>
+                Save Constituency
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- View Details Modal -->
+<div id="viewModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="bi bi-eye"></i>
+                Constituency Details
+            </h5>
+            <button class="modal-close" onclick="closeViewModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="viewModalContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeViewModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF Token
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Open Create Modal
+    function openCreateModal() {
+        document.getElementById('constituencyForm').reset();
+        document.getElementById('constituencyId').value = '';
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-plus-circle"></i> Add New Constituency';
+        document.getElementById('constituencyModal').classList.add('show');
+    }
+
+    // Close Modal
+    function closeModal() {
+        document.getElementById('constituencyModal').classList.remove('show');
+        document.getElementById('constituencyForm').reset();
+        clearValidationErrors();
+    }
+
+    // Close View Modal
+    function closeViewModal() {
+        document.getElementById('viewModal').classList.remove('show');
+    }
+
+    // Clear Validation Errors
+    function clearValidationErrors() {
+        document.querySelectorAll('.form-control').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.textContent = '';
+        });
+    }
+
+    // Save Constituency
+    async function saveConstituency() {
+        clearValidationErrors();
+        
+        const form = document.getElementById('constituencyForm');
+        const formData = new FormData(form);
+        const constituencyId = document.getElementById('constituencyId').value;
+        
+        const data = {
+            name: formData.get('name'),
+            code: formData.get('code'),
+            county: formData.get('county'),
+            current_mp: formData.get('current_mp') || '',
+            mp_party: formData.get('mp_party') || '',
+            cdf_office_location: formData.get('cdf_office_location') || '',
+            cdf_office_email: formData.get('cdf_office_email') || '',
+            cdf_office_phone: formData.get('cdf_office_phone') || '',
+            annual_cdf_allocation: formData.get('annual_cdf_allocation') || 0,
+            cdf_bursary_allocation: formData.get('cdf_bursary_allocation') || 0,
+            population: formData.get('population') || null,
+            is_active: document.getElementById('is_active').checked
+        };
+
+        const url = constituencyId 
+            ? `/admin-geography/constituencies/${constituencyId}/update/`
+            : '/admin-geography/constituencies/create/';
+        
+        const method = constituencyId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(result.message, 'success');
+                closeModal();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('An error occurred. Please try again.', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    // Edit Constituency
+    async function editConstituency(id) {
+        try {
+            const response = await fetch(`/admin-geography/constituencies/${id}/`);
+            const result = await response.json();
+
+            if (result.success) {
+                const constituency = result.constituency;
+                
+                document.getElementById('constituencyId').value = constituency.id;
+                document.getElementById('name').value = constituency.name;
+                document.getElementById('code').value = constituency.code;
+                document.getElementById('county').value = constituency.county_id;
+                document.getElementById('current_mp').value = constituency.current_mp;
+                document.getElementById('mp_party').value = constituency.mp_party;
+                document.getElementById('cdf_office_location').value = constituency.cdf_office_location;
+                document.getElementById('cdf_office_email').value = constituency.cdf_office_email;
+                document.getElementById('cdf_office_phone').value = constituency.cdf_office_phone;
+                document.getElementById('annual_cdf_allocation').value = constituency.annual_cdf_allocation;
+                document.getElementById('cdf_bursary_allocation').value = constituency.cdf_bursary_allocation;
+                document.getElementById('population').value = constituency.population || '';
+                document.getElementById('is_active').checked = constituency.is_active;
+
+                document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil"></i> Edit Constituency';
+                document.getElementById('constituencyModal').classList.add('show');
+            }
+        } catch (error) {
+            showNotification('Failed to load constituency details', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    // View Constituency
+    async function viewConstituency(id) {
+        try {
+            const response = await fetch(`/admin-geography/constituencies/${id}/`);
+            const result = await response.json();
+
+            if (result.success) {
+                const c = result.constituency;
+                const wards = result.wards;
+                
+                let wardsHtml = '<ul style="margin: 0; padding-left: 20px;">';
+                if (wards.length > 0) {
+                    wards.forEach(ward => {
+                        wardsHtml += `<li><strong>${ward.name}</strong> (${ward.code}) - ${ward.resident_count} residents, ${ward.application_count} applications</li>`;
+                    });
+                } else {
+                    wardsHtml += '<li class="text-muted">No wards added yet</li>';
+                }
+                wardsHtml += '</ul>';
+
+                const content = `
+                    <div style="display: grid; gap: 20px;">
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Basic Information</h6>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="padding: 8px 0; color: #64748B;">Name:</td><td style="padding: 8px 0;"><strong>${c.name}</strong></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Code:</td><td style="padding: 8px 0;"><strong>${c.code}</strong></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">County:</td><td style="padding: 8px 0;">${c.county_name}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Population:</td><td style="padding: 8px 0;">${c.population ? c.population.toLocaleString() : 'Not set'}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Status:</td><td style="padding: 8px 0;">
+                                    <span class="status-badge ${c.is_active ? 'status-active' : 'status-inactive'}">
+                                        ${c.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td></tr>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">MP Information</h6>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="padding: 8px 0; color: #64748B;">Current MP:</td><td style="padding: 8px 0;">${c.current_mp || 'Not set'}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Party:</td><td style="padding: 8px 0;">${c.mp_party || 'Not set'}</td></tr>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">CDF Office</h6>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="padding: 8px 0; color: #64748B;">Location:</td><td style="padding: 8px 0;">${c.cdf_office_location || 'Not set'}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Email:</td><td style="padding: 8px 0;">${c.cdf_office_email || 'Not set'}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Phone:</td><td style="padding: 8px 0;">${c.cdf_office_phone || 'Not set'}</td></tr>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Financial Information</h6>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="padding: 8px 0; color: #64748B;">Annual CDF:</td><td style="padding: 8px 0;"><strong>KES ${c.annual_cdf_allocation.toLocaleString()}</strong></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Bursary Allocation:</td><td style="padding: 8px 0;"><strong>KES ${c.cdf_bursary_allocation.toLocaleString()}</strong></td></tr>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Statistics</h6>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="padding: 8px 0; color: #64748B;">Wards:</td><td style="padding: 8px 0;"><strong>${c.ward_count}</strong></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Applications:</td><td style="padding: 8px 0;"><strong>${c.application_count}</strong></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748B;">Approved:</td><td style="padding: 8px 0;"><strong>${c.approved_applications}</strong></td></tr>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h6 style="color: #64748B; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">Wards in this Constituency</h6>
+                            ${wardsHtml}
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('viewModalContent').innerHTML = content;
+                document.getElementById('viewModal').classList.add('show');
+            }
+        } catch (error) {
+            showNotification('Failed to load constituency details', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    // Delete Constituency
+    async function deleteConstituency(id, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"?\n\nNote: If this constituency has wards, it will be marked as inactive instead of deleted.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin-geography/constituencies/${id}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(result.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('An error occurred. Please try again.', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    // Show Notification
+    function showNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: ${type === 'success' ? '#27ae60' : '#e74c3c'};
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('constituencyModal');
+        const viewModal = document.getElementById('viewModal');
+        if (event.target === modal) {
+            closeModal();
+        }
+        if (event.target === viewModal) {
+            closeViewModal();
+        }
+    }
+</script>
+{% endblock %}

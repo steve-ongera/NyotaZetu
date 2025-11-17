@@ -11102,3 +11102,720 @@ def proposal_management_view(request):
     }
     
     return render(request, 'admin/proposal_management.html', context)
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.core.paginator import Paginator
+from django.db.models import Q, Count, Sum
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+from django.shortcuts import redirect
+from django.contrib import messages
+from functools import wraps
+
+
+def admin_required(view_func):
+    """
+    Decorator to check if user is an admin
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please login to access this page.')
+            return redirect('login')
+        
+        # Check if user is admin or staff
+        if request.user.user_type not in ['admin', 'county_admin']:
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('dashboard')
+        
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
+from .models import County, Constituency, Ward, Application, WardAllocation
+from .views import admin_required  # You'll need to create this decorator
+
+
+# ============= CONSTITUENCY VIEWS =============
+
+@login_required
+@admin_required
+def constituency_management(request):
+    """
+    Main constituency management view with listing and statistics
+    """
+    # Get all constituencies with related data
+    constituencies = Constituency.objects.select_related('county').annotate(
+        ward_count=Count('wards'),
+        application_count=Count('wards__residents__applications')
+    ).order_by('county', 'name')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        constituencies = constituencies.filter(
+            Q(name__icontains=search_query) |
+            Q(code__icontains=search_query) |
+            Q(current_mp__icontains=search_query) |
+            Q(county__name__icontains=search_query)
+        )
+    
+    # Filter by county
+    county_filter = request.GET.get('county', '')
+    if county_filter:
+        constituencies = constituencies.filter(county_id=county_filter)
+    
+    # Filter by active status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        is_active = status_filter == 'active'
+        constituencies = constituencies.filter(is_active=is_active)
+    
+    # Statistics
+    stats = {
+        'total_constituencies': Constituency.objects.count(),
+        'active_constituencies': Constituency.objects.filter(is_active=True).count(),
+        'total_wards': Ward.objects.count(),
+        'total_cdf_allocation': Constituency.objects.aggregate(
+            total=Sum('cdf_bursary_allocation')
+        )['total'] or 0,
+    }
+    
+    # Pagination
+    paginator = Paginator(constituencies, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get all counties for filter dropdown
+    counties = County.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'page_obj': page_obj,
+        'constituencies': page_obj.object_list,
+        'stats': stats,
+        'counties': counties,
+        'search_query': search_query,
+        'county_filter': county_filter,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'admin/geography/constituency_management.html', context)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def constituency_create(request):
+    """
+    Create a new constituency via AJAX
+    """
+    try:
+        data = json.loads(request.body)
+        
+        # Validate required fields
+        required_fields = ['name', 'code', 'county']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'{field.title()} is required'
+                }, status=400)
+        
+        # Check if constituency with same name exists in the county
+        county = get_object_or_404(County, id=data['county'])
+        if Constituency.objects.filter(name=data['name'], county=county).exists():
+            return JsonResponse({
+                'success': False,
+                'message': f'Constituency "{data["name"]}" already exists in {county.name}'
+            }, status=400)
+        
+        # Create constituency
+        constituency = Constituency.objects.create(
+            name=data['name'],
+            code=data['code'],
+            county=county,
+            current_mp=data.get('current_mp', ''),
+            mp_party=data.get('mp_party', ''),
+            cdf_office_location=data.get('cdf_office_location', ''),
+            cdf_office_email=data.get('cdf_office_email', ''),
+            cdf_office_phone=data.get('cdf_office_phone', ''),
+            annual_cdf_allocation=data.get('annual_cdf_allocation', 0),
+            cdf_bursary_allocation=data.get('cdf_bursary_allocation', 0),
+            population=data.get('population', None),
+            is_active=data.get('is_active', True)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Constituency "{constituency.name}" created successfully',
+            'constituency': {
+                'id': constituency.id,
+                'name': constituency.name,
+                'code': constituency.code,
+                'county_name': constituency.county.name,
+                'current_mp': constituency.current_mp,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error creating constituency: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+def constituency_detail(request, constituency_id):
+    """
+    Get detailed information about a specific constituency
+    """
+    constituency = get_object_or_404(
+        Constituency.objects.select_related('county').annotate(
+            ward_count=Count('wards'),
+            application_count=Count('wards__residents__applications'),
+            approved_applications=Count(
+                'wards__residents__applications',
+                filter=Q(wards__residents__applications__status='approved')
+            )
+        ),
+        id=constituency_id
+    )
+    
+    # Get wards in this constituency
+    wards = constituency.wards.annotate(
+        resident_count=Count('residents'),
+        application_count=Count('residents__applications')
+    ).order_by('name')
+    
+    data = {
+        'success': True,
+        'constituency': {
+            'id': constituency.id,
+            'name': constituency.name,
+            'code': constituency.code,
+            'county_id': constituency.county.id,
+            'county_name': constituency.county.name,
+            'current_mp': constituency.current_mp or '',
+            'mp_party': constituency.mp_party or '',
+            'cdf_office_location': constituency.cdf_office_location or '',
+            'cdf_office_email': constituency.cdf_office_email or '',
+            'cdf_office_phone': constituency.cdf_office_phone or '',
+            'annual_cdf_allocation': float(constituency.annual_cdf_allocation),
+            'cdf_bursary_allocation': float(constituency.cdf_bursary_allocation),
+            'population': constituency.population,
+            'is_active': constituency.is_active,
+            'ward_count': constituency.ward_count,
+            'application_count': constituency.application_count,
+            'approved_applications': constituency.approved_applications,
+        },
+        'wards': [
+            {
+                'id': ward.id,
+                'name': ward.name,
+                'code': ward.code or '',
+                'resident_count': ward.resident_count,
+                'application_count': ward.application_count,
+            }
+            for ward in wards
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@admin_required
+@require_http_methods(["PUT", "POST"])
+def constituency_update(request, constituency_id):
+    """
+    Update an existing constituency
+    """
+    try:
+        constituency = get_object_or_404(Constituency, id=constituency_id)
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            # Check if name already exists in same county (excluding current)
+            if Constituency.objects.filter(
+                name=data['name'],
+                county=constituency.county
+            ).exclude(id=constituency_id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Constituency "{data["name"]}" already exists in {constituency.county.name}'
+                }, status=400)
+            constituency.name = data['name']
+        
+        if 'code' in data:
+            constituency.code = data['code']
+        if 'county' in data:
+            constituency.county_id = data['county']
+        if 'current_mp' in data:
+            constituency.current_mp = data['current_mp']
+        if 'mp_party' in data:
+            constituency.mp_party = data['mp_party']
+        if 'cdf_office_location' in data:
+            constituency.cdf_office_location = data['cdf_office_location']
+        if 'cdf_office_email' in data:
+            constituency.cdf_office_email = data['cdf_office_email']
+        if 'cdf_office_phone' in data:
+            constituency.cdf_office_phone = data['cdf_office_phone']
+        if 'annual_cdf_allocation' in data:
+            constituency.annual_cdf_allocation = data['annual_cdf_allocation']
+        if 'cdf_bursary_allocation' in data:
+            constituency.cdf_bursary_allocation = data['cdf_bursary_allocation']
+        if 'population' in data:
+            constituency.population = data['population']
+        if 'is_active' in data:
+            constituency.is_active = data['is_active']
+        
+        constituency.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Constituency "{constituency.name}" updated successfully',
+            'constituency': {
+                'id': constituency.id,
+                'name': constituency.name,
+                'code': constituency.code,
+                'county_name': constituency.county.name,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error updating constituency: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+@require_http_methods(["DELETE", "POST"])
+def constituency_delete(request, constituency_id):
+    """
+    Delete a constituency (soft delete by marking as inactive)
+    """
+    try:
+        constituency = get_object_or_404(Constituency, id=constituency_id)
+        
+        # Check if constituency has wards
+        ward_count = constituency.wards.count()
+        if ward_count > 0:
+            # Soft delete - mark as inactive
+            constituency.is_active = False
+            constituency.save()
+            return JsonResponse({
+                'success': True,
+                'message': f'Constituency "{constituency.name}" marked as inactive (has {ward_count} wards)',
+                'soft_delete': True
+            })
+        else:
+            # Hard delete if no wards
+            name = constituency.name
+            constituency.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Constituency "{name}" deleted successfully',
+                'soft_delete': False
+            })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error deleting constituency: {str(e)}'
+        }, status=500)
+
+
+# ============= WARD VIEWS =============
+
+@login_required
+@admin_required
+def ward_management(request):
+    """
+    Main ward management view with listing and statistics
+    """
+    # Get all wards with related data
+    wards = Ward.objects.select_related(
+        'constituency',
+        'constituency__county'
+    ).annotate(
+        resident_count=Count('residents'),
+        application_count=Count('residents__applications'),
+        location_count=Count('locations')
+    ).order_by('constituency__county__name', 'constituency__name', 'name')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        wards = wards.filter(
+            Q(name__icontains=search_query) |
+            Q(code__icontains=search_query) |
+            Q(current_mca__icontains=search_query) |
+            Q(constituency__name__icontains=search_query) |
+            Q(constituency__county__name__icontains=search_query)
+        )
+    
+    # Filter by constituency
+    constituency_filter = request.GET.get('constituency', '')
+    if constituency_filter:
+        wards = wards.filter(constituency_id=constituency_filter)
+    
+    # Filter by county
+    county_filter = request.GET.get('county', '')
+    if county_filter:
+        wards = wards.filter(constituency__county_id=county_filter)
+    
+    # Filter by active status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        is_active = status_filter == 'active'
+        wards = wards.filter(is_active=is_active)
+    
+    # Statistics
+    stats = {
+        'total_wards': Ward.objects.count(),
+        'active_wards': Ward.objects.filter(is_active=True).count(),
+        'total_locations': Ward.objects.aggregate(
+            count=Count('locations')
+        )['count'] or 0,
+        'total_residents': Ward.objects.aggregate(
+            count=Count('residents')
+        )['count'] or 0,
+    }
+    
+    # Pagination
+    paginator = Paginator(wards, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get all constituencies and counties for filter dropdowns
+    constituencies = Constituency.objects.filter(
+        is_active=True
+    ).select_related('county').order_by('county__name', 'name')
+    counties = County.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'page_obj': page_obj,
+        'wards': page_obj.object_list,
+        'stats': stats,
+        'constituencies': constituencies,
+        'counties': counties,
+        'search_query': search_query,
+        'constituency_filter': constituency_filter,
+        'county_filter': county_filter,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'admin/geography/ward_management.html', context)
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def ward_create(request):
+    """
+    Create a new ward via AJAX
+    """
+    try:
+        data = json.loads(request.body)
+        
+        # Validate required fields
+        required_fields = ['name', 'constituency']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'{field.title()} is required'
+                }, status=400)
+        
+        # Check if ward with same name exists in the constituency
+        constituency = get_object_or_404(Constituency, id=data['constituency'])
+        if Ward.objects.filter(name=data['name'], constituency=constituency).exists():
+            return JsonResponse({
+                'success': False,
+                'message': f'Ward "{data["name"]}" already exists in {constituency.name}'
+            }, status=400)
+        
+        # Create ward
+        ward = Ward.objects.create(
+            name=data['name'],
+            code=data.get('code', ''),
+            constituency=constituency,
+            current_mca=data.get('current_mca', ''),
+            mca_party=data.get('mca_party', ''),
+            mca_phone=data.get('mca_phone', ''),
+            mca_email=data.get('mca_email', ''),
+            ward_office_location=data.get('ward_office_location', ''),
+            population=data.get('population', None),
+            description=data.get('description', ''),
+            is_active=data.get('is_active', True)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Ward "{ward.name}" created successfully',
+            'ward': {
+                'id': ward.id,
+                'name': ward.name,
+                'code': ward.code,
+                'constituency_name': ward.constituency.name,
+                'current_mca': ward.current_mca,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error creating ward: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+def ward_detail(request, ward_id):
+    """
+    Get detailed information about a specific ward
+    """
+    ward = get_object_or_404(
+        Ward.objects.select_related(
+            'constituency',
+            'constituency__county'
+        ).annotate(
+            resident_count=Count('residents'),
+            application_count=Count('residents__applications'),
+            approved_applications=Count(
+                'residents__applications',
+                filter=Q(residents__applications__status='approved')
+            ),
+            location_count=Count('locations')
+        ),
+        id=ward_id
+    )
+    
+    # Get locations in this ward
+    locations = ward.locations.annotate(
+        sublocation_count=Count('sublocations')
+    ).order_by('name')
+    
+    # Get recent applications from this ward
+    recent_applications = Application.objects.filter(
+        applicant__ward=ward
+    ).select_related(
+        'applicant__user',
+        'institution'
+    ).order_by('-date_submitted')[:5]
+    
+    data = {
+        'success': True,
+        'ward': {
+            'id': ward.id,
+            'name': ward.name,
+            'code': ward.code or '',
+            'constituency_id': ward.constituency.id,
+            'constituency_name': ward.constituency.name,
+            'county_name': ward.constituency.county.name,
+            'current_mca': ward.current_mca or '',
+            'mca_party': ward.mca_party or '',
+            'mca_phone': ward.mca_phone or '',
+            'mca_email': ward.mca_email or '',
+            'ward_office_location': ward.ward_office_location or '',
+            'population': ward.population,
+            'description': ward.description or '',
+            'is_active': ward.is_active,
+            'resident_count': ward.resident_count,
+            'application_count': ward.application_count,
+            'approved_applications': ward.approved_applications,
+            'location_count': ward.location_count,
+        },
+        'locations': [
+            {
+                'id': location.id,
+                'name': location.name,
+                'sublocation_count': location.sublocation_count,
+            }
+            for location in locations
+        ],
+        'recent_applications': [
+            {
+                'id': app.id,
+                'application_number': app.application_number,
+                'applicant_name': f"{app.applicant.user.first_name} {app.applicant.user.last_name}",
+                'institution': app.institution.name,
+                'amount_requested': float(app.amount_requested),
+                'status': app.status,
+                'date_submitted': app.date_submitted.strftime('%Y-%m-%d %H:%M') if app.date_submitted else None,
+            }
+            for app in recent_applications
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@admin_required
+@require_http_methods(["PUT", "POST"])
+def ward_update(request, ward_id):
+    """
+    Update an existing ward
+    """
+    try:
+        ward = get_object_or_404(Ward, id=ward_id)
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            # Check if name already exists in same constituency (excluding current)
+            if Ward.objects.filter(
+                name=data['name'],
+                constituency=ward.constituency
+            ).exclude(id=ward_id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Ward "{data["name"]}" already exists in {ward.constituency.name}'
+                }, status=400)
+            ward.name = data['name']
+        
+        if 'code' in data:
+            ward.code = data['code']
+        if 'constituency' in data:
+            ward.constituency_id = data['constituency']
+        if 'current_mca' in data:
+            ward.current_mca = data['current_mca']
+        if 'mca_party' in data:
+            ward.mca_party = data['mca_party']
+        if 'mca_phone' in data:
+            ward.mca_phone = data['mca_phone']
+        if 'mca_email' in data:
+            ward.mca_email = data['mca_email']
+        if 'ward_office_location' in data:
+            ward.ward_office_location = data['ward_office_location']
+        if 'population' in data:
+            ward.population = data['population']
+        if 'description' in data:
+            ward.description = data['description']
+        if 'is_active' in data:
+            ward.is_active = data['is_active']
+        
+        ward.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Ward "{ward.name}" updated successfully',
+            'ward': {
+                'id': ward.id,
+                'name': ward.name,
+                'code': ward.code,
+                'constituency_name': ward.constituency.name,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error updating ward: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@admin_required
+@require_http_methods(["DELETE", "POST"])
+def ward_delete(request, ward_id):
+    """
+    Delete a ward (soft delete by marking as inactive)
+    """
+    try:
+        ward = get_object_or_404(Ward, id=ward_id)
+        
+        # Check if ward has residents or locations
+        resident_count = ward.residents.count()
+        location_count = ward.locations.count()
+        
+        if resident_count > 0 or location_count > 0:
+            # Soft delete - mark as inactive
+            ward.is_active = False
+            ward.save()
+            return JsonResponse({
+                'success': True,
+                'message': f'Ward "{ward.name}" marked as inactive (has {resident_count} residents and {location_count} locations)',
+                'soft_delete': True
+            })
+        else:
+            # Hard delete if no residents or locations
+            name = ward.name
+            ward.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Ward "{name}" deleted successfully',
+                'soft_delete': False
+            })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error deleting ward: {str(e)}'
+        }, status=500)
+
+
+# ============= UTILITY VIEWS =============
+
+@login_required
+@admin_required
+def get_constituencies_by_county(request, county_id):
+    """
+    Get all constituencies in a specific county (for cascading dropdowns)
+    """
+    constituencies = Constituency.objects.filter(
+        county_id=county_id,
+        is_active=True
+    ).order_by('name').values('id', 'name', 'code')
+    
+    return JsonResponse({
+        'success': True,
+        'constituencies': list(constituencies)
+    })
+
+
+@login_required
+@admin_required
+def get_wards_by_constituency(request, constituency_id):
+    """
+    Get all wards in a specific constituency (for cascading dropdowns)
+    """
+    wards = Ward.objects.filter(
+        constituency_id=constituency_id,
+        is_active=True
+    ).order_by('name').values('id', 'name', 'code')
+    
+    return JsonResponse({
+        'success': True,
+        'wards': list(wards)
+    })
