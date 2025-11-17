@@ -7556,18 +7556,50 @@ def admin_communication(request):
     }
     return render(request, 'admin/communication.html', context)
 
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import JsonResponse
+from django.db.models import Count, Q, Avg, Sum, F
+from django.db.models.functions import TruncHour, TruncDate, TruncMonth
+from django.utils import timezone
+from datetime import timedelta, datetime
+from django.core.paginator import Paginator
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from django.contrib import messages
+from .models import (
+    AuditLog, User, LoginAttempt, SecurityThreat, URLVisit,
+    UserURLVisit, UserSession, SuspiciousActivity, AccountLock
+)
+import json
+
+
+def is_admin_or_staff(user):
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
 @login_required
 @user_passes_test(is_admin_or_staff)
 def admin_security_audit(request):
-    """Admin security and audit view"""
+    """Enhanced security and audit view with real-time analytics"""
+    
+    # Time ranges
+    today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+    last_7_days = today - timedelta(days=7)
+    last_30_days = today - timedelta(days=30)
+    last_hour = timezone.now() - timedelta(hours=1)
+    
     # Get audit logs with filtering
-    audit_logs = AuditLog.objects.all().order_by('-timestamp')
+    audit_logs = AuditLog.objects.all().select_related('user').order_by('-timestamp')
     
     # Apply filters
     action_filter = request.GET.get('action')
     user_filter = request.GET.get('user')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    severity_filter = request.GET.get('severity')
     
     if action_filter:
         audit_logs = audit_logs.filter(action=action_filter)
@@ -7590,35 +7622,82 @@ def admin_security_audit(request):
             pass
     
     # Pagination
-    paginator = Paginator(audit_logs, 5)
+    paginator = Paginator(audit_logs, 20)
     page_number = request.GET.get('page')
     audit_logs_paginated = paginator.get_page(page_number)
     
-    # Security statistics
-    today = timezone.now().date()
-    last_7_days = today - timedelta(days=7)
-    last_30_days = today - timedelta(days=30)
-    
+    # Security Statistics
     security_stats = {
-        'total_logins_today': AuditLog.objects.filter(
-            action='login',
+        # Login statistics
+        'total_logins_today': LoginAttempt.objects.filter(
+            success=True,
             timestamp__date=today
         ).count(),
-        'total_logins_7_days': AuditLog.objects.filter(
-            action='login',
+        'total_logins_7_days': LoginAttempt.objects.filter(
+            success=True,
             timestamp__date__gte=last_7_days
         ).count(),
-        'total_logins_30_days': AuditLog.objects.filter(
-            action='login',
+        'total_logins_30_days': LoginAttempt.objects.filter(
+            success=True,
             timestamp__date__gte=last_30_days
         ).count(),
-        'failed_login_attempts': AuditLog.objects.filter(
-            description__icontains='failed login',
+        
+        # Failed login statistics
+        'failed_login_attempts_today': LoginAttempt.objects.filter(
+            success=False,
+            timestamp__date=today
+        ).count(),
+        'failed_login_attempts_7_days': LoginAttempt.objects.filter(
+            success=False,
             timestamp__date__gte=last_7_days
         ).count(),
+        
+        # User statistics
         'total_users': User.objects.count(),
-        'active_sessions': User.objects.filter(last_login__date=today).count(),
+        'active_users_today': User.objects.filter(last_login__date=today).count(),
+        'active_sessions': UserSession.objects.filter(is_active=True).count(),
+        'locked_accounts': AccountLock.objects.filter(is_locked=True).count(),
+        
+        # Security threats
+        'threats_today': SecurityThreat.objects.filter(detected_at__date=today).count(),
+        'threats_unresolved': SecurityThreat.objects.filter(resolved=False).count(),
+        'critical_threats': SecurityThreat.objects.filter(
+            severity='critical',
+            resolved=False
+        ).count(),
+        
+        # Suspicious activities
+        'suspicious_activities_today': SuspiciousActivity.objects.filter(
+            detected_at__date=today
+        ).count(),
+        'suspicious_uninvestigated': SuspiciousActivity.objects.filter(
+            investigated=False
+        ).count(),
+        
+        # URL statistics
+        'unique_urls_accessed': URLVisit.objects.count(),
+        'total_page_views_today': UserURLVisit.objects.filter(
+            visited_at__date=today
+        ).count(),
     }
+    
+    # Recent security threats
+    recent_threats = SecurityThreat.objects.filter(
+        resolved=False
+    ).select_related('user').order_by('-detected_at')[:10]
+    
+    # Recent suspicious activities
+    recent_suspicious = SuspiciousActivity.objects.filter(
+        investigated=False
+    ).select_related('user').order_by('-detected_at')[:10]
+    
+    # Active sessions
+    active_sessions = UserSession.objects.filter(
+        is_active=True
+    ).select_related('user').order_by('-last_activity')[:15]
+    
+    # Top visited URLs
+    top_urls = URLVisit.objects.all().order_by('-visit_count')[:10]
     
     # Get unique actions and users for filter dropdowns
     unique_actions = AuditLog.objects.values_list('action', flat=True).distinct()
@@ -7650,6 +7729,10 @@ def admin_security_audit(request):
     context = {
         'audit_logs': audit_logs_paginated,
         'security_stats': security_stats,
+        'recent_threats': recent_threats,
+        'recent_suspicious': recent_suspicious,
+        'active_sessions': active_sessions,
+        'top_urls': top_urls,
         'unique_actions': unique_actions,
         'unique_users': unique_users,
         'password_form': password_form,
@@ -7658,30 +7741,355 @@ def admin_security_audit(request):
             'user': user_filter,
             'date_from': date_from,
             'date_to': date_to,
+            'severity': severity_filter,
         },
         'page_title': 'Security & Audit',
     }
     return render(request, 'admin/security_audit.html', context)
 
-# AJAX views for dynamic content
+
+# ============= API ENDPOINTS FOR REAL-TIME DATA =============
+
 @login_required
 @user_passes_test(is_admin_or_staff)
-def get_audit_log_details(request, log_id):
-    """Get detailed information about an audit log entry"""
-    log_entry = get_object_or_404(AuditLog, id=log_id)
+def api_security_stats(request):
+    """API endpoint for real-time security statistics"""
+    today = timezone.now().date()
+    last_hour = timezone.now() - timedelta(hours=1)
+    last_7_days = today - timedelta(days=7)
     
-    data = {
-        'id': log_entry.id,
-        'user': str(log_entry.user) if log_entry.user else 'System',
-        'action': log_entry.get_action_display(),
-        'table_affected': log_entry.table_affected,
-        'record_id': log_entry.record_id,
-        'description': log_entry.description,
-        'ip_address': log_entry.ip_address,
-        'timestamp': log_entry.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+    stats = {
+        'active_users': UserSession.objects.filter(is_active=True).count(),
+        'requests_last_hour': AuditLog.objects.filter(timestamp__gte=last_hour).count(),
+        'threats_today': SecurityThreat.objects.filter(detected_at__date=today).count(),
+        'suspicious_activities': SuspiciousActivity.objects.filter(
+            investigated=False
+        ).count(),
+        'failed_logins_today': LoginAttempt.objects.filter(
+            success=False,
+            timestamp__date=today
+        ).count(),
+        'timestamp': timezone.now().isoformat(),
     }
     
-    return JsonResponse(data)
+    return JsonResponse(stats)
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_user_activity_chart(request):
+    """API endpoint for user activity timeline chart"""
+    hours = int(request.GET.get('hours', 24))
+    start_time = timezone.now() - timedelta(hours=hours)
+    
+    # Group by hour
+    activity_data = AuditLog.objects.filter(
+        timestamp__gte=start_time
+    ).annotate(
+        hour=TruncHour('timestamp')
+    ).values('hour').annotate(
+        count=Count('id')
+    ).order_by('hour')
+    
+    # Format for chart
+    labels = []
+    data = []
+    
+    for item in activity_data:
+        labels.append(item['hour'].strftime('%H:%M'))
+        data.append(item['count'])
+    
+    return JsonResponse({
+        'labels': labels,
+        'data': data,
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_login_attempts_chart(request):
+    """API endpoint for login attempts chart (success vs failed)"""
+    days = int(request.GET.get('days', 7))
+    start_date = timezone.now().date() - timedelta(days=days)
+    
+    # Get successful logins
+    successful_logins = LoginAttempt.objects.filter(
+        success=True,
+        timestamp__date__gte=start_date
+    ).annotate(
+        date=TruncDate('timestamp')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    # Get failed logins
+    failed_logins = LoginAttempt.objects.filter(
+        success=False,
+        timestamp__date__gte=start_date
+    ).annotate(
+        date=TruncDate('timestamp')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    # Create date range
+    date_range = []
+    current_date = start_date
+    while current_date <= timezone.now().date():
+        date_range.append(current_date)
+        current_date += timedelta(days=1)
+    
+    # Map data to dates
+    success_dict = {item['date']: item['count'] for item in successful_logins}
+    failed_dict = {item['date']: item['count'] for item in failed_logins}
+    
+    labels = [date.strftime('%b %d') for date in date_range]
+    success_data = [success_dict.get(date, 0) for date in date_range]
+    failed_data = [failed_dict.get(date, 0) for date in date_range]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Successful Logins',
+                'data': success_data,
+                'borderColor': 'rgb(39, 174, 96)',
+                'backgroundColor': 'rgba(39, 174, 96, 0.1)',
+            },
+            {
+                'label': 'Failed Attempts',
+                'data': failed_data,
+                'borderColor': 'rgb(231, 76, 60)',
+                'backgroundColor': 'rgba(231, 76, 60, 0.1)',
+            }
+        ],
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_threat_distribution(request):
+    """API endpoint for threat type distribution"""
+    threats = SecurityThreat.objects.values('threat_type').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    labels = [item['threat_type'].replace('_', ' ').title() for item in threats]
+    data = [item['count'] for item in threats]
+    
+    return JsonResponse({
+        'labels': labels,
+        'data': data,
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_top_urls(request):
+    """API endpoint for most visited URLs"""
+    limit = int(request.GET.get('limit', 10))
+    
+    top_urls = URLVisit.objects.all().order_by('-visit_count')[:limit]
+    
+    data = []
+    for url in top_urls:
+        data.append({
+            'url': url.url_path,
+            'visits': url.visit_count,
+            'last_visited': url.last_visited.isoformat(),
+        })
+    
+    return JsonResponse({
+        'urls': data,
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_active_sessions(request):
+    """API endpoint for active user sessions"""
+    sessions = UserSession.objects.filter(
+        is_active=True
+    ).select_related('user').order_by('-last_activity')[:20]
+    
+    data = []
+    for session in sessions:
+        data.append({
+            'user': session.user.username,
+            'user_full_name': f"{session.user.first_name} {session.user.last_name}",
+            'ip_address': session.ip_address,
+            'login_time': session.login_time.isoformat(),
+            'last_activity': session.last_activity.isoformat(),
+            'device_type': session.device_type or 'Unknown',
+            'browser': session.browser or 'Unknown',
+        })
+    
+    return JsonResponse({
+        'sessions': data,
+        'count': len(data),
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_security_threats(request):
+    """API endpoint for recent security threats"""
+    limit = int(request.GET.get('limit', 10))
+    unresolved_only = request.GET.get('unresolved', 'false').lower() == 'true'
+    
+    threats = SecurityThreat.objects.all()
+    
+    if unresolved_only:
+        threats = threats.filter(resolved=False)
+    
+    threats = threats.select_related('user').order_by('-detected_at')[:limit]
+    
+    data = []
+    for threat in threats:
+        data.append({
+            'id': threat.id,
+            'threat_type': threat.get_threat_type_display(),
+            'severity': threat.severity,
+            'ip_address': threat.ip_address,
+            'user': threat.user.username if threat.user else 'Anonymous',
+            'description': threat.description,
+            'detected_at': threat.detected_at.isoformat(),
+            'resolved': threat.resolved,
+            'blocked': threat.blocked,
+        })
+    
+    return JsonResponse({
+        'threats': data,
+        'count': len(data),
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_suspicious_activities(request):
+    """API endpoint for suspicious activities"""
+    limit = int(request.GET.get('limit', 10))
+    uninvestigated_only = request.GET.get('uninvestigated', 'false').lower() == 'true'
+    
+    activities = SuspiciousActivity.objects.all()
+    
+    if uninvestigated_only:
+        activities = activities.filter(investigated=False)
+    
+    activities = activities.select_related('user').order_by('-detected_at')[:limit]
+    
+    data = []
+    for activity in activities:
+        data.append({
+            'id': activity.id,
+            'user': activity.user.username,
+            'activity_type': activity.get_activity_type_display(),
+            'description': activity.description,
+            'risk_score': activity.risk_score,
+            'confidence': float(activity.confidence),
+            'detected_at': activity.detected_at.isoformat(),
+            'investigated': activity.investigated,
+        })
+    
+    return JsonResponse({
+        'activities': data,
+        'count': len(data),
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def api_geo_distribution(request):
+    """API endpoint for geographic distribution of users"""
+    sessions = UserSession.objects.filter(
+        is_active=True,
+        country__isnull=False
+    ).values('country').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    data = []
+    for item in sessions:
+        data.append({
+            'country': item['country'],
+            'count': item['count'],
+        })
+    
+    return JsonResponse({
+        'data': data,
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def resolve_threat(request, threat_id):
+    """Mark a security threat as resolved"""
+    if request.method == 'POST':
+        threat = get_object_or_404(SecurityThreat, id=threat_id)
+        
+        threat.resolved = True
+        threat.resolved_by = request.user
+        threat.resolved_at = timezone.now()
+        threat.resolution_notes = request.POST.get('notes', '')
+        threat.save()
+        
+        # Log the action
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            table_affected='SecurityThreat',
+            record_id=str(threat.id),
+            description=f'Resolved security threat: {threat.get_threat_type_display()}',
+            ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Threat marked as resolved'
+        })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
+
+
+@login_required
+@user_passes_test(is_admin_or_staff)
+def investigate_activity(request, activity_id):
+    """Mark a suspicious activity as investigated"""
+    if request.method == 'POST':
+        activity = get_object_or_404(SuspiciousActivity, id=activity_id)
+        
+        activity.investigated = True
+        activity.investigated_by = request.user
+        activity.investigated_at = timezone.now()
+        activity.investigation_notes = request.POST.get('notes', '')
+        activity.is_false_positive = request.POST.get('false_positive', 'false').lower() == 'true'
+        activity.action_taken = request.POST.get('action_taken', '')
+        activity.save()
+        
+        # Log the action
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            table_affected='SuspiciousActivity',
+            record_id=str(activity.id),
+            description=f'Investigated suspicious activity for user: {activity.user.username}',
+            ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Activity marked as investigated'
+        })
+    
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
 
 @login_required
 @user_passes_test(is_admin_or_staff)

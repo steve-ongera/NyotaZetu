@@ -88,6 +88,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Add custom security middleware
+                'main_application.middleware.SecurityMonitoringMiddleware',
+                'main_application.middleware.URLTrackingMiddleware',
             ],
         },
     },
@@ -200,6 +203,56 @@ CDF_WEBSITE_URL = 'https://kiharucdf.go.ke'
 
 # For Gmail specifically, you might need:
 EMAIL_TIMEOUT = 10
+
+# Security monitoring settings
+SECURITY_MONITORING = {
+    'ENABLED': True,
+    'MAX_REQUESTS_PER_MINUTE': 60,
+    'MAX_FAILED_LOGINS': 5,
+    'ACCOUNT_LOCK_DURATION_MINUTES': 30,
+    'SESSION_TIMEOUT_MINUTES': 30,
+    'LOG_SECURITY_EVENTS': True,
+    'DETECT_SUSPICIOUS_PATTERNS': True,
+    'REAL_TIME_ALERTS': True,
+}
+
+# Suspicious activity detection settings
+SUSPICIOUS_ACTIVITY_DETECTION = {
+    'ENABLED': True,
+    'UNUSUAL_ACCESS_PATTERN_THRESHOLD': 10,  # requests per minute
+    'RAPID_DATA_ACCESS_THRESHOLD': 5,  # pages per minute
+    'MULTIPLE_DEVICE_THRESHOLD': 3,  # simultaneous devices
+    'RISK_SCORE_THRESHOLD': 70,  # 0-100
+    'AUTO_LOCK_HIGH_RISK': True,
+    'AUTO_LOCK_RISK_THRESHOLD': 90,
+}
+
+# Threat detection patterns (regex)
+THREAT_DETECTION_PATTERNS = [
+    r'union.*select',  # SQL Injection
+    r'<script.*?>',    # XSS
+    r'\.\./\.\.',      # Path Traversal
+    r'eval\(',         # Code Injection
+    r'base64_decode',  # Obfuscation
+    r'system\(',       # Command Injection
+    r'exec\(',         # Command Injection
+    r'wget|curl',      # Remote file inclusion
+    r'\$\{.*\}',       # Template injection
+]
+
+# Security notification settings
+SECURITY_NOTIFICATIONS = {
+    'EMAIL_ENABLED': True,
+    'SMS_ENABLED': False,
+    'NOTIFY_ON_CRITICAL_THREAT': True,
+    'NOTIFY_ON_ACCOUNT_LOCK': True,
+    'NOTIFY_ON_SUSPICIOUS_ACTIVITY': True,
+    'ADMIN_EMAIL': 'security@yourdomain.com',
+}
+
+# Audit log retention
+AUDIT_LOG_RETENTION_DAYS = 365  # Keep logs for 1 year
+
 
 # ========================================
 # AUTHENTICATION & SESSION SETTINGS (FIXED)

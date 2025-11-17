@@ -173,9 +173,24 @@ urlpatterns = [
     path('admin-communication/', views.admin_communication, name='admin_communication'),
     path('admin-announcements/<int:announcement_id>/toggle/', views.toggle_announcement_status, name='toggle_announcement_status'),
     
-    # Security & Audit
-    path('admin-security/', views.admin_security_audit, name='admin_security_audit'),
-    path('admin-audit-log/<int:log_id>/details/', views.get_audit_log_details, name='get_audit_log_details'),
+ 
+    # Main security dashboard
+    path('admin-security-audit/', views.admin_security_audit, name='admin_security_audit'),
+    
+    # API Endpoints for real-time data
+    path('api/security-stats/', views.api_security_stats, name='api_security_stats'),
+    path('api/user-activity-chart/', views.api_user_activity_chart, name='api_user_activity_chart'),
+    path('api/login-attempts-chart/', views.api_login_attempts_chart, name='api_login_attempts_chart'),
+    path('api/threat-distribution/', views.api_threat_distribution, name='api_threat_distribution'),
+    path('api/top-urls/', views.api_top_urls, name='api_top_urls'),
+    path('api/active-sessions/', views.api_active_sessions, name='api_active_sessions'),
+    path('api/security-threats/', views.api_security_threats, name='api_security_threats'),
+    path('api/suspicious-activities/', views.api_suspicious_activities, name='api_suspicious_activities'),
+    path('api/geo-distribution/', views.api_geo_distribution, name='api_geo_distribution'),
+    
+    # Action endpoints
+    path('security/resolve-threat/<int:threat_id>/', views.resolve_threat, name='resolve_threat'),
+    path('security/investigate-activity/<int:activity_id>/', views.investigate_activity, name='investigate_activity'),
 
     path("ai/dashboard/", views.ai_dashboard, name="ai_dashboard"),
     path("ai/generate/", views.generate_analysis, name="generate_analysis"),
