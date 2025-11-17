@@ -1126,11 +1126,6 @@
             </div>
             <div class="submenu" id="submenu-reviews">
                 <a href="#" class="submenu-item">All Reviews</a>
-                <a href="#" class="submenu-item">Ward Reviews</a>
-                <a href="#" class="submenu-item">Constituency Reviews</a>
-                <a href="#" class="submenu-item">County Reviews</a>
-                <a href="#" class="submenu-item">Final Approvals</a>
-                <a href="#" class="submenu-item">Pending Reviews</a>
             </div>
 
             <div class="menu-item has-submenu" data-submenu="budget">
@@ -1145,21 +1140,9 @@
                 <a href="#" class="submenu-item">Ward Allocations</a>
                 <a href="{% url 'disbursement_round_list'%}" class="submenu-item">Disbursement Rounds</a>
                 <a href="{% url 'bulk_cheque_assignment'%}" class="submenu-item">Bulk Cheques</a>
-                <a href="#" class="submenu-item">Payment Tracking</a>
                 <a href="{% url 'ai_dashboard'%}" class="submenu-item">AI Analysis</a>
             </div>
 
-            <div class="menu-item has-submenu" data-submenu="documents">
-                <i class="fas fa-folder-open"></i>
-                <span>Documents</span>
-                <i class="fas fa-chevron-right arrow"></i>
-            </div>
-            <div class="submenu" id="submenu-documents">
-                <a href="#" class="submenu-item">All Documents</a>
-                <a href="#" class="submenu-item">Pending Verification</a>
-                <a href="#" class="submenu-item">Verified Documents</a>
-                <a href="#" class="submenu-item">Document Requests</a>
-            </div>
 
             <a href="{% url 'institution_list'%}" class="menu-item">
                 <i class="fas fa-building"></i>
@@ -1172,12 +1155,8 @@
                 <i class="fas fa-chevron-right arrow"></i>
             </div>
             <div class="submenu" id="submenu-geography">
-                <a href="#" class="submenu-item">Counties</a>
                 <a href="#" class="submenu-item">Constituencies</a>
                 <a href="#" class="submenu-item">Wards</a>
-                <a href="#" class="submenu-item">Locations</a>
-                <a href="#" class="submenu-item">Sub-Locations</a>
-                <a href="#" class="submenu-item">Villages</a>
             </div>
         </div>
 
@@ -1207,12 +1186,6 @@
             </div>
             <div class="submenu" id="submenu-ai">
                 <a href="{% url 'ai_dashboard'%}" class="submenu-item">AI Dashboard</a>
-                <a href="#" class="submenu-item">Demand Forecasting</a>
-                <a href="#" class="submenu-item">Allocation Optimization</a>
-                <a href="#" class="submenu-item">Geographic Analysis</a>
-                <a href="#" class="submenu-item">Equity Analysis</a>
-                <a href="#" class="submenu-item">Prediction Models</a>
-                <a href="#" class="submenu-item">Data Snapshots</a>
             </div>
 
             <div class="menu-item has-submenu" data-submenu="transparency">
@@ -1240,14 +1213,6 @@
             </div>
             <div class="submenu" id="submenu-users">
                 <a href="{% url 'user_management'%}" class="submenu-item">All Users</a>
-                <a href="#" class="submenu-item">Administrators</a>
-                <a href="#" class="submenu-item">Reviewers</a>
-                <a href="#" class="submenu-item">Finance Officers</a>
-                <a href="#" class="submenu-item">County Admins</a>
-                <a href="#" class="submenu-item">Ward Admins</a>
-                <a href="#" class="submenu-item">Account Locks</a>
-                <a href="#" class="submenu-item">Login Attempts</a>
-                <a href="#" class="submenu-item">Permissions</a>
             </div>
 
             <a href="{% url 'admin_communication'%}" class="menu-item">
@@ -1262,9 +1227,6 @@
             </div>
             <div class="submenu" id="submenu-notifications">
                 <a href="#" class="submenu-item">All Notifications</a>
-                <a href="#" class="submenu-item">SMS Logs</a>
-                <a href="#" class="submenu-item">Email Logs</a>
-                <a href="#" class="submenu-item">Security Notifications</a>
                 <a href="#" class="submenu-item">Send Bulk SMS</a>
                 <a href="#" class="submenu-item">Send Bulk Email</a>
             </div>
@@ -1276,16 +1238,9 @@
             </div>
             <div class="submenu" id="submenu-settings">
                 <a href="#" class="submenu-item">General Settings</a>
-                <a href="#" class="submenu-item">Application Settings</a>
-                <a href="#" class="submenu-item">Finance Settings</a>
                 <a href="#" class="submenu-item">Notification Settings</a>
-                <a href="#" class="submenu-item">Security Settings</a>
                 <a href="#" class="submenu-item">Announcements</a>
                 <a href="#" class="submenu-item">FAQ Management</a>
-                <a href="#" class="submenu-item">SMS Configuration</a>
-                <a href="#" class="submenu-item">Email Configuration</a>
-                <a href="#" class="submenu-item">2FA Settings</a>
-                <a href="#" class="submenu-item">Backup & Restore</a>
             </div>
 
             <div class="menu-item has-submenu" data-submenu="security">
@@ -1296,10 +1251,6 @@
             <div class="submenu" id="submenu-security">
                 <a href="{% url 'admin_security_audit'%}" class="submenu-item">Audit Logs</a>
                 <a href="#" class="submenu-item">Login History</a>
-                <a href="#" class="submenu-item">Failed Login Attempts</a>
-                <a href="#" class="submenu-item">Account Locks</a>
-                <a href="#" class="submenu-item">2FA Codes</a>
-                <a href="#" class="submenu-item">Security Notifications</a>
                 <a href="#" class="submenu-item">System Activity</a>
                 <a href="#" class="submenu-item">Data Export Logs</a>
             </div>
@@ -1312,8 +1263,6 @@
             <div class="submenu" id="submenu-help">
                 <a href="#" class="submenu-item">Documentation</a>
                 <a href="#" class="submenu-item">User Guide</a>
-                <a href="#" class="submenu-item">Video Tutorials</a>
-                <a href="#" class="submenu-item">System Status</a>
                 <a href="#" class="submenu-item">Contact Support</a>
             </div>
         </div>
