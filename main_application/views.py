@@ -10903,3 +10903,202 @@ def system_status_view(request):
     }
     
     return render(request, 'help/system_status.html', context)
+
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Sum, Count, Avg, F
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
+from decimal import Decimal
+import csv
+from datetime import datetime
+
+from .models import (
+    Application, Allocation, FiscalYear, Ward, BursaryCategory,
+    Applicant, Institution, DisbursementRound, Review, User,
+    Constituency
+)
+
+
+@login_required
+def proposal_management_view(request):
+    """
+    Main proposal/application management view with dynamic filtering and search
+    modify this to reviews for application
+    """
+    # Get all applications as base queryset
+    applications = Application.objects.select_related(
+        'applicant__user',
+        'applicant__ward',
+        'applicant__ward__constituency',
+        'fiscal_year',
+        'institution',
+        'bursary_category'
+    ).order_by('-date_submitted')
+    
+    # Initialize filter variables
+    search_query = request.GET.get('search', '').strip()
+    current_status = request.GET.get('status', '')
+    current_fiscal_year = request.GET.get('fiscal_year', '')
+    current_round = request.GET.get('disbursement_round', '')
+    current_ward = request.GET.get('ward', '')
+    current_constituency = request.GET.get('constituency', '')
+    current_category = request.GET.get('category', '')
+    current_institution = request.GET.get('institution', '')
+    current_institution_type = request.GET.get('institution_type', '')
+    current_bursary_source = request.GET.get('bursary_source', '')
+    
+    # Date range filters
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Amount range filters
+    amount_min = request.GET.get('amount_min', '')
+    amount_max = request.GET.get('amount_max', '')
+    
+    # Special filters
+    is_orphan = request.GET.get('is_orphan', '')
+    is_disabled = request.GET.get('is_disabled', '')
+    has_previous_allocation = request.GET.get('has_previous_allocation', '')
+    
+    # Apply search filter
+    if search_query:
+        applications = applications.filter(
+            Q(application_number__icontains=search_query) |
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__id_number__icontains=search_query) |
+            Q(applicant__user__email__icontains=search_query) |
+            Q(admission_number__icontains=search_query) |
+            Q(institution__name__icontains=search_query) |
+            Q(course_name__icontains=search_query)
+        )
+    
+    # Apply status filter
+    if current_status:
+        applications = applications.filter(status=current_status)
+    
+    # Apply fiscal year filter
+    if current_fiscal_year:
+        applications = applications.filter(fiscal_year_id=current_fiscal_year)
+    
+    # Apply disbursement round filter
+    if current_round:
+        applications = applications.filter(disbursement_round_id=current_round)
+    
+    # Apply ward filter
+    if current_ward:
+        applications = applications.filter(applicant__ward_id=current_ward)
+    
+    # Apply constituency filter
+    if current_constituency:
+        applications = applications.filter(applicant__ward__constituency_id=current_constituency)
+    
+    # Apply category filter
+    if current_category:
+        applications = applications.filter(bursary_category_id=current_category)
+    
+    # Apply institution filter
+    if current_institution:
+        applications = applications.filter(institution_id=current_institution)
+    
+    # Apply institution type filter
+    if current_institution_type:
+        applications = applications.filter(institution__institution_type=current_institution_type)
+    
+    # Apply bursary source filter
+    if current_bursary_source:
+        applications = applications.filter(bursary_source=current_bursary_source)
+    
+    # Apply date range filter
+    if date_from:
+        applications = applications.filter(date_submitted__gte=date_from)
+    if date_to:
+        applications = applications.filter(date_submitted__lte=date_to)
+    
+    # Apply amount range filter
+    if amount_min:
+        applications = applications.filter(amount_requested__gte=Decimal(amount_min))
+    if amount_max:
+        applications = applications.filter(amount_requested__lte=Decimal(amount_max))
+    
+    # Apply special filters
+    if is_orphan == 'true':
+        applications = applications.filter(Q(is_orphan=True) | Q(is_total_orphan=True))
+    if is_disabled == 'true':
+        applications = applications.filter(is_disabled=True)
+    if has_previous_allocation == 'true':
+        applications = applications.filter(has_received_previous_allocation=True)
+    elif has_previous_allocation == 'false':
+        applications = applications.filter(has_received_previous_allocation=False)
+    
+    # Calculate statistics
+    stats = {
+        'count_total': applications.count(),
+        'count_submitted': applications.filter(status='submitted').count(),
+        'count_under_review': applications.filter(status='under_review').count(),
+        'count_approved': applications.filter(status='approved').count(),
+        'count_rejected': applications.filter(status='rejected').count(),
+        'count_disbursed': applications.filter(status='disbursed').count(),
+        'total_requested': applications.aggregate(
+            total=Sum('amount_requested')
+        )['total'] or Decimal('0'),
+        'avg_requested': applications.aggregate(
+            avg=Avg('amount_requested')
+        )['avg'] or Decimal('0'),
+    }
+    
+    # Get filter options
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    disbursement_rounds = DisbursementRound.objects.select_related('fiscal_year').order_by('-fiscal_year__start_date', '-round_number')
+    wards = Ward.objects.filter(is_active=True).select_related('constituency').order_by('constituency__name', 'name')
+    constituencies = Constituency.objects.filter(is_active=True).order_by('name')
+    categories = BursaryCategory.objects.filter(is_active=True).select_related('fiscal_year').order_by('-fiscal_year__start_date', 'name')
+    institutions = Institution.objects.filter(is_active=True).order_by('name')
+    
+    # Pagination
+    paginator = Paginator(applications, 25)  # 25 items per page
+    page = request.GET.get('page', 1)
+    
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    context = {
+        'page_obj': page_obj,
+        'stats': stats,
+        'search_query': search_query,
+        'current_status': current_status,
+        'current_fiscal_year': current_fiscal_year,
+        'current_round': current_round,
+        'current_ward': current_ward,
+        'current_constituency': current_constituency,
+        'current_category': current_category,
+        'current_institution': current_institution,
+        'current_institution_type': current_institution_type,
+        'current_bursary_source': current_bursary_source,
+        'date_from': date_from,
+        'date_to': date_to,
+        'amount_min': amount_min,
+        'amount_max': amount_max,
+        'is_orphan': is_orphan,
+        'is_disabled': is_disabled,
+        'has_previous_allocation': has_previous_allocation,
+        'fiscal_years': fiscal_years,
+        'disbursement_rounds': disbursement_rounds,
+        'wards': wards,
+        'constituencies': constituencies,
+        'categories': categories,
+        'institutions': institutions,
+        'status_choices': Application.APPLICATION_STATUS,
+        'institution_types': Institution.INSTITUTION_TYPES,
+        'bursary_sources': Application.BURSARY_SOURCE,
+    }
+    
+    return render(request, 'admin/proposal_management.html', context)

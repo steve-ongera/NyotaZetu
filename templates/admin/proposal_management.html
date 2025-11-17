@@ -1,0 +1,1474 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Review Proposal Management - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .export-btn, .report-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover, .report-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        color: #64748B;
+    }
+
+    .search-section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        flex: 1;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94A3B8;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #F8FAFC;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        background: white;
+    }
+
+    .search-input::placeholder {
+        color: #94A3B8;
+    }
+
+    .search-btn {
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .search-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-search-btn {
+        padding: 12px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .clear-search-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        align-items: center;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .record-count {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .proposals-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .proposals-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .proposals-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .proposals-table tbody tr {
+        transition: background-color 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .proposals-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .proposals-table tbody tr.border-submitted {
+        border-left-color: #3498db;
+    }
+
+    .proposals-table tbody tr.border-approved {
+        border-left-color: #27ae60;
+    }
+
+    .proposals-table tbody tr.border-rejected {
+        border-left-color: #e74c3c;
+    }
+
+    .proposals-table tbody tr.border-under-review {
+        border-left-color: #f39c12;
+    }
+
+    .app-number {
+        font-weight: 600;
+        color: #1E293B;
+        font-family: monospace;
+    }
+
+    .applicant-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .applicant-avatar {
+        width: 40px;
+        height: 40px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #3498db;
+    }
+
+    .applicant-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .applicant-id {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .amount {
+        font-weight: 700;
+        font-size: 16px;
+        color: #3498db;
+    }
+
+    .institution-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .institution-name {
+        font-weight: 500;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .institution-type {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .date-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .date-primary {
+        font-weight: 500;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .date-secondary {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-submitted {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-under-review {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .status-draft {
+        background: #F1F5F9;
+        color: #475569;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        font-size: 1rem;
+        transition: all 0.2s ease-in-out;
+        background-color: transparent;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-action:hover {
+        transform: scale(1.1);
+        opacity: 0.9;
+    }
+
+    .btn-outline-primary {
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+
+    .btn-outline-success {
+        border-color: #198754;
+        color: #198754;
+    }
+    
+    .btn-outline-success:hover {
+        background-color: #198754;
+        color: #fff;
+    }
+
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    .btn-outline-secondary {
+        border-color: #6c757d;
+        color: #6c757d;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #3498db, #2980b9);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        line-height: 1;
+    }
+
+    .stat-value.success {
+        color: #27ae60;
+    }
+
+    .stat-value.warning {
+        color: #f39c12;
+    }
+
+    .stat-value.danger {
+        color: #e74c3c;
+    }
+
+    .stat-trend {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 8px;
+    }
+
+    .advanced-filters-toggle {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+    }
+
+    .advanced-filters-toggle:hover {
+        background: #F1F5F9;
+    }
+
+    .advanced-filters-toggle .title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #3498db;
+        color: white;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .filter-content {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .search-section {
+            flex-direction: column;
+        }
+
+        .search-btn,
+        .clear-search-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .proposals-table {
+            font-size: 13px;
+        }
+
+        .proposals-table thead th,
+        .proposals-table tbody td {
+            padding: 10px;
+        }
+
+        .action-buttons {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">Administration</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Review Proposal Management</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Review Proposal Management
+                </h1>
+                <p class="page-subtitle">
+                    Manage bursary applications and Review proposals
+                </p>
+            </div>
+            <div class="header-actions">
+                <div class="dropdown">
+                    <button class="export-btn dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        Export Data
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" onclick="exportToExcel()">
+                            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+                        </a></li>
+                        <li><a class="dropdown-item" onclick="exportToCSV()">
+                            <i class="bi bi-filetype-csv"></i> Export to CSV
+                        </a></li>
+                    </ul>
+                </div>
+                <a href="#" class="report-btn">
+                    <i class="bi bi-graph-up"></i>
+                    Reports
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Total Applications
+                </div>
+                <div class="stat-value">{{ stats.count_total|default:0 }}</div>
+                <div class="stat-trend">All proposals</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-file-earmark-check"></i>
+                    Submitted
+                </div>
+                <div class="stat-value">{{ stats.count_submitted|default:0 }}</div>
+                <div class="stat-trend">Awaiting review</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-eye"></i>
+                    Under Review
+                </div>
+                <div class="stat-value warning">{{ stats.count_under_review|default:0 }}</div>
+                <div class="stat-trend">Being processed</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-check-circle"></i>
+                    Approved
+                </div>
+                <div class="stat-value success">{{ stats.count_approved|default:0 }}</div>
+                <div class="stat-trend">Successfully approved</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-x-circle"></i>
+                    Rejected
+                </div>
+                <div class="stat-value danger">{{ stats.count_rejected|default:0 }}</div>
+                <div class="stat-trend">Not approved</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i class="bi bi-cash-stack"></i>
+                    Total Requested
+                </div>
+                <div class="stat-value">KES {{ stats.total_requested|floatformat:0|default:"0"|intcomma }}</div>
+                <div class="stat-trend">Avg: KES {{ stats.avg_requested|floatformat:0|default:"0"|intcomma }}</div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <form method="get" style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                <div class="search-input-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        name="search" 
+                        class="search-input" 
+                        placeholder="Search by application #, name, ID, admission #, institution..."
+                        value="{{ search_query }}"
+                    >
+                </div>
+                
+                <!-- Preserve existing filters -->
+                {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+                {% if current_fiscal_year %}<input type="hidden" name="fiscal_year" value="{{ current_fiscal_year }}">{% endif %}
+                {% if current_round %}<input type="hidden" name="disbursement_round" value="{{ current_round }}">{% endif %}
+                {% if current_ward %}<input type="hidden" name="ward" value="{{ current_ward }}">{% endif %}
+                {% if current_constituency %}<input type="hidden" name="constituency" value="{{ current_constituency }}">{% endif %}
+                {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
+                {% if current_institution %}<input type="hidden" name="institution" value="{{ current_institution }}">{% endif %}
+                {% if current_institution_type %}<input type="hidden" name="institution_type" value="{{ current_institution_type }}">{% endif %}
+                {% if current_bursary_source %}<input type="hidden" name="bursary_source" value="{{ current_bursary_source }}">{% endif %}
+                {% if date_from %}<input type="hidden" name="date_from" value="{{ date_from }}">{% endif %}
+                {% if date_to %}<input type="hidden" name="date_to" value="{{ date_to }}">{% endif %}
+                {% if amount_min %}<input type="hidden" name="amount_min" value="{{ amount_min }}">{% endif %}
+                {% if amount_max %}<input type="hidden" name="amount_max" value="{{ amount_max }}">{% endif %}
+                {% if is_orphan %}<input type="hidden" name="is_orphan" value="{{ is_orphan }}">{% endif %}
+                {% if is_disabled %}<input type="hidden" name="is_disabled" value="{{ is_disabled }}">{% endif %}
+                {% if has_previous_allocation %}<input type="hidden" name="has_previous_allocation" value="{{ has_previous_allocation }}">{% endif %}
+                
+                <button type="submit" class="search-btn">
+                    <i class="bi bi-search"></i>
+                    Search
+                </button>
+                
+                {% if search_query %}
+                <a href="{% url 'proposal_management' %}" class="clear-search-btn">
+                    <i class="bi bi-x-circle"></i>
+                    Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-header" onclick="toggleFilters()">
+                <h6 class="filter-title">
+                    <i class="bi bi-funnel"></i>
+                    Filter Applications
+                    {% if current_status or current_fiscal_year or current_round or current_ward or current_constituency or current_category or current_institution or current_institution_type or current_bursary_source or date_from or date_to or amount_min or amount_max or is_orphan or is_disabled or has_previous_allocation %}
+                    <span class="filter-badge">Active</span>
+                    {% endif %}
+                </h6>
+                <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+            </div>
+            
+            <div class="filter-content" id="filtersContent" style="display: none;">
+                <form method="get" id="filterForm">
+                    {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
+                    
+                    <div class="filter-content">
+                        <!-- Row 1 -->
+                        <div class="filter-group">
+                            <label class="filter-label" for="status">
+                                <i class="bi bi-flag"></i> Status
+                            </label>
+                            <select class="filter-select" name="status" id="status">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="fiscal_year">
+                                <i class="bi bi-calendar-range"></i> Fiscal Year
+                            </label>
+                            <select class="filter-select" name="fiscal_year" id="fiscal_year">
+                                <option value="">All Years</option>
+                                {% for fy in fiscal_years %}
+                                <option value="{{ fy.id }}" {% if current_fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ fy.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="disbursement_round">
+                                <i class="bi bi-arrow-repeat"></i> Disbursement Round
+                            </label>
+                            <select class="filter-select" name="disbursement_round" id="disbursement_round">
+                                <option value="">All Rounds</option>
+                                {% for round in disbursement_rounds %}
+                                <option value="{{ round.id }}" {% if current_round == round.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ round.name }} ({{ round.fiscal_year.name }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Row 2 -->
+                        <div class="filter-group">
+                            <label class="filter-label" for="ward">
+                                <i class="bi bi-geo-alt"></i> Ward
+                            </label>
+                            <select class="filter-select" name="ward" id="ward">
+                                <option value="">All Wards</option>
+                                {% for ward in wards %}
+                                <option value="{{ ward.id }}" {% if current_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ ward.name }} ({{ ward.constituency.name }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="constituency">
+                                <i class="bi bi-map"></i> Constituency
+                            </label>
+                            <select class="filter-select" name="constituency" id="constituency">
+                                <option value="">All Constituencies</option>
+                                {% for const in constituencies %}
+                                <option value="{{ const.id }}" {% if current_constituency == const.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ const.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="category">
+                                <i class="bi bi-tag"></i> Category
+                            </label>
+                            <select class="filter-select" name="category" id="category">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Row 3 -->
+                        <div class="filter-group">
+                            <label class="filter-label" for="institution">
+                                <i class="bi bi-building"></i> Institution
+                            </label>
+                            <select class="filter-select" name="institution" id="institution">
+                                <option value="">All Institutions</option>
+                                {% for inst in institutions %}
+                                <option value="{{ inst.id }}" {% if current_institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ inst.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="institution_type">
+                                <i class="bi bi-buildings"></i> Institution Type
+                            </label>
+                            <select class="filter-select" name="institution_type" id="institution_type">
+                                <option value="">All Types</option>
+                                {% for value, label in institution_types %}
+                                <option value="{{ value }}" {% if current_institution_type == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="bursary_source">
+                                <i class="bi bi-piggy-bank"></i> Bursary Source
+                            </label>
+                            <select class="filter-select" name="bursary_source" id="bursary_source">
+                                <option value="">All Sources</option>
+                                {% for value, label in bursary_sources %}
+                                <option value="{{ value }}" {% if current_bursary_source == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Filters Toggle -->
+                    <div class="advanced-filters-toggle" onclick="toggleAdvancedFilters()" style="margin-top: 16px;">
+                        <span class="title">
+                            <i class="bi bi-sliders"></i>
+                            Advanced Filters
+                        </span>
+                        <i class="bi bi-chevron-down filter-toggle" id="advancedToggle"></i>
+                    </div>
+                    
+                    <div id="advancedFiltersContent" style="display: none;">
+                        <div class="filter-content" style="margin-top: 16px;">
+                            <!-- Date Range -->
+                            <div class="filter-group">
+                                <label class="filter-label" for="date_from">
+                                    <i class="bi bi-calendar-event"></i> Date From
+                                </label>
+                                <input type="date" class="filter-select" name="date_from" id="date_from" value="{{ date_from }}">
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label" for="date_to">
+                                    <i class="bi bi-calendar-check"></i> Date To
+                                </label>
+                                <input type="date" class="filter-select" name="date_to" id="date_to" value="{{ date_to }}">
+                            </div>
+                            
+                            <!-- Amount Range -->
+                            <div class="filter-group">
+                                <label class="filter-label" for="amount_min">
+                                    <i class="bi bi-cash"></i> Min Amount (KES)
+                                </label>
+                                <input type="number" class="filter-select" name="amount_min" id="amount_min" value="{{ amount_min }}" placeholder="0" step="1000">
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label" for="amount_max">
+                                    <i class="bi bi-cash-stack"></i> Max Amount (KES)
+                                </label>
+                                <input type="number" class="filter-select" name="amount_max" id="amount_max" value="{{ amount_max }}" placeholder="1000000" step="1000">
+                            </div>
+                            
+                            <!-- Special Filters -->
+                            <div class="filter-group">
+                                <label class="filter-label" for="is_orphan">
+                                    <i class="bi bi-heart"></i> Orphan Status
+                                </label>
+                                <select class="filter-select" name="is_orphan" id="is_orphan">
+                                    <option value="">All</option>
+                                    <option value="true" {% if is_orphan == 'true' %}selected{% endif %}>Orphans Only</option>
+                                </select>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label" for="is_disabled">
+                                    <i class="bi bi-universal-access"></i> Disability Status
+                                </label>
+                                <select class="filter-select" name="is_disabled" id="is_disabled">
+                                    <option value="">All</option>
+                                    <option value="true" {% if is_disabled == 'true' %}selected{% endif %}>PWD Only</option>
+                                </select>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label" for="has_previous_allocation">
+                                    <i class="bi bi-arrow-repeat"></i> Previous Allocation
+                                </label>
+                                <select class="filter-select" name="has_previous_allocation" id="has_previous_allocation">
+                                    <option value="">All</option>
+                                    <option value="true" {% if has_previous_allocation == 'true' %}selected{% endif %}>Has Previous</option>
+                                    <option value="false" {% if has_previous_allocation == 'false' %}selected{% endif %}>No Previous</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="filter-btn">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'proposal_management' %}" class="clear-btn">
+                            <i class="bi bi-x-circle"></i> Clear All
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Proposals Table -->
+        <div class="table-header">
+            <h6 class="table-title">
+                <i class="bi bi-table"></i>
+                Applications List
+            </h6>
+            <span class="record-count">{{ page_obj.paginator.count|default:0 }} records</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="proposals-table">
+                <thead>
+                    <tr>
+                        <th>Application #</th>
+                        <th>Applicant</th>
+                        <th>Institution</th>
+                        <th>Amount Requested</th>
+                        <th>Category</th>
+                        <th>Date Submitted</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for application in page_obj %}
+                    <tr class="{% if application.status == 'submitted' %}border-submitted{% elif application.status == 'approved' %}border-approved{% elif application.status == 'rejected' %}border-rejected{% elif application.status == 'under_review' %}border-under-review{% endif %}">
+                        <td>
+                            <span class="app-number">{{ application.application_number }}</span>
+                        </td>
+                        <td>
+                            <div class="applicant-info">
+                                <div class="applicant-avatar">
+                                    {{ application.applicant.user.first_name.0 }}{{ application.applicant.user.last_name.0 }}
+                                </div>
+                                <div class="applicant-details">
+                                    <div class="applicant-name">
+                                        {{ application.applicant.user.first_name }} {{ application.applicant.user.last_name }}
+                                    </div>
+                                    <div class="applicant-id">
+                                        <i class="bi bi-credit-card me-1"></i>{{ application.applicant.id_number }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="institution-info">
+                                <div class="institution-name">{{ application.institution.name }}</div>
+                                <div class="institution-type">
+                                    <i class="bi bi-building me-1"></i>{{ application.institution.get_institution_type_display }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="amount">KES {{ application.amount_requested|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ application.bursary_category.name }}</span>
+                        </td>
+                        <td>
+                            {% if application.date_submitted %}
+                            <div class="date-info">
+                                <div class="date-primary">{{ application.date_submitted|date:"M d, Y" }}</div>
+                                <div class="date-secondary">{{ application.date_submitted|timesince }} ago</div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Not submitted</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ application.status }}">
+                                {% if application.status == 'submitted' %}
+                                    <i class="bi bi-file-earmark-check"></i>Submitted
+                                {% elif application.status == 'under_review' %}
+                                    <i class="bi bi-eye"></i>Under Review
+                                {% elif application.status == 'approved' %}
+                                    <i class="bi bi-check-circle"></i>Approved
+                                {% elif application.status == 'rejected' %}
+                                    <i class="bi bi-x-circle"></i>Rejected
+                                {% elif application.status == 'disbursed' %}
+                                    <i class="bi bi-cash-coin"></i>Disbursed
+                                {% elif application.status == 'draft' %}
+                                    <i class="bi bi-pencil"></i>Draft
+                                {% else %}
+                                    {{ application.get_status_display }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'application_detail' application.id %}" 
+                                   class="btn-action btn-outline-primary" 
+                                   title="View Details"
+                                   data-bs-toggle="tooltip">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if application.status == 'submitted' or application.status == 'under_review' %}
+                                <a href="{% url 'application_review' application.id %}" 
+                                   class="btn-action btn-outline-success" 
+                                   title="Review Application"
+                                   data-bs-toggle="tooltip">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </a>
+                                {% endif %}
+                                <a href="#" 
+                                   class="btn-action btn-outline-secondary" 
+                                   title="Edit"
+                                   data-bs-toggle="tooltip">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Applications Found</h3>
+                                <p class="empty-text">
+                                    {% if search_query %}
+                                        No applications match your search for "{{ search_query }}".
+                                    {% else %}
+                                        Try adjusting your filters or search criteria.
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'proposal_management' %}" class="clear-btn">
+                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index|default:0 }} to {{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count|default:0 }} entries
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_round %}&disbursement_round={{ current_round }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_constituency %}&constituency={{ current_constituency }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_institution %}&institution={{ current_institution }}{% endif %}{% if current_institution_type %}&institution_type={{ current_institution_type }}{% endif %}{% if current_bursary_source %}&bursary_source={{ current_bursary_source }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if amount_min %}&amount_min={{ amount_min }}{% endif %}{% if amount_max %}&amount_max={{ amount_max }}{% endif %}{% if is_orphan %}&is_orphan={{ is_orphan }}{% endif %}{% if is_disabled %}&is_disabled={{ is_disabled }}{% endif %}{% if has_previous_allocation %}&has_previous_allocation={{ has_previous_allocation }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_round %}&disbursement_round={{ current_round }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_constituency %}&constituency={{ current_constituency }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_institution %}&institution={{ current_institution }}{% endif %}{% if current_institution_type %}&institution_type={{ current_institution_type }}{% endif %}{% if current_bursary_source %}&bursary_source={{ current_bursary_source }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if amount_min %}&amount_min={{ amount_min }}{% endif %}{% if amount_max %}&amount_max={{ amount_max }}{% endif %}{% if is_orphan %}&is_orphan={{ is_orphan }}{% endif %}{% if is_disabled %}&is_disabled={{ is_disabled }}{% endif %}{% if has_previous_allocation %}&has_previous_allocation={{ has_previous_allocation }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_fiscal_year %}&fiscal_year={{ current_fiscal_year }}{% endif %}{% if current_round %}&disbursement_round={{ current_round }}{% endif %}{% if current_ward %}&ward={{ current_ward }}{% endif %}{% if current_constituency %}&constituency={{ current_constituency }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_institution %}&institution={{ current_institution }}{% endif %}{% if current_institution_type %}&institution_type={{ current_institution_type }}{% endif %}{% if current_bursary_source %}&bursary_source={{ current_bursary_source }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if amount_min %}&amount_min={{ amount_min }}{% endif %}{% if amount_max %}&amount_max={{ amount_max }}{% endif %}{% if is_orphan %}&is_orphan={{ is_orphan }}{% endif %}{% if is_disabled %}&is_disabled={{ is_disabled }}{% endif %}{% if has_previous_allocation %}&has_previous_allocation={{ has_previous_allocation }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-expand filters if any filter is active
+        const hasActiveFilters = "{{ current_status }}" !== "" || 
+                                "{{ current_fiscal_year }}" !== "" ||
+                                "{{ current_round }}" !== "" ||
+                                "{{ current_ward }}" !== "" ||
+                                "{{ current_constituency }}" !== "" ||
+                                "{{ current_category }}" !== "" ||
+                                "{{ current_institution }}" !== "" ||
+                                "{{ current_institution_type }}" !== "" ||
+                                "{{ current_bursary_source }}" !== "" ||
+                                "{{ date_from }}" !== "" ||
+                                "{{ date_to }}" !== "" ||
+                                "{{ amount_min }}" !== "" ||
+                                "{{ amount_max }}" !== "" ||
+                                "{{ is_orphan }}" !== "" ||
+                                "{{ is_disabled }}" !== "" ||
+                                "{{ has_previous_allocation }}" !== "";
+        
+        if (hasActiveFilters) {
+            document.getElementById('filtersContent').style.display = 'grid';
+            document.getElementById('filterToggle').classList.add('rotated');
+        }
+
+        // Auto-expand advanced filters if active
+        const hasAdvancedFilters = "{{ date_from }}" !== "" ||
+                                   "{{ date_to }}" !== "" ||
+                                   "{{ amount_min }}" !== "" ||
+                                   "{{ amount_max }}" !== "" ||
+                                   "{{ is_orphan }}" !== "" ||
+                                   "{{ is_disabled }}" !== "" ||
+                                   "{{ has_previous_allocation }}" !== "";
+        
+        if (hasAdvancedFilters) {
+            document.getElementById('advancedFiltersContent').style.display = 'block';
+            document.getElementById('advancedToggle').classList.add('rotated');
+        }
+
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
+    function toggleFilters() {
+        const content = document.getElementById('filtersContent');
+        const toggle = document.getElementById('filterToggle');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'grid';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+
+    function toggleAdvancedFilters() {
+        const content = document.getElementById('advancedFiltersContent');
+        const toggle = document.getElementById('advancedToggle');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+
+    function exportToExcel() {
+        // Export implementation
+        alert('Export to Excel functionality');
+    }
+
+    function exportToCSV() {
+        // Export implementation
+        alert('Export to CSV functionality');
+    }
+</script>
+{% endblock %}

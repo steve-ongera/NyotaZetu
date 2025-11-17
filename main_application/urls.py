@@ -219,5 +219,6 @@ urlpatterns = [
     path("search/", views.search_help_view, name="search"),
     path("download/<str:guide_type>/", views.download_guide_view, name="download_guide"),
     path("system-status/", views.system_status_view, name="system_status"),
+    path('admin-proposals/', views.proposal_management_view, name='proposal_management'),
     
 ]
