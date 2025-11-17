@@ -1187,12 +1187,12 @@
                 <i class="fas fa-chevron-right arrow"></i>
             </div>
             <div class="submenu" id="submenu-transparency">
-                <a href="#" class="submenu-item">Public Reports</a>
-                <a href="#" class="submenu-item">Beneficiaries List</a>
-                <a href="#" class="submenu-item">Budget Utilization</a>
-                <a href="#" class="submenu-item">Testimonials</a>
-                <a href="#" class="submenu-item">Annual Reports</a>
-                <a href="#" class="submenu-item">Quarterly Reports</a>
+                <a href="{% url 'public_reports'%}" class="submenu-item">Public Reports</a>
+                <a href="{% url 'beneficiaries_list'%}" class="submenu-item">Beneficiaries List</a>
+                <a href="{% url 'budget_utilization'%}" class="submenu-item">Budget Utilization</a>
+                <a href="{% url 'testimonials'%}" class="submenu-item">Testimonials</a>
+                <a href="{% url 'annual_reports'%}" class="submenu-item">Annual Reports</a>
+                <a href="{% url 'quarterly_reports'%}" class="submenu-item">Quarterly Reports</a>
             </div>
         </div>
 
@@ -1254,9 +1254,9 @@
                 <i class="fas fa-chevron-right arrow"></i>
             </div>
             <div class="submenu" id="submenu-help">
-                <a href="#" class="submenu-item">Documentation</a>
-                <a href="#" class="submenu-item">User Guide</a>
-                <a href="#" class="submenu-item">Contact Support</a>
+                <a href="{% url 'documentation'%}" class="submenu-item">Documentation</a>
+                <a href="{% url 'user_guide'%}" class="submenu-item">User Guide</a>
+                <a href="{% url 'contact_support'%}" class="submenu-item">Contact Support</a>
             </div>
         </div>
     </div>

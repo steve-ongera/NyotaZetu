@@ -206,5 +206,18 @@ urlpatterns = [
          name='export_round_applications'),
     
     
+    path('reports/', views.public_reports_view, name='public_reports'),
+    path('beneficiaries/', views.beneficiaries_list_view, name='beneficiaries_list'),
+    path('budget/', views.budget_utilization_view, name='budget_utilization'),
+    path('testimonials/', views.testimonials_view, name='testimonials'),
+    path('reports/annual/', views.annual_reports_view, name='annual_reports'),
+    path('reports/quarterly/', views.quarterly_reports_view, name='quarterly_reports'),
+    
+    path("documentation/", views.documentation_view, name="documentation"),
+    path("user-guide/", views.user_guide_view, name="user_guide"),
+    path("contact-support/", views.contact_support_view, name="contact_support"),
+    path("search/", views.search_help_view, name="search"),
+    path("download/<str:guide_type>/", views.download_guide_view, name="download_guide"),
+    path("system-status/", views.system_status_view, name="system_status"),
     
 ]

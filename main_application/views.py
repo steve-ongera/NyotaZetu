@@ -10472,3 +10472,434 @@ def quarterly_reports_view(request):
     }
     
     return render(request, 'transparency/quarterly_reports.html', context)
+
+
+
+"""
+Help & Support Views
+These views provide documentation, user guides, and contact support functionality
+"""
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
+
+from .models import FAQ, SystemSettings, County
+
+
+def documentation_view(request):
+    """
+    System documentation and guides page
+    """
+    # Get system settings for contact info
+    try:
+        system_county = County.objects.first()
+    except:
+        system_county = None
+    
+    # Documentation sections
+    documentation_sections = [
+        {
+            'title': 'Getting Started',
+            'icon': 'fas fa-rocket',
+            'items': [
+                {'name': 'System Overview', 'link': '#overview'},
+                {'name': 'Account Registration', 'link': '#registration'},
+                {'name': 'First Time Login', 'link': '#first-login'},
+                {'name': 'Dashboard Navigation', 'link': '#navigation'},
+            ]
+        },
+        {
+            'title': 'Application Process',
+            'icon': 'fas fa-file-alt',
+            'items': [
+                {'name': 'Eligibility Criteria', 'link': '#eligibility'},
+                {'name': 'Required Documents', 'link': '#documents'},
+                {'name': 'Application Submission', 'link': '#submission'},
+                {'name': 'Application Tracking', 'link': '#tracking'},
+            ]
+        },
+        {
+            'title': 'Account Management',
+            'icon': 'fas fa-user-cog',
+            'items': [
+                {'name': 'Profile Settings', 'link': '#profile'},
+                {'name': 'Password Management', 'link': '#password'},
+                {'name': 'Notification Settings', 'link': '#notifications'},
+                {'name': 'Security Settings', 'link': '#security'},
+            ]
+        },
+        {
+            'title': 'Administrative Features',
+            'icon': 'fas fa-users-cog',
+            'items': [
+                {'name': 'User Management', 'link': '#user-management'},
+                {'name': 'Application Review', 'link': '#review'},
+                {'name': 'Allocation Management', 'link': '#allocation'},
+                {'name': 'Reports Generation', 'link': '#reports'},
+            ]
+        },
+        {
+            'title': 'Technical Documentation',
+            'icon': 'fas fa-code',
+            'items': [
+                {'name': 'System Architecture', 'link': '#architecture'},
+                {'name': 'API Documentation', 'link': '#api'},
+                {'name': 'Database Schema', 'link': '#database'},
+                {'name': 'Integration Guide', 'link': '#integration'},
+            ]
+        },
+    ]
+    
+    context = {
+        'documentation_sections': documentation_sections,
+        'system_county': system_county,
+        'page_title': 'System Documentation',
+    }
+    
+    return render(request, 'help/documentation.html', context)
+
+
+def user_guide_view(request):
+    """
+    User guide with FAQs and step-by-step instructions
+    """
+    # Get all active FAQs
+    faqs = FAQ.objects.filter(is_active=True).order_by('category', 'order')
+    
+    # Group FAQs by category
+    faq_categories = {}
+    for faq in faqs:
+        category = faq.get_category_display() if hasattr(faq, 'get_category_display') else faq.category
+        if category not in faq_categories:
+            faq_categories[category] = []
+        faq_categories[category].append(faq)
+    
+    # Quick start guide steps
+    quick_start_steps = [
+        {
+            'step': 1,
+            'title': 'Create an Account',
+            'description': 'Register with your personal details and valid ID number.',
+            'icon': 'fas fa-user-plus'
+        },
+        {
+            'step': 2,
+            'title': 'Complete Your Profile',
+            'description': 'Fill in all required information including guardian details and residence.',
+            'icon': 'fas fa-id-card'
+        },
+        {
+            'step': 3,
+            'title': 'Prepare Documents',
+            'description': 'Gather all required documents: ID, admission letter, fee structure, etc.',
+            'icon': 'fas fa-file-upload'
+        },
+        {
+            'step': 4,
+            'title': 'Submit Application',
+            'description': 'Fill out the application form and upload required documents.',
+            'icon': 'fas fa-paper-plane'
+        },
+        {
+            'step': 5,
+            'title': 'Track Progress',
+            'description': 'Monitor your application status through the dashboard.',
+            'icon': 'fas fa-chart-line'
+        },
+        {
+            'step': 6,
+            'title': 'Receive Notification',
+            'description': 'Get notified via SMS and email about your application status.',
+            'icon': 'fas fa-bell'
+        },
+    ]
+    
+    # Video tutorials (if available)
+    video_tutorials = [
+        {
+            'title': 'How to Register',
+            'duration': '3:45',
+            'thumbnail': 'images/tutorial-1.jpg',
+            'url': '#'
+        },
+        {
+            'title': 'Submitting Your Application',
+            'duration': '5:20',
+            'thumbnail': 'images/tutorial-2.jpg',
+            'url': '#'
+        },
+        {
+            'title': 'Uploading Documents',
+            'duration': '2:30',
+            'thumbnail': 'images/tutorial-3.jpg',
+            'url': '#'
+        },
+    ]
+    
+    # Common issues and solutions
+    common_issues = [
+        {
+            'issue': 'Cannot Login',
+            'solution': 'Ensure you are using the correct username and password. If you forgot your password, use the "Forgot Password" link.'
+        },
+        {
+            'issue': 'Document Upload Fails',
+            'solution': 'Make sure your file is in PDF or image format (JPG, PNG) and does not exceed 5MB.'
+        },
+        {
+            'issue': 'Application Not Submitting',
+            'solution': 'Verify that all required fields are filled and all mandatory documents are uploaded.'
+        },
+        {
+            'issue': 'Not Receiving Notifications',
+            'solution': 'Check your email spam folder and ensure your phone number is correct in your profile.'
+        },
+    ]
+    
+    context = {
+        'faq_categories': faq_categories,
+        'quick_start_steps': quick_start_steps,
+        'video_tutorials': video_tutorials,
+        'common_issues': common_issues,
+        'page_title': 'User Guide',
+    }
+    
+    return render(request, 'help/user_guide.html', context)
+
+
+def contact_support_view(request):
+    """
+    Contact support page with form and contact information
+    """
+    if request.method == 'POST':
+        # Get form data
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        subject = request.POST.get('subject')
+        message_text = request.POST.get('message')
+        priority = request.POST.get('priority', 'normal')
+        
+        # Validate
+        if not all([name, email, subject, message_text]):
+            messages.error(request, 'Please fill in all required fields.')
+        else:
+            try:
+                # Send email to support
+                full_message = f"""
+New Support Request
+
+Name: {name}
+Email: {email}
+Phone: {phone}
+Priority: {priority}
+
+Subject: {subject}
+
+Message:
+{message_text}
+
+---
+Sent from Bursary Management System
+                """
+                
+                # Get support email from settings or county
+                try:
+                    system_county = County.objects.first()
+                    support_email = system_county.education_office_email if system_county else settings.DEFAULT_FROM_EMAIL
+                except:
+                    support_email = settings.DEFAULT_FROM_EMAIL
+                
+                send_mail(
+                    subject=f'[Support Request] {subject}',
+                    message=full_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[support_email],
+                    fail_silently=False,
+                )
+                
+                messages.success(request, 'Your message has been sent successfully! We will get back to you soon.')
+                return redirect('help:contact_support')
+                
+            except Exception as e:
+                messages.error(request, f'An error occurred while sending your message. Please try again or contact us directly.')
+    
+    # Get contact information
+    try:
+        system_county = County.objects.first()
+    except:
+        system_county = None
+    
+    # Support channels
+    support_channels = [
+        {
+            'icon': 'fas fa-phone',
+            'title': 'Phone Support',
+            'value': system_county.education_office_phone if system_county and system_county.education_office_phone else '+254 XXX XXX XXX',
+            'description': 'Monday - Friday, 8:00 AM - 5:00 PM'
+        },
+        {
+            'icon': 'fas fa-envelope',
+            'title': 'Email Support',
+            'value': system_county.education_office_email if system_county and system_county.education_office_email else 'support@bursary.go.ke',
+            'description': 'Response within 24 hours'
+        },
+        {
+            'icon': 'fas fa-map-marker-alt',
+            'title': 'Office Location',
+            'value': f"{system_county.name} County Education Office" if system_county else 'County Education Office',
+            'description': 'Visit us during working hours'
+        },
+        {
+            'icon': 'fas fa-clock',
+            'title': 'Working Hours',
+            'value': 'Monday - Friday',
+            'description': '8:00 AM - 5:00 PM (Closed on public holidays)'
+        },
+    ]
+    
+    # Support categories
+    support_categories = [
+        {'value': 'technical', 'label': 'Technical Issue'},
+        {'value': 'application', 'label': 'Application Help'},
+        {'value': 'account', 'label': 'Account Issue'},
+        {'value': 'payment', 'label': 'Payment/Disbursement Query'},
+        {'value': 'documents', 'label': 'Document Upload Issue'},
+        {'value': 'general', 'label': 'General Inquiry'},
+        {'value': 'other', 'label': 'Other'},
+    ]
+    
+    # Get recent FAQs
+    recent_faqs = FAQ.objects.filter(is_active=True).order_by('-views_count')[:5]
+    
+    context = {
+        'system_county': system_county,
+        'support_channels': support_channels,
+        'support_categories': support_categories,
+        'recent_faqs': recent_faqs,
+        'page_title': 'Contact Support',
+    }
+    
+    return render(request, 'help/contact_support.html', context)
+
+
+def search_help_view(request):
+    """
+    Search help content and FAQs
+    """
+    query = request.GET.get('q', '')
+    results = []
+    
+    if query:
+        # Search FAQs
+        faq_results = FAQ.objects.filter(
+            Q(question__icontains=query) | Q(answer__icontains=query),
+            is_active=True
+        )
+        
+        for faq in faq_results:
+            results.append({
+                'type': 'FAQ',
+                'title': faq.question,
+                'content': faq.answer[:200] + '...' if len(faq.answer) > 200 else faq.answer,
+                'category': faq.get_category_display() if hasattr(faq, 'get_category_display') else faq.category,
+                'url': f'/help/user-guide/#{faq.id}'
+            })
+    
+    context = {
+        'query': query,
+        'results': results,
+        'result_count': len(results),
+        'page_title': 'Search Help',
+    }
+    
+    return render(request, 'help/search_results.html', context)
+
+
+def download_guide_view(request, guide_type):
+    """
+    Download user guides as PDF
+    """
+    from django.http import FileResponse, Http404
+    import os
+    
+    guide_files = {
+        'applicant': 'guides/Applicant_User_Guide.pdf',
+        'admin': 'guides/Administrator_Guide.pdf',
+        'reviewer': 'guides/Reviewer_Guide.pdf',
+        'finance': 'guides/Finance_Officer_Guide.pdf',
+    }
+    
+    if guide_type not in guide_files:
+        raise Http404("Guide not found")
+    
+    file_path = os.path.join(settings.MEDIA_ROOT, guide_files[guide_type])
+    
+    if os.path.exists(file_path):
+        return FileResponse(
+            open(file_path, 'rb'),
+            as_attachment=True,
+            filename=f'{guide_type}_guide.pdf'
+        )
+    else:
+        messages.error(request, 'Guide file not found. Please contact support.')
+        return redirect('help:user_guide')
+
+
+def system_status_view(request):
+    """
+    Show system status and announcements
+    """
+    from django.db.models import Count
+    from .models import Announcement, FiscalYear, Application
+    
+    # Get active announcements
+    now = timezone.now()
+    announcements = Announcement.objects.filter(
+        is_active=True,
+        published_date__lte=now,
+        expiry_date__gte=now
+    ).order_by('-published_date')[:5]
+    
+    # System statistics
+    try:
+        current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+        
+        if current_fiscal_year:
+            total_applications_today = Application.objects.filter(
+                date_submitted__date=timezone.now().date()
+            ).count()
+            
+            total_applications_week = Application.objects.filter(
+                date_submitted__gte=timezone.now() - timedelta(days=7)
+            ).count()
+        else:
+            total_applications_today = 0
+            total_applications_week = 0
+    except:
+        total_applications_today = 0
+        total_applications_week = 0
+        current_fiscal_year = None
+    
+    # System status
+    system_status = {
+        'status': 'operational',  # operational, maintenance, degraded
+        'message': 'All systems operational',
+        'last_updated': timezone.now(),
+    }
+    
+    context = {
+        'announcements': announcements,
+        'system_status': system_status,
+        'total_applications_today': total_applications_today,
+        'total_applications_week': total_applications_week,
+        'current_fiscal_year': current_fiscal_year,
+        'page_title': 'System Status',
+    }
+    
+    return render(request, 'help/system_status.html', context)
