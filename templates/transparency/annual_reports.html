@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Public Reports - Bursary System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-bar me-2"></i>Public Reports Dashboard</h2>
+            <p class="text-muted">Comprehensive overview of bursary allocation and distribution</p>
+        </div>
+    </div>
+    
+    <!-- Key Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Applications</h6>
+                    <h3>{{ total_applications|default:0 }}</h3>
+                    <small class="text-success">All Time</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Approved Applications</h6>
+                    <h3>{{ total_approved|default:0 }}</h3>
+                    <small class="text-info">Success Rate: {{ success_rate }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Beneficiaries</h6>
+                    <h3>{{ total_beneficiaries|default:0 }}</h3>
+                    <small class="text-primary">Unique Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Amount Allocated</h6>
+                    <h3>KES {{ total_amount_allocated|floatformat:0 }}</h3>
+                    <small class="text-warning">Total Disbursed</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if current_fiscal_year %}
+    <!-- Current Year Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>{{ current_fiscal_year.name }} Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Applications Received</h6>
+                            <h4>{{ current_year_applications }}</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Applications Approved</h6>
+                            <h4>{{ current_year_approved }}</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Amount Allocated</h6>
+                            <h4>KES {{ current_year_allocated|floatformat:0 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Applications by Status</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Applications by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Top 10 Wards by Applications</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="wardChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Monthly Application Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tables -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Ward Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Ward</th>
+                                    <th>Applications</th>
+                                    <th>Amount Allocated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in applications_by_ward %}
+                                <tr>
+                                    <td>{{ item.applicant__ward__name|default:"Unknown" }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>KES {{ item.total_amount|floatformat:0|default:"0" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Gender Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Gender</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in gender_distribution %}
+                                <tr>
+                                    <td>{{ item.gender|title }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>{{ item.count|floatformat:0 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Institution Types -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Applications by Institution Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Institution Type</th>
+                                    <th>Applications</th>
+                                    <th>Amount Allocated</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in applications_by_institution %}
+                                <tr>
+                                    <td>{{ item.institution__institution_type|title }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>KES {{ item.total_amount|floatformat:0|default:"0" }}</td>
+                                    <td>{{ item.count|floatformat:0 }}%</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// Status Chart
+const statusData = {{ status_chart_data|safe }};
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: statusData.labels,
+        datasets: [{
+            data: statusData.data,
+            backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Category Chart
+const categoryData = {{ category_chart_data|safe }};
+new Chart(document.getElementById('categoryChart'), {
+    type: 'bar',
+    data: {
+        labels: categoryData.labels,
+        datasets: [{
+            label: 'Applications',
+            data: categoryData.data,
+            backgroundColor: '#3498db'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Ward Chart
+const wardData = {{ ward_chart_data|safe }};
+new Chart(document.getElementById('wardChart'), {
+    type: 'bar',
+    data: {
+        labels: wardData.labels,
+        datasets: [{
+            label: 'Applications',
+            data: wardData.data,
+            backgroundColor: '#2ecc71'
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Monthly Chart
+const monthlyData = {{ monthly_chart_data|safe }};
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'line',
+    data: {
+        labels: monthlyData.labels,
+        datasets: [{
+            label: 'Applications',
+            data: monthlyData.data,
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

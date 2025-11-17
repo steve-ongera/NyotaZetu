@@ -1482,3 +1482,314 @@ class BeneficiaryTestimonial(models.Model):
     
     def __str__(self):
         return f"Testimonial from {self.applicant} - {self.submitted_date.date()}"
+    
+  
+# Add these models to your models.py file
+# These models are referenced in your views but missing from the current models
+
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+
+
+class Testimonial(models.Model):
+    """
+    Public testimonials from beneficiaries
+    This model consolidates testimonial functionality
+    """
+    RATING_CHOICES = (
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    )
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='public_testimonials')
+    application = models.ForeignKey('Application', on_delete=models.CASCADE, related_name='testimonials')
+    
+    testimonial_text = models.TextField(help_text="Share your experience with the bursary program")
+    rating = models.PositiveIntegerField(
+        choices=RATING_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rate your experience from 1 to 5 stars"
+    )
+    
+    # Optional photo
+    photo = models.ImageField(upload_to='testimonials/%Y/%m/', blank=True, null=True)
+    
+    # Approval workflow
+    is_approved = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True, help_text="Display on public page")
+    is_featured = models.BooleanField(default=False, help_text="Feature on homepage")
+    
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='approved_public_testimonials'
+    )
+    approval_date = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    views_count = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Testimonial"
+        verbose_name_plural = "Testimonials"
+    
+    def __str__(self):
+        return f"Testimonial by {self.user.get_full_name()} - {self.rating} stars"
+
+
+class Disbursement(models.Model):
+    """
+    Individual disbursement records tracking payment to institutions
+    """
+    DISBURSEMENT_STATUS = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('reversed', 'Reversed'),
+    )
+    
+    PAYMENT_METHOD = (
+        ('cheque', 'Cheque'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('mpesa', 'M-Pesa'),
+        ('bulk_cheque', 'Bulk Cheque'),
+        ('eft', 'Electronic Funds Transfer'),
+    )
+    
+    allocation = models.ForeignKey(
+        'Allocation', 
+        on_delete=models.CASCADE, 
+        related_name='disbursements'
+    )
+    applicant = models.ForeignKey(
+        'Applicant',
+        on_delete=models.CASCADE,
+        related_name='disbursements'
+    )
+    fiscal_year = models.ForeignKey(
+        'FiscalYear',
+        on_delete=models.CASCADE,
+        related_name='disbursements'
+    )
+    
+    # Amount details
+    amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        help_text="Amount disbursed"
+    )
+    
+    # Payment details
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD, default='cheque')
+    reference_number = models.CharField(
+        max_length=100, 
+        unique=True,
+        help_text="Payment reference/transaction number"
+    )
+    cheque_number = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Status and dates
+    status = models.CharField(max_length=20, choices=DISBURSEMENT_STATUS, default='pending')
+    disbursement_date = models.DateField(help_text="Date payment was made")
+    expected_receipt_date = models.DateField(blank=True, null=True)
+    actual_receipt_date = models.DateField(blank=True, null=True)
+    
+    # Processing details
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='processed_disbursements'
+    )
+    processed_at = models.DateTimeField(auto_now_add=True)
+    
+    # Institution confirmation
+    is_received_by_institution = models.BooleanField(default=False)
+    institution_receipt_number = models.CharField(max_length=100, blank=True, null=True)
+    institution_confirmation_date = models.DateField(blank=True, null=True)
+    confirmed_by = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Bank details (if applicable)
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    bank_branch = models.CharField(max_length=100, blank=True, null=True)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Bulk cheque reference
+    bulk_cheque = models.ForeignKey(
+        'BulkCheque',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='individual_disbursements'
+    )
+    
+    remarks = models.TextField(blank=True, null=True)
+    failure_reason = models.TextField(blank=True, null=True)
+    
+    # Audit trail
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-disbursement_date']
+        indexes = [
+            models.Index(fields=['fiscal_year', 'status']),
+            models.Index(fields=['disbursement_date']),
+            models.Index(fields=['reference_number']),
+        ]
+    
+    def __str__(self):
+        return f"Disbursement {self.reference_number} - KES {self.amount:,.2f}"
+    
+    def mark_as_completed(self):
+        """Mark disbursement as completed"""
+        self.status = 'completed'
+        self.save()
+    
+    def mark_as_failed(self, reason):
+        """Mark disbursement as failed with reason"""
+        self.status = 'failed'
+        self.failure_reason = reason
+        self.save()
+
+
+# UPDATE YOUR EXISTING ALLOCATION MODEL
+# Add these fields to your existing Allocation model if they don't exist:
+
+"""
+IMPORTANT: Update your existing Allocation model to include these fields:
+
+class Allocation(models.Model):
+    # EXISTING FIELDS - Keep these as they are
+    application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='allocation')
+    amount_allocated = models.DecimalField(max_digits=10, decimal_places=2)
+    allocation_date = models.DateField(auto_now_add=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='approvals'
+    )
+    cheque_number = models.CharField(max_length=50, blank=True, null=True)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=[
+            ('cheque', 'Cheque'),
+            ('bank_transfer', 'Bank Transfer'),
+            ('mpesa', 'M-Pesa'),
+            ('bulk_cheque', 'Bulk Cheque')
+        ],
+        default='cheque'
+    )
+    is_disbursed = models.BooleanField(default=False)
+    disbursement_date = models.DateField(blank=True, null=True)
+    disbursed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='disbursements'
+    )
+    is_received_by_institution = models.BooleanField(default=False)
+    institution_confirmation_date = models.DateField(blank=True, null=True)
+    institution_receipt_number = models.CharField(max_length=50, blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    
+    # ADD THESE NEW FIELDS if they don't exist:
+    applicant = models.ForeignKey(
+        'Applicant',
+        on_delete=models.CASCADE,
+        related_name='allocations',
+        null=True  # Allow null for existing data
+    )
+    fiscal_year = models.ForeignKey(
+        'FiscalYear',
+        on_delete=models.CASCADE,
+        related_name='allocations',
+        null=True  # Allow null for existing data
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+            ('disbursed', 'Disbursed'),
+        ],
+        default='approved'  # Set default since old records don't have this
+    )
+    approved_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Final approved amount (may differ from allocated amount)",
+        null=True,  # Allow null for existing data
+        blank=True
+    )
+    date_approved = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-allocation_date']
+    
+    def __str__(self):
+        return f"Allocation for {self.application.application_number}: KES {self.amount_allocated:,.2f}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-populate applicant and fiscal_year from application if not set
+        if not self.applicant:
+            self.applicant = self.application.applicant
+        if not self.fiscal_year:
+            self.fiscal_year = self.application.fiscal_year
+        # If approved_amount is not set, use amount_allocated
+        if not self.approved_amount:
+            self.approved_amount = self.amount_allocated
+        super().save(*args, **kwargs)
+"""
+
+
+# MIGRATION STEPS:
+"""
+After updating your Allocation model with the new fields above, run these commands:
+
+1. python manage.py makemigrations
+   
+   When prompted about default values for existing records, choose option 1 (provide a one-off default)
+   and enter:
+   - For 'status': 'approved'
+   - For 'applicant': None (we'll fix this with a data migration)
+   - For 'fiscal_year': None (we'll fix this with a data migration)
+   - For 'approved_amount': None (we'll fix this with a data migration)
+
+2. python manage.py migrate
+
+3. Then run this management command or execute in Django shell to populate the new fields:
+
+from main_application.models import Allocation
+
+# Update all existing allocations
+for allocation in Allocation.objects.all():
+    if not allocation.applicant:
+        allocation.applicant = allocation.application.applicant
+    if not allocation.fiscal_year:
+        allocation.fiscal_year = allocation.application.fiscal_year
+    if not allocation.approved_amount:
+        allocation.approved_amount = allocation.amount_allocated
+    if not allocation.date_approved:
+        allocation.date_approved = allocation.allocation_date
+    allocation.save()
+
+4. After data is populated, you can make the fields non-nullable if desired by:
+   - Removing null=True from the field definitions
+   - Running makemigrations and migrate again
+
+OR: You can keep null=True to be safe and just ensure new records always have these values.
+"""

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Testimonials - Bursary System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-comments me-2"></i>Beneficiary Testimonials</h2>
+            <p class="text-muted">Success stories and feedback from our bursary beneficiaries</p>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Testimonials</h6>
+                    <h3>{{ total_testimonials }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Average Rating</h6>
+                    <h3>
+                        {{ avg_rating }}
+                        <i class="fas fa-star text-warning"></i>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Rating Distribution</h6>
+                    {% for item in rating_distribution %}
+                    <div class="mb-1">
+                        <small>{{ item.rating }} <i class="fas fa-star text-warning"></i>: {{ item.count }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Filter by Rating</label>
+                        <select name="rating" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Ratings</option>
+                            <option value="5" {% if selected_rating == "5" %}selected{% endif %}>
+                                5 Stars
+                            </option>
+                            <option value="4" {% if selected_rating == "4" %}selected{% endif %}>
+                                4 Stars
+                            </option>
+                            <option value="3" {% if selected_rating == "3" %}selected{% endif %}>
+                                3 Stars
+                            </option>
+                            <option value="2" {% if selected_rating == "2" %}selected{% endif %}>
+                                2 Stars
+                            </option>
+                            <option value="1" {% if selected_rating == "1" %}selected{% endif %}>
+                                1 Star
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{% url 'testimonials' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Testimonials Grid -->
+    <div class="row">
+        {% for testimonial in testimonials %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title">
+                                {{ testimonial.user.first_name }} {{ testimonial.user.last_name }}
+                            </h5>
+                            {% if testimonial.application and testimonial.application.institution %}
+                            <small class="text-muted">
+                                {{ testimonial.application.institution.name }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div class="text-warning">
+                            {% for i in "12345"|make_list %}
+                                {% if forloop.counter <= testimonial.rating %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <p class="card-text">{{ testimonial.testimonial_text }}</p>
+                    
+                    <div class="border-top pt-3 mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>
+                            {{ testimonial.created_at|date:"F d, Y" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No testimonials available at the moment.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
