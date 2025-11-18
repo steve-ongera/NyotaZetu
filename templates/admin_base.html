@@ -1369,17 +1369,76 @@
             });
         });
 
-        // Active menu item
-        const allMenuItems = document.querySelectorAll('.menu-item:not(.has-submenu), .submenu-item');
-        
-        allMenuItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (!item.classList.contains('has-submenu')) {
-                    allMenuItems.forEach(mi => mi.classList.remove('active'));
-                    item.classList.add('active');
+        // Active Menu Item Resolver
+        function setActiveMenuItem() {
+            const currentPath = window.location.pathname;
+            const allLinks = document.querySelectorAll('.menu-item[href], .submenu-item[href]');
+            
+            // Remove all active classes first
+            document.querySelectorAll('.menu-item, .submenu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            let activeItemFound = false;
+            
+            // Find and set active item
+            allLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                
+                // Check for exact match or if current path starts with link href (for nested routes)
+                if (href && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
+                    link.classList.add('active');
+                    activeItemFound = true;
+                    
+                    // If it's a submenu item, open its parent submenu
+                    if (link.classList.contains('submenu-item')) {
+                        const submenu = link.closest('.submenu');
+                        if (submenu) {
+                            submenu.classList.add('open');
+                            const submenuId = submenu.id.replace('submenu-', '');
+                            const parentMenuItem = document.querySelector(`.menu-item[data-submenu="${submenuId}"]`);
+                            if (parentMenuItem) {
+                                parentMenuItem.classList.add('open');
+                            }
+                        }
+                    }
                 }
             });
-        });
+            
+            // If no exact match found, try partial matching for better accuracy
+            if (!activeItemFound) {
+                let bestMatch = null;
+                let bestMatchLength = 0;
+                
+                allLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href !== '/' && currentPath.startsWith(href) && href.length > bestMatchLength) {
+                        bestMatch = link;
+                        bestMatchLength = href.length;
+                    }
+                });
+                
+                if (bestMatch) {
+                    bestMatch.classList.add('active');
+                    
+                    // Open parent submenu if it's a submenu item
+                    if (bestMatch.classList.contains('submenu-item')) {
+                        const submenu = bestMatch.closest('.submenu');
+                        if (submenu) {
+                            submenu.classList.add('open');
+                            const submenuId = submenu.id.replace('submenu-', '');
+                            const parentMenuItem = document.querySelector(`.menu-item[data-submenu="${submenuId}"]`);
+                            if (parentMenuItem) {
+                                parentMenuItem.classList.add('open');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Set active menu item on page load
+        document.addEventListener('DOMContentLoaded', setActiveMenuItem);
 
         // User Profile Dropdown Toggle
         const userProfile = document.getElementById('userProfile');
