@@ -2446,21 +2446,201 @@ def is_admin(user):
     return user.user_type == 'admin'
 
 # Budget and Allocation Views
+from django.db.models import Sum, Count, Q, F
+from django.contrib import messages
+
 @login_required
 @user_passes_test(is_admin)
 def fiscal_year_list(request):
-    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    # Base queryset with annotations
+    fiscal_years = FiscalYear.objects.select_related('county', 'created_by').annotate(
+        # Ward allocations
+        total_ward_allocations=Sum('ward_allocations__allocated_amount'),
+        total_ward_spent=Sum('ward_allocations__spent_amount'),
+        total_beneficiaries=Sum('ward_allocations__beneficiaries_count'),
+        
+        # Applications
+        total_applications=Count('application', distinct=True),
+        approved_applications=Count(
+            'application',
+            filter=Q(application__status='approved'),
+            distinct=True
+        ),
+        disbursed_applications=Count(
+            'application',
+            filter=Q(application__status='disbursed'),
+            distinct=True
+        ),
+        
+        # Categories
+        categories_count=Count('categories', distinct=True),
+        
+        # Disbursement rounds
+        rounds_count=Count('disbursement_rounds', distinct=True),
+        active_rounds=Count(
+            'disbursement_rounds',
+            filter=Q(disbursement_rounds__is_open=True),
+            distinct=True
+        ),
+        
+        # Financial totals
+        total_requested=Sum('application__amount_requested'),
+        total_allocated_apps=Sum('application__allocation__amount_allocated'),
+        total_disbursed=Sum('disbursement_rounds__disbursed_amount'),
+    ).order_by('-start_date')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        fiscal_years = fiscal_years.filter(
+            Q(name__icontains=search_query) |
+            Q(county__name__icontains=search_query)
+        )
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'active':
+        fiscal_years = fiscal_years.filter(is_active=True)
+    elif status_filter == 'inactive':
+        fiscal_years = fiscal_years.filter(is_active=False)
+    elif status_filter == 'open':
+        fiscal_years = fiscal_years.filter(application_open=True)
+    
+    # Filter by county (if system has multiple counties)
+    county_filter = request.GET.get('county', '')
+    if county_filter:
+        fiscal_years = fiscal_years.filter(county_id=county_filter)
+    
+    # Calculate summary statistics
+    summary_stats = fiscal_years.aggregate(
+        total_budget=Sum('total_bursary_allocation'),
+        total_education_budget=Sum('education_budget'),
+        total_applications=Sum('total_applications'),
+        total_approved=Sum('approved_applications'),
+        total_beneficiaries=Sum('total_beneficiaries'),
+        active_count=Count('id', filter=Q(is_active=True)),
+    )
+    
+    # Get available counties for filter
+    counties = County.objects.filter(is_active=True).order_by('name')
     
     # Add pagination
     paginator = Paginator(fiscal_years, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Calculate additional metrics for each fiscal year
+    for fy in page_obj:
+        # Budget utilization percentage
+        if fy.total_bursary_allocation:
+            fy.utilization_rate = (
+                (fy.total_ward_spent or 0) / fy.total_bursary_allocation * 100
+            )
+        else:
+            fy.utilization_rate = 0
+        
+        # Approval rate
+        if fy.total_applications:
+            fy.approval_rate = (
+                (fy.approved_applications or 0) / fy.total_applications * 100
+            )
+        else:
+            fy.approval_rate = 0
+        
+        # Disbursement rate
+        if fy.approved_applications:
+            fy.disbursement_rate = (
+                (fy.disbursed_applications or 0) / fy.approved_applications * 100
+            )
+        else:
+            fy.disbursement_rate = 0
+        
+        # Budget balance
+        fy.budget_balance = (fy.total_bursary_allocation or 0) - (fy.total_ward_spent or 0)
+    
     context = {
         'fiscal_years': page_obj,
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'summary_stats': summary_stats,
+        'counties': counties,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'county_filter': county_filter,
+        'current_date': timezone.now().date(),
     }
+    
     return render(request, 'admin/fiscal_year_list.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def fiscal_year_activate(request, pk):
+    """Activate a fiscal year and deactivate others"""
+    if request.method == 'POST':
+        try:
+            fiscal_year = get_object_or_404(FiscalYear, pk=pk)
+            
+            # Deactivate all other fiscal years
+            FiscalYear.objects.exclude(pk=pk).update(is_active=False)
+            
+            # Activate the selected fiscal year
+            fiscal_year.is_active = True
+            fiscal_year.save()
+            
+            messages.success(
+                request,
+                f'Fiscal Year {fiscal_year.name} has been activated successfully.'
+            )
+            
+            # Log the action
+            AuditLog.objects.create(
+                user=request.user,
+                action='update',
+                table_affected='FiscalYear',
+                record_id=str(pk),
+                description=f'Activated fiscal year: {fiscal_year.name}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+        except Exception as e:
+            messages.error(request, f'Error activating fiscal year: {str(e)}')
+    
+    return redirect('fiscal_year_list')
+
+
+@login_required
+@user_passes_test(is_admin)
+def fiscal_year_toggle_applications(request, pk):
+    """Toggle application open/close status"""
+    if request.method == 'POST':
+        try:
+            fiscal_year = get_object_or_404(FiscalYear, pk=pk)
+            
+            fiscal_year.application_open = not fiscal_year.application_open
+            fiscal_year.save()
+            
+            status = 'opened' if fiscal_year.application_open else 'closed'
+            messages.success(
+                request,
+                f'Applications for {fiscal_year.name} have been {status}.'
+            )
+            
+            # Log the action
+            AuditLog.objects.create(
+                user=request.user,
+                action='update',
+                table_affected='FiscalYear',
+                record_id=str(pk),
+                description=f'Applications {status} for fiscal year: {fiscal_year.name}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+        except Exception as e:
+            messages.error(request, f'Error toggling applications: {str(e)}')
+    
+    return redirect('fiscal_year_list')
 
 
 from django.shortcuts import render, redirect

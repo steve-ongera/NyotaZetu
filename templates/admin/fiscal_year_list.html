@@ -39,6 +39,58 @@
         color: #2980b9;
     }
 
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        font-size: 18px;
+    }
+
+    .stat-blue { background: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .stat-green { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
+    .stat-purple { background: rgba(155, 89, 182, 0.1); color: #9b59b6; }
+    .stat-orange { background: rgba(230, 126, 34, 0.1); color: #e67e22; }
+
     .section-container {
         background: white;
         border-radius: 8px;
@@ -75,6 +127,50 @@
         margin: 0;
     }
 
+    .filter-section {
+        background: #F8FAFC;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .filter-input, .filter-select {
+        padding: 10px 14px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
     .btn-primary-custom {
         padding: 10px 20px;
         background: #3498db;
@@ -94,6 +190,27 @@
     .btn-primary-custom:hover {
         background: #2980b9;
         transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary-custom {
+        padding: 10px 20px;
+        background: #64748B;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #475569;
         color: white;
     }
 
@@ -154,23 +271,89 @@
         font-weight: 600;
         color: #1E293B;
         font-size: 15px;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .fiscal-year-meta {
+        font-size: 12px;
+        color: #64748B;
     }
 
     .date-text {
         color: #334155;
+        font-size: 13px;
     }
 
-    .allocation-amount {
+    .amount-display {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .amount-main {
         font-weight: 600;
         color: #27ae60;
         font-size: 15px;
     }
 
+    .amount-sub {
+        font-size: 11px;
+        color: #64748B;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: #E2E8F0;
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 4px 0;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2ecc71);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 11px;
+        color: #64748B;
+        margin-top: 2px;
+    }
+
+    .stats-mini {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .stat-mini-item {
+        font-size: 12px;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-mini-icon {
+        font-size: 10px;
+        color: #94A3B8;
+    }
+
+    .status-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
     .status-badge {
         display: inline-block;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
@@ -186,10 +369,21 @@
         color: #64748B;
     }
 
+    .status-open {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-closed {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
     .action-buttons {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         justify-content: flex-end;
+        flex-wrap: wrap;
     }
 
     .action-btn {
@@ -205,7 +399,7 @@
         border-radius: 6px;
         transition: all 0.2s ease;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .action-btn:hover {
@@ -215,7 +409,7 @@
         transform: translateY(-1px);
     }
 
-    .action-btn.btn-info:hover {
+    .action-btn.btn-view:hover {
         border-color: #16a085;
         color: #16a085;
         background: rgba(22, 160, 133, 0.05);
@@ -225,6 +419,12 @@
         border-color: #27ae60;
         color: #27ae60;
         background: rgba(39, 174, 96, 0.05);
+    }
+
+    .action-btn.btn-warning:hover {
+        border-color: #f39c12;
+        color: #f39c12;
+        background: rgba(243, 156, 18, 0.05);
     }
 
     .empty-state {
@@ -251,7 +451,64 @@
         margin-bottom: 20px;
     }
 
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 0;
+        margin-top: 20px;
+        border-top: 1px solid #E2E8F0;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .pagination-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .page-link {
+        padding: 8px 14px;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #475569;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+
+    .page-link:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+    }
+
+    .page-link.active {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .page-link.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
     @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+
         .page-header {
             flex-direction: column;
             align-items: flex-start;
@@ -287,6 +544,41 @@
         </ol>
     </nav>
 
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-blue">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="stat-label">Total Budget</div>
+            <div class="stat-value">KSh {{ summary_stats.total_budget|floatformat:0|intcomma|default:"0" }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-green">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-label">Total Applications</div>
+            <div class="stat-value">{{ summary_stats.total_applications|intcomma|default:"0" }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-purple">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-label">Approved</div>
+            <div class="stat-value">{{ summary_stats.total_approved|intcomma|default:"0" }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-orange">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-label">Beneficiaries</div>
+            <div class="stat-value">{{ summary_stats.total_beneficiaries|intcomma|default:"0" }}</div>
+        </div>
+    </div>
+
     <div class="section-container">
         <!-- Page Header -->
         <div class="page-header">
@@ -296,7 +588,7 @@
                     Fiscal Years Management
                 </h1>
                 <p class="page-subtitle">
-                    Manage fiscal years and their allocations
+                    Manage fiscal years, budgets, and allocations
                 </p>
             </div>
             <a href="{% url 'fiscal_year_create' %}" class="btn-primary-custom">
@@ -305,11 +597,67 @@
             </a>
         </div>
 
+        <!-- Filters -->
+        <div class="filter-section">
+            <form method="get" action="{% url 'fiscal_year_list' %}">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Search</label>
+                        <input type="text" 
+                               name="search" 
+                               class="filter-input" 
+                               placeholder="Search by name or county..."
+                               value="{{ search_query }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Applications Open</option>
+                        </select>
+                    </div>
+
+                    {% if counties.count > 1 %}
+                    <div class="filter-group">
+                        <label class="filter-label">County</label>
+                        <select name="county" class="filter-select">
+                            <option value="">All Counties</option>
+                            {% for county in counties %}
+                            <option value="{{ county.id }}" {% if county_filter == county.id|stringformat:"s" %}selected{% endif %}>
+                                {{ county.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="filter-group">
+                        <button type="submit" class="btn-primary-custom">
+                            <i class="bi bi-search"></i>
+                            Filter
+                        </button>
+                    </div>
+
+                    {% if search_query or status_filter or county_filter %}
+                    <div class="filter-group">
+                        <a href="{% url 'fiscal_year_list' %}" class="btn-secondary-custom">
+                            <i class="bi bi-x-circle"></i>
+                            Clear
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
         <!-- Fiscal Years Table -->
         <div class="table-header">
             <h6 class="table-title">
                 <i class="bi bi-list-check"></i>
-                Fiscal Years List
+                Fiscal Years List ({{ page_obj.paginator.count }})
             </h6>
         </div>
 
@@ -318,10 +666,11 @@
             <table class="fiscal-years-table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Total Allocation</th>
+                        <th>Fiscal Year</th>
+                        <th>Period</th>
+                        <th>Budget Allocation</th>
+                        <th>Utilization</th>
+                        <th>Applications</th>
                         <th>Status</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
@@ -331,60 +680,243 @@
                     <tr>
                         <td>
                             <span class="fiscal-year-name">{{ fiscal_year.name }}</span>
+                            <div class="fiscal-year-meta">
+                                <i class="bi bi-geo-alt"></i> {{ fiscal_year.county.name }}
+                                {% if fiscal_year.categories_count %}
+                                | <i class="bi bi-folder2-open"></i> {{ fiscal_year.categories_count }} categories
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
-                            <span class="date-text">{{ fiscal_year.start_date|date:"M d, Y" }}</span>
+                            <div class="stats-mini">
+                                <span class="date-text">
+                                    <i class="bi bi-calendar-check"></i>
+                                    {{ fiscal_year.start_date|date:"M d, Y" }}
+                                </span>
+                                <span class="date-text">
+                                    <i class="bi bi-calendar-x"></i>
+                                    {{ fiscal_year.end_date|date:"M d, Y" }}
+                                </span>
+                                {% if fiscal_year.application_deadline %}
+                                <span class="date-text" style="color: #e74c3c;">
+                                    <i class="bi bi-clock"></i>
+                                    Deadline: {{ fiscal_year.application_deadline|date:"M d, Y" }}
+                                </span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
-                            <span class="date-text">{{ fiscal_year.end_date|date:"M d, Y" }}</span>
+                            <div class="amount-display">
+                                <span class="amount-main">
+                                    KSh {{ fiscal_year.total_bursary_allocation|floatformat:0|intcomma }}
+                                </span>
+                                <span class="amount-sub">
+                                    Education: KSh {{ fiscal_year.education_budget|floatformat:0|intcomma|default:"N/A" }}
+                                </span>
+                                {% if fiscal_year.budget_balance %}
+                                <span class="amount-sub">
+                                    Balance: KSh {{ fiscal_year.budget_balance|floatformat:0|intcomma }}
+                                </span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
-                            <span class="allocation-amount">KSh {{ fiscal_year.total_allocation|floatformat:0|intcomma }}</span>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" 
+                                     style="width: {{ fiscal_year.utilization_rate|floatformat:0 }}%">
+                                </div>
+                            </div>
+                            <div class="progress-text">
+                                {{ fiscal_year.utilization_rate|floatformat:1 }}% utilized
+                            </div>
+                            <div class="stats-mini" style="margin-top: 8px;">
+                                <div class="stat-mini-item">
+                                    <i class="bi bi-people stat-mini-icon"></i>
+                                    {{ fiscal_year.total_beneficiaries|intcomma|default:"0" }} beneficiaries
+                                </div>
+                            </div>
                         </td>
                         <td>
-                            {% if fiscal_year.is_active %}
-                                <span class="status-badge status-active">Active</span>
-                            {% else %}
-                                <span class="status-badge status-inactive">Inactive</span>
-                            {% endif %}
+                            <div class="stats-mini">
+                                <div class="stat-mini-item">
+                                    <i class="bi bi-file-earmark-text stat-mini-icon"></i>
+                                    {{ fiscal_year.total_applications|default:"0" }} total
+                                </div>
+                                <div class="stat-mini-item" style="color: #27ae60;">
+                                    <i class="bi bi-check-circle stat-mini-icon"></i>
+                                    {{ fiscal_year.approved_applications|default:"0" }} approved
+                                </div>
+                                <div class="stat-mini-item" style="color: #3498db;">
+                                    <i class="bi bi-send stat-mini-icon"></i>
+                                    {{ fiscal_year.disbursed_applications|default:"0" }} disbursed
+                                </div>
+                                {% if fiscal_year.approval_rate %}
+                                <div class="stat-mini-item" style="color: #64748B; font-size: 11px;">
+                                    {{ fiscal_year.approval_rate|floatformat:1 }}% approval rate
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="status-badges">
+                                {% if fiscal_year.is_active %}
+                                    <span class="status-badge status-active">
+                                        <i class="bi bi-check-circle"></i> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                {% endif %}
+                                
+                                {% if fiscal_year.application_open %}
+                                    <span class="status-badge status-open">
+                                        <i class="bi bi-door-open"></i> Open
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-closed">
+                                        <i class="bi bi-door-closed"></i> Closed
+                                    </span>
+                                {% endif %}
+                                
+                                {% if fiscal_year.active_rounds %}
+                                    <span class="status-badge" style="background: #FEF3C7; color: #92400E;">
+                                        {{ fiscal_year.active_rounds }} Round{{ fiscal_year.active_rounds|pluralize }} Active
+                                    </span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
                             <div class="action-buttons">
+                                <a href="{% url 'fiscal_year_detail' fiscal_year.id %}" 
+                                   class="action-btn btn-view" 
+                                   title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                
                                 <a href="{% url 'bursary_category_list' %}?fiscal_year={{ fiscal_year.id }}" 
-                                   class="action-btn btn-info" 
-                                   title="View Categories">
+                                   class="action-btn" 
+                                   title="Categories">
                                     <i class="bi bi-folder2-open"></i>
                                 </a>
+                                
+                                <a href="{% url 'ward_allocation_list' %}?fiscal_year={{ fiscal_year.id }}" 
+                                   class="action-btn" 
+                                   title="Ward Allocations">
+                                    <i class="bi bi-pin-map"></i>
+                                </a>
+                                
                                 <a href="{% url 'fiscal_year_update' fiscal_year.id %}" 
                                    class="action-btn" 
                                    title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                
                                 {% if not fiscal_year.is_active %}
-                                <button class="action-btn btn-success" 
-                                        title="Activate"
-                                        onclick="activateFiscalYear({{ fiscal_year.id }})">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
+                                <form method="post" 
+                                      action="{% url 'fiscal_year_activate' fiscal_year.id %}" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('Activate this fiscal year? This will deactivate all others.');">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="action-btn btn-success" 
+                                            title="Activate">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                </form>
                                 {% endif %}
+                                
+                                <form method="post" 
+                                      action="{% url 'fiscal_year_toggle_applications' fiscal_year.id %}" 
+                                      style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="action-btn btn-warning" 
+                                            title="{% if fiscal_year.application_open %}Close Applications{% else %}Open Applications{% endif %}">
+                                        <i class="bi bi-{% if fiscal_year.application_open %}door-closed{% else %}door-open{% endif %}"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                </div>
+                <div class="pagination-buttons">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if county_filter %}&county={{ county_filter }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if county_filter %}&county={{ county_filter }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    {% else %}
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </span>
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
+                    {% endif %}
+
+                    <span class="page-link active">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if county_filter %}&county={{ county_filter }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if county_filter %}&county={{ county_filter }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    {% else %}
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-right"></i>
+                        </span>
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             {% else %}
             <div class="empty-state">
                 <div class="empty-icon">
                     <i class="bi bi-calendar-x"></i>
                 </div>
-                <h3 class="empty-title">No Fiscal Years Found</h3>
+                <h3 class="empty-title">
+                    {% if search_query or status_filter or county_filter %}
+                        No Fiscal Years Match Your Filters
+                    {% else %}
+                        No Fiscal Years Found
+                    {% endif %}
+                </h3>
                 <p class="empty-text">
-                    Get started by adding your first fiscal year
+                    {% if search_query or status_filter or county_filter %}
+                        Try adjusting your filters or clearing them to see all fiscal years.
+                    {% else %}
+                        Get started by adding your first fiscal year to manage bursary allocations.
+                    {% endif %}
                 </p>
+                {% if not search_query and not status_filter and not county_filter %}
                 <a href="{% url 'fiscal_year_create' %}" class="btn-primary-custom">
                     <i class="bi bi-plus-circle"></i> Add Fiscal Year
                 </a>
+                {% else %}
+                <a href="{% url 'fiscal_year_list' %}" class="btn-secondary-custom">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </a>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -394,27 +926,21 @@
 
 {% block extra_js %}
 <script>
-    function activateFiscalYear(fiscalYearId) {
-        if (confirm('Are you sure you want to activate this fiscal year? This will deactivate all other fiscal years.')) {
-            // Create a form and submit it
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/admin/fiscal-year/${fiscalYearId}/activate/`; // Adjust URL as needed
-            
-            // Add CSRF token
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = csrfToken.value;
-                form.appendChild(csrfInput);
+    // Confirm activation
+    document.querySelectorAll('form[action*="activate"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to activate this fiscal year? This will deactivate all other fiscal years.')) {
+                e.preventDefault();
             }
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
+        });
+    });
+
+    // Auto-submit filter form on select change
+    document.querySelectorAll('.filter-select').forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
 
     // Add tooltips if using Bootstrap
     document.addEventListener('DOMContentLoaded', function() {
@@ -423,5 +949,12 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     });
+
+    // Highlight active filters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('search') || urlParams.has('status') || urlParams.has('county')) {
+        document.querySelector('.filter-section').style.borderColor = '#3498db';
+        document.querySelector('.filter-section').style.backgroundColor = '#EBF8FF';
+    }
 </script>
 {% endblock %}
