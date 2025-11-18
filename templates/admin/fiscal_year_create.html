@@ -110,6 +110,7 @@
         border: 1px solid #E2E8F0;
         border-radius: 8px;
         overflow: hidden;
+        margin-bottom: 24px;
     }
 
     .card-header {
@@ -174,6 +175,9 @@
 
     .form-check {
         padding-left: 0;
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
     }
 
     .form-check-input {
@@ -202,12 +206,6 @@
         color: #1E293B;
         font-size: 14px;
         cursor: pointer;
-    }
-
-    .form-check {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
     }
 
     .form-actions {
@@ -268,12 +266,38 @@
         margin-bottom: 20px;
     }
 
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
     .form-group {
         margin-bottom: 20px;
     }
 
+    .info-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #EFF6FF;
+        color: #1E40AF;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 16px;
+    }
+
+    .calculated-field {
+        background-color: #F8FAFC;
+        cursor: not-allowed;
+    }
+
     @media (max-width: 768px) {
-        .form-row {
+        .form-row,
+        .form-row-3 {
             grid-template-columns: 1fr;
         }
 
@@ -330,7 +354,7 @@
                     Create Fiscal Year
                 </h1>
                 <p class="page-subtitle">
-                    Add a new fiscal year to the system
+                    Configure a new fiscal year for {{ county.name }} County
                 </p>
             </div>
             <div class="header-actions">
@@ -340,19 +364,19 @@
             </div>
         </div>
 
-        <!-- Form Card -->
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-calendar-range"></i>
-                <span class="card-title">Fiscal Year Information</span>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
+        <form method="post" id="fiscalYearForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-calendar-range"></i>
+                    <span class="card-title">Basic Information</span>
+                </div>
+                <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="name" class="form-label required-field">Name</label>
+                            <label for="name" class="form-label required-field">Fiscal Year Name</label>
                             <input 
                                 type="text" 
                                 class="form-control" 
@@ -365,18 +389,15 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="total_allocation" class="form-label required-field">Total Allocation (KES)</label>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                name="total_allocation" 
-                                id="total_allocation" 
-                                required 
-                                step="0.01" 
-                                min="0" 
-                                placeholder="0.00"
-                            >
-                            <small class="form-text">Total amount allocated for this fiscal year</small>
+                            <label for="number_of_disbursement_rounds" class="form-label required-field">Disbursement Rounds</label>
+                            <select class="form-select" name="number_of_disbursement_rounds" id="number_of_disbursement_rounds" required>
+                                <option value="1">1 Round (Annual)</option>
+                                <option value="2" selected>2 Rounds (Bi-Annual)</option>
+                                <option value="3">3 Rounds (Tri-Annual)</option>
+                                <option value="4">4 Rounds (Quarterly)</option>
+                                <option value="5">5 Rounds (Custom)</option>
+                            </select>
+                            <small class="form-text">Number of times bursaries will be disbursed per year</small>
                         </div>
                     </div>
 
@@ -390,7 +411,7 @@
                                 id="start_date" 
                                 required
                             >
-                            <small class="form-text">Fiscal year start date</small>
+                            <small class="form-text">Fiscal year start date (typically July 1)</small>
                         </div>
                         
                         <div class="form-group">
@@ -402,39 +423,183 @@
                                 id="end_date" 
                                 required
                             >
-                            <small class="form-text">Fiscal year end date</small>
+                            <small class="form-text">Fiscal year end date (typically June 30)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Allocation -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-cash-stack"></i>
+                    <span class="card-title">Budget Allocation</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-badge">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Ensure bursary allocation does not exceed education budget</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="total_county_budget" class="form-label">Total County Budget (KES)</label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                name="total_county_budget" 
+                                id="total_county_budget" 
+                                step="0.01" 
+                                min="0" 
+                                placeholder="0.00"
+                                value="0"
+                            >
+                            <small class="form-text">Total county budget for the year</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="education_budget" class="form-label">Education Sector Budget (KES)</label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                name="education_budget" 
+                                id="education_budget" 
+                                step="0.01" 
+                                min="0" 
+                                placeholder="0.00"
+                                value="0"
+                            >
+                            <small class="form-text">Total education sector allocation</small>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <div class="form-check form-switch">
+                        <label for="total_bursary_allocation" class="form-label required-field">Total Bursary Allocation (KES)</label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            name="total_bursary_allocation" 
+                            id="total_bursary_allocation" 
+                            required 
+                            step="0.01" 
+                            min="0.01" 
+                            placeholder="0.00"
+                        >
+                        <small class="form-text">Total amount allocated for bursaries this fiscal year</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- National Treasury Transfers -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-bank"></i>
+                    <span class="card-title">National Treasury Transfers (Optional)</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="equitable_share" class="form-label">Equitable Share (KES)</label>
                             <input 
-                                class="form-check-input" 
-                                type="checkbox" 
-                                role="switch" 
-                                name="is_active" 
-                                id="is_active"
+                                type="number" 
+                                class="form-control" 
+                                name="equitable_share" 
+                                id="equitable_share" 
+                                step="0.01" 
+                                min="0" 
+                                placeholder="0.00"
+                                value="0"
                             >
-                            <label class="form-check-label" for="is_active">
-                                Set as Active Fiscal Year
-                            </label>
+                            <small class="form-text">Equitable share from National Treasury</small>
                         </div>
-                        <small class="form-text">Note: Setting this as active will deactivate all other fiscal years.</small>
+                        
+                        <div class="form-group">
+                            <label for="conditional_grants" class="form-label">Conditional Grants (KES)</label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                name="conditional_grants" 
+                                id="conditional_grants" 
+                                step="0.01" 
+                                min="0" 
+                                placeholder="0.00"
+                                value="0"
+                            >
+                            <small class="form-text">Conditional allocations from National Treasury</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="card-title">Application Settings</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="application_deadline" class="form-label">Application Deadline</label>
+                        <input 
+                            type="date" 
+                            class="form-control" 
+                            name="application_deadline" 
+                            id="application_deadline"
+                        >
+                        <small class="form-text">Last date for accepting applications (optional)</small>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">
-                            <i class="bi bi-check-circle"></i>
-                            Create Fiscal Year
-                        </button>
-                        <a href="{% url 'fiscal_year_list' %}" class="btn-cancel">
-                            <i class="bi bi-x-circle"></i>
-                            Cancel
-                        </a>
+                    <div class="form-check form-switch">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox" 
+                            role="switch" 
+                            name="application_open" 
+                            id="application_open"
+                        >
+                        <label class="form-check-label" for="application_open">
+                            Open for Applications
+                        </label>
                     </div>
-                </form>
+                    <small class="form-text">Allow applicants to submit applications immediately</small>
+                </div>
             </div>
-        </div>
+
+            <!-- Status Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-toggle-on"></i>
+                    <span class="card-title">Status Settings</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox" 
+                            role="switch" 
+                            name="is_active" 
+                            id="is_active"
+                        >
+                        <label class="form-check-label" for="is_active">
+                            Set as Active Fiscal Year
+                        </label>
+                    </div>
+                    <small class="form-text">Note: Setting this as active will deactivate all other fiscal years.</small>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-circle"></i>
+                    Create Fiscal Year
+                </button>
+                <a href="{% url 'fiscal_year_list' %}" class="btn-cancel">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -442,28 +607,45 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Set today's date as default for start date
+        // Set default dates (Kenya's fiscal year: July 1 - June 30)
         const today = new Date();
-        const formattedToday = today.toISOString().split('T')[0];
-        document.getElementById('start_date').value = formattedToday;
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth(); // 0-indexed
         
-        // Set end date to one year from today
-        const nextYear = new Date();
-        nextYear.setFullYear(today.getFullYear() + 1);
-        const formattedNextYear = nextYear.toISOString().split('T')[0];
-        document.getElementById('end_date').value = formattedNextYear;
+        // If we're past June (month 5), set to next fiscal year
+        let fiscalStartYear = currentMonth >= 6 ? currentYear : currentYear - 1;
         
-        // Add input formatting for allocation amount
-        const allocationInput = document.getElementById('total_allocation');
-        allocationInput.addEventListener('blur', function() {
-            if (this.value) {
-                this.value = parseFloat(this.value).toFixed(2);
-            }
+        const startDate = new Date(fiscalStartYear, 6, 1); // July 1
+        const endDate = new Date(fiscalStartYear + 1, 5, 30); // June 30 next year
+        
+        document.getElementById('start_date').valueAsDate = startDate;
+        document.getElementById('end_date').valueAsDate = endDate;
+        
+        // Set suggested fiscal year name
+        document.getElementById('name').value = `${fiscalStartYear}-${fiscalStartYear + 1}`;
+        
+        // Format number inputs on blur
+        const numberInputs = [
+            'total_county_budget',
+            'education_budget', 
+            'total_bursary_allocation',
+            'equitable_share',
+            'conditional_grants'
+        ];
+        
+        numberInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            input.addEventListener('blur', function() {
+                if (this.value) {
+                    this.value = parseFloat(this.value).toFixed(2);
+                }
+            });
         });
 
         // Validate end date is after start date
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
+        const applicationDeadlineInput = document.getElementById('application_deadline');
 
         function validateDates() {
             if (startDateInput.value && endDateInput.value) {
@@ -476,10 +658,72 @@
                     endDateInput.setCustomValidity('');
                 }
             }
+            
+            // Validate application deadline
+            if (applicationDeadlineInput.value && startDateInput.value && endDateInput.value) {
+                const deadline = new Date(applicationDeadlineInput.value);
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                
+                if (deadline < startDate || deadline > endDate) {
+                    applicationDeadlineInput.setCustomValidity('Deadline must be within fiscal year dates');
+                } else {
+                    applicationDeadlineInput.setCustomValidity('');
+                }
+            }
         }
 
         startDateInput.addEventListener('change', validateDates);
         endDateInput.addEventListener('change', validateDates);
+        applicationDeadlineInput.addEventListener('change', validateDates);
+
+        // Validate budget hierarchy
+        const totalCountyBudgetInput = document.getElementById('total_county_budget');
+        const educationBudgetInput = document.getElementById('education_budget');
+        const bursaryAllocationInput = document.getElementById('total_bursary_allocation');
+
+        function validateBudgets() {
+            const totalCounty = parseFloat(totalCountyBudgetInput.value) || 0;
+            const education = parseFloat(educationBudgetInput.value) || 0;
+            const bursary = parseFloat(bursaryAllocationInput.value) || 0;
+
+            // Education budget validation
+            if (totalCounty > 0 && education > totalCounty) {
+                educationBudgetInput.setCustomValidity('Education budget cannot exceed total county budget');
+            } else {
+                educationBudgetInput.setCustomValidity('');
+            }
+
+            // Bursary allocation validation
+            if (education > 0 && bursary > education) {
+                bursaryAllocationInput.setCustomValidity('Bursary allocation cannot exceed education budget');
+            } else {
+                bursaryAllocationInput.setCustomValidity('');
+            }
+        }
+
+        totalCountyBudgetInput.addEventListener('input', validateBudgets);
+        educationBudgetInput.addEventListener('input', validateBudgets);
+        bursaryAllocationInput.addEventListener('input', validateBudgets);
+
+        // Form submission validation
+        document.getElementById('fiscalYearForm').addEventListener('submit', function(e) {
+            validateDates();
+            validateBudgets();
+            
+            // Check if form is valid
+            if (!this.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Show first invalid field
+                const firstInvalid = this.querySelector(':invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    firstInvalid.reportValidity();
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

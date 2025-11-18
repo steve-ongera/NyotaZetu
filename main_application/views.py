@@ -2462,15 +2462,60 @@ def fiscal_year_list(request):
     }
     return render(request, 'admin/fiscal_year_list.html', context)
 
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Q
+from datetime import datetime
+from decimal import Decimal
+from .models import FiscalYear, County
+
+def is_admin(user):
+    return user.user_type in ['admin', 'county_admin', 'finance']
+
 @login_required
 @user_passes_test(is_admin)
 def fiscal_year_create(request):
+    # Get the system county (first county or default)
+    try:
+        county = County.objects.filter(is_active=True).first()
+        if not county:
+            messages.error(request, 'No active county found. Please set up a county first.')
+            return redirect('admin_dashboard')
+    except County.DoesNotExist:
+        messages.error(request, 'County not configured. Please contact system administrator.')
+        return redirect('admin_dashboard')
+    
     if request.method == 'POST':
-        name = request.POST['name']
-        start_date = request.POST['start_date']
-        end_date = request.POST['end_date']
-        total_allocation = request.POST['total_allocation']
+        # Extract form data
+        name = request.POST.get('name', '').strip()
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        # Budget allocations
+        total_county_budget = request.POST.get('total_county_budget', 0)
+        education_budget = request.POST.get('education_budget', 0)
+        total_bursary_allocation = request.POST.get('total_bursary_allocation', 0)
+        
+        # National Treasury transfers
+        equitable_share = request.POST.get('equitable_share', 0)
+        conditional_grants = request.POST.get('conditional_grants', 0)
+        
+        # Disbursement configuration
+        number_of_disbursement_rounds = request.POST.get('number_of_disbursement_rounds', 2)
+        
+        # Application settings
+        application_open = 'application_open' in request.POST
+        application_deadline = request.POST.get('application_deadline') or None
+        
+        # Status flags
         is_active = 'is_active' in request.POST
+        
+        # Validate required fields
+        if not all([name, start_date, end_date, total_bursary_allocation]):
+            messages.error(request, 'Please fill in all required fields')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
         
         # Validate dates
         try:
@@ -2479,36 +2524,107 @@ def fiscal_year_create(request):
             
             if start_date_obj >= end_date_obj:
                 messages.error(request, 'End date must be after start date')
-                return render(request, 'admin/fiscal_year_create.html')
-        except ValueError:
-            messages.error(request, 'Invalid date format')
-            return render(request, 'admin/fiscal_year_create.html')
+                return render(request, 'admin/fiscal_year_create.html', {'county': county})
+            
+            # Validate application deadline if provided
+            if application_deadline:
+                deadline_obj = datetime.strptime(application_deadline, '%Y-%m-%d').date()
+                if deadline_obj < start_date_obj or deadline_obj > end_date_obj:
+                    messages.error(request, 'Application deadline must be within fiscal year dates')
+                    return render(request, 'admin/fiscal_year_create.html', {'county': county})
+                    
+        except ValueError as e:
+            messages.error(request, f'Invalid date format: {str(e)}')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
         
-        # Check for overlapping fiscal years
+        # Validate budget allocations
+        try:
+            total_county_budget = Decimal(total_county_budget)
+            education_budget = Decimal(education_budget)
+            total_bursary_allocation = Decimal(total_bursary_allocation)
+            equitable_share = Decimal(equitable_share)
+            conditional_grants = Decimal(conditional_grants)
+            
+            if total_bursary_allocation <= 0:
+                messages.error(request, 'Total bursary allocation must be greater than zero')
+                return render(request, 'admin/fiscal_year_create.html', {'county': county})
+            
+            if education_budget > total_county_budget:
+                messages.error(request, 'Education budget cannot exceed total county budget')
+                return render(request, 'admin/fiscal_year_create.html', {'county': county})
+            
+            if total_bursary_allocation > education_budget:
+                messages.error(request, 'Bursary allocation cannot exceed education budget')
+                return render(request, 'admin/fiscal_year_create.html', {'county': county})
+                
+        except (ValueError, TypeError) as e:
+            messages.error(request, f'Invalid budget amount: {str(e)}')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
+        
+        # Validate disbursement rounds
+        try:
+            number_of_disbursement_rounds = int(number_of_disbursement_rounds)
+            if number_of_disbursement_rounds < 1 or number_of_disbursement_rounds > 5:
+                messages.error(request, 'Number of disbursement rounds must be between 1 and 5')
+                return render(request, 'admin/fiscal_year_create.html', {'county': county})
+        except ValueError:
+            messages.error(request, 'Invalid number of disbursement rounds')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
+        
+        # Check for overlapping fiscal years for the same county
         overlapping = FiscalYear.objects.filter(
-            Q(start_date__lte=end_date_obj, end_date__gte=start_date_obj)
+            county=county,
+            start_date__lte=end_date_obj,
+            end_date__gte=start_date_obj
         ).exists()
         
         if overlapping:
-            messages.error(request, 'Fiscal year dates overlap with existing fiscal year')
-            return render(request, 'admin/fiscal_year_create.html')
+            messages.error(request, 'Fiscal year dates overlap with an existing fiscal year for this county')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
         
-        # Deactivate other fiscal years if this one is active
+        # Check for duplicate name
+        if FiscalYear.objects.filter(county=county, name=name).exists():
+            messages.error(request, f'Fiscal year with name "{name}" already exists for this county')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
+        
+        # Deactivate other fiscal years if this one is set as active
         if is_active:
-            FiscalYear.objects.all().update(is_active=False)
+            FiscalYear.objects.filter(county=county).update(is_active=False)
         
-        fiscal_year = FiscalYear.objects.create(
-            name=name,
-            start_date=start_date,
-            end_date=end_date,
-            total_allocation=total_allocation,
-            is_active=is_active
-        )
-        
-        messages.success(request, f'Fiscal year {name} created successfully')
-        return redirect('fiscal_year_list')
+        # Create the fiscal year
+        try:
+            fiscal_year = FiscalYear.objects.create(
+                name=name,
+                start_date=start_date_obj,
+                end_date=end_date_obj,
+                county=county,
+                total_county_budget=total_county_budget,
+                education_budget=education_budget,
+                total_bursary_allocation=total_bursary_allocation,
+                equitable_share=equitable_share,
+                conditional_grants=conditional_grants,
+                number_of_disbursement_rounds=number_of_disbursement_rounds,
+                is_active=is_active,
+                application_open=application_open,
+                application_deadline=application_deadline,
+                created_by=request.user
+            )
+            
+            messages.success(
+                request, 
+                f'Fiscal year "{name}" created successfully with allocation of KES {total_bursary_allocation:,.2f}'
+            )
+            return redirect('fiscal_year_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating fiscal year: {str(e)}')
+            return render(request, 'admin/fiscal_year_create.html', {'county': county})
     
-    return render(request, 'admin/fiscal_year_create.html')
+    # GET request - render the form
+    context = {
+        'county': county,
+    }
+    return render(request, 'admin/fiscal_year_create.html', context)
 
 from django.db.models.functions import TruncMonth
 from django.core.serializers.json import DjangoJSONEncoder
