@@ -289,13 +289,11 @@
             <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
             <div class="stat-label">Q{{ quarter }} Applications</div>
             <div class="stat-value">{{ quarter_applications|intcomma }}</div>
-            {% if prev_applications > 0 %}
-            {% with change=quarter_applications|add:"-"|add:prev_applications %}
-            <div class="stat-change {% if change >= 0 %}positive{% else %}negative{% endif %}">
-                <i class="bi bi-arrow-{% if change >= 0 %}up{% else %}down{% endif %}"></i>
-                {{ change|abs|intcomma }} vs Q{{ quarter|add:"-1" }}
+            {% if prev_applications > 0 and quarter > 1 %}
+            <div class="stat-change {% if quarter_applications >= prev_applications %}positive{% else %}negative{% endif %}">
+                <i class="bi bi-arrow-{% if quarter_applications >= prev_applications %}up{% else %}down{% endif %}"></i>
+                {% if quarter_applications >= prev_applications %}+{% endif %}{{ quarter_change|intcomma }} vs Q{{ prev_quarter }}
             </div>
-            {% endwith %}
             {% endif %}
         </div>
         <div class="stat-card stat-green">

@@ -12227,6 +12227,8 @@ def quarterly_reports_view(request):
     quarter_applications = quarter_approved = 0
     quarter_allocated = quarter_disbursed = Decimal('0')
     prev_applications = 0
+    quarter_change = 0
+    prev_quarter = 0
     category_performance = ward_performance = []
     quarters_summary = []
     quarterly_comparison_chart = category_chart = {}
@@ -12273,8 +12275,12 @@ def quarterly_reports_view(request):
                 fiscal_year=fiscal_year,
                 date_submitted__date__range=[prev_start, prev_end]
             ).count()
+            quarter_change = quarter_applications - prev_applications
+            prev_quarter = quarter - 1
         else:
             prev_applications = 0
+            quarter_change = 0
+            prev_quarter = 0
         
         # Category performance in quarter
         category_performance = list(Allocation.objects.filter(
@@ -12354,6 +12360,8 @@ def quarterly_reports_view(request):
         'quarter_allocated': quarter_allocated,
         'quarter_disbursed': quarter_disbursed,
         'prev_applications': prev_applications,
+        'quarter_change': quarter_change if fiscal_year else 0,
+        'prev_quarter': prev_quarter if fiscal_year else 0,
         'category_performance': category_performance,
         'ward_performance': ward_performance,
         'quarters_summary': quarters_summary,
