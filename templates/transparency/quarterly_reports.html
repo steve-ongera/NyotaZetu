@@ -1,0 +1,512 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Quarterly Reports - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .breadcrumb-item { color: #64748B; }
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+    .breadcrumb-item.active { color: #1E293B; font-weight: 500; }
+    .breadcrumb a { color: #3498db; text-decoration: none; transition: color 0.3s ease; }
+    .breadcrumb a:hover { color: #2980b9; }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+    .stat-card.stat-blue { color: #3498db; }
+    .stat-card.stat-green { color: #27ae60; }
+    .stat-card.stat-orange { color: #f39c12; }
+    .stat-card.stat-red { color: #e74c3c; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #16a085; }
+
+    .stat-icon {
+        width: 44px; height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-size: 20px;
+    }
+    .stat-blue .stat-icon { background: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .stat-green .stat-icon { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
+    .stat-orange .stat-icon { background: rgba(243, 156, 18, 0.1); color: #f39c12; }
+    .stat-red .stat-icon { background: rgba(231, 76, 60, 0.1); color: #e74c3c; }
+    .stat-purple .stat-icon { background: rgba(155, 89, 182, 0.1); color: #9b59b6; }
+    .stat-teal .stat-icon { background: rgba(22, 160, 133, 0.1); color: #16a085; }
+
+    .stat-label {
+        font-size: 11px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .stat-value { font-size: 22px; font-weight: 700; color: #1E293B; }
+    .stat-change { font-size: 12px; margin-top: 4px; }
+    .stat-change.positive { color: #27ae60; }
+    .stat-change.negative { color: #e74c3c; }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .page-subtitle { color: #64748B; font-size: 14px; margin: 0; }
+
+    .filter-section {
+        background: #F8FAFC;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+        display: flex;
+        gap: 16px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-width: 200px;
+    }
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .filter-select {
+        padding: 10px 14px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.2s ease;
+    }
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn-success-custom {
+        padding: 10px 20px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-success-custom:hover { background: #229954; color: white; }
+
+    .quarter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .quarter-tab {
+        padding: 10px 20px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .quarter-tab:hover { border-color: #3498db; color: #3498db; }
+    .quarter-tab.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        transition: all 0.3s ease;
+    }
+    .chart-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .chart-title i { color: #3498db; }
+    .chart-canvas-container { position: relative; width: 100%; height: 350px; }
+
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table { width: 100%; margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+    .table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+    .table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+    .table tbody tr { transition: background-color 0.2s ease; }
+    .table tbody tr:hover { background-color: #F8FAFC; }
+
+    .highlight-box {
+        background: #F0F9FF;
+        border-left: 4px solid #3498db;
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    .highlight-title { font-size: 14px; font-weight: 600; color: #1E40AF; margin-bottom: 8px; }
+    .highlight-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    .highlight-item { display: flex; justify-content: space-between; font-size: 13px; }
+    .highlight-label { color: #64748B; }
+    .highlight-value { font-weight: 600; color: #1E293B; }
+
+    @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .filter-section { flex-direction: column; }
+        .chart-canvas-container { height: 280px; }
+        .highlight-items { grid-template-columns: 1fr; }
+        .quarter-tabs { justify-content: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Quarterly Reports</li>
+        </ol>
+    </nav>
+
+    <!-- Key Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="stat-label">Q{{ quarter }} Applications</div>
+            <div class="stat-value">{{ quarter_applications|intcomma }}</div>
+            {% if prev_applications > 0 %}
+            {% with change=quarter_applications|add:"-"|add:prev_applications %}
+            <div class="stat-change {% if change >= 0 %}positive{% else %}negative{% endif %}">
+                <i class="bi bi-arrow-{% if change >= 0 %}up{% else %}down{% endif %}"></i>
+                {{ change|abs|intcomma }} vs Q{{ quarter|add:"-1" }}
+            </div>
+            {% endwith %}
+            {% endif %}
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-label">Approved</div>
+            <div class="stat-value">{{ quarter_approved|intcomma }}</div>
+        </div>
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-label">Allocated</div>
+            <div class="stat-value">KSh {{ quarter_allocated|floatformat:0|intcomma }}</div>
+        </div>
+        <div class="stat-card stat-teal">
+            <div class="stat-icon"><i class="bi bi-bank"></i></div>
+            <div class="stat-label">Disbursed</div>
+            <div class="stat-value">KSh {{ quarter_disbursed|floatformat:0|intcomma }}</div>
+        </div>
+    </div>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-calendar3"></i>
+                    Quarterly Report - Q{{ quarter }} {{ fiscal_year.name }}
+                </h1>
+                <p class="page-subtitle">Performance analysis for Quarter {{ quarter }} of fiscal year {{ fiscal_year.name }}</p>
+            </div>
+            <a href="?fiscal_year={{ fiscal_year.id }}&quarter={{ quarter }}&export=excel" class="btn-success-custom">
+                <i class="bi bi-file-earmark-excel"></i> Export to Excel
+            </a>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">Fiscal Year</label>
+                <select class="filter-select" id="fiscalYearSelect">
+                    {% for fy in fiscal_years %}
+                    <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>{{ fy.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Quarter Tabs -->
+        <div class="quarter-tabs">
+            {% for q in "1234" %}
+            <a href="?fiscal_year={{ fiscal_year.id }}&quarter={{ q }}" 
+               class="quarter-tab {% if quarter == q|add:0 %}active{% endif %}">
+                Q{{ q }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Quarterly Comparison Highlight -->
+        <div class="highlight-box">
+            <div class="highlight-title"><i class="bi bi-graph-up-arrow"></i> Quarterly Summary</div>
+            <div class="highlight-items">
+                {% for q in quarters_summary %}
+                <div class="highlight-item">
+                    <span class="highlight-label">Q{{ q.quarter }} Applications:</span>
+                    <span class="highlight-value">{{ q.applications|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title"><i class="bi bi-bar-chart"></i> Quarterly Comparison</div>
+                    <div class="chart-canvas-container">
+                        <canvas id="quarterlyComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-title"><i class="bi bi-pie-chart"></i> Category Distribution</div>
+                    <div class="chart-canvas-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Performance Table -->
+        {% if category_performance %}
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-list-check"></i> Category Performance - Q{{ quarter }}</div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Category</th>
+                            <th>Beneficiaries</th>
+                            <th>Amount Allocated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in category_performance %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ cat.application__bursary_category__name|default:"Unknown" }}</strong></td>
+                            <td>{{ cat.beneficiaries|intcomma }}</td>
+                            <td>KSh {{ cat.amount|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ward Performance Table -->
+        {% if ward_performance %}
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-pin-map"></i> Top 10 Wards - Q{{ quarter }}</div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ward</th>
+                            <th>Beneficiaries</th>
+                            <th>Amount Allocated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ward in ward_performance %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ ward.application__applicant__ward__name|default:"Unknown" }}</strong></td>
+                            <td>{{ ward.beneficiaries|intcomma }}</td>
+                            <td>KSh {{ ward.amount|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fiscal Year Select
+    document.getElementById('fiscalYearSelect').addEventListener('change', function() {
+        window.location.href = '?fiscal_year=' + this.value + '&quarter={{ quarter }}';
+    });
+
+    // Quarterly Comparison Chart
+    const quarterlyData = {{ quarterly_comparison_chart|safe }};
+    if (quarterlyData.labels && quarterlyData.applications) {
+        new Chart(document.getElementById('quarterlyComparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: quarterlyData.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: quarterlyData.applications,
+                    backgroundColor: '#3498db',
+                    borderRadius: 5
+                }, {
+                    label: 'Allocated (KES)',
+                    data: quarterlyData.allocated,
+                    backgroundColor: '#27ae60',
+                    borderRadius: 5,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, position: 'left' },
+                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+                },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }
+
+    // Category Chart
+    const categoryData = {{ category_chart|safe }};
+    if (categoryData.labels && categoryData.data) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.data,
+                    backgroundColor: ['#3498db', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6', '#16a085', '#d35400', '#2980b9'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

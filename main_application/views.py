@@ -12188,6 +12188,15 @@ def export_annual_report_to_excel(
     return response
 
 
+import json
+from datetime import datetime
+from decimal import Decimal
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
+from django.db.models import Sum, Count
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
 
 def quarterly_reports_view(request):
     """Quarterly reports and progress tracking"""
@@ -12195,6 +12204,7 @@ def quarterly_reports_view(request):
     # Get filters
     fiscal_year_id = request.GET.get('fiscal_year')
     quarter = request.GET.get('quarter', '1')
+    export = request.GET.get('export')
     
     if fiscal_year_id:
         fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
@@ -12213,37 +12223,45 @@ def quarterly_reports_view(request):
     except (ValueError, TypeError):
         quarter = 1
     
+    # Initialize variables
+    quarter_applications = quarter_approved = 0
+    quarter_allocated = quarter_disbursed = Decimal('0')
+    prev_applications = 0
+    category_performance = ward_performance = []
+    quarters_summary = []
+    quarterly_comparison_chart = category_chart = {}
+    start_date = end_date = None
+    
     if fiscal_year:
         # Calculate quarter date range
         year = fiscal_year.start_date.year
         quarter_ranges = {
-            1: (datetime(year, 1, 1), datetime(year, 3, 31)),
-            2: (datetime(year, 4, 1), datetime(year, 6, 30)),
-            3: (datetime(year, 7, 1), datetime(year, 9, 30)),
-            4: (datetime(year, 10, 1), datetime(year, 12, 31)),
+            1: (datetime(year, 1, 1).date(), datetime(year, 3, 31).date()),
+            2: (datetime(year, 4, 1).date(), datetime(year, 6, 30).date()),
+            3: (datetime(year, 7, 1).date(), datetime(year, 9, 30).date()),
+            4: (datetime(year, 10, 1).date(), datetime(year, 12, 31).date()),
         }
         start_date, end_date = quarter_ranges[quarter]
         
         # Quarter statistics
         quarter_applications = Application.objects.filter(
             fiscal_year=fiscal_year,
-            date_submitted__range=[start_date, end_date]
+            date_submitted__date__range=[start_date, end_date]
         ).count()
         
         quarter_approved = Application.objects.filter(
             fiscal_year=fiscal_year,
             status='approved',
-            date_submitted__range=[start_date, end_date]
+            date_submitted__date__range=[start_date, end_date]
         ).count()
         
         quarter_allocated = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved',
-            date_approved__range=[start_date, end_date]
-        ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+            application__fiscal_year=fiscal_year,
+            allocation_date__range=[start_date, end_date]
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
         
         quarter_disbursed = Disbursement.objects.filter(
-            allocation__fiscal_year=fiscal_year,
+            fiscal_year=fiscal_year,
             status='completed',
             disbursement_date__range=[start_date, end_date]
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
@@ -12253,48 +12271,44 @@ def quarterly_reports_view(request):
             prev_start, prev_end = quarter_ranges[quarter - 1]
             prev_applications = Application.objects.filter(
                 fiscal_year=fiscal_year,
-                date_submitted__range=[prev_start, prev_end]
+                date_submitted__date__range=[prev_start, prev_end]
             ).count()
         else:
             prev_applications = 0
         
         # Category performance in quarter
-        category_performance = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved',
-            date_approved__range=[start_date, end_date]
+        category_performance = list(Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            allocation_date__range=[start_date, end_date]
         ).values(
             'application__bursary_category__name'
         ).annotate(
             beneficiaries=Count('id'),
-            amount=Sum('approved_amount')
-        ).order_by('-beneficiaries')
+            amount=Sum('amount_allocated')
+        ).order_by('-beneficiaries'))
         
         # Ward performance in quarter
-        ward_performance = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved',
-            date_approved__range=[start_date, end_date]
+        ward_performance = list(Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            allocation_date__range=[start_date, end_date]
         ).values(
-            'applicant__ward__name'
+            'application__applicant__ward__name'
         ).annotate(
             beneficiaries=Count('id'),
-            amount=Sum('approved_amount')
-        ).order_by('-beneficiaries')[:10]
+            amount=Sum('amount_allocated')
+        ).order_by('-beneficiaries')[:10])
         
         # All quarters summary
-        quarters_summary = []
         for q in range(1, 5):
             q_start, q_end = quarter_ranges[q]
             q_apps = Application.objects.filter(
                 fiscal_year=fiscal_year,
-                date_submitted__range=[q_start, q_end]
+                date_submitted__date__range=[q_start, q_end]
             ).count()
             q_allocated = Allocation.objects.filter(
-                fiscal_year=fiscal_year,
-                status='approved',
-                date_approved__range=[q_start, q_end]
-            ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+                application__fiscal_year=fiscal_year,
+                allocation_date__range=[q_start, q_end]
+            ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
             
             quarters_summary.append({
                 'quarter': q,
@@ -12313,14 +12327,23 @@ def quarterly_reports_view(request):
             'labels': [item['application__bursary_category__name'] or 'Unknown' for item in category_performance],
             'data': [item['beneficiaries'] for item in category_performance]
         }
-        
-    else:
-        quarter_applications = quarter_approved = 0
-        quarter_allocated = quarter_disbursed = Decimal('0')
-        prev_applications = 0
-        weekly_stats = category_performance = ward_performance = []
-        quarters_summary = []
-        quarterly_comparison_chart = category_chart = {}
+    
+    # Handle Excel export
+    if export == 'excel':
+        return export_quarterly_report_excel(
+            fiscal_year=fiscal_year,
+            quarter=quarter,
+            start_date=start_date,
+            end_date=end_date,
+            quarter_applications=quarter_applications,
+            quarter_approved=quarter_approved,
+            quarter_allocated=quarter_allocated,
+            quarter_disbursed=quarter_disbursed,
+            prev_applications=prev_applications,
+            category_performance=category_performance,
+            ward_performance=ward_performance,
+            quarters_summary=quarters_summary
+        )
     
     context = {
         'fiscal_year': fiscal_year,
@@ -12341,6 +12364,191 @@ def quarterly_reports_view(request):
     return render(request, 'transparency/quarterly_reports.html', context)
 
 
+def export_quarterly_report_excel(fiscal_year, quarter, start_date, end_date,
+                                   quarter_applications, quarter_approved,
+                                   quarter_allocated, quarter_disbursed,
+                                   prev_applications, category_performance,
+                                   ward_performance, quarters_summary):
+    """Export quarterly report to Excel"""
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Q{quarter} Report"
+    
+    # Styles
+    header_font = Font(bold=True, size=14, color="FFFFFF")
+    subheader_font = Font(bold=True, size=11)
+    title_fill = PatternFill(start_color="27ae60", end_color="27ae60", fill_type="solid")
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    alt_row_fill = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal='center', vertical='center')
+    
+    current_row = 1
+    
+    # Title
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    title_cell = ws.cell(row=current_row, column=1, 
+                         value=f"Quarterly Report - Q{quarter} {fiscal_year.name if fiscal_year else 'N/A'}")
+    title_cell.font = Font(bold=True, size=16)
+    title_cell.alignment = center_align
+    current_row += 1
+    
+    # Report period
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    period_text = f"Period: {start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}" if start_date else "N/A"
+    ws.cell(row=current_row, column=1, value=period_text).alignment = center_align
+    current_row += 2
+    
+    # === Summary Statistics Section ===
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    summary_header = ws.cell(row=current_row, column=1, value="SUMMARY STATISTICS")
+    summary_header.font = header_font
+    summary_header.fill = title_fill
+    summary_header.alignment = center_align
+    current_row += 1
+    
+    stats = [
+        ("Total Applications", quarter_applications),
+        ("Approved Applications", quarter_approved),
+        ("Total Allocated (KES)", f"{quarter_allocated:,.2f}"),
+        ("Total Disbursed (KES)", f"{quarter_disbursed:,.2f}"),
+        ("Previous Quarter Applications", prev_applications),
+    ]
+    
+    for stat_name, stat_value in stats:
+        ws.cell(row=current_row, column=1, value=stat_name).font = subheader_font
+        ws.cell(row=current_row, column=2, value=stat_value)
+        for col in range(1, 3):
+            ws.cell(row=current_row, column=col).border = thin_border
+        current_row += 1
+    
+    current_row += 1
+    
+    # === Category Performance Section ===
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    cat_header = ws.cell(row=current_row, column=1, value="CATEGORY PERFORMANCE")
+    cat_header.font = header_font
+    cat_header.fill = title_fill
+    cat_header.alignment = center_align
+    current_row += 1
+    
+    # Category headers
+    cat_headers = ["#", "Category", "Beneficiaries", "Amount (KES)"]
+    for col, header in enumerate(cat_headers, 1):
+        cell = ws.cell(row=current_row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    current_row += 1
+    
+    # Category data
+    for idx, cat in enumerate(category_performance, 1):
+        row_fill = alt_row_fill if idx % 2 == 0 else None
+        cells = [
+            (1, idx),
+            (2, cat.get('application__bursary_category__name') or 'Unknown'),
+            (3, cat.get('beneficiaries', 0)),
+            (4, f"{cat.get('amount', 0):,.2f}"),
+        ]
+        for col, value in cells:
+            cell = ws.cell(row=current_row, column=col, value=value)
+            cell.border = thin_border
+            if row_fill:
+                cell.fill = row_fill
+        current_row += 1
+    
+    current_row += 1
+    
+    # === Ward Performance Section ===
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    ward_header = ws.cell(row=current_row, column=1, value="TOP 10 WARDS BY BENEFICIARIES")
+    ward_header.font = header_font
+    ward_header.fill = title_fill
+    ward_header.alignment = center_align
+    current_row += 1
+    
+    # Ward headers
+    ward_headers = ["#", "Ward", "Beneficiaries", "Amount (KES)"]
+    for col, header in enumerate(ward_headers, 1):
+        cell = ws.cell(row=current_row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    current_row += 1
+    
+    # Ward data
+    for idx, ward in enumerate(ward_performance, 1):
+        row_fill = alt_row_fill if idx % 2 == 0 else None
+        cells = [
+            (1, idx),
+            (2, ward.get('application__applicant__ward__name') or 'Unknown'),
+            (3, ward.get('beneficiaries', 0)),
+            (4, f"{ward.get('amount', 0):,.2f}"),
+        ]
+        for col, value in cells:
+            cell = ws.cell(row=current_row, column=col, value=value)
+            cell.border = thin_border
+            if row_fill:
+                cell.fill = row_fill
+        current_row += 1
+    
+    current_row += 1
+    
+    # === Quarterly Comparison Section ===
+    ws.merge_cells(f'A{current_row}:E{current_row}')
+    qtr_header = ws.cell(row=current_row, column=1, value="QUARTERLY COMPARISON")
+    qtr_header.font = header_font
+    qtr_header.fill = title_fill
+    qtr_header.alignment = center_align
+    current_row += 1
+    
+    # Quarterly headers
+    qtr_headers = ["Quarter", "Applications", "Amount Allocated (KES)"]
+    for col, header in enumerate(qtr_headers, 1):
+        cell = ws.cell(row=current_row, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    current_row += 1
+    
+    # Quarterly data
+    for idx, qtr in enumerate(quarters_summary, 1):
+        row_fill = alt_row_fill if idx % 2 == 0 else None
+        cells = [
+            (1, f"Q{qtr['quarter']}"),
+            (2, qtr['applications']),
+            (3, f"{qtr['allocated']:,.2f}"),
+        ]
+        for col, value in cells:
+            cell = ws.cell(row=current_row, column=col, value=value)
+            cell.border = thin_border
+            if row_fill:
+                cell.fill = row_fill
+        current_row += 1
+    
+    # Adjust column widths
+    col_widths = [8, 35, 18, 20, 15]
+    for i, width in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"Quarterly_Report_Q{quarter}_{fiscal_year.name if fiscal_year else 'NA'}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
 
 """
 Help & Support Views
