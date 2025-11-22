@@ -11126,11 +11126,33 @@ def export_beneficiaries_to_excel(allocations, request):
     workbook.save(response)
     return response
 
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.db.models import Sum, Count, Q, Avg, F
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.chart import BarChart, PieChart, Reference
+import json
+from decimal import Decimal
+
+from .models import (
+    Allocation, FiscalYear, Ward, BursaryCategory, 
+    Institution, Applicant, Application, WardAllocation
+)
+
+
+@login_required
 def budget_utilization_view(request):
     """Budget utilization and allocation reports"""
     
     # Get fiscal year filter
     fiscal_year_id = request.GET.get('fiscal_year')
+    export_format = request.GET.get('export')
     
     if fiscal_year_id:
         fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
@@ -11143,71 +11165,126 @@ def budget_utilization_view(request):
     fiscal_years = FiscalYear.objects.all().order_by('-start_date')
     
     if fiscal_year:
-        # Budget statistics - use total_bursary_allocation instead of total_budget
+        # Budget statistics
         total_budget = fiscal_year.total_bursary_allocation
+        
+        # Get allocated amount - sum of all disbursed allocations
         allocated_amount = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved'
-        ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
         
-        disbursed_amount = Disbursement.objects.filter(
-            allocation__fiscal_year=fiscal_year,
-            status='completed'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        # Disbursed amount (same as allocated since we filter by is_disbursed=True)
+        disbursed_amount = allocated_amount
         
-        pending_disbursement = allocated_amount - disbursed_amount
-        remaining_budget = total_budget - allocated_amount
-        utilization_rate = (allocated_amount / total_budget * 100) if total_budget > 0 else 0
+        # Pending disbursement - approved but not yet disbursed
+        pending_disbursement = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=False
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+        
+        # Remaining budget
+        total_allocated_and_pending = allocated_amount + pending_disbursement
+        remaining_budget = total_budget - total_allocated_and_pending
+        
+        # Utilization rate
+        utilization_rate = (total_allocated_and_pending / total_budget * 100) if total_budget > 0 else 0
+        disbursement_rate = (disbursed_amount / total_budget * 100) if total_budget > 0 else 0
         
         # Category-wise allocation
         category_allocation = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved'
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
         ).values(
             'application__bursary_category__name'
         ).annotate(
-            allocated=Sum('approved_amount'),
+            allocated=Sum('amount_allocated'),
             count=Count('id')
         ).order_by('-allocated')
         
         # Ward-wise allocation
         ward_allocation = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved'
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
         ).values(
-            'applicant__ward__name'
+            'application__applicant__ward__name'
         ).annotate(
-            allocated=Sum('approved_amount'),
+            allocated=Sum('amount_allocated'),
             count=Count('id')
         ).order_by('-allocated')
         
         # Institution type allocation
         institution_allocation = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved'
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
         ).values(
             'application__institution__institution_type'
         ).annotate(
-            allocated=Sum('approved_amount'),
+            allocated=Sum('amount_allocated'),
             count=Count('id')
         ).order_by('-allocated')
         
         # Monthly disbursement trend
-        monthly_disbursement = Disbursement.objects.filter(
-            allocation__fiscal_year=fiscal_year,
-            status='completed'
+        monthly_disbursement = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True,
+            disbursement_date__isnull=False
         ).annotate(
             month=TruncMonth('disbursement_date')
         ).values('month').annotate(
-            amount=Sum('amount'),
+            amount=Sum('amount_allocated'),
             count=Count('id')
         ).order_by('month')
         
+        # Ward budget vs actual allocation
+        ward_budget_comparison = []
+        ward_allocations_db = WardAllocation.objects.filter(
+            fiscal_year=fiscal_year
+        ).select_related('ward')
+        
+        for ward_alloc in ward_allocations_db:
+            actual_spent = Allocation.objects.filter(
+                application__fiscal_year=fiscal_year,
+                application__applicant__ward=ward_alloc.ward,
+                is_disbursed=True
+            ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+            
+            ward_budget_comparison.append({
+                'ward': ward_alloc.ward.name,
+                'allocated': ward_alloc.allocated_amount,
+                'spent': actual_spent,
+                'balance': ward_alloc.allocated_amount - actual_spent,
+                'utilization': (actual_spent / ward_alloc.allocated_amount * 100) if ward_alloc.allocated_amount > 0 else 0
+            })
+        
+        # Application status breakdown
+        status_breakdown = Application.objects.filter(
+            fiscal_year=fiscal_year
+        ).values('status').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        # Handle export
+        if export_format == 'excel':
+            return export_budget_utilization_to_excel(
+                fiscal_year,
+                total_budget,
+                allocated_amount,
+                disbursed_amount,
+                pending_disbursement,
+                remaining_budget,
+                utilization_rate,
+                category_allocation,
+                ward_allocation,
+                institution_allocation,
+                ward_budget_comparison,
+                monthly_disbursement
+            )
+        
         # Chart data
         budget_chart_data = {
-            'labels': ['Allocated', 'Disbursed', 'Pending Disbursement', 'Remaining Budget'],
+            'labels': ['Disbursed', 'Pending Disbursement', 'Remaining Budget'],
             'data': [
-                float(allocated_amount),
                 float(disbursed_amount),
                 float(pending_disbursement),
                 float(remaining_budget)
@@ -11220,7 +11297,7 @@ def budget_utilization_view(request):
         }
         
         ward_chart_data = {
-            'labels': [item['applicant__ward__name'] or 'Unknown' for item in ward_allocation[:10]],
+            'labels': [item['application__applicant__ward__name'] or 'Unknown' for item in ward_allocation[:10]],
             'data': [float(item['allocated']) for item in ward_allocation[:10]]
         }
         
@@ -11232,9 +11309,11 @@ def budget_utilization_view(request):
     else:
         total_budget = allocated_amount = disbursed_amount = Decimal('0')
         pending_disbursement = remaining_budget = Decimal('0')
-        utilization_rate = 0
+        utilization_rate = disbursement_rate = 0
         category_allocation = ward_allocation = institution_allocation = []
         monthly_disbursement = []
+        ward_budget_comparison = []
+        status_breakdown = []
         budget_chart_data = category_chart_data = ward_chart_data = monthly_disbursement_chart = {}
     
     context = {
@@ -11246,10 +11325,13 @@ def budget_utilization_view(request):
         'pending_disbursement': pending_disbursement,
         'remaining_budget': remaining_budget,
         'utilization_rate': round(utilization_rate, 2),
+        'disbursement_rate': round(disbursement_rate, 2),
         'category_allocation': category_allocation,
         'ward_allocation': ward_allocation,
         'institution_allocation': institution_allocation,
         'monthly_disbursement': monthly_disbursement,
+        'ward_budget_comparison': ward_budget_comparison,
+        'status_breakdown': status_breakdown,
         'budget_chart_data': json.dumps(budget_chart_data),
         'category_chart_data': json.dumps(category_chart_data),
         'ward_chart_data': json.dumps(ward_chart_data),
@@ -11258,6 +11340,261 @@ def budget_utilization_view(request):
     
     return render(request, 'transparency/budget_utilization.html', context)
 
+
+def export_budget_utilization_to_excel(
+    fiscal_year,
+    total_budget,
+    allocated_amount,
+    disbursed_amount,
+    pending_disbursement,
+    remaining_budget,
+    utilization_rate,
+    category_allocation,
+    ward_allocation,
+    institution_allocation,
+    ward_budget_comparison,
+    monthly_disbursement
+):
+    """Export budget utilization report to Excel"""
+    
+    workbook = openpyxl.Workbook()
+    
+    # Remove default sheet
+    workbook.remove(workbook.active)
+    
+    # Define styles
+    title_font = Font(bold=True, size=14, color="FFFFFF")
+    title_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    cell_alignment = Alignment(horizontal="left", vertical="center")
+    currency_alignment = Alignment(horizontal="right", vertical="center")
+    center_alignment = Alignment(horizontal="center", vertical="center")
+    
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # ============= SUMMARY SHEET =============
+    summary_sheet = workbook.create_sheet("Budget Summary")
+    
+    # Title
+    summary_sheet.merge_cells('A1:D1')
+    title_cell = summary_sheet['A1']
+    title_cell.value = f"Budget Utilization Report - {fiscal_year.name}"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # Report date
+    summary_sheet['A2'] = "Report Generated:"
+    summary_sheet['B2'] = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    summary_sheet['A2'].font = Font(bold=True)
+    
+    # Budget Overview
+    row = 4
+    summary_sheet.merge_cells(f'A{row}:D{row}')
+    overview_cell = summary_sheet[f'A{row}']
+    overview_cell.value = "BUDGET OVERVIEW"
+    overview_cell.font = header_font
+    overview_cell.fill = header_fill
+    overview_cell.alignment = center_alignment
+    
+    row += 1
+    budget_data = [
+        ('Total Budget Allocation', float(total_budget)),
+        ('Total Disbursed', float(disbursed_amount)),
+        ('Pending Disbursement', float(pending_disbursement)),
+        ('Remaining Budget', float(remaining_budget)),
+        ('Utilization Rate', f"{utilization_rate:.2f}%"),
+    ]
+    
+    for label, value in budget_data:
+        summary_sheet[f'A{row}'] = label
+        summary_sheet[f'A{row}'].font = Font(bold=True)
+        summary_sheet[f'B{row}'] = value
+        if isinstance(value, float):
+            summary_sheet[f'B{row}'].number_format = '#,##0.00'
+        row += 1
+    
+    # Column widths
+    summary_sheet.column_dimensions['A'].width = 30
+    summary_sheet.column_dimensions['B'].width = 20
+    
+    # ============= CATEGORY ALLOCATION SHEET =============
+    category_sheet = workbook.create_sheet("By Category")
+    
+    # Title
+    category_sheet.merge_cells('A1:D1')
+    title_cell = category_sheet['A1']
+    title_cell.value = "Allocation by Category"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # Headers
+    headers = ['Category', 'Number of Beneficiaries', 'Amount Allocated', 'Percentage']
+    for col_num, header in enumerate(headers, 1):
+        cell = category_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # Data
+    total_category_amount = sum(float(item['allocated']) for item in category_allocation)
+    row = 4
+    for item in category_allocation:
+        category_sheet[f'A{row}'] = item['application__bursary_category__name'] or 'Unknown'
+        category_sheet[f'B{row}'] = item['count']
+        category_sheet[f'C{row}'] = float(item['allocated'])
+        category_sheet[f'C{row}'].number_format = '#,##0.00'
+        percentage = (float(item['allocated']) / total_category_amount * 100) if total_category_amount > 0 else 0
+        category_sheet[f'D{row}'] = f"{percentage:.2f}%"
+        row += 1
+    
+    # Column widths
+    category_sheet.column_dimensions['A'].width = 30
+    category_sheet.column_dimensions['B'].width = 25
+    category_sheet.column_dimensions['C'].width = 20
+    category_sheet.column_dimensions['D'].width = 15
+    
+    # ============= WARD ALLOCATION SHEET =============
+    ward_sheet = workbook.create_sheet("By Ward")
+    
+    # Title
+    ward_sheet.merge_cells('A1:E1')
+    title_cell = ward_sheet['A1']
+    title_cell.value = "Allocation by Ward"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # Headers
+    headers = ['Ward', 'Budget Allocated', 'Amount Spent', 'Balance', 'Utilization Rate']
+    for col_num, header in enumerate(headers, 1):
+        cell = ward_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # Data
+    row = 4
+    for item in ward_budget_comparison:
+        ward_sheet[f'A{row}'] = item['ward']
+        ward_sheet[f'B{row}'] = float(item['allocated'])
+        ward_sheet[f'B{row}'].number_format = '#,##0.00'
+        ward_sheet[f'C{row}'] = float(item['spent'])
+        ward_sheet[f'C{row}'].number_format = '#,##0.00'
+        ward_sheet[f'D{row}'] = float(item['balance'])
+        ward_sheet[f'D{row}'].number_format = '#,##0.00'
+        ward_sheet[f'E{row}'] = f"{item['utilization']:.2f}%"
+        row += 1
+    
+    # Column widths
+    ward_sheet.column_dimensions['A'].width = 25
+    ward_sheet.column_dimensions['B'].width = 20
+    ward_sheet.column_dimensions['C'].width = 20
+    ward_sheet.column_dimensions['D'].width = 20
+    ward_sheet.column_dimensions['E'].width = 18
+    
+    # ============= INSTITUTION TYPE SHEET =============
+    institution_sheet = workbook.create_sheet("By Institution Type")
+    
+    # Title
+    institution_sheet.merge_cells('A1:D1')
+    title_cell = institution_sheet['A1']
+    title_cell.value = "Allocation by Institution Type"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # Headers
+    headers = ['Institution Type', 'Number of Students', 'Amount Allocated', 'Average per Student']
+    for col_num, header in enumerate(headers, 1):
+        cell = institution_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # Data
+    row = 4
+    for item in institution_allocation:
+        inst_type = dict(Institution.INSTITUTION_TYPES).get(
+            item['application__institution__institution_type'], 
+            'Unknown'
+        )
+        institution_sheet[f'A{row}'] = inst_type
+        institution_sheet[f'B{row}'] = item['count']
+        institution_sheet[f'C{row}'] = float(item['allocated'])
+        institution_sheet[f'C{row}'].number_format = '#,##0.00'
+        avg = float(item['allocated']) / item['count'] if item['count'] > 0 else 0
+        institution_sheet[f'D{row}'] = avg
+        institution_sheet[f'D{row}'].number_format = '#,##0.00'
+        row += 1
+    
+    # Column widths
+    institution_sheet.column_dimensions['A'].width = 30
+    institution_sheet.column_dimensions['B'].width = 20
+    institution_sheet.column_dimensions['C'].width = 20
+    institution_sheet.column_dimensions['D'].width = 22
+    
+    # ============= MONTHLY DISBURSEMENT SHEET =============
+    monthly_sheet = workbook.create_sheet("Monthly Disbursements")
+    
+    # Title
+    monthly_sheet.merge_cells('A1:C1')
+    title_cell = monthly_sheet['A1']
+    title_cell.value = "Monthly Disbursement Trend"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # Headers
+    headers = ['Month', 'Amount Disbursed', 'Number of Beneficiaries']
+    for col_num, header in enumerate(headers, 1):
+        cell = monthly_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # Data
+    row = 4
+    for item in monthly_disbursement:
+        monthly_sheet[f'A{row}'] = item['month'].strftime('%B %Y')
+        monthly_sheet[f'B{row}'] = float(item['amount'])
+        monthly_sheet[f'B{row}'].number_format = '#,##0.00'
+        monthly_sheet[f'C{row}'] = item['count']
+        row += 1
+    
+    # Column widths
+    monthly_sheet.column_dimensions['A'].width = 20
+    monthly_sheet.column_dimensions['B'].width = 20
+    monthly_sheet.column_dimensions['C'].width = 25
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"budget_utilization_{fiscal_year.name}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    workbook.save(response)
+    return response
 
 def testimonials_view(request):
     """Public testimonials from beneficiaries"""
