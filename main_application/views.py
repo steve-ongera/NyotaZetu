@@ -5652,80 +5652,432 @@ def application_reports(request):
     
     return render(request, 'admin/application_reports.html', context)
 
+import json
+from datetime import datetime, timedelta
+from decimal import Decimal
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.db.models import Sum, Count, Q, Avg
+from django.utils import timezone
 from django.core.serializers.json import DjangoJSONEncoder
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
+
+from .models import (
+    FiscalYear, BursaryCategory, Application, Allocation, 
+    Disbursement, Ward, Constituency, Institution
+)
+
 
 @login_required
 def financial_reports(request):
-    """Financial Reports Dashboard"""
-    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    """Financial Reports Dashboard with Charts and Export"""
     
-    # Budget allocation by category
-    budget_data = BursaryCategory.objects.filter(
-        fiscal_year=current_fiscal_year
-    ).values('name', 'allocation_amount').annotate(
-        disbursed=Sum('application__allocation__amount_allocated', 
-                     filter=Q(application__allocation__is_disbursed=True))
-    )
+    # Get filter parameters
+    fiscal_year_id = request.GET.get('fiscal_year')
+    export = request.GET.get('export')
     
-    for item in budget_data:
-        if item['disbursed'] is None:
-            item['disbursed'] = 0
-        item['remaining'] = float(item['allocation_amount']) - float(item['disbursed'])
+    # Get fiscal year
+    if fiscal_year_id:
+        current_fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
-    # Monthly disbursements
+    if not current_fiscal_year:
+        current_fiscal_year = FiscalYear.objects.order_by('-start_date').first()
+    
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Initialize default values
+    budget_data = []
     monthly_disbursements = []
-    for i in range(12):
-        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=30*i)
-        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+    ward_allocations = []
+    constituency_allocations = []
+    institution_allocations = []
+    payment_method_stats = []
+    
+    total_budget = Decimal('0')
+    total_allocated = Decimal('0')
+    total_disbursed = Decimal('0')
+    total_requested = Decimal('0')
+    pending_disbursements = Decimal('0')
+    
+    if current_fiscal_year:
+        # Total budget from fiscal year
+        total_budget = current_fiscal_year.total_bursary_allocation or Decimal('0')
         
-        amount = Allocation.objects.filter(
-            disbursement_date__range=[month_start, month_end],
+        # Budget allocation by category
+        categories = BursaryCategory.objects.filter(
+            fiscal_year=current_fiscal_year,
+            is_active=True
+        ).annotate(
+            allocated=Sum(
+                'application__allocation__amount_allocated',
+                filter=Q(application__status='approved')
+            ),
+            disbursed=Sum(
+                'application__allocation__amount_allocated',
+                filter=Q(application__allocation__is_disbursed=True)
+            ),
+            beneficiaries=Count(
+                'application__allocation',
+                filter=Q(application__status='approved')
+            )
+        )
+        
+        budget_data = []
+        for cat in categories:
+            allocated = cat.allocated or Decimal('0')
+            disbursed = cat.disbursed or Decimal('0')
+            budget_data.append({
+                'name': cat.name,
+                'budget': float(cat.allocation_amount),
+                'allocated': float(allocated),
+                'disbursed': float(disbursed),
+                'remaining': float(cat.allocation_amount - allocated),
+                'beneficiaries': cat.beneficiaries or 0,
+                'utilization': round(float(allocated) / float(cat.allocation_amount) * 100, 1) if cat.allocation_amount > 0 else 0
+            })
+        
+        # Monthly disbursements for the fiscal year
+        year_start = current_fiscal_year.start_date
+        year_end = current_fiscal_year.end_date
+        
+        monthly_disbursements = []
+        current_month = year_start.replace(day=1)
+        
+        while current_month <= year_end:
+            next_month = (current_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+            
+            month_allocated = Allocation.objects.filter(
+                application__fiscal_year=current_fiscal_year,
+                allocation_date__gte=current_month,
+                allocation_date__lt=next_month
+            ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+            
+            month_disbursed = Allocation.objects.filter(
+                application__fiscal_year=current_fiscal_year,
+                is_disbursed=True,
+                disbursement_date__gte=current_month,
+                disbursement_date__lt=next_month
+            ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+            
+            monthly_disbursements.append({
+                'month': current_month.strftime('%b %Y'),
+                'allocated': float(month_allocated),
+                'disbursed': float(month_disbursed)
+            })
+            
+            current_month = next_month
+        
+        # Ward-wise allocation
+        ward_allocations = list(Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year
+        ).values(
+            'application__applicant__ward__name'
+        ).annotate(
+            total_allocated=Sum('amount_allocated'),
+            beneficiaries=Count('id')
+        ).order_by('-total_allocated')[:10])
+        
+        # Constituency-wise allocation
+        constituency_allocations = list(Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year
+        ).values(
+            'application__applicant__constituency__name'
+        ).annotate(
+            total_allocated=Sum('amount_allocated'),
+            beneficiaries=Count('id')
+        ).order_by('-total_allocated'))
+        
+        # Institution-wise allocation
+        institution_allocations = list(Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year
+        ).values(
+            'application__institution__name',
+            'application__institution__institution_type'
+        ).annotate(
+            total_allocated=Sum('amount_allocated'),
+            beneficiaries=Count('id')
+        ).order_by('-total_allocated')[:15])
+        
+        # Payment method breakdown
+        payment_method_stats = list(Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year,
             is_disbursed=True
-        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+        ).values('payment_method').annotate(
+            total=Sum('amount_allocated'),
+            count=Count('id')
+        ))
         
-        monthly_disbursements.append({
-            'month': month_start.strftime('%B %Y'),
-            'amount': float(amount)
-        })
+        # Financial summary calculations
+        total_allocated = Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+        
+        total_disbursed = Allocation.objects.filter(
+            application__fiscal_year=current_fiscal_year,
+            is_disbursed=True
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+        
+        total_requested = Application.objects.filter(
+            fiscal_year=current_fiscal_year,
+            status__in=['submitted', 'under_review', 'approved', 'disbursed']
+        ).aggregate(total=Sum('amount_requested'))['total'] or Decimal('0')
+        
+        pending_disbursements = total_allocated - total_disbursed
     
-    monthly_disbursements.reverse()
+    # Calculate rates
+    budget_utilization = round(float(total_allocated) / float(total_budget) * 100, 2) if total_budget > 0 else 0
+    disbursement_rate = round(float(total_disbursed) / float(total_allocated) * 100, 2) if total_allocated > 0 else 0
+    allocation_rate = round(float(total_allocated) / float(total_requested) * 100, 2) if total_requested > 0 else 0
     
-    # Amount requested vs allocated
-    request_vs_allocated = Application.objects.filter(
-        fiscal_year=current_fiscal_year,
-        status='approved'
-    ).aggregate(
-        total_requested=Sum('amount_requested'),
-        total_allocated=Sum('allocation__amount_allocated')
-    )
+    # Prepare chart data
+    budget_chart = {
+        'labels': [item['name'] for item in budget_data],
+        'budget': [item['budget'] for item in budget_data],
+        'allocated': [item['allocated'] for item in budget_data],
+        'disbursed': [item['disbursed'] for item in budget_data]
+    }
     
-    # Financial summary
-    total_budget = current_fiscal_year.total_allocation if current_fiscal_year else 0
-    total_allocated = Allocation.objects.filter(
-        application__fiscal_year=current_fiscal_year
-    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    monthly_chart = {
+        'labels': [item['month'] for item in monthly_disbursements],
+        'allocated': [item['allocated'] for item in monthly_disbursements],
+        'disbursed': [item['disbursed'] for item in monthly_disbursements]
+    }
     
-    total_disbursed = Allocation.objects.filter(
-        application__fiscal_year=current_fiscal_year,
-        is_disbursed=True
-    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    constituency_chart = {
+        'labels': [item['application__applicant__constituency__name'] or 'Unknown' for item in constituency_allocations],
+        'data': [float(item['total_allocated'] or 0) for item in constituency_allocations]
+    }
     
-    pending_disbursements = total_allocated - total_disbursed
+    payment_chart = {
+        'labels': [item['payment_method'] for item in payment_method_stats],
+        'data': [float(item['total'] or 0) for item in payment_method_stats]
+    }
+    
+    # Handle Excel export
+    if export == 'excel':
+        return export_financial_report_excel(
+            fiscal_year=current_fiscal_year,
+            budget_data=budget_data,
+            monthly_disbursements=monthly_disbursements,
+            ward_allocations=ward_allocations,
+            institution_allocations=institution_allocations,
+            total_budget=total_budget,
+            total_allocated=total_allocated,
+            total_disbursed=total_disbursed,
+            total_requested=total_requested,
+            pending_disbursements=pending_disbursements,
+            budget_utilization=budget_utilization
+        )
     
     context = {
-        'budget_data': json.dumps(list(budget_data), cls=DjangoJSONEncoder),
-        'monthly_disbursements': json.dumps(monthly_disbursements, cls=DjangoJSONEncoder),
-        'request_vs_allocated': request_vs_allocated,
+        'current_fiscal_year': current_fiscal_year,
+        'fiscal_years': fiscal_years,
+        'budget_data': budget_data,
+        'monthly_disbursements': monthly_disbursements,
+        'ward_allocations': ward_allocations,
+        'institution_allocations': institution_allocations,
+        'payment_method_stats': payment_method_stats,
         'total_budget': float(total_budget),
         'total_allocated': float(total_allocated),
         'total_disbursed': float(total_disbursed),
+        'total_requested': float(total_requested),
         'pending_disbursements': float(pending_disbursements),
-        'budget_utilization': round((float(total_allocated) / float(total_budget) * 100), 2) if total_budget > 0 else 0,
-        'current_fiscal_year': current_fiscal_year,
-        'report_type': 'financial'
+        'budget_utilization': budget_utilization,
+        'disbursement_rate': disbursement_rate,
+        'allocation_rate': allocation_rate,
+        'budget_chart': json.dumps(budget_chart, cls=DjangoJSONEncoder),
+        'monthly_chart': json.dumps(monthly_chart, cls=DjangoJSONEncoder),
+        'constituency_chart': json.dumps(constituency_chart, cls=DjangoJSONEncoder),
+        'payment_chart': json.dumps(payment_chart, cls=DjangoJSONEncoder),
     }
     
-    return render(request, 'admin/financial_reports.html', context)
+    return render(request, 'transparency/financial_reports.html', context)
+
+
+def export_financial_report_excel(fiscal_year, budget_data, monthly_disbursements,
+                                   ward_allocations, institution_allocations,
+                                   total_budget, total_allocated, total_disbursed,
+                                   total_requested, pending_disbursements, budget_utilization):
+    """Export financial report to Excel"""
+    
+    wb = openpyxl.Workbook()
+    
+    # Styles
+    header_font = Font(bold=True, size=14, color="FFFFFF")
+    subheader_font = Font(bold=True, size=11)
+    title_fill = PatternFill(start_color="27ae60", end_color="27ae60", fill_type="solid")
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    alt_fill = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center = Alignment(horizontal='center', vertical='center')
+    
+    # === Sheet 1: Summary ===
+    ws1 = wb.active
+    ws1.title = "Financial Summary"
+    
+    row = 1
+    ws1.merge_cells(f'A{row}:D{row}')
+    ws1.cell(row=row, column=1, value=f"Financial Report - {fiscal_year.name if fiscal_year else 'N/A'}")
+    ws1.cell(row=row, column=1).font = Font(bold=True, size=16)
+    ws1.cell(row=row, column=1).alignment = center
+    row += 2
+    
+    # Summary section
+    ws1.merge_cells(f'A{row}:D{row}')
+    ws1.cell(row=row, column=1, value="FINANCIAL SUMMARY").font = header_font
+    ws1.cell(row=row, column=1).fill = title_fill
+    row += 1
+    
+    summary = [
+        ("Total Budget", f"KES {total_budget:,.2f}"),
+        ("Total Allocated", f"KES {total_allocated:,.2f}"),
+        ("Total Disbursed", f"KES {total_disbursed:,.2f}"),
+        ("Pending Disbursement", f"KES {pending_disbursements:,.2f}"),
+        ("Total Requested", f"KES {total_requested:,.2f}"),
+        ("Budget Utilization", f"{budget_utilization}%"),
+    ]
+    
+    for label, value in summary:
+        ws1.cell(row=row, column=1, value=label).font = subheader_font
+        ws1.cell(row=row, column=2, value=value)
+        ws1.cell(row=row, column=1).border = border
+        ws1.cell(row=row, column=2).border = border
+        row += 1
+    
+    row += 1
+    
+    # Category breakdown
+    ws1.merge_cells(f'A{row}:F{row}')
+    ws1.cell(row=row, column=1, value="CATEGORY BREAKDOWN").font = header_font
+    ws1.cell(row=row, column=1).fill = title_fill
+    row += 1
+    
+    cat_headers = ["Category", "Budget", "Allocated", "Disbursed", "Remaining", "Utilization %"]
+    for col, h in enumerate(cat_headers, 1):
+        c = ws1.cell(row=row, column=col, value=h)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = header_fill
+        c.border = border
+    row += 1
+    
+    for i, cat in enumerate(budget_data):
+        fill = alt_fill if i % 2 == 0 else None
+        vals = [cat['name'], f"KES {cat['budget']:,.2f}", f"KES {cat['allocated']:,.2f}",
+                f"KES {cat['disbursed']:,.2f}", f"KES {cat['remaining']:,.2f}", f"{cat['utilization']}%"]
+        for col, v in enumerate(vals, 1):
+            c = ws1.cell(row=row, column=col, value=v)
+            c.border = border
+            if fill: c.fill = fill
+        row += 1
+    
+    # Adjust column widths
+    for i, w in enumerate([25, 18, 18, 18, 18, 15], 1):
+        ws1.column_dimensions[get_column_letter(i)].width = w
+    
+    # === Sheet 2: Monthly Trends ===
+    ws2 = wb.create_sheet("Monthly Trends")
+    row = 1
+    
+    ws2.merge_cells(f'A{row}:C{row}')
+    ws2.cell(row=row, column=1, value="MONTHLY DISBURSEMENT TRENDS").font = header_font
+    ws2.cell(row=row, column=1).fill = title_fill
+    row += 1
+    
+    for col, h in enumerate(["Month", "Allocated", "Disbursed"], 1):
+        c = ws2.cell(row=row, column=col, value=h)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = header_fill
+        c.border = border
+    row += 1
+    
+    for i, m in enumerate(monthly_disbursements):
+        fill = alt_fill if i % 2 == 0 else None
+        vals = [m['month'], f"KES {m['allocated']:,.2f}", f"KES {m['disbursed']:,.2f}"]
+        for col, v in enumerate(vals, 1):
+            c = ws2.cell(row=row, column=col, value=v)
+            c.border = border
+            if fill: c.fill = fill
+        row += 1
+    
+    for i, w in enumerate([15, 20, 20], 1):
+        ws2.column_dimensions[get_column_letter(i)].width = w
+    
+    # === Sheet 3: Ward Allocations ===
+    ws3 = wb.create_sheet("Ward Allocations")
+    row = 1
+    
+    ws3.merge_cells(f'A{row}:C{row}')
+    ws3.cell(row=row, column=1, value="TOP 10 WARDS BY ALLOCATION").font = header_font
+    ws3.cell(row=row, column=1).fill = title_fill
+    row += 1
+    
+    for col, h in enumerate(["Ward", "Total Allocated", "Beneficiaries"], 1):
+        c = ws3.cell(row=row, column=col, value=h)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = header_fill
+        c.border = border
+    row += 1
+    
+    for i, w in enumerate(ward_allocations):
+        fill = alt_fill if i % 2 == 0 else None
+        vals = [w.get('application__applicant__ward__name') or 'Unknown',
+                f"KES {w.get('total_allocated', 0):,.2f}", w.get('beneficiaries', 0)]
+        for col, v in enumerate(vals, 1):
+            c = ws3.cell(row=row, column=col, value=v)
+            c.border = border
+            if fill: c.fill = fill
+        row += 1
+    
+    for i, width in enumerate([25, 20, 15], 1):
+        ws3.column_dimensions[get_column_letter(i)].width = width
+    
+    # === Sheet 4: Institution Allocations ===
+    ws4 = wb.create_sheet("Institution Allocations")
+    row = 1
+    
+    ws4.merge_cells(f'A{row}:D{row}')
+    ws4.cell(row=row, column=1, value="TOP 15 INSTITUTIONS BY ALLOCATION").font = header_font
+    ws4.cell(row=row, column=1).fill = title_fill
+    row += 1
+    
+    for col, h in enumerate(["Institution", "Type", "Total Allocated", "Beneficiaries"], 1):
+        c = ws4.cell(row=row, column=col, value=h)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = header_fill
+        c.border = border
+    row += 1
+    
+    for i, inst in enumerate(institution_allocations):
+        fill = alt_fill if i % 2 == 0 else None
+        vals = [inst.get('application__institution__name') or 'Unknown',
+                inst.get('application__institution__institution_type') or 'N/A',
+                f"KES {inst.get('total_allocated', 0):,.2f}", inst.get('beneficiaries', 0)]
+        for col, v in enumerate(vals, 1):
+            c = ws4.cell(row=row, column=col, value=v)
+            c.border = border
+            if fill: c.fill = fill
+        row += 1
+    
+    for i, width in enumerate([35, 15, 20, 15], 1):
+        ws4.column_dimensions[get_column_letter(i)].width = width
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"Financial_Report_{fiscal_year.name if fiscal_year else 'NA'}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
 
 @login_required
 def ward_reports(request):

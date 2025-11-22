@@ -1,0 +1,430 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Financial Reports - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0; margin-bottom: 20px; font-size: 14px;
+        list-style: none; display: flex; flex-wrap: wrap;
+    }
+    .breadcrumb-item { color: #64748B; }
+    .breadcrumb-item + .breadcrumb-item::before { content: "/ "; color: #94A3B8; padding: 0 8px; }
+    .breadcrumb-item.active { color: #1E293B; font-weight: 500; }
+    .breadcrumb a { color: #3498db; text-decoration: none; }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white; border-radius: 8px; padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #E2E8F0;
+        transition: transform 0.2s ease; position: relative; overflow: hidden;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0;
+        height: 3px; background: currentColor; opacity: 0.3;
+    }
+    .stat-card.stat-blue { color: #3498db; }
+    .stat-card.stat-green { color: #27ae60; }
+    .stat-card.stat-orange { color: #f39c12; }
+    .stat-card.stat-red { color: #e74c3c; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #16a085; }
+
+    .stat-icon {
+        width: 44px; height: 44px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 10px; font-size: 20px;
+    }
+    .stat-blue .stat-icon { background: rgba(52,152,219,0.1); color: #3498db; }
+    .stat-green .stat-icon { background: rgba(39,174,96,0.1); color: #27ae60; }
+    .stat-orange .stat-icon { background: rgba(243,156,18,0.1); color: #f39c12; }
+    .stat-red .stat-icon { background: rgba(231,76,60,0.1); color: #e74c3c; }
+    .stat-purple .stat-icon { background: rgba(155,89,182,0.1); color: #9b59b6; }
+    .stat-teal .stat-icon { background: rgba(22,160,133,0.1); color: #16a085; }
+
+    .stat-label { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #1E293B; }
+    .stat-subtext { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+    .section-container {
+        background: white; border-radius: 8px; padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; border: 1px solid #E2E8F0;
+    }
+    .page-header {
+        margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #F1F5F9;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .page-title { font-size: 22px; font-weight: 600; color: #1E293B; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .page-subtitle { color: #64748B; font-size: 14px; margin: 0; }
+
+    .filter-section {
+        background: #F8FAFC; padding: 20px; border-radius: 8px; margin-bottom: 24px;
+        border: 1px solid #E2E8F0; display: flex; gap: 16px; align-items: end; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+    .filter-label { font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; }
+    .filter-select {
+        padding: 10px 14px; border: 1px solid #CBD5E1; border-radius: 6px;
+        font-size: 14px; background: white;
+    }
+
+    .btn-success-custom {
+        padding: 10px 20px; background: #27ae60; color: white; border: none;
+        border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-success-custom:hover { background: #229954; color: white; }
+
+    .chart-container {
+        background: white; border: 1px solid #E2E8F0; border-radius: 8px;
+        padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px;
+    }
+    .chart-container:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .chart-title {
+        font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 20px;
+        padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .chart-title i { color: #3498db; }
+    .chart-canvas-container { position: relative; width: 100%; height: 350px; }
+
+    .progress-bar-container { margin-bottom: 16px; }
+    .progress-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+    .progress-label span:first-child { color: #475569; font-weight: 500; }
+    .progress-label span:last-child { color: #1E293B; font-weight: 600; }
+    .progress-track { height: 10px; background: #E2E8F0; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+    .progress-fill.blue { background: linear-gradient(90deg, #3498db, #2980b9); }
+    .progress-fill.green { background: linear-gradient(90deg, #27ae60, #1e8449); }
+    .progress-fill.orange { background: linear-gradient(90deg, #f39c12, #d68910); }
+
+    .table-responsive { overflow-x: auto; }
+    .table { width: 100%; margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+    .table thead th {
+        background: #F8FAFC; padding: 12px 16px; text-align: left;
+        font-size: 12px; font-weight: 600; color: #64748B;
+        text-transform: uppercase; border-bottom: 1px solid #E2E8F0;
+    }
+    .table tbody td { padding: 14px 16px; border-bottom: 1px solid #F1F5F9; font-size: 14px; color: #334155; }
+    .table tbody tr:hover { background-color: #F8FAFC; }
+
+    .highlight-box {
+        background: linear-gradient(135deg, #F0F9FF, #E0F2FE);
+        border-left: 4px solid #3498db; padding: 20px; border-radius: 8px; margin-bottom: 24px;
+    }
+    .highlight-title { font-size: 15px; font-weight: 600; color: #1E40AF; margin-bottom: 12px; }
+    .highlight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+    .highlight-item { text-align: center; }
+    .highlight-value { font-size: 24px; font-weight: 700; color: #1E293B; }
+    .highlight-label { font-size: 12px; color: #64748B; margin-top: 4px; }
+
+    @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .filter-section { flex-direction: column; }
+        .chart-canvas-container { height: 280px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+            <li class="breadcrumb-item active">Financial Reports</li>
+        </ol>
+    </nav>
+
+    <!-- Key Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="stat-label">Total Budget</div>
+            <div class="stat-value">KSh {{ total_budget|floatformat:0|intcomma }}</div>
+            <div class="stat-subtext">FY {{ current_fiscal_year.name }}</div>
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-label">Allocated</div>
+            <div class="stat-value">KSh {{ total_allocated|floatformat:0|intcomma }}</div>
+            <div class="stat-subtext">{{ budget_utilization }}% of budget</div>
+        </div>
+        <div class="stat-card stat-teal">
+            <div class="stat-icon"><i class="bi bi-send-check"></i></div>
+            <div class="stat-label">Disbursed</div>
+            <div class="stat-value">KSh {{ total_disbursed|floatformat:0|intcomma }}</div>
+            <div class="stat-subtext">{{ disbursement_rate }}% of allocated</div>
+        </div>
+        <div class="stat-card stat-orange">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-value">KSh {{ pending_disbursements|floatformat:0|intcomma }}</div>
+            <div class="stat-subtext">Awaiting disbursement</div>
+        </div>
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
+            <div class="stat-label">Requested</div>
+            <div class="stat-value">KSh {{ total_requested|floatformat:0|intcomma }}</div>
+            <div class="stat-subtext">Total applications</div>
+        </div>
+    </div>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><i class="bi bi-currency-exchange"></i> Financial Reports</h1>
+                <p class="page-subtitle">Budget allocation, disbursements, and financial analysis for {{ current_fiscal_year.name }}</p>
+            </div>
+            <a href="?fiscal_year={{ current_fiscal_year.id }}&export=excel" class="btn-success-custom">
+                <i class="bi bi-file-earmark-excel"></i> Export to Excel
+            </a>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">Fiscal Year</label>
+                <select class="filter-select" onchange="window.location.href='?fiscal_year='+this.value">
+                    {% for fy in fiscal_years %}
+                    <option value="{{ fy.id }}" {% if current_fiscal_year.id == fy.id %}selected{% endif %}>{{ fy.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Budget Utilization Highlight -->
+        <div class="highlight-box">
+            <div class="highlight-title"><i class="bi bi-pie-chart"></i> Budget Utilization Overview</div>
+            <div class="highlight-grid">
+                <div class="highlight-item">
+                    <div class="highlight-value">{{ budget_utilization }}%</div>
+                    <div class="highlight-label">Budget Utilized</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-value">{{ disbursement_rate }}%</div>
+                    <div class="highlight-label">Disbursement Rate</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-value">{{ allocation_rate }}%</div>
+                    <div class="highlight-label">Request Fulfillment</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bars -->
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-bar-chart-steps"></i> Budget Progress</div>
+            <div class="progress-bar-container">
+                <div class="progress-label">
+                    <span>Budget Allocation</span>
+                    <span>{{ budget_utilization }}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill blue" style="width: {{ budget_utilization }}%"></div>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-label">
+                    <span>Disbursement Progress</span>
+                    <span>{{ disbursement_rate }}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill green" style="width: {{ disbursement_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <div class="chart-title"><i class="bi bi-bar-chart"></i> Category Budget vs Allocation</div>
+                    <div class="chart-canvas-container">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container">
+                    <div class="chart-title"><i class="bi bi-pie-chart"></i> By Constituency</div>
+                    <div class="chart-canvas-container">
+                        <canvas id="constituencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trend Chart -->
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-graph-up"></i> Monthly Allocation & Disbursement Trend</div>
+            <div class="chart-canvas-container">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Table -->
+        {% if budget_data %}
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-table"></i> Category Breakdown</div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Budget</th>
+                            <th>Allocated</th>
+                            <th>Disbursed</th>
+                            <th>Remaining</th>
+                            <th>Beneficiaries</th>
+                            <th>Utilization</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in budget_data %}
+                        <tr>
+                            <td><strong>{{ cat.name }}</strong></td>
+                            <td>KSh {{ cat.budget|floatformat:0|intcomma }}</td>
+                            <td>KSh {{ cat.allocated|floatformat:0|intcomma }}</td>
+                            <td>KSh {{ cat.disbursed|floatformat:0|intcomma }}</td>
+                            <td>KSh {{ cat.remaining|floatformat:0|intcomma }}</td>
+                            <td>{{ cat.beneficiaries|intcomma }}</td>
+                            <td>
+                                <span style="color: {% if cat.utilization >= 80 %}#27ae60{% elif cat.utilization >= 50 %}#f39c12{% else %}#e74c3c{% endif %}; font-weight: 600;">
+                                    {{ cat.utilization }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Institution Allocations -->
+        {% if institution_allocations %}
+        <div class="chart-container">
+            <div class="chart-title"><i class="bi bi-building"></i> Top 15 Institutions by Allocation</div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Institution</th>
+                            <th>Type</th>
+                            <th>Total Allocated</th>
+                            <th>Beneficiaries</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inst in institution_allocations %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ inst.application__institution__name|default:"Unknown" }}</strong></td>
+                            <td>{{ inst.application__institution__institution_type|default:"N/A"|title }}</td>
+                            <td>KSh {{ inst.total_allocated|floatformat:0|intcomma }}</td>
+                            <td>{{ inst.beneficiaries|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Budget vs Allocation Chart
+    const budgetData = {{ budget_chart|safe }};
+    if (budgetData.labels && budgetData.labels.length > 0) {
+        new Chart(document.getElementById('budgetChart'), {
+            type: 'bar',
+            data: {
+                labels: budgetData.labels,
+                datasets: [
+                    { label: 'Budget', data: budgetData.budget, backgroundColor: '#3498db', borderRadius: 4 },
+                    { label: 'Allocated', data: budgetData.allocated, backgroundColor: '#27ae60', borderRadius: 4 },
+                    { label: 'Disbursed', data: budgetData.disbursed, backgroundColor: '#f39c12', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { callback: v => 'KSh ' + v.toLocaleString() } } },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': KSh ' + ctx.parsed.y.toLocaleString() } }
+                }
+            }
+        });
+    }
+
+    // Constituency Chart
+    const constData = {{ constituency_chart|safe }};
+    if (constData.labels && constData.labels.length > 0) {
+        new Chart(document.getElementById('constituencyChart'), {
+            type: 'doughnut',
+            data: {
+                labels: constData.labels,
+                datasets: [{
+                    data: constData.data,
+                    backgroundColor: ['#3498db', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6', '#16a085', '#d35400'],
+                    borderWidth: 2, borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => ctx.label + ': KSh ' + ctx.parsed.toLocaleString() } }
+                }
+            }
+        });
+    }
+
+    // Monthly Trend Chart
+    const monthlyData = {{ monthly_chart|safe }};
+    if (monthlyData.labels && monthlyData.labels.length > 0) {
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [
+                    {
+                        label: 'Allocated', data: monthlyData.allocated,
+                        borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)',
+                        borderWidth: 3, fill: true, tension: 0.4
+                    },
+                    {
+                        label: 'Disbursed', data: monthlyData.disbursed,
+                        borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)',
+                        borderWidth: 3, fill: true, tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { callback: v => 'KSh ' + v.toLocaleString() } } },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': KSh ' + ctx.parsed.y.toLocaleString() } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
