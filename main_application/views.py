@@ -10779,33 +10779,70 @@ def public_reports_view(request):
     
     return render(request, 'transparency/public_reports.html', context)
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.db.models import Sum, Count, Q, Avg
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils import timezone
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from datetime import datetime
+from decimal import Decimal
+
+from .models import (
+    Allocation, FiscalYear, Ward, BursaryCategory, 
+    Institution, Applicant, Application, County, Constituency
+)
+
+
+@login_required
 def beneficiaries_list_view(request):
-    """Public list of beneficiaries"""
+    """Public list of beneficiaries with search and export functionality"""
     
     # Get filters from request
     fiscal_year_id = request.GET.get('fiscal_year')
     ward_id = request.GET.get('ward')
+    constituency_id = request.GET.get('constituency')
     category_id = request.GET.get('category')
     institution_type = request.GET.get('institution_type')
+    gender = request.GET.get('gender')
+    search_query = request.GET.get('search', '').strip()
+    export_format = request.GET.get('export')
     
-    # Base queryset - only approved allocations
+    # Base queryset - only disbursed allocations
     allocations = Allocation.objects.filter(
-        status='approved'
+        is_disbursed=True
     ).select_related(
-        'applicant__user',
-        'applicant__ward',
-        'applicant__ward__constituency',
-        'fiscal_year',
+        'application__applicant__user',
+        'application__applicant__ward',
+        'application__applicant__ward__constituency',
+        'application__fiscal_year',
         'application__institution',
-        'application__bursary_category'
-    ).order_by('-date_approved')
+        'application__bursary_category',
+        'application__applicant__county'
+    ).order_by('-allocation_date')
+    
+    # Apply search
+    if search_query:
+        allocations = allocations.filter(
+            Q(application__applicant__user__first_name__icontains=search_query) |
+            Q(application__applicant__user__last_name__icontains=search_query) |
+            Q(application__applicant__id_number__icontains=search_query) |
+            Q(application__application_number__icontains=search_query) |
+            Q(application__institution__name__icontains=search_query)
+        )
     
     # Apply filters
     if fiscal_year_id:
-        allocations = allocations.filter(fiscal_year_id=fiscal_year_id)
+        allocations = allocations.filter(application__fiscal_year_id=fiscal_year_id)
     
     if ward_id:
-        allocations = allocations.filter(applicant__ward_id=ward_id)
+        allocations = allocations.filter(application__applicant__ward_id=ward_id)
+    
+    if constituency_id:
+        allocations = allocations.filter(application__applicant__ward__constituency_id=constituency_id)
     
     if category_id:
         allocations = allocations.filter(application__bursary_category_id=category_id)
@@ -10813,42 +10850,281 @@ def beneficiaries_list_view(request):
     if institution_type:
         allocations = allocations.filter(application__institution__institution_type=institution_type)
     
-    # Get filter options
-    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
-    wards = Ward.objects.filter(is_active=True).order_by('name')
-    categories = BursaryCategory.objects.filter(is_active=True).order_by('name')
+    if gender:
+        allocations = allocations.filter(application__applicant__gender=gender)
+    
+    # Handle export
+    if export_format == 'excel':
+        return export_beneficiaries_to_excel(allocations, request)
     
     # Statistics
     total_beneficiaries = allocations.count()
-    total_amount = allocations.aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
-    avg_amount = allocations.aggregate(avg=Avg('approved_amount'))['avg'] or Decimal('0')
+    total_amount = allocations.aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+    avg_amount = allocations.aggregate(avg=Avg('amount_allocated'))['avg'] or Decimal('0')
+    
+    # Gender distribution
+    gender_distribution = allocations.values(
+        'application__applicant__gender'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_allocated')
+    ).order_by('-count')
     
     # Ward distribution
     ward_distribution = allocations.values(
-        'applicant__ward__name'
+        'application__applicant__ward__name'
     ).annotate(
         count=Count('id'),
-        total_amount=Sum('approved_amount')
+        total_amount=Sum('amount_allocated')
+    ).order_by('-count')[:10]
+    
+    # Category distribution
+    category_distribution = allocations.values(
+        'application__bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_allocated')
     ).order_by('-count')
     
+    # Institution type distribution
+    institution_distribution = allocations.values(
+        'application__institution__institution_type'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_allocated')
+    ).order_by('-count')
+    
+    # Pagination
+    paginator = Paginator(allocations, 50)  # Show 50 beneficiaries per page
+    page = request.GET.get('page')
+    
+    try:
+        allocations_page = paginator.page(page)
+    except PageNotAnInteger:
+        allocations_page = paginator.page(1)
+    except EmptyPage:
+        allocations_page = paginator.page(paginator.num_pages)
+    
+    # Get filter options
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    constituencies = Constituency.objects.filter(
+        county__system_county="Murang'a",
+        is_active=True
+    ).order_by('name')
+    wards = Ward.objects.filter(
+        constituency__county__system_county="Murang'a",
+        is_active=True
+    ).order_by('constituency__name', 'name')
+    
+    # Get only categories that have been used in fiscal years
+    categories = BursaryCategory.objects.filter(
+        is_active=True
+    ).order_by('fiscal_year__name', 'name')
+    
     context = {
-        'allocations': allocations[:1000],  # Limit for performance
+        'allocations': allocations_page,
         'fiscal_years': fiscal_years,
+        'constituencies': constituencies,
         'wards': wards,
         'categories': categories,
         'institution_types': Institution.INSTITUTION_TYPES,
+        'gender_choices': Applicant.GENDER_CHOICES,
         'total_beneficiaries': total_beneficiaries,
         'total_amount': total_amount,
         'avg_amount': avg_amount,
+        'gender_distribution': gender_distribution,
         'ward_distribution': ward_distribution,
+        'category_distribution': category_distribution,
+        'institution_distribution': institution_distribution,
         'selected_fiscal_year': fiscal_year_id,
+        'selected_constituency': constituency_id,
         'selected_ward': ward_id,
         'selected_category': category_id,
         'selected_institution_type': institution_type,
+        'selected_gender': gender,
+        'search_query': search_query,
+        'page_obj': allocations_page,
     }
     
     return render(request, 'transparency/beneficiaries_list.html', context)
 
+
+def export_beneficiaries_to_excel(allocations, request):
+    """Export beneficiaries list to Excel"""
+    
+    # Create workbook
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Beneficiaries List"
+    
+    # Define styles
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    cell_alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    currency_alignment = Alignment(horizontal="right", vertical="center")
+    
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Headers
+    headers = [
+        'No.',
+        'Application Number',
+        'Beneficiary Name',
+        'ID Number',
+        'Gender',
+        'Ward',
+        'Constituency',
+        'Institution',
+        'Institution Type',
+        'Course',
+        'Year of Study',
+        'Category',
+        'Amount Allocated (KES)',
+        'Payment Method',
+        'Cheque Number',
+        'Allocation Date',
+        'Disbursement Date',
+        'Fiscal Year'
+    ]
+    
+    # Write headers
+    for col_num, header in enumerate(headers, 1):
+        cell = worksheet.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # Set column widths
+    column_widths = [5, 20, 25, 15, 10, 20, 20, 30, 18, 30, 12, 20, 18, 15, 20, 15, 15, 15]
+    for i, width in enumerate(column_widths, 1):
+        worksheet.column_dimensions[get_column_letter(i)].width = width
+    
+    # Write data
+    for row_num, allocation in enumerate(allocations, 2):
+        applicant = allocation.application.applicant
+        application = allocation.application
+        
+        # Prepare data
+        data = [
+            row_num - 1,  # Serial number
+            application.application_number,
+            f"{applicant.user.first_name} {applicant.user.last_name}",
+            applicant.id_number,
+            applicant.get_gender_display(),
+            applicant.ward.name if applicant.ward else 'N/A',
+            applicant.ward.constituency.name if applicant.ward and applicant.ward.constituency else 'N/A',
+            application.institution.name,
+            application.institution.get_institution_type_display(),
+            application.course_name or 'N/A',
+            application.year_of_study,
+            application.bursary_category.name,
+            float(allocation.amount_allocated),
+            allocation.get_payment_method_display(),
+            allocation.cheque_number or 'N/A',
+            allocation.allocation_date.strftime('%Y-%m-%d'),
+            allocation.disbursement_date.strftime('%Y-%m-%d') if allocation.disbursement_date else 'N/A',
+            application.fiscal_year.name
+        ]
+        
+        # Write row
+        for col_num, value in enumerate(data, 1):
+            cell = worksheet.cell(row=row_num, column=col_num)
+            cell.value = value
+            cell.border = border
+            
+            # Apply specific alignments
+            if col_num == 13:  # Amount column
+                cell.alignment = currency_alignment
+                cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = cell_alignment
+    
+    # Add summary section
+    summary_row = len(list(allocations)) + 3
+    
+    # Calculate totals again for export
+    total_beneficiaries = allocations.count()
+    total_amount = sum(float(a.amount_allocated) for a in allocations)
+    avg_amount = total_amount / total_beneficiaries if total_beneficiaries > 0 else 0
+    
+    # Total beneficiaries
+    worksheet.cell(row=summary_row, column=1).value = "Total Beneficiaries:"
+    worksheet.cell(row=summary_row, column=1).font = Font(bold=True)
+    worksheet.cell(row=summary_row, column=2).value = total_beneficiaries
+    
+    # Total amount
+    worksheet.cell(row=summary_row + 1, column=1).value = "Total Amount Allocated:"
+    worksheet.cell(row=summary_row + 1, column=1).font = Font(bold=True)
+    worksheet.cell(row=summary_row + 1, column=2).value = total_amount
+    worksheet.cell(row=summary_row + 1, column=2).number_format = '#,##0.00'
+    
+    # Average amount
+    worksheet.cell(row=summary_row + 2, column=1).value = "Average Amount:"
+    worksheet.cell(row=summary_row + 2, column=1).font = Font(bold=True)
+    worksheet.cell(row=summary_row + 2, column=2).value = avg_amount
+    worksheet.cell(row=summary_row + 2, column=2).number_format = '#,##0.00'
+    
+    # Export date
+    worksheet.cell(row=summary_row + 4, column=1).value = "Export Date:"
+    worksheet.cell(row=summary_row + 4, column=1).font = Font(bold=True)
+    worksheet.cell(row=summary_row + 4, column=2).value = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Filter info
+    filters_applied = []
+    if request.GET.get('fiscal_year'):
+        fy = FiscalYear.objects.filter(id=request.GET.get('fiscal_year')).first()
+        if fy:
+            filters_applied.append(f"Fiscal Year: {fy.name}")
+    if request.GET.get('ward'):
+        ward = Ward.objects.filter(id=request.GET.get('ward')).first()
+        if ward:
+            filters_applied.append(f"Ward: {ward.name}")
+    if request.GET.get('constituency'):
+        constituency = Constituency.objects.filter(id=request.GET.get('constituency')).first()
+        if constituency:
+            filters_applied.append(f"Constituency: {constituency.name}")
+    if request.GET.get('category'):
+        cat = BursaryCategory.objects.filter(id=request.GET.get('category')).first()
+        if cat:
+            filters_applied.append(f"Category: {cat.name}")
+    if request.GET.get('institution_type'):
+        inst_type = dict(Institution.INSTITUTION_TYPES).get(request.GET.get('institution_type'))
+        if inst_type:
+            filters_applied.append(f"Institution Type: {inst_type}")
+    if request.GET.get('gender'):
+        gender_type = dict(Applicant.GENDER_CHOICES).get(request.GET.get('gender'))
+        if gender_type:
+            filters_applied.append(f"Gender: {gender_type}")
+    if request.GET.get('search'):
+        filters_applied.append(f"Search: {request.GET.get('search')}")
+    
+    if filters_applied:
+        worksheet.cell(row=summary_row + 5, column=1).value = "Filters Applied:"
+        worksheet.cell(row=summary_row + 5, column=1).font = Font(bold=True)
+        worksheet.cell(row=summary_row + 6, column=1).value = ", ".join(filters_applied)
+    
+    # Freeze header row
+    worksheet.freeze_panes = 'A2'
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"beneficiaries_list_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    workbook.save(response)
+    return response
 
 def budget_utilization_view(request):
     """Budget utilization and allocation reports"""

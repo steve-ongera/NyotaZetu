@@ -1,0 +1,830 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Beneficiaries List - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        font-size: 18px;
+    }
+
+    .stat-blue { background: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .stat-green { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
+    .stat-purple { background: rgba(155, 89, 182, 0.1); color: #9b59b6; }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .filter-input, .filter-select {
+        padding: 10px 14px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn-primary-custom {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary-custom:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-success-custom {
+        padding: 10px 20px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-success-custom:hover {
+        background: #229954;
+        color: white;
+    }
+
+    .btn-secondary-custom {
+        padding: 10px 20px;
+        background: #64748B;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #475569;
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .beneficiaries-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .beneficiaries-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .beneficiaries-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .beneficiaries-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .beneficiaries-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .beneficiary-name {
+        font-weight: 600;
+        color: #1E293B;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .beneficiary-meta {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .institution-info {
+        font-size: 13px;
+        color: #334155;
+    }
+
+    .institution-type {
+        font-size: 11px;
+        color: #64748B;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .amount-display {
+        font-weight: 600;
+        color: #27ae60;
+        font-size: 15px;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-male {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-female {
+        background: #FCE7F3;
+        color: #9F1239;
+    }
+
+    .badge-category {
+        background: #F3E8FF;
+        color: #6B21A8;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 0;
+        margin-top: 20px;
+        border-top: 1px solid #E2E8F0;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .pagination-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .page-link {
+        padding: 8px 14px;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #475569;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+
+    .page-link:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+    }
+
+    .page-link.active {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .page-link.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .filter-active-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #27ae60;
+        border-radius: 50%;
+        margin-left: 5px;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .beneficiaries-table {
+            font-size: 13px;
+        }
+
+        .beneficiaries-table thead th,
+        .beneficiaries-table tbody td {
+            padding: 10px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-primary-custom,
+        .btn-success-custom,
+        .btn-secondary-custom {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Beneficiaries List</li>
+        </ol>
+    </nav>
+
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-blue">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-label">Total Beneficiaries</div>
+            <div class="stat-value">{{ total_beneficiaries|intcomma }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-green">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="stat-label">Total Amount</div>
+            <div class="stat-value">KSh {{ total_amount|floatformat:0|intcomma }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-purple">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <div class="stat-label">Average Amount</div>
+            <div class="stat-value">KSh {{ avg_amount|floatformat:0|intcomma }}</div>
+        </div>
+    </div>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-list-check"></i>
+                    Beneficiaries List
+                    {% if search_query or selected_fiscal_year or selected_ward or selected_category %}
+                        <span class="filter-active-indicator" title="Filters Active"></span>
+                    {% endif %}
+                </h1>
+                <p class="page-subtitle">
+                    View and export list of bursary beneficiaries
+                </p>
+            </div>
+            <div class="action-buttons">
+                <a href="?export=excel{% if selected_fiscal_year %}&fiscal_year={{ selected_fiscal_year }}{% endif %}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_constituency %}&constituency={{ selected_constituency }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_institution_type %}&institution_type={{ selected_institution_type }}{% endif %}{% if selected_gender %}&gender={{ selected_gender }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="btn-success-custom">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Export to Excel
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <form method="get" action="" id="filterForm">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Search</label>
+                        <input type="text" 
+                               name="search" 
+                               class="filter-input" 
+                               placeholder="Name, ID, Application No..."
+                               value="{{ search_query }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Fiscal Year</label>
+                        <select name="fiscal_year" class="filter-select">
+                            <option value="">All Years</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}" {% if selected_fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                                {{ fy.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Constituency</label>
+                        <select name="constituency" class="filter-select" id="constituencySelect">
+                            <option value="">All Constituencies</option>
+                            {% for constituency in constituencies %}
+                            <option value="{{ constituency.id }}" {% if selected_constituency == constituency.id|stringformat:"s" %}selected{% endif %}>
+                                {{ constituency.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Ward</label>
+                        <select name="ward" class="filter-select">
+                            <option value="">All Wards</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}" {% if selected_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ward.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Category</label>
+                        <select name="category" class="filter-select">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Institution Type</label>
+                        <select name="institution_type" class="filter-select">
+                            <option value="">All Types</option>
+                            {% for type_code, type_name in institution_types %}
+                            <option value="{{ type_code }}" {% if selected_institution_type == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Gender</label>
+                        <select name="gender" class="filter-select">
+                            <option value="">All Genders</option>
+                            {% for gender_code, gender_name in gender_choices %}
+                            <option value="{{ gender_code }}" {% if selected_gender == gender_code %}selected{% endif %}>
+                                {{ gender_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <button type="submit" class="btn-primary-custom">
+                            <i class="bi bi-search"></i>
+                            Filter
+                        </button>
+                    </div>
+
+                    {% if search_query or selected_fiscal_year or selected_ward or selected_constituency or selected_category or selected_institution_type or selected_gender %}
+                    <div class="filter-group">
+                        <a href="{% url 'beneficiaries_list' %}" class="btn-secondary-custom">
+                            <i class="bi bi-x-circle"></i>
+                            Clear
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Beneficiaries Table -->
+        <div class="table-header">
+            <h6 class="table-title">
+                <i class="bi bi-people"></i>
+                Beneficiaries ({{ page_obj.paginator.count|intcomma }})
+            </h6>
+        </div>
+
+        <div class="table-responsive">
+            {% if allocations %}
+            <table class="beneficiaries-table">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Beneficiary</th>
+                        <th>Gender</th>
+                        <th>Location</th>
+                        <th>Institution</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allocation in allocations %}
+                    <tr>
+                        <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                        <td>
+                            <span class="beneficiary-name">
+                                {{ allocation.application.applicant.user.first_name }} 
+                                {{ allocation.application.applicant.user.last_name }}
+                            </span>
+                            <div class="beneficiary-meta">
+                                <i class="bi bi-credit-card"></i> {{ allocation.application.applicant.id_number }}
+                                | <i class="bi bi-hash"></i> {{ allocation.application.application_number }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if allocation.application.applicant.gender == 'M' %}
+                                <span class="badge badge-male">Male</span>
+                            {% else %}
+                                <span class="badge badge-female">Female</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-size: 13px;">
+                                <strong>{{ allocation.application.applicant.ward.name|default:"N/A" }}</strong>
+                                <div style="font-size: 11px; color: #64748B;">
+                                    {{ allocation.application.applicant.ward.constituency.name|default:"N/A" }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="institution-info">
+                                {{ allocation.application.institution.name }}
+                            </span>
+                            <span class="institution-type">
+                                {{ allocation.application.institution.get_institution_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-category">
+                                {{ allocation.application.bursary_category.name }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="amount-display">
+                                KSh {{ allocation.amount_allocated|floatformat:0|intcomma }}
+                            </span>
+                        </td>
+                        <td style="font-size: 12px; color: #64748B;">
+                            {{ allocation.allocation_date|date:"M d, Y" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count|intcomma }} entries
+                </div>
+                <div class="pagination-buttons">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_fiscal_year %}&fiscal_year={{ selected_fiscal_year }}{% endif %}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_constituency %}&constituency={{ selected_constituency }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_institution_type %}&institution_type={{ selected_institution_type }}{% endif %}{% if selected_gender %}&gender={{ selected_gender }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_fiscal_year %}&fiscal_year={{ selected_fiscal_year }}{% endif %}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_constituency %}&constituency={{ selected_constituency }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_institution_type %}&institution_type={{ selected_institution_type }}{% endif %}{% if selected_gender %}&gender={{ selected_gender }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    {% else %}
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </span>
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-left"></i>
+                        </span>
+                    {% endif %}
+
+                    <span class="page-link active">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_fiscal_year %}&fiscal_year={{ selected_fiscal_year }}{% endif %}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_constituency %}&constituency={{ selected_constituency }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_institution_type %}&institution_type={{ selected_institution_type }}{% endif %}{% if selected_gender %}&gender={{ selected_gender }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_fiscal_year %}&fiscal_year={{ selected_fiscal_year }}{% endif %}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_constituency %}&constituency={{ selected_constituency }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_institution_type %}&institution_type={{ selected_institution_type }}{% endif %}{% if selected_gender %}&gender={{ selected_gender }}{% endif %}" 
+                           class="page-link">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    {% else %}
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-right"></i>
+                        </span>
+                        <span class="page-link disabled">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h3 class="empty-title">
+                    {% if search_query or selected_fiscal_year or selected_ward or selected_category %}
+                        No Beneficiaries Match Your Filters
+                    {% else %}
+                        No Beneficiaries Found
+                    {% endif %}
+                </h3>
+                <p class="empty-text">
+                    {% if search_query or selected_fiscal_year or selected_ward or selected_category %}
+                        Try adjusting your filters or clearing them to see all beneficiaries.
+                    {% else %}
+                        Beneficiaries will appear here once allocations are disbursed.
+                    {% endif %}
+                </p>
+                {% if search_query or selected_fiscal_year or selected_ward or selected_category %}
+                <a href="{% url 'beneficiaries_list' %}" class="btn-secondary-custom">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit filter form on select change (optional)
+    document.querySelectorAll('.filter-select').forEach(select => {
+        select.addEventListener('change', function() {
+            // Optionally auto-submit on change
+            // this.closest('form').submit();
+        });
+    });
+
+    // Highlight active filters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('search') || urlParams.has('fiscal_year') || urlParams.has('ward') || 
+        urlParams.has('category') || urlParams.has('institution_type') || urlParams.has('gender')) {
+        document.querySelector('.filter-section').style.borderColor = '#3498db';
+        document.querySelector('.filter-section').style.backgroundColor = '#EBF8FF';
+    }
+
+    // Confirm export
+    document.querySelectorAll('a[href*="export"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const count = '{{ total_beneficiaries }}';
+            if (parseInt(count) > 1000) {
+                if (!confirm(`You are about to export ${count} records. This may take a moment. Continue?`)) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
