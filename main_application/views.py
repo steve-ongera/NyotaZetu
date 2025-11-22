@@ -11634,11 +11634,33 @@ def testimonials_view(request):
     return render(request, 'transparency/testimonials.html', context)
 
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.db.models import Sum, Count, Q, Avg, F
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.chart import BarChart, PieChart, LineChart, Reference
+import json
+from decimal import Decimal
+
+from .models import (
+    Allocation, FiscalYear, Ward, BursaryCategory, 
+    Institution, Applicant, Application
+)
+
+
+@login_required
 def annual_reports_view(request):
     """Annual reports and statistics"""
     
     # Get year filter
     year = request.GET.get('year')
+    export_format = request.GET.get('export')
+    
     if year:
         try:
             year = int(year)
@@ -11649,70 +11671,113 @@ def annual_reports_view(request):
     
     # Get fiscal year for the selected year
     fiscal_year = FiscalYear.objects.filter(
-        start_date__year=year
+        Q(start_date__year=year) | Q(end_date__year=year)
     ).first()
     
     if fiscal_year:
         # Overall statistics
         total_applications = Application.objects.filter(fiscal_year=fiscal_year).count()
+        
         approved_applications = Application.objects.filter(
             fiscal_year=fiscal_year,
-            status='approved'
+            status__in=['approved', 'disbursed']
         ).count()
+        
         rejected_applications = Application.objects.filter(
             fiscal_year=fiscal_year,
             status='rejected'
         ).count()
         
-        total_allocated = Allocation.objects.filter(
+        pending_applications = Application.objects.filter(
             fiscal_year=fiscal_year,
-            status='approved'
-        ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+            status__in=['submitted', 'under_review']
+        ).count()
         
-        total_disbursed = Disbursement.objects.filter(
-            allocation__fiscal_year=fiscal_year,
-            status='completed'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        # Financial statistics
+        total_allocated = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
         
-        # Demographics
+        total_disbursed = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+        
+        avg_allocation = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
+        ).aggregate(avg=Avg('amount_allocated'))['avg'] or Decimal('0')
+        
+        # Approval and disbursement rates
+        approval_rate = (approved_applications / total_applications * 100) if total_applications > 0 else 0
+        disbursement_rate = (total_disbursed / fiscal_year.total_bursary_allocation * 100) if fiscal_year.total_bursary_allocation > 0 else 0
+        
+        # Demographics - Gender distribution
         gender_stats = Applicant.objects.filter(
             applications__fiscal_year=fiscal_year,
-            applications__status='approved'
-        ).values('gender').annotate(count=Count('id', distinct=True))
+            applications__status__in=['approved', 'disbursed']
+        ).values('gender').annotate(
+            count=Count('id', distinct=True),
+            total_amount=Sum('applications__allocation__amount_allocated', distinct=True)
+        ).order_by('gender')
         
+        # Special circumstances statistics
         orphan_stats = Application.objects.filter(
             fiscal_year=fiscal_year,
-            status='approved'
+            status__in=['approved', 'disbursed']
         ).aggregate(
             total_orphans=Count('id', filter=Q(is_orphan=True)),
             total_total_orphans=Count('id', filter=Q(is_total_orphan=True)),
-            disabled=Count('id', filter=Q(is_disabled=True))
+            disabled=Count('id', filter=Q(is_disabled=True)),
+            chronic_illness=Count('id', filter=Q(has_chronic_illness=True))
         )
         
-        # Institution distribution
+        # Institution type distribution
         institution_stats = Application.objects.filter(
             fiscal_year=fiscal_year,
-            status='approved'
+            status__in=['approved', 'disbursed']
         ).values(
             'institution__institution_type'
         ).annotate(
             count=Count('id'),
-            total_amount=Sum('allocation__approved_amount')
+            total_amount=Sum('allocation__amount_allocated')
+        ).order_by('-count')
+        
+        # Category-wise statistics
+        category_stats = Application.objects.filter(
+            fiscal_year=fiscal_year,
+            status__in=['approved', 'disbursed']
+        ).values(
+            'bursary_category__name'
+        ).annotate(
+            count=Count('id'),
+            total_amount=Sum('allocation__amount_allocated')
         ).order_by('-count')
         
         # Ward performance
         ward_stats = Allocation.objects.filter(
-            fiscal_year=fiscal_year,
-            status='approved'
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
         ).values(
-            'applicant__ward__name',
-            'applicant__ward__constituency__name'
+            'application__applicant__ward__name',
+            'application__applicant__ward__constituency__name'
         ).annotate(
             beneficiaries=Count('id'),
-            total_amount=Sum('approved_amount')
+            total_amount=Sum('amount_allocated')
+        ).order_by('-beneficiaries')[:15]
+        
+        # Constituency distribution
+        constituency_stats = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True
+        ).values(
+            'application__applicant__ward__constituency__name'
+        ).annotate(
+            beneficiaries=Count('id'),
+            total_amount=Sum('amount_allocated')
         ).order_by('-beneficiaries')
         
-        # Monthly trend
+        # Monthly application trend
         monthly_trend = Application.objects.filter(
             fiscal_year=fiscal_year,
             date_submitted__isnull=False
@@ -11720,30 +11785,81 @@ def annual_reports_view(request):
             month=TruncMonth('date_submitted')
         ).values('month').annotate(
             applications=Count('id'),
-            approved=Count('id', filter=Q(status='approved'))
+            approved=Count('id', filter=Q(status__in=['approved', 'disbursed']))
         ).order_by('month')
         
-        # Top institutions
+        # Monthly disbursement trend
+        monthly_disbursement = Allocation.objects.filter(
+            application__fiscal_year=fiscal_year,
+            is_disbursed=True,
+            disbursement_date__isnull=False
+        ).annotate(
+            month=TruncMonth('disbursement_date')
+        ).values('month').annotate(
+            count=Count('id'),
+            amount=Sum('amount_allocated')
+        ).order_by('month')
+        
+        # Top institutions by number of beneficiaries
         top_institutions = Application.objects.filter(
             fiscal_year=fiscal_year,
-            status='approved'
+            status__in=['approved', 'disbursed']
         ).values(
             'institution__name',
             'institution__institution_type'
         ).annotate(
             beneficiaries=Count('id'),
-            total_amount=Sum('allocation__approved_amount')
-        ).order_by('-beneficiaries')[:10]
+            total_amount=Sum('allocation__amount_allocated')
+        ).order_by('-beneficiaries')[:15]
+        
+        # Application source distribution
+        source_distribution = Application.objects.filter(
+            fiscal_year=fiscal_year,
+            status__in=['approved', 'disbursed']
+        ).values('bursary_source').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        # Handle export
+        if export_format == 'excel':
+            return export_annual_report_to_excel(
+                fiscal_year,
+                year,
+                total_applications,
+                approved_applications,
+                rejected_applications,
+                pending_applications,
+                total_allocated,
+                total_disbursed,
+                avg_allocation,
+                approval_rate,
+                disbursement_rate,
+                gender_stats,
+                orphan_stats,
+                institution_stats,
+                category_stats,
+                ward_stats,
+                constituency_stats,
+                monthly_trend,
+                monthly_disbursement,
+                top_institutions
+            )
         
         # Chart data
         gender_chart = {
-            'labels': [item['gender'] for item in gender_stats],
+            'labels': ['Male' if item['gender'] == 'M' else 'Female' for item in gender_stats],
             'data': [item['count'] for item in gender_stats]
         }
         
         institution_chart = {
-            'labels': [item['institution__institution_type'] for item in institution_stats],
+            'labels': [dict(Institution.INSTITUTION_TYPES).get(item['institution__institution_type'], 'Unknown') 
+                      for item in institution_stats],
             'data': [item['count'] for item in institution_stats]
+        }
+        
+        category_chart = {
+            'labels': [item['bursary_category__name'] or 'Unknown' for item in category_stats],
+            'data': [float(item['total_amount']) for item in category_stats]
         }
         
         monthly_trend_chart = {
@@ -11752,13 +11868,27 @@ def annual_reports_view(request):
             'approved': [item['approved'] for item in monthly_trend]
         }
         
+        monthly_disbursement_chart = {
+            'labels': [item['month'].strftime('%B %Y') for item in monthly_disbursement],
+            'data': [float(item['amount']) for item in monthly_disbursement]
+        }
+        
+        constituency_chart = {
+            'labels': [item['application__applicant__ward__constituency__name'] or 'Unknown' 
+                      for item in constituency_stats],
+            'data': [item['beneficiaries'] for item in constituency_stats]
+        }
+        
     else:
-        total_applications = approved_applications = rejected_applications = 0
-        total_allocated = total_disbursed = Decimal('0')
-        gender_stats = orphan_stats = institution_stats = []
-        ward_stats = monthly_trend = top_institutions = []
-        gender_chart = institution_chart = monthly_trend_chart = {}
+        total_applications = approved_applications = rejected_applications = pending_applications = 0
+        total_allocated = total_disbursed = avg_allocation = Decimal('0')
+        approval_rate = disbursement_rate = 0
+        gender_stats = orphan_stats = institution_stats = category_stats = []
+        ward_stats = constituency_stats = monthly_trend = monthly_disbursement = []
+        top_institutions = source_distribution = []
         orphan_stats = {}
+        gender_chart = institution_chart = category_chart = {}
+        monthly_trend_chart = monthly_disbursement_chart = constituency_chart = {}
     
     # Get available years
     available_years = FiscalYear.objects.dates('start_date', 'year', order='DESC')
@@ -11770,19 +11900,293 @@ def annual_reports_view(request):
         'total_applications': total_applications,
         'approved_applications': approved_applications,
         'rejected_applications': rejected_applications,
+        'pending_applications': pending_applications,
         'total_allocated': total_allocated,
         'total_disbursed': total_disbursed,
+        'avg_allocation': avg_allocation,
+        'approval_rate': round(approval_rate, 2),
+        'disbursement_rate': round(disbursement_rate, 2),
+        'gender_stats': gender_stats,
         'orphan_stats': orphan_stats,
         'institution_stats': institution_stats,
+        'category_stats': category_stats,
         'ward_stats': ward_stats,
+        'constituency_stats': constituency_stats,
         'monthly_trend': monthly_trend,
+        'monthly_disbursement': monthly_disbursement,
         'top_institutions': top_institutions,
+        'source_distribution': source_distribution,
         'gender_chart': json.dumps(gender_chart),
         'institution_chart': json.dumps(institution_chart),
+        'category_chart': json.dumps(category_chart),
         'monthly_trend_chart': json.dumps(monthly_trend_chart),
+        'monthly_disbursement_chart': json.dumps(monthly_disbursement_chart),
+        'constituency_chart': json.dumps(constituency_chart),
     }
     
     return render(request, 'transparency/annual_reports.html', context)
+
+
+def export_annual_report_to_excel(
+    fiscal_year,
+    year,
+    total_applications,
+    approved_applications,
+    rejected_applications,
+    pending_applications,
+    total_allocated,
+    total_disbursed,
+    avg_allocation,
+    approval_rate,
+    disbursement_rate,
+    gender_stats,
+    orphan_stats,
+    institution_stats,
+    category_stats,
+    ward_stats,
+    constituency_stats,
+    monthly_trend,
+    monthly_disbursement,
+    top_institutions
+):
+    """Export annual report to Excel"""
+    
+    workbook = openpyxl.Workbook()
+    workbook.remove(workbook.active)
+    
+    # Define styles
+    title_font = Font(bold=True, size=14, color="FFFFFF")
+    title_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    cell_alignment = Alignment(horizontal="left", vertical="center")
+    center_alignment = Alignment(horizontal="center", vertical="center")
+    
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # ============= EXECUTIVE SUMMARY SHEET =============
+    summary_sheet = workbook.create_sheet("Executive Summary")
+    
+    # Title
+    summary_sheet.merge_cells('A1:D1')
+    title_cell = summary_sheet['A1']
+    title_cell.value = f"Annual Report - Fiscal Year {fiscal_year.name}"
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    row = 3
+    summary_sheet[f'A{row}'] = "Report Period:"
+    summary_sheet[f'B{row}'] = f"{fiscal_year.start_date.strftime('%B %d, %Y')} - {fiscal_year.end_date.strftime('%B %d, %Y')}"
+    summary_sheet[f'A{row}'].font = Font(bold=True)
+    
+    row += 1
+    summary_sheet[f'A{row}'] = "Generated On:"
+    summary_sheet[f'B{row}'] = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    summary_sheet[f'A{row}'].font = Font(bold=True)
+    
+    # Key Statistics
+    row += 2
+    summary_sheet.merge_cells(f'A{row}:D{row}')
+    summary_sheet[f'A{row}'] = "KEY STATISTICS"
+    summary_sheet[f'A{row}'].font = header_font
+    summary_sheet[f'A{row}'].fill = header_fill
+    summary_sheet[f'A{row}'].alignment = center_alignment
+    
+    row += 1
+    stats_data = [
+        ('Total Applications Received', total_applications),
+        ('Applications Approved', approved_applications),
+        ('Applications Rejected', rejected_applications),
+        ('Applications Pending', pending_applications),
+        ('Approval Rate', f"{approval_rate:.2f}%"),
+        ('', ''),
+        ('Total Budget Allocated', f"KES {float(fiscal_year.total_bursary_allocation):,.2f}"),
+        ('Total Amount Allocated', f"KES {float(total_allocated):,.2f}"),
+        ('Total Amount Disbursed', f"KES {float(total_disbursed):,.2f}"),
+        ('Average Allocation per Student', f"KES {float(avg_allocation):,.2f}"),
+        ('Disbursement Rate', f"{disbursement_rate:.2f}%"),
+    ]
+    
+    for label, value in stats_data:
+        summary_sheet[f'A{row}'] = label
+        summary_sheet[f'B{row}'] = value
+        if label:
+            summary_sheet[f'A{row}'].font = Font(bold=True)
+        row += 1
+    
+    # Special Circumstances
+    row += 1
+    summary_sheet.merge_cells(f'A{row}:D{row}')
+    summary_sheet[f'A{row}'] = "VULNERABLE GROUPS"
+    summary_sheet[f'A{row}'].font = header_font
+    summary_sheet[f'A{row}'].fill = header_fill
+    summary_sheet[f'A{row}'].alignment = center_alignment
+    
+    row += 1
+    vulnerable_data = [
+        ('Orphans Supported', orphan_stats.get('total_orphans', 0)),
+        ('Total Orphans (Both Parents)', orphan_stats.get('total_total_orphans', 0)),
+        ('Students with Disabilities', orphan_stats.get('disabled', 0)),
+        ('Students with Chronic Illness', orphan_stats.get('chronic_illness', 0)),
+    ]
+    
+    for label, value in vulnerable_data:
+        summary_sheet[f'A{row}'] = label
+        summary_sheet[f'B{row}'] = value
+        summary_sheet[f'A{row}'].font = Font(bold=True)
+        row += 1
+    
+    summary_sheet.column_dimensions['A'].width = 35
+    summary_sheet.column_dimensions['B'].width = 25
+    
+    # ============= GENDER DISTRIBUTION SHEET =============
+    gender_sheet = workbook.create_sheet("Gender Distribution")
+    
+    gender_sheet.merge_cells('A1:D1')
+    gender_sheet['A1'] = "Gender Distribution Analysis"
+    gender_sheet['A1'].font = title_font
+    gender_sheet['A1'].fill = title_fill
+    gender_sheet['A1'].alignment = center_alignment
+    
+    headers = ['Gender', 'Number of Beneficiaries', 'Total Amount', 'Percentage']
+    for col_num, header in enumerate(headers, 1):
+        cell = gender_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    total_gender_count = sum(item['count'] for item in gender_stats)
+    row = 4
+    for item in gender_stats:
+        gender_sheet[f'A{row}'] = 'Male' if item['gender'] == 'M' else 'Female'
+        gender_sheet[f'B{row}'] = item['count']
+        gender_sheet[f'C{row}'] = float(item.get('total_amount', 0) or 0)
+        gender_sheet[f'C{row}'].number_format = '#,##0.00'
+        percentage = (item['count'] / total_gender_count * 100) if total_gender_count > 0 else 0
+        gender_sheet[f'D{row}'] = f"{percentage:.2f}%"
+        row += 1
+    
+    for col in ['A', 'B', 'C', 'D']:
+        gender_sheet.column_dimensions[col].width = 25
+    
+    # ============= INSTITUTION STATS SHEET =============
+    inst_sheet = workbook.create_sheet("Institution Analysis")
+    
+    inst_sheet.merge_cells('A1:D1')
+    inst_sheet['A1'] = "Analysis by Institution Type"
+    inst_sheet['A1'].font = title_font
+    inst_sheet['A1'].fill = title_fill
+    inst_sheet['A1'].alignment = center_alignment
+    
+    headers = ['Institution Type', 'Number of Students', 'Total Amount', 'Average per Student']
+    for col_num, header in enumerate(headers, 1):
+        cell = inst_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    row = 4
+    for item in institution_stats:
+        inst_type = dict(Institution.INSTITUTION_TYPES).get(item['institution__institution_type'], 'Unknown')
+        inst_sheet[f'A{row}'] = inst_type
+        inst_sheet[f'B{row}'] = item['count']
+        inst_sheet[f'C{row}'] = float(item.get('total_amount', 0) or 0)
+        inst_sheet[f'C{row}'].number_format = '#,##0.00'
+        avg = float(item.get('total_amount', 0) or 0) / item['count'] if item['count'] > 0 else 0
+        inst_sheet[f'D{row}'] = avg
+        inst_sheet[f'D{row}'].number_format = '#,##0.00'
+        row += 1
+    
+    for col in ['A', 'B', 'C', 'D']:
+        inst_sheet.column_dimensions[col].width = 25
+    
+    # ============= WARD DISTRIBUTION SHEET =============
+    ward_sheet = workbook.create_sheet("Ward Distribution")
+    
+    ward_sheet.merge_cells('A1:D1')
+    ward_sheet['A1'] = "Beneficiaries by Ward"
+    ward_sheet['A1'].font = title_font
+    ward_sheet['A1'].fill = title_fill
+    ward_sheet['A1'].alignment = center_alignment
+    
+    headers = ['Ward', 'Constituency', 'Beneficiaries', 'Total Amount']
+    for col_num, header in enumerate(headers, 1):
+        cell = ward_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    row = 4
+    for item in ward_stats:
+        ward_sheet[f'A{row}'] = item['application__applicant__ward__name'] or 'Unknown'
+        ward_sheet[f'B{row}'] = item['application__applicant__ward__constituency__name'] or 'Unknown'
+        ward_sheet[f'C{row}'] = item['beneficiaries']
+        ward_sheet[f'D{row}'] = float(item['total_amount'] or 0)
+        ward_sheet[f'D{row}'].number_format = '#,##0.00'
+        row += 1
+    
+    for col in ['A', 'B', 'C', 'D']:
+        ward_sheet.column_dimensions[col].width = 25
+    
+    # ============= TOP INSTITUTIONS SHEET =============
+    top_inst_sheet = workbook.create_sheet("Top Institutions")
+    
+    top_inst_sheet.merge_cells('A1:D1')
+    top_inst_sheet['A1'] = "Top 15 Institutions by Number of Beneficiaries"
+    top_inst_sheet['A1'].font = title_font
+    top_inst_sheet['A1'].fill = title_fill
+    top_inst_sheet['A1'].alignment = center_alignment
+    
+    headers = ['Institution Name', 'Type', 'Beneficiaries', 'Total Amount']
+    for col_num, header in enumerate(headers, 1):
+        cell = top_inst_sheet.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    row = 4
+    for item in top_institutions:
+        inst_type = dict(Institution.INSTITUTION_TYPES).get(item['institution__institution_type'], 'Unknown')
+        top_inst_sheet[f'A{row}'] = item['institution__name']
+        top_inst_sheet[f'B{row}'] = inst_type
+        top_inst_sheet[f'C{row}'] = item['beneficiaries']
+        top_inst_sheet[f'D{row}'] = float(item.get('total_amount', 0) or 0)
+        top_inst_sheet[f'D{row}'].number_format = '#,##0.00'
+        row += 1
+    
+    top_inst_sheet.column_dimensions['A'].width = 40
+    top_inst_sheet.column_dimensions['B'].width = 20
+    top_inst_sheet.column_dimensions['C'].width = 18
+    top_inst_sheet.column_dimensions['D'].width = 20
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"annual_report_{year}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    workbook.save(response)
+    return response
+
 
 
 def quarterly_reports_view(request):

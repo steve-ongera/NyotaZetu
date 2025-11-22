@@ -225,7 +225,7 @@ urlpatterns = [
     path('beneficiaries/', views.beneficiaries_list_view, name='beneficiaries_list'),
     path('budget/', views.budget_utilization_view, name='budget_utilization'),
     path('testimonials/', views.testimonials_view, name='testimonials'),
-    path('reports/annual/', views.annual_reports_view, name='annual_reports'),
+    path('reports-annual/', views.annual_reports_view, name='annual_reports'),
     path('reports/quarterly/', views.quarterly_reports_view, name='quarterly_reports'),
     
     path("documentation/", views.documentation_view, name="documentation"),
