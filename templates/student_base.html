@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Kiharu Bursary Portal{% endblock %}</title>
+    <title>{% block title %}Nyota Zetu Bursary Portal{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
     
     <!-- Fonts -->
@@ -1190,7 +1190,7 @@
                 </button>
                 <div class="brand-info">
                     <img src="{% static 'images/logo.png' %}" alt="Logo" class="brand-logo">
-                    <span class="brand-text">Kiharu Bursary Portal</span>
+                    <span class="brand-text">Nyota Zetu Bursary Portal</span>
                 </div>
             </div>
 
@@ -1211,7 +1211,7 @@
                     <div class="user-dropdown" id="userDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-user-name">{{ user.get_full_name|default:user.username }}</div>
-                            <div class="dropdown-user-email">{{ user.email|default:"student@kiharu.go.ke" }}</div>
+                            <div class="dropdown-user-email">{{ user.email|default:"student@Nyota Zetu.go.ke" }}</div>
                         </div>
                         <div class="dropdown-menu-custom">
                             <a href="{% url 'student_profile_view' %}" class="dropdown-item">

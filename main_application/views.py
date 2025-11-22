@@ -2512,14 +2512,28 @@ def fiscal_year_list(request):
         fiscal_years = fiscal_years.filter(county_id=county_filter)
     
     # Calculate summary statistics
-    summary_stats = fiscal_years.aggregate(
-        total_budget=Sum('total_bursary_allocation'),
-        total_education_budget=Sum('education_budget'),
-        total_applications=Sum('total_applications'),
-        total_approved=Sum('approved_applications'),
-        total_beneficiaries=Sum('total_beneficiaries'),
-        active_count=Count('id', filter=Q(is_active=True)),
-    )
+    # Need to aggregate directly from base queryset without annotated fields
+    all_fiscal_years = FiscalYear.objects.all()
+    
+    summary_stats = {
+        'total_budget': all_fiscal_years.aggregate(
+            total=Sum('total_bursary_allocation')
+        )['total'] or 0,
+        'total_education_budget': all_fiscal_years.aggregate(
+            total=Sum('education_budget')
+        )['total'] or 0,
+        'total_applications': Application.objects.filter(
+            fiscal_year__in=all_fiscal_years
+        ).count(),
+        'total_approved': Application.objects.filter(
+            fiscal_year__in=all_fiscal_years,
+            status='approved'
+        ).count(),
+        'total_beneficiaries': WardAllocation.objects.filter(
+            fiscal_year__in=all_fiscal_years
+        ).aggregate(total=Sum('beneficiaries_count'))['total'] or 0,
+        'active_count': all_fiscal_years.filter(is_active=True).count(),
+    }
     
     # Get available counties for filter
     counties = County.objects.filter(is_active=True).order_by('name')
@@ -2570,6 +2584,7 @@ def fiscal_year_list(request):
     }
     
     return render(request, 'admin/fiscal_year_list.html', context)
+
 
 
 @login_required
@@ -2833,7 +2848,7 @@ def fiscal_year_detail(request, pk):
     ).aggregate(total=Sum('amount_allocated'))['total'] or 0
     
     # Remaining balance calculation
-    remaining_balance = fiscal_year.total_allocation - total_allocated
+    remaining_balance = fiscal_year.total_bursary_allocation - total_allocated
     
     # Gender statistics
     gender_stats = Application.objects.filter(
@@ -2878,7 +2893,7 @@ def fiscal_year_detail(request, pk):
             })
     
     # Calculate utilization rate
-    utilization_rate = (total_allocated / fiscal_year.total_allocation * 100) if fiscal_year.total_allocation > 0 else 0
+    utilization_rate = (total_allocated / fiscal_year.total_bursary_allocation * 100) if fiscal_year.total_bursary_allocation > 0 else 0
     
     context = {
         'fiscal_year': fiscal_year,
@@ -10498,6 +10513,23 @@ from .models import (
 )
 
 
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q, Avg, F, Case, When, DecimalField
+from django.db.models.functions import Coalesce, TruncMonth
+from django.utils import timezone
+from datetime import datetime, timedelta
+import json
+from decimal import Decimal
+
+from .models import (
+    Application, Allocation, FiscalYear, Ward, BursaryCategory,
+    Applicant, Institution, Constituency, County
+)
+
+
+@login_required
 def public_reports_view(request):
     """Public reports dashboard with key statistics"""
     
@@ -10505,18 +10537,24 @@ def public_reports_view(request):
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     recent_years = FiscalYear.objects.all().order_by('-start_date')[:5]
     
+    # Get total wards count
+    total_wards = Ward.objects.filter(
+        constituency__county__system_county="Murang'a",
+        is_active=True
+    ).count()
+    
     # Overall statistics
     total_applications = Application.objects.filter(status='submitted').count()
     total_approved = Application.objects.filter(status='approved').count()
     
     # Use distinct applicants from allocations
     total_beneficiaries = Allocation.objects.filter(
-        status='approved'
-    ).values('applicant').distinct().count()
+        is_disbursed=True
+    ).values('application__applicant').distinct().count()
     
     total_amount_allocated = Allocation.objects.filter(
-        status='approved'
-    ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+        is_disbursed=True
+    ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
     
     # Current year statistics
     if current_fiscal_year:
@@ -10528,9 +10566,9 @@ def public_reports_view(request):
             status='approved'
         ).count()
         current_year_allocated = Allocation.objects.filter(
-            fiscal_year=current_fiscal_year,
-            status='approved'
-        ).aggregate(total=Sum('approved_amount'))['total'] or Decimal('0')
+            application__fiscal_year=current_fiscal_year,
+            is_disbursed=True
+        ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
     else:
         current_year_applications = 0
         current_year_approved = 0
@@ -10541,12 +10579,108 @@ def public_reports_view(request):
         count=Count('id')
     ).order_by('-count')
     
-    # Applications by ward - fixed to use correct relationship
+    # Ward Applications with all statistics
+    ward_applications = Ward.objects.filter(
+        constituency__county__system_county="Murang'a",
+        is_active=True
+    ).annotate(
+        total_applications=Count(
+            'residents__applications',
+            filter=Q(residents__applications__fiscal_year=current_fiscal_year) if current_fiscal_year else Q()
+        ),
+        approved_applications=Count(
+            'residents__applications',
+            filter=Q(
+                residents__applications__fiscal_year=current_fiscal_year,
+                residents__applications__status__in=['approved', 'disbursed']
+            ) if current_fiscal_year else Q(residents__applications__status__in=['approved', 'disbursed'])
+        ),
+        total_allocated=Coalesce(
+            Sum(
+                'residents__applications__allocation__amount_allocated',
+                filter=Q(
+                    residents__applications__fiscal_year=current_fiscal_year,
+                    residents__applications__status__in=['approved', 'disbursed'],
+                    residents__applications__allocation__is_disbursed=True
+                ) if current_fiscal_year else Q(
+                    residents__applications__status__in=['approved', 'disbursed'],
+                    residents__applications__allocation__is_disbursed=True
+                )
+            ),
+            Decimal('0'),
+            output_field=DecimalField()
+        )
+    ).values('name', 'total_applications', 'approved_applications', 'total_allocated').order_by('name')
+    
+    # Convert QuerySet to list and ensure all values are serializable
+    ward_applications_list = []
+    for ward in ward_applications:
+        ward_applications_list.append({
+            'name': ward['name'] or 'Unknown Ward',
+            'total_applications': int(ward['total_applications'] or 0),
+            'approved_applications': int(ward['approved_applications'] or 0),
+            'total_allocated': float(ward['total_allocated'] or 0)
+        })
+    
+    # Gender distribution by ward
+    ward_gender_data = Ward.objects.filter(
+        constituency__county__system_county="Murang'a",
+        is_active=True
+    ).annotate(
+        male=Count(
+            'residents__applications',
+            filter=Q(
+                residents__gender='M',
+                residents__applications__fiscal_year=current_fiscal_year,
+                residents__applications__status__in=['approved', 'disbursed']
+            ) if current_fiscal_year else Q(
+                residents__gender='M',
+                residents__applications__status__in=['approved', 'disbursed']
+            )
+        ),
+        female=Count(
+            'residents__applications',
+            filter=Q(
+                residents__gender='F',
+                residents__applications__fiscal_year=current_fiscal_year,
+                residents__applications__status__in=['approved', 'disbursed']
+            ) if current_fiscal_year else Q(
+                residents__gender='F',
+                residents__applications__status__in=['approved', 'disbursed']
+            )
+        )
+    ).values('name', 'male', 'female').order_by('name')
+    
+    # Convert to list
+    ward_gender_list = []
+    for ward in ward_gender_data:
+        ward_gender_list.append({
+            'ward': ward['name'] or 'Unknown Ward',
+            'male': int(ward['male'] or 0),
+            'female': int(ward['female'] or 0)
+        })
+    
+    # Success rate by ward
+    ward_success_rate = []
+    for ward in ward_applications_list:
+        total = ward['total_applications']
+        approved = ward['approved_applications']
+        success_rate_value = (approved / total * 100) if total > 0 else 0
+        ward_success_rate.append({
+            'ward': ward['name'],
+            'success_rate': round(success_rate_value, 2)
+        })
+    
+    # Applications by ward - top 10
     applications_by_ward = Application.objects.filter(
         status__in=['approved', 'disbursed']
     ).values('applicant__ward__name').annotate(
         count=Count('id'),
-        total_amount=Sum('allocation__approved_amount')
+        total_amount=Coalesce(
+            Sum('allocation__amount_allocated'),
+            Decimal('0'),
+            output_field=DecimalField()
+        )
     ).order_by('-count')[:10]
     
     # Applications by category
@@ -10554,7 +10688,11 @@ def public_reports_view(request):
         status__in=['approved', 'disbursed']
     ).values('bursary_category__name').annotate(
         count=Count('id'),
-        total_amount=Sum('allocation__approved_amount')
+        total_amount=Coalesce(
+            Sum('allocation__amount_allocated'),
+            Decimal('0'),
+            output_field=DecimalField()
+        )
     ).order_by('-count')
     
     # Applications by institution type
@@ -10562,7 +10700,11 @@ def public_reports_view(request):
         status__in=['approved', 'disbursed']
     ).values('institution__institution_type').annotate(
         count=Count('id'),
-        total_amount=Sum('allocation__approved_amount')
+        total_amount=Coalesce(
+            Sum('allocation__amount_allocated'),
+            Decimal('0'),
+            output_field=DecimalField()
+        )
     ).order_by('-count')
     
     # Monthly trend for current year
@@ -10612,6 +10754,7 @@ def public_reports_view(request):
     context = {
         'current_fiscal_year': current_fiscal_year,
         'recent_years': recent_years,
+        'total_wards': total_wards,
         'total_applications': total_applications,
         'total_approved': total_approved,
         'total_beneficiaries': total_beneficiaries,
@@ -10628,10 +10771,13 @@ def public_reports_view(request):
         'ward_chart_data': json.dumps(ward_chart_data),
         'category_chart_data': json.dumps(category_chart_data),
         'monthly_chart_data': json.dumps(monthly_chart_data),
+        # Ward-specific data for charts
+        'ward_applications': json.dumps(ward_applications_list),
+        'ward_gender_data': json.dumps(ward_gender_list),
+        'ward_success_rate': json.dumps(ward_success_rate),
     }
     
     return render(request, 'transparency/public_reports.html', context)
-
 
 def beneficiaries_list_view(request):
     """Public list of beneficiaries"""
