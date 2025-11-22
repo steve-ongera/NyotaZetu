@@ -1,0 +1,319 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Documentation - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .breadcrumb-item { color: #64748B; }
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+    .breadcrumb-item.active { color: #1E293B; font-weight: 500; }
+    .breadcrumb a { color: #3498db; text-decoration: none; transition: color 0.3s ease; }
+    .breadcrumb a:hover { color: #2980b9; }
+
+    .page-header {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+    .page-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .page-header p { opacity: 0.9; font-size: 16px; margin: 0; }
+
+    .search-box {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 500px;
+        margin-top: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .search-box input {
+        border: none;
+        outline: none;
+        flex: 1;
+        font-size: 14px;
+        color: #1E293B;
+    }
+    .search-box i { color: #94A3B8; }
+
+    .doc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .doc-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #E2E8F0;
+        transition: all 0.3s ease;
+    }
+    .doc-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: #3498db;
+    }
+    .doc-card-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+    .doc-card-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+    }
+    .doc-card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+    }
+    .doc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .doc-list li {
+        margin-bottom: 10px;
+    }
+    .doc-list a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        color: #475569;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+    .doc-list a:hover {
+        background: #F0F9FF;
+        color: #3498db;
+        padding-left: 20px;
+    }
+    .doc-list a i {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+    .doc-list a:hover i { color: #3498db; }
+
+    .quick-links {
+        background: #F8FAFC;
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid #E2E8F0;
+    }
+    .quick-links h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .quick-links h3 i { color: #f39c12; }
+    
+    .quick-link-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        text-decoration: none;
+        color: #475569;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+    }
+    .quick-link-item:hover {
+        border-color: #3498db;
+        color: #3498db;
+        transform: translateX(4px);
+    }
+    .quick-link-item i {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #EBF5FF;
+        color: #3498db;
+    }
+
+    .version-info {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #E2E8F0;
+        margin-top: 24px;
+    }
+    .version-info h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 12px;
+    }
+    .version-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #DCFCE7;
+        color: #16A34A;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .page-header { padding: 24px; }
+        .page-header h1 { font-size: 22px; }
+        .doc-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'admin_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Documentation</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="bi bi-book"></i> System Documentation</h1>
+        <p>Comprehensive guides and documentation for the Nyota Zetu Bursary Management System</p>
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search documentation..." id="docSearch">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- Documentation Cards -->
+            <div class="doc-grid">
+                {% for section in documentation_sections %}
+                <div class="doc-card">
+                    <div class="doc-card-header">
+                        <div class="doc-card-icon">
+                            <i class="{{ section.icon }}"></i>
+                        </div>
+                        <h3 class="doc-card-title">{{ section.title }}</h3>
+                    </div>
+                    <ul class="doc-list">
+                        {% for item in section.items %}
+                        <li>
+                            <a href="{{ item.link }}">
+                                <i class="bi bi-chevron-right"></i>
+                                {{ item.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <h3><i class="bi bi-lightning-charge-fill"></i> Quick Links</h3>
+                <a href="{% url 'user_guide' %}" class="quick-link-item">
+                    <i class="bi bi-question-circle"></i>
+                    <span>User Guide & FAQs</span>
+                </a>
+                <a href="{% url 'contact_support' %}" class="quick-link-item">
+                    <i class="bi bi-headset"></i>
+                    <span>Contact Support</span>
+                </a>
+                <a href="#" class="quick-link-item">
+                    <i class="bi bi-download"></i>
+                    <span>Download PDF Guide</span>
+                </a>
+                <a href="#" class="quick-link-item">
+                    <i class="bi bi-play-circle"></i>
+                    <span>Video Tutorials</span>
+                </a>
+            </div>
+
+            <!-- Version Info -->
+            <div class="version-info">
+                <h4>System Information</h4>
+                <p style="margin-bottom: 8px; font-size: 13px; color: #64748B;">Current Version</p>
+                <span class="version-badge">v2.0.0</span>
+                <p style="margin: 12px 0 0; font-size: 12px; color: #94A3B8;">Last updated: November 2025</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('docSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    document.querySelectorAll('.doc-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+});
+</script>
+{% endblock %}
