@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget Management{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Budget Management</h1>
+        <p>Budget overview and utilization for {{ current_fiscal_year.name }}</p>
+    </div>
+
+    <!-- Overall Budget Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Budget</h3>
+            <p class="stat-value">KES {{ total_budget|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Allocated</h3>
+            <p class="stat-value">KES {{ total_allocated|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">{{ utilization_rate|floatformat:1 }}% Utilization</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Disbursed</h3>
+            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">{{ disbursement_rate|floatformat:1 }}% of Allocated</p>
+        </div>
+        <div class="stat-card">
+            <h3>Budget Balance</h3>
+            <p class="stat-value">KES {{ budget_balance|floatformat:2|default:"0.00" }}</p>
+        </div>
+    </div>
+
+    <!-- Category Budget Breakdown -->
+    <div class="section">
+        <h2>Budget by Category</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Budget</th>
+                    <th>Allocated</th>
+                    <th>Disbursed</th>
+                    <th>Balance</th>
+                    <th>Utilization</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in category_budgets %}
+                <tr>
+                    <td>{{ category.name }}</td>
+                    <td>{{ category.get_category_type_display }}</td>
+                    <td>KES {{ category.allocation_amount|floatformat:2 }}</td>
+                    <td>KES {{ category.allocated|floatformat:2|default:"0.00" }}</td>
+                    <td>KES {{ category.disbursed|floatformat:2|default:"0.00" }}</td>
+                    <td>KES {% widthratio category.allocation_amount 1 1 as budget %}{% widthratio category.allocated|default:0 1 1 as alloc %}{{ budget|add:"-"|add:alloc|floatformat:2 }}</td>
+                    <td>
+                        {% if category.allocation_amount > 0 %}
+                            {% widthratio category.allocated|default:0 1 category.allocation_amount as util %}
+                            {{ util }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">No category budgets found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Ward Allocations -->
+    <div class="section">
+        <h2>Ward Allocations</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ward</th>
+                    <th>Allocated</th>
+                    <th>Spent</th>
+                    <th>Balance</th>
+                    <th>Beneficiaries</th>
+                    <th>Utilization</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ward in ward_allocations %}
+                <tr>
+                    <td>{{ ward.ward.name }}</td>
+                    <td>KES {{ ward.allocated_amount|floatformat:2 }}</td>
+                    <td>KES {{ ward.spent_amount|floatformat:2 }}</td>
+                    <td>KES {{ ward.balance|floatformat:2 }}</td>
+                    <td>{{ ward.beneficiaries_count }}</td>
+                    <td>{{ ward.utilization|floatformat:1 }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No ward allocations found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Disbursement Rounds -->
+    <div class="section">
+        <h2>Disbursement Rounds</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Round</th>
+                    <th>Name</th>
+                    <th>Allocated</th>
+                    <th>Disbursed</th>
+                    <th>Disbursement Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for round in disbursement_rounds %}
+                <tr>
+                    <td>{{ round.round_number }}</td>
+                    <td>{{ round.name }}</td>
+                    <td>KES {{ round.allocated_amount|floatformat:2 }}</td>
+                    <td>KES {{ round.actual_disbursed|floatformat:2|default:"0.00" }}</td>
+                    <td>{{ round.disbursement_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if round.is_completed %}
+                            <span class="badge-success">Completed</span>
+                        {% elif round.is_open %}
+                            <span class="badge-info">Open</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No disbursement rounds found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

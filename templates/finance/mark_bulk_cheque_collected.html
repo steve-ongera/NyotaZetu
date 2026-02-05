@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mark Bulk Cheque as Collected{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Mark Bulk Cheque as Collected</h1>
+        <p>Confirm collection of bulk cheque</p>
+    </div>
+
+    <!-- Cheque Summary -->
+    <div class="section">
+        <h2>Cheque Summary</h2>
+        <table>
+            <tr>
+                <th>Cheque Number</th>
+                <td>{{ bulk_cheque.cheque_number }}</td>
+            </tr>
+            <tr>
+                <th>Institution</th>
+                <td>{{ bulk_cheque.institution.name }}</td>
+            </tr>
+            <tr>
+                <th>Total Amount</th>
+                <td>KES {{ bulk_cheque.total_amount|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Number of Students</th>
+                <td>{{ bulk_cheque.student_count }}</td>
+            </tr>
+            <tr>
+                <th>Cheque Holder</th>
+                <td>{{ bulk_cheque.cheque_holder_name }}</td>
+            </tr>
+            <tr>
+                <th>Position</th>
+                <td>{{ bulk_cheque.cheque_holder_position }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Collection Form -->
+    <div class="section">
+        <h2>Collection Details</h2>
+        <form method="post" action="">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="collector_id_number">Collector ID Number <span class="required">*</span></label>
+                <input type="text" name="collector_id_number" id="collector_id_number" required>
+                <small>Enter the ID number of the person collecting the cheque</small>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Important:</strong> By marking this cheque as collected, you confirm that:
+                <ul>
+                    <li>The cheque has been physically handed over to the authorized person</li>
+                    <li>All {{ bulk_cheque.student_count }} student allocations will be marked as disbursed</li>
+                    <li>Notifications will be sent to all affected students</li>
+                    <li>This action cannot be easily reversed</li>
+                </ul>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Confirm Collection</button>
+                <a href="{% url 'finance_bulk_cheque_detail' bulk_cheque.id %}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Affected Students -->
+    <div class="section">
+        <h2>Students in this Bulk Cheque</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Application No.</th>
+                    <th>Student Name</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bca in bulk_cheque.allocations.all %}
+                <tr>
+                    <td>{{ bca.allocation.application.application_number }}</td>
+                    <td>{{ bca.allocation.application.applicant.user.get_full_name }}</td>
+                    <td>KES {{ bca.allocation.amount_allocated|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

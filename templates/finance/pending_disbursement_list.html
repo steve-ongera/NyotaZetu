@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Disbursements{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Pending Disbursements</h1>
+        <p>Allocations awaiting disbursement</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Pending</h3>
+            <p class="stat-value">KES {{ total_pending|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Allocations</h3>
+            <p class="stat-value">{{ allocations.paginator.count }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <h3>Filter</h3>
+        <form method="get" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fiscal Year</label>
+                    <select name="fiscal_year">
+                        <option value="">All Years</option>
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Institution</label>
+                    <select name="institution">
+                        <option value="">All Institutions</option>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inst.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Filter</button>
+                    <a href="{% url 'finance_pending_disbursement' %}">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Institution Summary -->
+    <div class="section">
+        <h2>Summary by Institution</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Institution</th>
+                    <th>Number of Students</th>
+                    <th>Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst_summary in institutions_summary %}
+                <tr>
+                    <td>{{ inst_summary.application__institution__name }}</td>
+                    <td>{{ inst_summary.student_count }}</td>
+                    <td>KES {{ inst_summary.total_amount|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No pending disbursements</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bulk Disbursement Form -->
+    <div class="section">
+        <h2>Bulk Disbursement</h2>
+        <form method="post" action="{% url 'finance_bulk_disbursement' %}">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select name="payment_method" required>
+                        <option value="">Select Method</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="bulk_cheque">Bulk Cheque</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Disbursement Date</label>
+                    <input type="date" name="disbursement_date" required>
+                </div>
+            </div>
+
+            <!-- Pending Allocations Table with Checkboxes -->
+            <h3>Select Allocations to Disburse</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"></th>
+                        <th>Application No.</th>
+                        <th>Student Name</th>
+                        <th>Institution</th>
+                        <th>Amount</th>
+                        <th>Date Allocated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allocation in allocations %}
+                    <tr>
+                        <td><input type="checkbox" name="allocation_ids" value="{{ allocation.id }}" class="allocation-checkbox"></td>
+                        <td>{{ allocation.application.application_number }}</td>
+                        <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+                        <td>{{ allocation.application.institution.name }}</td>
+                        <td>KES {{ allocation.amount_allocated|floatformat:2 }}</td>
+                        <td>{{ allocation.allocation_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No pending allocations</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="form-actions">
+                <button type="submit">Process Selected Disbursements</button>
+            </div>
+        </form>
+
+        <!-- Pagination -->
+        {% if allocations.has_other_pages %}
+        <div class="pagination">
+            {% if allocations.has_previous %}
+                <a href="?page={{ allocations.previous_page_number }}">Previous</a>
+            {% endif %}
+
+            <span>Page {{ allocations.number }} of {{ allocations.paginator.num_pages }}</span>
+
+            {% if allocations.has_next %}
+                <a href="?page={{ allocations.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Select all checkboxes
+document.getElementById('select-all').addEventListener('change', function() {
+    var checkboxes = document.querySelectorAll('.allocation-checkbox');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = this.checked;
+    }, this);
+});
+</script>
+{% endblock %}

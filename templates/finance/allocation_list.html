@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Allocations{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>All Allocations</h1>
+        <p>View and manage all bursary allocations</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Allocated</h3>
+            <p class="stat-value">KES {{ total_allocated|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Disbursed</h3>
+            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Disbursement</h3>
+            <p class="stat-value">KES {{ pending_disbursement|floatformat:2|default:"0.00" }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <h3>Filter Allocations</h3>
+        <form method="get" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fiscal Year</label>
+                    <select name="fiscal_year">
+                        <option value="">All Years</option>
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="">All Status</option>
+                        <option value="disbursed" {% if request.GET.status == 'disbursed' %}selected{% endif %}>Disbursed</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Institution</label>
+                    <select name="institution">
+                        <option value="">All Institutions</option>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inst.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ward</label>
+                    <select name="ward">
+                        <option value="">All Wards</option>
+                        {% for ward in wards %}
+                        <option value="{{ ward.id }}" {% if request.GET.ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                            {{ ward.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Search</label>
+                    <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Name, ID, App No.">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Filter</button>
+                    <a href="{% url 'finance_allocation_list' %}">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Allocations Table -->
+    <div class="section">
+        <h2>Allocations ({{ allocations.paginator.count }} total)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Application No.</th>
+                    <th>Student Name</th>
+                    <th>ID Number</th>
+                    <th>Institution</th>
+                    <th>Ward</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Allocation Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for allocation in allocations %}
+                <tr>
+                    <td>{{ allocation.application.application_number }}</td>
+                    <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+                    <td>{{ allocation.application.applicant.id_number }}</td>
+                    <td>{{ allocation.application.institution.name }}</td>
+                    <td>{{ allocation.application.applicant.ward.name|default:"N/A" }}</td>
+                    <td>KES {{ allocation.amount_allocated|floatformat:2 }}</td>
+                    <td>
+                        {% if allocation.is_disbursed %}
+                            <span class="badge-success">Disbursed</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ allocation.allocation_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if not allocation.is_disbursed %}
+                            <a href="{% url 'finance_process_disbursement' allocation.id %}">Process</a>
+                        {% else %}
+                            <span>-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">No allocations found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if allocations.has_other_pages %}
+        <div class="pagination">
+            {% if allocations.has_previous %}
+                <a href="?page={{ allocations.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+            {% endif %}
+
+            <span>Page {{ allocations.number }} of {{ allocations.paginator.num_pages }}</span>
+
+            {% if allocations.has_next %}
+                <a href="?page={{ allocations.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Process Disbursement{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Process Disbursement</h1>
+        <p>Record disbursement details for allocation</p>
+    </div>
+
+    <!-- Allocation Details -->
+    <div class="section">
+        <h2>Allocation Details</h2>
+        <table>
+            <tr>
+                <th>Application Number</th>
+                <td>{{ allocation.application.application_number }}</td>
+            </tr>
+            <tr>
+                <th>Student Name</th>
+                <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+            </tr>
+            <tr>
+                <th>ID Number</th>
+                <td>{{ allocation.application.applicant.id_number }}</td>
+            </tr>
+            <tr>
+                <th>Institution</th>
+                <td>{{ allocation.application.institution.name }}</td>
+            </tr>
+            <tr>
+                <th>Ward</th>
+                <td>{{ allocation.application.applicant.ward.name|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <th>Amount Allocated</th>
+                <td>KES {{ allocation.amount_allocated|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Allocation Date</th>
+                <td>{{ allocation.allocation_date|date:"Y-m-d" }}</td>
+            </tr>
+            <tr>
+                <th>Approved By</th>
+                <td>{{ allocation.approved_by.get_full_name|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Disbursement Form -->
+    <div class="section">
+        <h2>Disbursement Information</h2>
+        <form method="post" action="">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="payment_method">Payment Method <span class="required">*</span></label>
+                <select name="payment_method" id="payment_method" required>
+                    <option value="">Select Payment Method</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="mpesa">M-Pesa</option>
+                    <option value="bulk_cheque">Bulk Cheque</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="cheque-number-group">
+                <label for="cheque_number">Cheque Number / Reference Number</label>
+                <input type="text" name="cheque_number" id="cheque_number">
+                <small>Enter cheque number or transaction reference</small>
+            </div>
+
+            <div class="form-group">
+                <label for="disbursement_date">Disbursement Date <span class="required">*</span></label>
+                <input type="date" name="disbursement_date" id="disbursement_date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="remarks">Remarks / Notes</label>
+                <textarea name="remarks" id="remarks" rows="4"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Process Disbursement</button>
+                <a href="{% url 'finance_pending_disbursement' %}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bank Details (if available) -->
+    {% if allocation.application.institution.bank_name %}
+    <div class="section">
+        <h2>Institution Bank Details</h2>
+        <table>
+            <tr>
+                <th>Bank Name</th>
+                <td>{{ allocation.application.institution.bank_name }}</td>
+            </tr>
+            <tr>
+                <th>Branch</th>
+                <td>{{ allocation.application.institution.bank_branch|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <th>Account Number</th>
+                <td>{{ allocation.application.institution.account_number|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <th>Account Name</th>
+                <td>{{ allocation.application.institution.account_name|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Set today's date as default
+document.getElementById('disbursement_date').valueAsDate = new Date();
+</script>
+{% endblock %}

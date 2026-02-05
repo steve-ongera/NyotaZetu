@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Cheque Details{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Bulk Cheque Details</h1>
+        <p>Cheque Number: {{ bulk_cheque.cheque_number }}</p>
+    </div>
+
+    <!-- Cheque Information -->
+    <div class="section">
+        <h2>Cheque Information</h2>
+        <table>
+            <tr>
+                <th>Cheque Number</th>
+                <td>{{ bulk_cheque.cheque_number }}</td>
+            </tr>
+            <tr>
+                <th>Institution</th>
+                <td>{{ bulk_cheque.institution.name }}</td>
+            </tr>
+            <tr>
+                <th>Fiscal Year</th>
+                <td>{{ bulk_cheque.fiscal_year.name }}</td>
+            </tr>
+            <tr>
+                <th>Total Amount</th>
+                <td>KES {{ bulk_cheque.total_amount|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Number of Students</th>
+                <td>{{ bulk_cheque.student_count }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>
+                    {% if bulk_cheque.is_collected %}
+                        <span class="badge-success">Collected</span>
+                    {% else %}
+                        <span class="badge-warning">Pending Collection</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Created Date</th>
+                <td>{{ bulk_cheque.created_date|date:"Y-m-d H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Created By</th>
+                <td>{{ bulk_cheque.created_by.get_full_name|default:"N/A" }}</td>
+            </tr>
+            {% if bulk_cheque.is_collected %}
+            <tr>
+                <th>Collection Date</th>
+                <td>{{ bulk_cheque.collection_date|date:"Y-m-d H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Collector ID Number</th>
+                <td>{{ bulk_cheque.collector_id_number }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Cheque Holder Information -->
+    <div class="section">
+        <h2>Cheque Holder Information</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <td>{{ bulk_cheque.cheque_holder_name }}</td>
+            </tr>
+            <tr>
+                <th>Position</th>
+                <td>{{ bulk_cheque.cheque_holder_position }}</td>
+            </tr>
+            <tr>
+                <th>ID Number</th>
+                <td>{{ bulk_cheque.cheque_holder_id }}</td>
+            </tr>
+            <tr>
+                <th>Phone Number</th>
+                <td>{{ bulk_cheque.cheque_holder_phone }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ bulk_cheque.cheque_holder_email|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Student Allocations -->
+    <div class="section">
+        <h2>Student Allocations</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Application No.</th>
+                    <th>Student Name</th>
+                    <th>ID Number</th>
+                    <th>Amount</th>
+                    <th>Notified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bca in allocations %}
+                <tr>
+                    <td>{{ bca.allocation.application.application_number }}</td>
+                    <td>{{ bca.allocation.application.applicant.user.get_full_name }}</td>
+                    <td>{{ bca.allocation.application.applicant.id_number }}</td>
+                    <td>KES {{ bca.allocation.amount_allocated|floatformat:2 }}</td>
+                    <td>
+                        {% if bca.is_notified %}
+                            <span class="badge-success">Yes</span>
+                        {% else %}
+                            <span class="badge-warning">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No allocations found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Actions -->
+    <div class="section">
+        {% if not bulk_cheque.is_collected %}
+            <a href="{% url 'finance_mark_bulk_cheque_collected' bulk_cheque.id %}" class="button">Mark as Collected</a>
+        {% endif %}
+        <a href="{% url 'finance_bulk_cheque_list' %}" class="button">Back to List</a>
+    </div>
+
+    <!-- Notes -->
+    {% if bulk_cheque.notes %}
+    <div class="section">
+        <h2>Notes</h2>
+        <p>{{ bulk_cheque.notes }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

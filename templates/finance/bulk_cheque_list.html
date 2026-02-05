@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Cheques{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Bulk Cheques</h1>
+        <p>Manage bulk cheque assignments</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Amount</h3>
+            <p class="stat-value">KES {{ total_amount|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Students</h3>
+            <p class="stat-value">{{ total_students }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Collected</h3>
+            <p class="stat-value">{{ collected_count }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Collection</h3>
+            <p class="stat-value">{{ pending_count }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <h3>Filter Bulk Cheques</h3>
+        <form method="get" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fiscal Year</label>
+                    <select name="fiscal_year">
+                        <option value="">All Years</option>
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Institution</label>
+                    <select name="institution">
+                        <option value="">All Institutions</option>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inst.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="">All Status</option>
+                        <option value="collected" {% if request.GET.status == 'collected' %}selected{% endif %}>Collected</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Filter</button>
+                    <a href="{% url 'finance_bulk_cheque_list' %}">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Cheques Table -->
+    <div class="section">
+        <h2>Bulk Cheques ({{ bulk_cheques.paginator.count }} total)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cheque Number</th>
+                    <th>Institution</th>
+                    <th>Fiscal Year</th>
+                    <th>Amount</th>
+                    <th>Students</th>
+                    <th>Cheque Holder</th>
+                    <th>Status</th>
+                    <th>Created Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cheque in bulk_cheques %}
+                <tr>
+                    <td>{{ cheque.cheque_number }}</td>
+                    <td>{{ cheque.institution.name }}</td>
+                    <td>{{ cheque.fiscal_year.name }}</td>
+                    <td>KES {{ cheque.total_amount|floatformat:2 }}</td>
+                    <td>{{ cheque.student_count }}</td>
+                    <td>{{ cheque.cheque_holder_name }}</td>
+                    <td>
+                        {% if cheque.is_collected %}
+                            <span class="badge-success">Collected</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ cheque.created_date|date:"Y-m-d" }}</td>
+                    <td>
+                        <a href="{% url 'finance_bulk_cheque_detail' cheque.id %}">View</a>
+                        {% if not cheque.is_collected %}
+                            | <a href="{% url 'finance_mark_bulk_cheque_collected' cheque.id %}">Mark Collected</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">No bulk cheques found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if bulk_cheques.has_other_pages %}
+        <div class="pagination">
+            {% if bulk_cheques.has_previous %}
+                <a href="?page={{ bulk_cheques.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+            {% endif %}
+
+            <span>Page {{ bulk_cheques.number }} of {{ bulk_cheques.paginator.num_pages }}</span>
+
+            {% if bulk_cheques.has_next %}
+                <a href="?page={{ bulk_cheques.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

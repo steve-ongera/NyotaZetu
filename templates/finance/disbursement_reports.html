@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Disbursement Reports{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Disbursement Reports</h1>
+        <p>Comprehensive disbursement analysis and reports</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <h3>Report Filters</h3>
+        <form method="get" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fiscal Year</label>
+                    <select name="fiscal_year">
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Date From</label>
+                    <input type="date" name="date_from" value="{{ request.GET.date_from }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Date To</label>
+                    <input type="date" name="date_to" value="{{ request.GET.date_to }}">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Generate Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Disbursed</h3>
+            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Beneficiaries</h3>
+            <p class="stat-value">{{ total_beneficiaries }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Average Amount</h3>
+            <p class="stat-value">KES {{ average_amount|floatformat:2|default:"0.00" }}</p>
+        </div>
+    </div>
+
+    <!-- Institution Breakdown -->
+    <div class="section">
+        <h2>Disbursement by Institution</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Institution</th>
+                    <th>Type</th>
+                    <th>Total Amount</th>
+                    <th>Number of Students</th>
+                    <th>Average per Student</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst in institution_breakdown %}
+                <tr>
+                    <td>{{ inst.application__institution__name }}</td>
+                    <td>{{ inst.application__institution__institution_type|title }}</td>
+                    <td>KES {{ inst.total|floatformat:2 }}</td>
+                    <td>{{ inst.count }}</td>
+                    <td>KES {% widthratio inst.total 1 inst.count as avg %}{{ avg|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Ward Breakdown -->
+    <div class="section">
+        <h2>Disbursement by Ward</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ward</th>
+                    <th>Total Amount</th>
+                    <th>Number of Students</th>
+                    <th>Average per Student</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ward in ward_breakdown %}
+                <tr>
+                    <td>{{ ward.application__applicant__ward__name }}</td>
+                    <td>KES {{ ward.total|floatformat:2 }}</td>
+                    <td>{{ ward.count }}</td>
+                    <td>KES {% widthratio ward.total 1 ward.count as avg %}{{ avg|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Payment Method Breakdown -->
+    <div class="section">
+        <h2>Disbursement by Payment Method</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Payment Method</th>
+                    <th>Total Amount</th>
+                    <th>Number of Transactions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payment_method_breakdown %}
+                <tr>
+                    <td>{{ payment.payment_method|title }}</td>
+                    <td>KES {{ payment.total|floatformat:2 }}</td>
+                    <td>{{ payment.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Gender Breakdown -->
+    <div class="section">
+        <h2>Disbursement by Gender</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Gender</th>
+                    <th>Total Amount</th>
+                    <th>Number of Students</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gender in gender_breakdown %}
+                <tr>
+                    <td>{% if gender.application__applicant__gender == 'M' %}Male{% else %}Female{% endif %}</td>
+                    <td>KES {{ gender.total|floatformat:2 }}</td>
+                    <td>{{ gender.count }}</td>
+                    <td>{% widthratio gender.count 1 total_beneficiaries as pct %}{{ pct }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Monthly Trend -->
+    <div class="section">
+        <h2>Monthly Disbursement Trend</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Total Amount</th>
+                    <th>Number of Disbursements</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for month in monthly_trend %}
+                <tr>
+                    <td>{{ month.month|date:"F Y" }}</td>
+                    <td>KES {{ month.total|floatformat:2 }}</td>
+                    <td>{{ month.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

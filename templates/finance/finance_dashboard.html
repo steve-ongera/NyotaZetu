@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Finance Dashboard{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Finance Dashboard</h1>
+        <p>Overview of financial operations and budget status</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Budget</h3>
+            <p class="stat-value">KES {{ total_budget|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">{{ current_fiscal_year.name }}</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Disbursed</h3>
+            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">{{ utilization_percentage|floatformat:1 }}% Utilized</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending Disbursement</h3>
+            <p class="stat-value">KES {{ total_pending_disbursement|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">{{ approved_allocations.count }} Allocations</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Disbursed Today</h3>
+            <p class="stat-value">{{ disbursed_today }}</p>
+            <p class="stat-label">Transactions</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Budget Balance</h3>
+            <p class="stat-value">KES {{ budget_balance|floatformat:2|default:"0.00" }}</p>
+            <p class="stat-label">Remaining</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending Bulk Cheques</h3>
+            <p class="stat-value">{{ pending_bulk_cheques }}</p>
+            <p class="stat-label">Awaiting Collection</p>
+        </div>
+    </div>
+
+    <!-- Recent Allocations -->
+    <div class="section">
+        <h2>Recent Allocations</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Application No.</th>
+                    <th>Student Name</th>
+                    <th>Institution</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for allocation in recent_allocations %}
+                <tr>
+                    <td>{{ allocation.application.application_number }}</td>
+                    <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+                    <td>{{ allocation.application.institution.name }}</td>
+                    <td>KES {{ allocation.amount_allocated|floatformat:2 }}</td>
+                    <td>
+                        {% if allocation.is_disbursed %}
+                            <span class="badge-success">Disbursed</span>
+                        {% else %}
+                            <span class="badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ allocation.allocation_date|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No recent allocations</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Ward Allocations Summary -->
+    <div class="section">
+        <h2>Ward Allocations Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ward</th>
+                    <th>Allocated</th>
+                    <th>Spent</th>
+                    <th>Balance</th>
+                    <th>Beneficiaries</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ward_alloc in ward_allocations %}
+                <tr>
+                    <td>{{ ward_alloc.ward.name }}</td>
+                    <td>KES {{ ward_alloc.allocated_amount|floatformat:2 }}</td>
+                    <td>KES {{ ward_alloc.spent_amount|floatformat:2 }}</td>
+                    <td>KES {{ ward_alloc.balance|floatformat:2 }}</td>
+                    <td>{{ ward_alloc.beneficiaries_count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No ward allocations found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Monthly Disbursement Trend -->
+    <div class="section">
+        <h2>Monthly Disbursement Trend (Last 6 Months)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Total Amount</th>
+                    <th>Number of Disbursements</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for month_data in monthly_disbursements %}
+                <tr>
+                    <td>{{ month_data.month|date:"F Y" }}</td>
+                    <td>KES {{ month_data.total|floatformat:2 }}</td>
+                    <td>{{ month_data.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No disbursement data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
