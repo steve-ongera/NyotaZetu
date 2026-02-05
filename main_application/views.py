@@ -1804,16 +1804,18 @@ def budget_management(request):
 
 
 # ============= REPORTS =============
-
 @login_required
 @user_passes_test(is_finance)
 def disbursement_reports(request):
     """
-    Comprehensive disbursement reports
+    Comprehensive disbursement reports with analytics and visualizations
     """
     fiscal_year_id = request.GET.get('fiscal_year')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    ward_id = request.GET.get('ward')
+    institution_type = request.GET.get('institution_type')
+    payment_method = request.GET.get('payment_method')
     
     # Get fiscal year
     if fiscal_year_id:
@@ -1824,6 +1826,7 @@ def disbursement_reports(request):
     # Base queryset
     disbursements = Allocation.objects.filter(is_disbursed=True)
     
+    # Apply filters
     if fiscal_year:
         disbursements = disbursements.filter(application__fiscal_year=fiscal_year)
     
@@ -1833,10 +1836,27 @@ def disbursement_reports(request):
     if date_to:
         disbursements = disbursements.filter(disbursement_date__lte=date_to)
     
+    if ward_id:
+        disbursements = disbursements.filter(application__applicant__ward_id=ward_id)
+    
+    if institution_type:
+        disbursements = disbursements.filter(
+            application__institution__institution_type=institution_type
+        )
+    
+    if payment_method:
+        disbursements = disbursements.filter(payment_method=payment_method)
+    
     # Summary statistics
     total_disbursed = disbursements.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
     total_beneficiaries = disbursements.count()
     average_amount = disbursements.aggregate(Avg('amount_allocated'))['amount_allocated__avg'] or 0
+    
+    # Get min and max amounts
+    from django.db.models import Min, Max
+
+    min_amount = disbursements.aggregate(Min('amount_allocated'))['amount_allocated__min'] or 0
+    max_amount = disbursements.aggregate(Max('amount_allocated'))['amount_allocated__max'] or 0
     
     # Institution-wise breakdown
     institution_breakdown = disbursements.values(
@@ -1844,12 +1864,22 @@ def disbursement_reports(request):
         'application__institution__institution_type'
     ).annotate(
         total=Sum('amount_allocated'),
-        count=Count('id')
-    ).order_by('-total')
+        count=Count('id'),
+        average=Avg('amount_allocated')
+    ).order_by('-total')[:20]
     
     # Ward-wise breakdown
     ward_breakdown = disbursements.values(
         'application__applicant__ward__name'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id'),
+        average=Avg('amount_allocated')
+    ).order_by('-total')
+    
+    # Constituency breakdown
+    constituency_breakdown = disbursements.values(
+        'application__applicant__constituency__name'
     ).annotate(
         total=Sum('amount_allocated'),
         count=Count('id')
@@ -1869,28 +1899,269 @@ def disbursement_reports(request):
         count=Count('id')
     )
     
-    # Monthly trend
-    monthly_trend = disbursements.extra(
-        select={'month': "DATE_TRUNC('month', disbursement_date)"}
-    ).values('month').annotate(
+    # Category breakdown
+    category_breakdown = disbursements.values(
+        'application__bursary_category__name',
+        'application__bursary_category__category_type'
+    ).annotate(
         total=Sum('amount_allocated'),
         count=Count('id')
+    ).order_by('-total')
+    
+    # Monthly trend
+    from django.db.models.functions import TruncMonth
+    monthly_trend = disbursements.annotate(
+        month=TruncMonth('disbursement_date')
+    ).values('month').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id'),
+        average=Avg('amount_allocated')
     ).order_by('month')
+    
+    # Weekly trend (last 12 weeks)
+    from django.db.models.functions import TruncWeek
+    twelve_weeks_ago = timezone.now().date() - timedelta(weeks=12)
+    weekly_trend = disbursements.filter(
+        disbursement_date__gte=twelve_weeks_ago
+    ).annotate(
+        week=TruncWeek('disbursement_date')
+    ).values('week').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('week')
+    
+    # ===== CHART DATA PREPARATION =====
+    
+    # 1. Institution Type Distribution (Pie Chart)
+    institution_type_data = disbursements.values(
+        'application__institution__institution_type'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    institution_type_labels = []
+    institution_type_amounts = []
+    institution_type_colors = {
+        'highschool': '#3498db',
+        'university': '#10B981',
+        'college': '#F59E0B',
+        'technical_institute': '#8B5CF6',
+        'special_school': '#EC4899'
+    }
+    chart_colors = []
+    
+    for item in institution_type_data:
+        inst_type = item['application__institution__institution_type']
+        type_display = dict([
+            ('highschool', 'High School'),
+            ('special_school', 'Special School'),
+            ('college', 'College'),
+            ('university', 'University'),
+            ('technical_institute', 'Technical Institute')
+        ]).get(inst_type, inst_type)
+        
+        institution_type_labels.append(f"{type_display} ({item['count']})")
+        institution_type_amounts.append(float(item['total'] or 0))
+        chart_colors.append(institution_type_colors.get(inst_type, '#64748B'))
+    
+    institution_type_chart = {
+        'labels': institution_type_labels,
+        'data': institution_type_amounts,
+        'colors': chart_colors
+    }
+    
+    # 2. Ward Distribution (Bar Chart - Top 15)
+    ward_chart_labels = []
+    ward_chart_amounts = []
+    ward_chart_counts = []
+    
+    for ward in ward_breakdown[:15]:
+        ward_chart_labels.append(ward['application__applicant__ward__name'] or 'Unknown')
+        ward_chart_amounts.append(float(ward['total'] or 0))
+        ward_chart_counts.append(ward['count'])
+    
+    ward_distribution_chart = {
+        'labels': ward_chart_labels,
+        'amounts': ward_chart_amounts,
+        'counts': ward_chart_counts
+    }
+    
+    # 3. Monthly Trend (Line Chart)
+    monthly_labels = []
+    monthly_amounts = []
+    monthly_counts = []
+    
+    for item in monthly_trend:
+        month_name = item['month'].strftime('%b %Y')
+        monthly_labels.append(month_name)
+        monthly_amounts.append(float(item['total'] or 0))
+        monthly_counts.append(item['count'])
+    
+    monthly_trend_chart = {
+        'labels': monthly_labels,
+        'amounts': monthly_amounts,
+        'counts': monthly_counts
+    }
+    
+    # 4. Payment Method Distribution (Donut Chart)
+    payment_labels = []
+    payment_amounts = []
+    payment_colors_map = {
+        'cheque': '#3498db',
+        'bank_transfer': '#10B981',
+        'mpesa': '#F59E0B',
+        'bulk_cheque': '#8B5CF6'
+    }
+    payment_chart_colors = []
+    
+    for pm in payment_method_breakdown:
+        method_display = dict([
+            ('cheque', 'Cheque'),
+            ('bank_transfer', 'Bank Transfer'),
+            ('mpesa', 'M-Pesa'),
+            ('bulk_cheque', 'Bulk Cheque')
+        ]).get(pm['payment_method'], pm['payment_method'])
+        
+        payment_labels.append(f"{method_display} ({pm['count']})")
+        payment_amounts.append(float(pm['total'] or 0))
+        payment_chart_colors.append(payment_colors_map.get(pm['payment_method'], '#64748B'))
+    
+    payment_method_chart = {
+        'labels': payment_labels,
+        'data': payment_amounts,
+        'colors': payment_chart_colors
+    }
+    
+    # 5. Gender Distribution (Donut Chart)
+    gender_labels = []
+    gender_amounts = []
+    gender_counts = []
+    
+    for item in gender_breakdown:
+        gender = 'Male' if item['application__applicant__gender'] == 'M' else 'Female'
+        gender_labels.append(f"{gender} ({item['count']})")
+        gender_amounts.append(float(item['total'] or 0))
+        gender_counts.append(item['count'])
+    
+    gender_distribution_chart = {
+        'labels': gender_labels,
+        'data': gender_amounts,
+        'colors': ['#3498db', '#EC4899']
+    }
+    
+    # 6. Category Distribution (Horizontal Bar Chart)
+    category_labels = []
+    category_amounts = []
+    
+    for cat in category_breakdown[:10]:
+        category_labels.append(cat['application__bursary_category__name'] or 'Unknown')
+        category_amounts.append(float(cat['total'] or 0))
+    
+    category_distribution_chart = {
+        'labels': category_labels,
+        'data': category_amounts
+    }
+    
+    # 7. Top 10 Institutions (Horizontal Bar Chart)
+    top_institution_labels = []
+    top_institution_amounts = []
+    
+    for inst in institution_breakdown[:10]:
+        top_institution_labels.append(inst['application__institution__name'] or 'Unknown')
+        top_institution_amounts.append(float(inst['total'] or 0))
+    
+    top_institutions_chart = {
+        'labels': top_institution_labels,
+        'data': top_institution_amounts
+    }
+    
+    # 8. Weekly Trend (Area Chart)
+    weekly_labels = []
+    weekly_amounts = []
+    
+    for item in weekly_trend:
+        week_name = item['week'].strftime('%b %d')
+        weekly_labels.append(week_name)
+        weekly_amounts.append(float(item['total'] or 0))
+    
+    weekly_trend_chart = {
+        'labels': weekly_labels,
+        'data': weekly_amounts
+    }
+    
+    # 9. Constituency Distribution (Pie Chart)
+    constituency_labels = []
+    constituency_amounts = []
+    
+    for const in constituency_breakdown:
+        constituency_labels.append(const['application__applicant__constituency__name'] or 'Unknown')
+        constituency_amounts.append(float(const['total'] or 0))
+    
+    constituency_distribution_chart = {
+        'labels': constituency_labels,
+        'data': constituency_amounts
+    }
+    
+    # Get filter options
+    wards = Ward.objects.all().order_by('name')
+    institution_types = [
+        ('highschool', 'High School'),
+        ('special_school', 'Special School'),
+        ('college', 'College'),
+        ('university', 'University'),
+        ('technical_institute', 'Technical Institute')
+    ]
+    payment_methods = [
+        ('cheque', 'Cheque'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('mpesa', 'M-Pesa'),
+        ('bulk_cheque', 'Bulk Cheque')
+    ]
     
     context = {
         'fiscal_year': fiscal_year,
+        'fiscal_years': FiscalYear.objects.all(),
+        
+        # Summary Statistics
         'total_disbursed': total_disbursed,
         'total_beneficiaries': total_beneficiaries,
         'average_amount': average_amount,
+        'min_amount': min_amount,
+        'max_amount': max_amount,
+        
+        # Breakdowns
         'institution_breakdown': institution_breakdown,
         'ward_breakdown': ward_breakdown,
+        'constituency_breakdown': constituency_breakdown,
         'payment_method_breakdown': payment_method_breakdown,
         'gender_breakdown': gender_breakdown,
+        'category_breakdown': category_breakdown,
         'monthly_trend': monthly_trend,
-        'fiscal_years': FiscalYear.objects.all(),
+        
+        # Charts Data (as JSON)
+        'institution_type_chart': json.dumps(institution_type_chart),
+        'ward_distribution_chart': json.dumps(ward_distribution_chart),
+        'monthly_trend_chart': json.dumps(monthly_trend_chart),
+        'payment_method_chart': json.dumps(payment_method_chart),
+        'gender_distribution_chart': json.dumps(gender_distribution_chart),
+        'category_distribution_chart': json.dumps(category_distribution_chart),
+        'top_institutions_chart': json.dumps(top_institutions_chart),
+        'weekly_trend_chart': json.dumps(weekly_trend_chart),
+        'constituency_distribution_chart': json.dumps(constituency_distribution_chart),
+        
+        # Filters
+        'wards': wards,
+        'institution_types': institution_types,
+        'payment_methods': payment_methods,
+        'selected_ward': ward_id,
+        'selected_institution_type': institution_type,
+        'selected_payment_method': payment_method,
+        'date_from': date_from,
+        'date_to': date_to,
     }
+    
     return render(request, 'finance/disbursement_reports.html', context)
-
 
 @login_required
 @user_passes_test(is_finance)
