@@ -35,6 +35,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Check if application is in DEBUG mode
+DEBUG_MODE = getattr(settings, 'DEBUG', False)
+
 def get_client_ip(request):
     """Get client IP address"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -255,23 +258,45 @@ def login_view(request):
                 account_lock.save()
             
             if user.user_type in ['admin', 'reviewer', 'finance']:
-                # Require 2FA for admin users
-                session_key = get_session_key(request)
-                tfa_code_obj = generate_tfa_code(user, ip_address, session_key)
-                
-                # Store pending login data in session
-                request.session['pending_login_user_id'] = user.id
-                request.session['pending_login_time'] = timezone.now().isoformat()
-                request.session['tfa_code_id'] = tfa_code_obj.id
-                request.session['pending_next_url'] = next_url  # Store next URL
-                
-                messages.info(request, 'Verification code sent to your email. Please check and enter the code.')
-                return render(request, 'auth/login.html', {
-                    'show_tfa': True,
-                    'username': username,
-                    'expires_at': tfa_code_obj.expires_at.isoformat(),
-                    'next': next_url,
-                })
+                # Skip 2FA if in DEBUG mode
+                if DEBUG_MODE:
+                    # Direct login for admin users in development mode
+                    login(request, user)
+                    
+                    # Initialize session activity tracking
+                    request.session['last_activity'] = timezone.now().isoformat()
+                    
+                    # Clear the redirect flag
+                    request.session.pop('redirect_after_login', None)
+                    
+                    # Redirect to next URL or default dashboard
+                    if next_url and next_url != '/':
+                        messages.success(request, 'Welcome back! You were redirected to your previous page.')
+                        return redirect(next_url)
+                    elif user.user_type == 'admin':
+                        return redirect('admin_dashboard')
+                    elif user.user_type == 'reviewer':
+                        return redirect('reviewer_dashboard')
+                    elif user.user_type == 'finance':
+                        return redirect('finance_dashboard')
+                else:
+                    # Require 2FA for admin users in production
+                    session_key = get_session_key(request)
+                    tfa_code_obj = generate_tfa_code(user, ip_address, session_key)
+                    
+                    # Store pending login data in session
+                    request.session['pending_login_user_id'] = user.id
+                    request.session['pending_login_time'] = timezone.now().isoformat()
+                    request.session['tfa_code_id'] = tfa_code_obj.id
+                    request.session['pending_next_url'] = next_url  # Store next URL
+                    
+                    messages.info(request, 'Verification code sent to your email. Please check and enter the code.')
+                    return render(request, 'auth/login.html', {
+                        'show_tfa': True,
+                        'username': username,
+                        'expires_at': tfa_code_obj.expires_at.isoformat(),
+                        'next': next_url,
+                    })
             
             elif user.user_type == 'applicant':
                 # Direct login for applicants
@@ -424,6 +449,7 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('login_view')
+
 
 # Helper function to check user type
 def is_admin(user):
