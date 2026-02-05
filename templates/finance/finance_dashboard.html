@@ -1,97 +1,940 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'admin_base.html' %}
+{% load humanize %}
 
-{% block title %}Finance Dashboard{% endblock %}
+{% block title %}Finance Dashboard - {{ current_fiscal_year.county.name }} Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Statistics Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid #E2E8F0;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+    }
+
+    .stat-icon.yellow {
+        background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        color: white;
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+    }
+
+    .stat-icon.cyan {
+        background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+        color: white;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        color: white;
+    }
+
+    .stat-icon.red {
+        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        color: white;
+    }
+
+    .stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .stat-badge.primary {
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.1);
+    }
+
+    .stat-badge.warning {
+        color: #F59E0B;
+        background: rgba(245, 158, 11, 0.1);
+    }
+
+    .stat-badge.success {
+        color: #10B981;
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .stat-badge.info {
+        color: #06B6D4;
+        background: rgba(6, 182, 212, 0.1);
+    }
+
+    .stat-badge.danger {
+        color: #EF4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Content Cards */
+    .content-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        margin-bottom: 24px;
+    }
+
+    .card-header-custom {
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .card-title i {
+        color: #3498db;
+    }
+
+    /* Chart Container */
+    .chart-container {
+        position: relative;
+        padding: 24px;
+        min-height: 300px;
+    }
+
+    .chart-container canvas {
+        max-height: 400px;
+    }
+
+    /* Tables */
+    .table-custom {
+        width: 100%;
+        margin: 0;
+    }
+
+    .table-custom thead th {
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748B;
+        border-bottom: 2px solid #E2E8F0;
+        padding: 16px 24px;
+        background: #F8FAFC;
+    }
+
+    .table-custom tbody td {
+        padding: 16px 24px;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        color: #1E293B;
+        font-size: 14px;
+    }
+
+    .table-custom tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .status-badge.disbursed {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-badge.pending {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-badge.collected {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    /* Grid Layout */
+    .grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .grid-layout-thirds {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    /* Buttons */
+    .btn-custom {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #3498db;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-custom:hover {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    /* Alert Boxes */
+    .alert-box {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-box.warning {
+        background: #FEF3C7;
+        border: 1px solid #FCD34D;
+        color: #92400E;
+    }
+
+    .alert-box.danger {
+        background: #FEE2E2;
+        border: 1px solid #FCA5A5;
+        color: #7F1D1D;
+    }
+
+    .alert-box.info {
+        background: #DBEAFE;
+        border: 1px solid #93C5FD;
+        color: #1E40AF;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .grid-layout, .grid-layout-thirds {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart.js default configuration
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748B';
+    
+    // 1. Disbursement Status (Donut Chart)
+    const disbursementStatusData = {{ disbursement_status_data|safe }};
+    if (document.getElementById('disbursementStatusChart')) {
+        new Chart(document.getElementById('disbursementStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: disbursementStatusData.labels,
+                datasets: [{
+                    data: disbursementStatusData.data,
+                    backgroundColor: disbursementStatusData.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += 'KES ' + context.parsed.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 2. Monthly Disbursement Trend (Line Chart)
+    const monthlyData = {{ monthly_trend_data|safe }};
+    if (document.getElementById('monthlyTrendChart')) {
+        new Chart(document.getElementById('monthlyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Disbursed Amount',
+                    data: monthlyData.amounts,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'KES ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 3. Ward Budget Utilization (Grouped Bar Chart)
+    const wardData = {{ ward_utilization_data|safe }};
+    if (document.getElementById('wardUtilizationChart')) {
+        new Chart(document.getElementById('wardUtilizationChart'), {
+            type: 'bar',
+            data: {
+                labels: wardData.labels,
+                datasets: [{
+                    label: 'Allocated',
+                    data: wardData.allocated,
+                    backgroundColor: '#3498db',
+                    borderRadius: 6
+                }, {
+                    label: 'Spent',
+                    data: wardData.spent,
+                    backgroundColor: '#10B981',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': KES ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 4. Payment Method Distribution (Pie Chart)
+    const paymentData = {{ payment_method_data|safe }};
+    if (document.getElementById('paymentMethodChart')) {
+        new Chart(document.getElementById('paymentMethodChart'), {
+            type: 'pie',
+            data: {
+                labels: paymentData.labels,
+                datasets: [{
+                    data: paymentData.data,
+                    backgroundColor: paymentData.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += 'KES ' + context.parsed.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 5. Institution Type Distribution (Bar Chart)
+    const institutionData = {{ institution_distribution_data|safe }};
+    if (document.getElementById('institutionDistributionChart')) {
+        new Chart(document.getElementById('institutionDistributionChart'), {
+            type: 'bar',
+            data: {
+                labels: institutionData.labels,
+                datasets: [{
+                    label: 'Disbursed Amount',
+                    data: institutionData.data,
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'KES ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+    
+    // 6. Daily Disbursement Trend (Area Chart)
+    const dailyData = {{ daily_trend_data|safe }};
+    if (document.getElementById('dailyTrendChart')) {
+        new Chart(document.getElementById('dailyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: dailyData.labels,
+                datasets: [{
+                    label: 'Daily Disbursements',
+                    data: dailyData.data,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'KES ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="content">
-    <div class="page-header">
-        <h1>Finance Dashboard</h1>
-        <p>Overview of financial operations and budget status</p>
+<!-- Alert Boxes -->
+{% if low_budget_warning %}
+<div class="alert-box danger">
+    <i class="bi bi-exclamation-triangle" style="font-size: 24px;"></i>
+    <div>
+        <strong>Low Budget Warning:</strong> Budget balance is below 20% (KES {{ budget_balance|floatformat:0|intcomma }} remaining).
+    </div>
+</div>
+{% endif %}
+
+{% if allocations_needing_disbursement > 0 %}
+<div class="alert-box warning">
+    <i class="bi bi-cash-stack" style="font-size: 24px;"></i>
+    <div>
+        <strong>Pending Disbursement:</strong> {{ allocations_needing_disbursement }} allocation{{ allocations_needing_disbursement|pluralize }} ready for disbursement.
+        <a href="{% url 'allocation_list' %}" style="color: inherit; text-decoration: underline;">Process now</a>
+    </div>
+</div>
+{% endif %}
+
+{% if pending_bulk_count > 0 %}
+<div class="alert-box info">
+    <i class="bi bi-file-earmark-check" style="font-size: 24px;"></i>
+    <div>
+        <strong>Bulk Cheques Pending:</strong> {{ pending_bulk_count }} bulk cheque{{ pending_bulk_count|pluralize }} waiting for collection.
+        <a href="{% url 'bulk_cheque_list' %}" style="color: inherit; text-decoration: underline;">View details</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon blue">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="stat-badge primary">
+                <i class="bi bi-calendar3"></i> {{ current_fiscal_year.name }}
+            </div>
+        </div>
+        <div class="stat-value">KES {{ total_budget|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Total Budget</div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <h3>Total Budget</h3>
-            <p class="stat-value">KES {{ total_budget|floatformat:2|default:"0.00" }}</p>
-            <p class="stat-label">{{ current_fiscal_year.name }}</p>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon green">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-badge success">
+                <i class="bi bi-arrow-up"></i> {{ utilization_percentage }}%
+            </div>
         </div>
+        <div class="stat-value">KES {{ total_disbursed|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Total Disbursed</div>
+    </div>
 
-        <div class="stat-card">
-            <h3>Total Disbursed</h3>
-            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
-            <p class="stat-label">{{ utilization_percentage|floatformat:1 }}% Utilized</p>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon yellow">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="stat-badge warning">
+                <i class="bi bi-hourglass-split"></i> {{ pending_count }}
+            </div>
         </div>
+        <div class="stat-value">KES {{ total_pending_disbursement|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Pending Disbursement</div>
+    </div>
 
-        <div class="stat-card">
-            <h3>Pending Disbursement</h3>
-            <p class="stat-value">KES {{ total_pending_disbursement|floatformat:2|default:"0.00" }}</p>
-            <p class="stat-label">{{ approved_allocations.count }} Allocations</p>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon cyan">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="stat-badge info">
+                <i class="bi bi-piggy-bank"></i> Available
+            </div>
         </div>
+        <div class="stat-value">KES {{ budget_balance|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Budget Balance</div>
+    </div>
 
-        <div class="stat-card">
-            <h3>Disbursed Today</h3>
-            <p class="stat-value">{{ disbursed_today }}</p>
-            <p class="stat-label">Transactions</p>
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon purple">
+                <i class="bi bi-file-earmark-check"></i>
+            </div>
+            <div class="stat-badge" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;">
+                <i class="bi bi-files"></i> Bulk
+            </div>
         </div>
+        <div class="stat-value">{{ pending_bulk_count|intcomma }}</div>
+        <div class="stat-label">Pending Bulk Cheques</div>
+    </div>
 
-        <div class="stat-card">
-            <h3>Budget Balance</h3>
-            <p class="stat-value">KES {{ budget_balance|floatformat:2|default:"0.00" }}</p>
-            <p class="stat-label">Remaining</p>
+   
+</div>
+
+<!-- Budget Progress Bar -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-graph-up"></i>
+            Budget Utilization - {{ current_fiscal_year.name }}
+        </h6>
+        <span class="stat-badge success">{{ utilization_percentage }}% Utilized</span>
+    </div>
+    <div style="padding: 24px;">
+        <div class="stats-grid" style="margin-bottom: 20px;">
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Allocated</div>
+                <div style="font-size: 20px; font-weight: 700; color: #3498db;">
+                    KES {{ total_allocated|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Disbursed</div>
+                <div style="font-size: 20px; font-weight: 700; color: #10B981;">
+                    KES {{ total_disbursed|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Pending</div>
+                <div style="font-size: 20px; font-weight: 700; color: #F59E0B;">
+                    KES {{ total_pending_disbursement|floatformat:0|intcomma }}
+                </div>
+            </div>
+            <div>
+                <div style="color: #64748B; font-size: 13px; margin-bottom: 8px;">Balance</div>
+                <div style="font-size: 20px; font-weight: 700; color: #64748B;">
+                    KES {{ budget_balance|floatformat:0|intcomma }}
+                </div>
+            </div>
         </div>
+        <div style="height: 12px; background: #F1F5F9; border-radius: 12px; overflow: hidden;">
+            <div style="height: 100%; width: {{ utilization_percentage }}%; background: linear-gradient(90deg, #3498db 0%, #10B981 100%); border-radius: 12px;"></div>
+        </div>
+    </div>
+</div>
 
-        <div class="stat-card">
-            <h3>Pending Bulk Cheques</h3>
-            <p class="stat-value">{{ pending_bulk_cheques }}</p>
-            <p class="stat-label">Awaiting Collection</p>
+<!-- Main Charts Grid -->
+<div class="grid-layout">
+    <!-- Disbursement Status -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-pie-chart"></i>
+                Disbursement Status
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="disbursementStatusChart"></canvas>
         </div>
     </div>
 
-    <!-- Recent Allocations -->
-    <div class="section">
-        <h2>Recent Allocations</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Application No.</th>
-                    <th>Student Name</th>
-                    <th>Institution</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for allocation in recent_allocations %}
-                <tr>
-                    <td>{{ allocation.application.application_number }}</td>
-                    <td>{{ allocation.application.applicant.user.get_full_name }}</td>
-                    <td>{{ allocation.application.institution.name }}</td>
-                    <td>KES {{ allocation.amount_allocated|floatformat:2 }}</td>
-                    <td>
-                        {% if allocation.is_disbursed %}
-                            <span class="badge-success">Disbursed</span>
-                        {% else %}
-                            <span class="badge-warning">Pending</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ allocation.allocation_date|date:"Y-m-d" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6">No recent allocations</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Payment Method Distribution -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-credit-card"></i>
+                Payment Methods
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="paymentMethodChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Trend -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-graph-up-arrow"></i>
+            Monthly Disbursement Trend (Last 6 Months)
+        </h6>
+    </div>
+    <div class="chart-container" style="min-height: 350px;">
+        <canvas id="monthlyTrendChart"></canvas>
+    </div>
+</div>
+
+<!-- Three Column Charts -->
+<div class="grid-layout-thirds">
+    <!-- Ward Utilization -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-map"></i>
+                Top 10 Wards
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="wardUtilizationChart"></canvas>
+        </div>
     </div>
 
-    <!-- Ward Allocations Summary -->
-    <div class="section">
-        <h2>Ward Allocations Summary</h2>
-        <table>
+    <!-- Institution Distribution -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-building"></i>
+                By Institution Type
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="institutionDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Daily Trend -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-calendar-day"></i>
+                Daily Trend (30 Days)
+            </h6>
+        </div>
+        <div class="chart-container">
+            <canvas id="dailyTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities Grid -->
+<div class="grid-layout">
+    <!-- Recent Disbursements -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-clock-history"></i>
+                Recent Disbursements
+            </h6>
+            <a href="{% url 'allocation_list' %}?disbursed=true" class="btn-custom">
+                <i class="bi bi-eye"></i> View All
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Applicant</th>
+                        <th>Institution</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allocation in recent_disbursements %}
+                    <tr>
+                        <td style="font-weight: 500;">
+                            {{ allocation.application.applicant.user.get_full_name }}
+                        </td>
+                        <td>{{ allocation.application.institution.name|truncatewords:3 }}</td>
+                        <td style="font-weight: 600; color: #10B981;">
+                            KES {{ allocation.amount_allocated|floatformat:0|intcomma }}
+                        </td>
+                        <td style="color: #64748B; font-size: 13px;">
+                            {{ allocation.disbursement_date|date:"M d, Y" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <p>No disbursements yet</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Bulk Cheques -->
+    <div class="content-card">
+        <div class="card-header-custom">
+            <h6 class="card-title">
+                <i class="bi bi-file-earmark-check"></i>
+                Pending Bulk Cheques
+            </h6>
+            <a href="#" class="btn-custom">
+                <i class="bi bi-eye"></i> View All
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Cheque #</th>
+                        <th>Institution</th>
+                        <th>Amount</th>
+                        <th>Students</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cheque in pending_bulk_cheques|slice:":10" %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'bulk_cheque_detail' cheque.id %}" 
+                               style="color: #3498db; text-decoration: none; font-weight: 600;">
+                                {{ cheque.cheque_number }}
+                            </a>
+                        </td>
+                        <td style="font-weight: 500;">{{ cheque.institution.name|truncatewords:3 }}</td>
+                        <td style="font-weight: 600; color: #F59E0B;">
+                            KES {{ cheque.total_amount|floatformat:0|intcomma }}
+                        </td>
+                        <td>
+                            <span class="stat-badge warning">{{ cheque.student_count }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-check-circle"></i>
+                                <p>No pending bulk cheques</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ward Allocations Table -->
+<div class="content-card">
+    <div class="card-header-custom">
+        <h6 class="card-title">
+            <i class="bi bi-geo-alt"></i>
+            Ward Budget Allocations
+        </h6>
+        <a href="#" class="btn-custom">
+            <i class="bi bi-eye"></i> View All
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
             <thead>
                 <tr>
                     <th>Ward</th>
@@ -99,47 +942,43 @@
                     <th>Spent</th>
                     <th>Balance</th>
                     <th>Beneficiaries</th>
+                    <th>Utilization</th>
                 </tr>
             </thead>
             <tbody>
-                {% for ward_alloc in ward_allocations %}
+                {% for ward in ward_allocations %}
                 <tr>
-                    <td>{{ ward_alloc.ward.name }}</td>
-                    <td>KES {{ ward_alloc.allocated_amount|floatformat:2 }}</td>
-                    <td>KES {{ ward_alloc.spent_amount|floatformat:2 }}</td>
-                    <td>KES {{ ward_alloc.balance|floatformat:2 }}</td>
-                    <td>{{ ward_alloc.beneficiaries_count }}</td>
+                    <td style="font-weight: 600;">{{ ward.ward.name }}</td>
+                    <td style="color: #3498db; font-weight: 500;">
+                        KES {{ ward.allocated_amount|floatformat:0|intcomma }}
+                    </td>
+                    <td style="color: #10B981; font-weight: 500;">
+                        KES {{ ward.spent_amount|floatformat:0|intcomma }}
+                    </td>
+                    <td style="color: #64748B; font-weight: 500;">
+                        KES {{ ward.balance|floatformat:0|intcomma }}
+                    </td>
+                    <td>
+                        <span class="stat-badge info">{{ ward.beneficiaries_count }}</span>
+                    </td>
+                    <td>
+                        {% widthratio ward.spent_amount ward.allocated_amount 100 as utilization %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; height: 8px; background: #F1F5F9; border-radius: 8px; overflow: hidden;">
+                                <div style="height: 100%; width: {{ utilization }}%; background: #10B981; border-radius: 8px;"></div>
+                            </div>
+                            <span style="font-size: 13px; font-weight: 600; color: #10B981;">{{ utilization }}%</span>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5">No ward allocations found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Monthly Disbursement Trend -->
-    <div class="section">
-        <h2>Monthly Disbursement Trend (Last 6 Months)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Month</th>
-                    <th>Total Amount</th>
-                    <th>Number of Disbursements</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for month_data in monthly_disbursements %}
-                <tr>
-                    <td>{{ month_data.month|date:"F Y" }}</td>
-                    <td>KES {{ month_data.total|floatformat:2 }}</td>
-                    <td>{{ month_data.count }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3">No disbursement data available</td>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-map"></i>
+                            <p>No ward allocations found</p>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

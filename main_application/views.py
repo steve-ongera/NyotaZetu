@@ -973,86 +973,313 @@ def is_finance(user):
 @user_passes_test(is_finance)
 def finance_dashboard(request):
     """
-    Finance Officer Dashboard
+    Finance Officer Dashboard with comprehensive financial analytics
     """
     # Get current fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
-    # Financial statistics
+    if not current_fiscal_year:
+        messages.warning(request, "No active fiscal year found.")
+        context = {'current_fiscal_year': None}
+        return render(request, 'finance/finance_dashboard.html', context)
+    
+    # ===== FINANCIAL STATISTICS =====
+    
+    # Approved allocations pending disbursement
     approved_allocations = Allocation.objects.filter(
-        is_disbursed=False,
-        fiscal_year=current_fiscal_year
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=False
     )
+    
     total_pending_disbursement = approved_allocations.aggregate(
         Sum('amount_allocated')
     )['amount_allocated__sum'] or 0
     
+    pending_count = approved_allocations.count()
+    
     # Disbursements
+    disbursed_allocations = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=True
+    )
+    
+    total_disbursed = disbursed_allocations.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    disbursed_count = disbursed_allocations.count()
+    
+    # Today's disbursements
     disbursed_today = Allocation.objects.filter(
         disbursement_date=timezone.now().date()
     ).count()
     
-    total_disbursed = Allocation.objects.filter(
-        is_disbursed=True,
-        fiscal_year=current_fiscal_year
-    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-    
     # Budget statistics
-    total_budget = current_fiscal_year.total_bursary_allocation if current_fiscal_year else 0
+    total_budget = current_fiscal_year.total_bursary_allocation
     budget_utilized = total_disbursed
     budget_balance = total_budget - budget_utilized
     utilization_percentage = (budget_utilized / total_budget * 100) if total_budget > 0 else 0
     
+    # Total allocations (approved + disbursed)
+    all_allocations = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year
+    )
+    total_allocated = all_allocations.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    # ===== CHART DATA =====
+    
+    # 1. Disbursement Status (Donut Chart)
+    disbursement_status_data = {
+        'labels': ['Disbursed', 'Pending Disbursement', 'Budget Balance'],
+        'data': [
+            float(total_disbursed),
+            float(total_pending_disbursement),
+            float(budget_balance)
+        ],
+        'colors': ['#10B981', '#F59E0B', '#E2E8F0']
+    }
+    
+    # 2. Monthly Disbursement Trend (Line Chart - Last 6 Months)
+    six_months_ago = timezone.now().date() - timedelta(days=180)
+    
+    # Get disbursements by month
+    from django.db.models.functions import TruncMonth
+    monthly_disbursements = Allocation.objects.filter(
+        disbursement_date__gte=six_months_ago,
+        is_disbursed=True
+    ).annotate(
+        month=TruncMonth('disbursement_date')
+    ).values('month').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('month')
+    
+    monthly_labels = []
+    monthly_amounts = []
+    monthly_counts = []
+    
+    for item in monthly_disbursements:
+        month_name = item['month'].strftime('%b %Y')
+        monthly_labels.append(month_name)
+        monthly_amounts.append(float(item['total'] or 0))
+        monthly_counts.append(item['count'])
+    
+    monthly_trend_data = {
+        'labels': monthly_labels,
+        'amounts': monthly_amounts,
+        'counts': monthly_counts
+    }
+    
+    # 3. Ward Budget Utilization (Bar Chart)
+    ward_allocations = WardAllocation.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).select_related('ward').order_by('-spent_amount')[:10]
+    
+    ward_labels = []
+    ward_allocated = []
+    ward_spent = []
+    
+    for wa in ward_allocations:
+        ward_labels.append(wa.ward.name)
+        ward_allocated.append(float(wa.allocated_amount))
+        ward_spent.append(float(wa.spent_amount))
+    
+    ward_utilization_data = {
+        'labels': ward_labels,
+        'allocated': ward_allocated,
+        'spent': ward_spent
+    }
+    
+    # 4. Payment Method Distribution (Pie Chart)
+    payment_methods = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=True
+    ).values('payment_method').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    payment_labels = []
+    payment_amounts = []
+    payment_colors = {
+        'cheque': '#3498db',
+        'bank_transfer': '#10B981',
+        'mpesa': '#F59E0B',
+        'bulk_cheque': '#8B5CF6'
+    }
+    payment_chart_colors = []
+    
+    for pm in payment_methods:
+        method_display = dict([
+            ('cheque', 'Cheque'),
+            ('bank_transfer', 'Bank Transfer'),
+            ('mpesa', 'M-Pesa'),
+            ('bulk_cheque', 'Bulk Cheque')
+        ]).get(pm['payment_method'], pm['payment_method'])
+        
+        payment_labels.append(f"{method_display} ({pm['count']})")
+        payment_amounts.append(float(pm['total'] or 0))
+        payment_chart_colors.append(payment_colors.get(pm['payment_method'], '#64748B'))
+    
+    payment_method_data = {
+        'labels': payment_labels,
+        'data': payment_amounts,
+        'colors': payment_chart_colors
+    }
+    
+    # 5. Institution Type Distribution (Bar Chart)
+    institution_disbursements = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=True
+    ).values(
+        'application__institution__institution_type'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    institution_labels = []
+    institution_amounts = []
+    
+    for inst in institution_disbursements:
+        inst_type = inst['application__institution__institution_type']
+        type_display = dict([
+            ('highschool', 'High School'),
+            ('special_school', 'Special School'),
+            ('college', 'College'),
+            ('university', 'University'),
+            ('technical_institute', 'Technical Institute')
+        ]).get(inst_type, inst_type)
+        
+        institution_labels.append(f"{type_display} ({inst['count']})")
+        institution_amounts.append(float(inst['total'] or 0))
+    
+    institution_distribution_data = {
+        'labels': institution_labels,
+        'data': institution_amounts
+    }
+    
+    # 6. Daily Disbursement Trend (Last 30 Days)
+    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+    
+    from django.db.models.functions import TruncDate
+    daily_disbursements = Allocation.objects.filter(
+        disbursement_date__gte=thirty_days_ago,
+        is_disbursed=True
+    ).annotate(
+        day=TruncDate('disbursement_date')
+    ).values('day').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('day')
+    
+    daily_labels = []
+    daily_amounts = []
+    
+    for item in daily_disbursements:
+        day_name = item['day'].strftime('%b %d')
+        daily_labels.append(day_name)
+        daily_amounts.append(float(item['total'] or 0))
+    
+    daily_trend_data = {
+        'labels': daily_labels,
+        'data': daily_amounts
+    }
+    
+    # ===== RECENT ACTIVITIES =====
+    
     # Recent allocations
     recent_allocations = Allocation.objects.filter(
-        fiscal_year=current_fiscal_year
+        application__fiscal_year=current_fiscal_year
     ).select_related(
         'application__applicant__user',
         'application__institution',
         'approved_by'
     ).order_by('-allocation_date')[:10]
     
+    # Recent disbursements
+    recent_disbursements = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=True
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'disbursed_by'
+    ).order_by('-disbursement_date')[:10]
+    
+    # ===== BULK CHEQUES =====
+    
     # Pending bulk cheques
     pending_bulk_cheques = BulkCheque.objects.filter(
         is_collected=False,
         fiscal_year=current_fiscal_year
-    ).count()
+    ).select_related('institution').order_by('-created_date')
     
-    # Ward allocation summary
-    ward_allocations = WardAllocation.objects.filter(
+    pending_bulk_count = pending_bulk_cheques.count()
+    
+    # Collected bulk cheques (recent)
+    collected_bulk_cheques = BulkCheque.objects.filter(
+        is_collected=True,
         fiscal_year=current_fiscal_year
-    ).select_related('ward').annotate(
-        balance=F('allocated_amount') - F('spent_amount')
-    )
+    ).select_related('institution').order_by('-collection_date')[:5]
     
-    # Monthly disbursement trend (last 6 months)
-    six_months_ago = timezone.now().date() - timedelta(days=180)
-    monthly_disbursements = Allocation.objects.filter(
-        disbursement_date__gte=six_months_ago,
-        is_disbursed=True
-    ).extra(
-        select={'month': "DATE_TRUNC('month', disbursement_date)"}
-    ).values('month').annotate(
-        total=Sum('amount_allocated'),
-        count=Count('id')
-    ).order_by('month')
+    # ===== ALERTS & NOTIFICATIONS =====
+    
+    # Allocations needing disbursement
+    allocations_needing_disbursement = approved_allocations.count()
+    
+    # Low budget warning (below 20%)
+    from decimal import Decimal
+
+    low_budget_warning = budget_balance < (total_budget * Decimal('0.2'))
+
     
     context = {
+        # Fiscal Year
         'current_fiscal_year': current_fiscal_year,
-        'approved_allocations': approved_allocations,
-        'total_pending_disbursement': total_pending_disbursement,
-        'disbursed_today': disbursed_today,
-        'total_disbursed': total_disbursed,
+        
+        # Financial Statistics
         'total_budget': total_budget,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'total_pending_disbursement': total_pending_disbursement,
         'budget_balance': budget_balance,
-        'utilization_percentage': utilization_percentage,
+        'budget_utilized': budget_utilized,
+        'utilization_percentage': round(utilization_percentage, 2),
+        
+        # Counts
+        'pending_count': pending_count,
+        'disbursed_count': disbursed_count,
+        'disbursed_today': disbursed_today,
+        'allocations_needing_disbursement': allocations_needing_disbursement,
+        
+        # Charts Data (as JSON)
+        'disbursement_status_data': json.dumps(disbursement_status_data),
+        'monthly_trend_data': json.dumps(monthly_trend_data),
+        'ward_utilization_data': json.dumps(ward_utilization_data),
+        'payment_method_data': json.dumps(payment_method_data),
+        'institution_distribution_data': json.dumps(institution_distribution_data),
+        'daily_trend_data': json.dumps(daily_trend_data),
+        
+        # Recent Activities
         'recent_allocations': recent_allocations,
+        'recent_disbursements': recent_disbursements,
+        
+        # Bulk Cheques
         'pending_bulk_cheques': pending_bulk_cheques,
+        'pending_bulk_count': pending_bulk_count,
+        'collected_bulk_cheques': collected_bulk_cheques,
+        
+        # Ward Allocations
         'ward_allocations': ward_allocations,
-        'monthly_disbursements': monthly_disbursements,
+        
+        # Alerts
+        'low_budget_warning': low_budget_warning,
     }
+    
     return render(request, 'finance/finance_dashboard.html', context)
-
 
 # ============= ALLOCATIONS =============
 
