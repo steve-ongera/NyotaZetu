@@ -13,7 +13,7 @@ import json
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseForbidden
 
-# Authentication Views
+# Bursray  Authentication Views
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
