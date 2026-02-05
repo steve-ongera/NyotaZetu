@@ -948,20 +948,878 @@ def reviewer_dashboard(request):
     }
     return render(request, 'admin/reviewer_dashboard.html', context)
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.http import JsonResponse, HttpResponse
+from django.db.models import Q, Sum, Count, Avg, F
+from django.core.paginator import Paginator
+from django.utils import timezone
+from django.db import transaction
+from datetime import timedelta, datetime
+from decimal import Decimal
+import json
+from .models import *
+from .forms import *
+
+# Helper function to check if user is finance officer
+def is_finance(user):
+    return user.user_type == 'finance'
+
+
+# ============= DASHBOARD =============
+
 @login_required
 @user_passes_test(is_finance)
 def finance_dashboard(request):
+    """
+    Finance Officer Dashboard
+    """
+    # Get current fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
     # Financial statistics
-    approved_allocations = Allocation.objects.filter(is_disbursed=False)
-    total_pending_disbursement = approved_allocations.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-    disbursed_today = Allocation.objects.filter(disbursement_date=timezone.now().date()).count()
+    approved_allocations = Allocation.objects.filter(
+        is_disbursed=False,
+        fiscal_year=current_fiscal_year
+    )
+    total_pending_disbursement = approved_allocations.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    # Disbursements
+    disbursed_today = Allocation.objects.filter(
+        disbursement_date=timezone.now().date()
+    ).count()
+    
+    total_disbursed = Allocation.objects.filter(
+        is_disbursed=True,
+        fiscal_year=current_fiscal_year
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    # Budget statistics
+    total_budget = current_fiscal_year.total_bursary_allocation if current_fiscal_year else 0
+    budget_utilized = total_disbursed
+    budget_balance = total_budget - budget_utilized
+    utilization_percentage = (budget_utilized / total_budget * 100) if total_budget > 0 else 0
+    
+    # Recent allocations
+    recent_allocations = Allocation.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'approved_by'
+    ).order_by('-allocation_date')[:10]
+    
+    # Pending bulk cheques
+    pending_bulk_cheques = BulkCheque.objects.filter(
+        is_collected=False,
+        fiscal_year=current_fiscal_year
+    ).count()
+    
+    # Ward allocation summary
+    ward_allocations = WardAllocation.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).select_related('ward').annotate(
+        balance=F('allocated_amount') - F('spent_amount')
+    )
+    
+    # Monthly disbursement trend (last 6 months)
+    six_months_ago = timezone.now().date() - timedelta(days=180)
+    monthly_disbursements = Allocation.objects.filter(
+        disbursement_date__gte=six_months_ago,
+        is_disbursed=True
+    ).extra(
+        select={'month': "DATE_TRUNC('month', disbursement_date)"}
+    ).values('month').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('month')
     
     context = {
+        'current_fiscal_year': current_fiscal_year,
         'approved_allocations': approved_allocations,
         'total_pending_disbursement': total_pending_disbursement,
         'disbursed_today': disbursed_today,
+        'total_disbursed': total_disbursed,
+        'total_budget': total_budget,
+        'budget_balance': budget_balance,
+        'utilization_percentage': utilization_percentage,
+        'recent_allocations': recent_allocations,
+        'pending_bulk_cheques': pending_bulk_cheques,
+        'ward_allocations': ward_allocations,
+        'monthly_disbursements': monthly_disbursements,
     }
-    return render(request, 'admin/finance_dashboard.html', context)
+    return render(request, 'finance/finance_dashboard.html', context)
+
+
+# ============= ALLOCATIONS =============
+
+@login_required
+@user_passes_test(is_finance)
+def allocation_list(request):
+    """
+    View all allocations
+    """
+    # Get filter parameters
+    fiscal_year_id = request.GET.get('fiscal_year')
+    status = request.GET.get('status')
+    institution_id = request.GET.get('institution')
+    ward_id = request.GET.get('ward')
+    search = request.GET.get('search')
+    
+    # Base queryset
+    allocations = Allocation.objects.all().select_related(
+        'application__applicant__user',
+        'application__applicant__ward',
+        'application__institution',
+        'approved_by',
+        'disbursed_by'
+    ).order_by('-allocation_date')
+    
+    # Apply filters
+    if fiscal_year_id:
+        allocations = allocations.filter(application__fiscal_year_id=fiscal_year_id)
+    
+    if status == 'disbursed':
+        allocations = allocations.filter(is_disbursed=True)
+    elif status == 'pending':
+        allocations = allocations.filter(is_disbursed=False)
+    
+    if institution_id:
+        allocations = allocations.filter(application__institution_id=institution_id)
+    
+    if ward_id:
+        allocations = allocations.filter(application__applicant__ward_id=ward_id)
+    
+    if search:
+        allocations = allocations.filter(
+            Q(application__application_number__icontains=search) |
+            Q(application__applicant__user__first_name__icontains=search) |
+            Q(application__applicant__user__last_name__icontains=search) |
+            Q(application__applicant__id_number__icontains=search)
+        )
+    
+    # Statistics
+    total_allocated = allocations.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    total_disbursed = allocations.filter(is_disbursed=True).aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    pending_disbursement = total_allocated - total_disbursed
+    
+    # Pagination
+    paginator = Paginator(allocations, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'allocations': page_obj,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'pending_disbursement': pending_disbursement,
+        'fiscal_years': FiscalYear.objects.all(),
+        'institutions': Institution.objects.all(),
+        'wards': Ward.objects.all(),
+    }
+    return render(request, 'finance/allocation_list.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def pending_disbursement_list(request):
+    """
+    View allocations pending disbursement
+    """
+    # Get filter parameters
+    fiscal_year_id = request.GET.get('fiscal_year')
+    institution_id = request.GET.get('institution')
+    
+    # Get pending allocations
+    allocations = Allocation.objects.filter(
+        is_disbursed=False
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'approved_by'
+    ).order_by('allocation_date')
+    
+    # Apply filters
+    if fiscal_year_id:
+        allocations = allocations.filter(application__fiscal_year_id=fiscal_year_id)
+    
+    if institution_id:
+        allocations = allocations.filter(application__institution_id=institution_id)
+    
+    # Group by institution
+    institutions_summary = allocations.values(
+        'application__institution__name',
+        'application__institution_id'
+    ).annotate(
+        total_amount=Sum('amount_allocated'),
+        student_count=Count('id')
+    ).order_by('application__institution__name')
+    
+    # Total pending
+    total_pending = allocations.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    # Pagination
+    paginator = Paginator(allocations, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'allocations': page_obj,
+        'total_pending': total_pending,
+        'institutions_summary': institutions_summary,
+        'fiscal_years': FiscalYear.objects.all(),
+        'institutions': Institution.objects.all(),
+    }
+    return render(request, 'finance/pending_disbursement_list.html', context)
+
+
+# ============= DISBURSEMENTS =============
+
+@login_required
+@user_passes_test(is_finance)
+def disbursement_list(request):
+    """
+    View all disbursements
+    """
+    # Get filter parameters
+    fiscal_year_id = request.GET.get('fiscal_year')
+    institution_id = request.GET.get('institution')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    payment_method = request.GET.get('payment_method')
+    
+    # Base queryset
+    disbursements = Allocation.objects.filter(
+        is_disbursed=True
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'disbursed_by'
+    ).order_by('-disbursement_date')
+    
+    # Apply filters
+    if fiscal_year_id:
+        disbursements = disbursements.filter(application__fiscal_year_id=fiscal_year_id)
+    
+    if institution_id:
+        disbursements = disbursements.filter(application__institution_id=institution_id)
+    
+    if date_from:
+        disbursements = disbursements.filter(disbursement_date__gte=date_from)
+    
+    if date_to:
+        disbursements = disbursements.filter(disbursement_date__lte=date_to)
+    
+    if payment_method:
+        disbursements = disbursements.filter(payment_method=payment_method)
+    
+    # Statistics
+    total_disbursed = disbursements.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    total_count = disbursements.count()
+    
+    # Payment method breakdown
+    payment_breakdown = disbursements.values('payment_method').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    # Pagination
+    paginator = Paginator(disbursements, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'disbursements': page_obj,
+        'total_disbursed': total_disbursed,
+        'total_count': total_count,
+        'payment_breakdown': payment_breakdown,
+        'fiscal_years': FiscalYear.objects.all(),
+        'institutions': Institution.objects.all(),
+    }
+    return render(request, 'finance/disbursement_list.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def process_disbursement(request, allocation_id):
+    """
+    Process a single disbursement
+    """
+    allocation = get_object_or_404(Allocation, id=allocation_id)
+    
+    if request.method == 'POST':
+        payment_method = request.POST.get('payment_method')
+        cheque_number = request.POST.get('cheque_number')
+        disbursement_date = request.POST.get('disbursement_date')
+        remarks = request.POST.get('remarks')
+        
+        # Update allocation
+        allocation.payment_method = payment_method
+        allocation.cheque_number = cheque_number
+        allocation.disbursement_date = disbursement_date
+        allocation.remarks = remarks
+        allocation.is_disbursed = True
+        allocation.disbursed_by = request.user
+        allocation.save()
+        
+        # Update application status
+        allocation.application.status = 'disbursed'
+        allocation.application.save()
+        
+        # Update ward allocation spent amount
+        ward_allocation = WardAllocation.objects.filter(
+            fiscal_year=allocation.application.fiscal_year,
+            ward=allocation.application.applicant.ward
+        ).first()
+        
+        if ward_allocation:
+            ward_allocation.spent_amount += allocation.amount_allocated
+            ward_allocation.beneficiaries_count += 1
+            ward_allocation.save()
+        
+        # Send notification to applicant
+        Notification.objects.create(
+            user=allocation.application.applicant.user,
+            notification_type='disbursement',
+            title='Bursary Disbursed',
+            message=f'Your bursary of KES {allocation.amount_allocated:,.2f} has been disbursed via {payment_method}.',
+            related_application=allocation.application
+        )
+        
+        messages.success(request, 'Disbursement processed successfully.')
+        return redirect('disbursement_list')
+    
+    context = {
+        'allocation': allocation,
+    }
+    return render(request, 'finance/process_disbursement.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def bulk_disbursement(request):
+    """
+    Process multiple disbursements at once
+    """
+    if request.method == 'POST':
+        allocation_ids = request.POST.getlist('allocation_ids')
+        payment_method = request.POST.get('payment_method')
+        disbursement_date = request.POST.get('disbursement_date')
+        
+        if not allocation_ids:
+            messages.error(request, 'No allocations selected.')
+            return redirect('pending_disbursement_list')
+        
+        try:
+            with transaction.atomic():
+                allocations = Allocation.objects.filter(
+                    id__in=allocation_ids,
+                    is_disbursed=False
+                )
+                
+                total_amount = 0
+                for allocation in allocations:
+                    allocation.payment_method = payment_method
+                    allocation.disbursement_date = disbursement_date
+                    allocation.is_disbursed = True
+                    allocation.disbursed_by = request.user
+                    allocation.save()
+                    
+                    # Update application status
+                    allocation.application.status = 'disbursed'
+                    allocation.application.save()
+                    
+                    # Update ward allocation
+                    ward_allocation = WardAllocation.objects.filter(
+                        fiscal_year=allocation.application.fiscal_year,
+                        ward=allocation.application.applicant.ward
+                    ).first()
+                    
+                    if ward_allocation:
+                        ward_allocation.spent_amount += allocation.amount_allocated
+                        ward_allocation.beneficiaries_count += 1
+                        ward_allocation.save()
+                    
+                    total_amount += allocation.amount_allocated
+                    
+                    # Send notification
+                    Notification.objects.create(
+                        user=allocation.application.applicant.user,
+                        notification_type='disbursement',
+                        title='Bursary Disbursed',
+                        message=f'Your bursary of KES {allocation.amount_allocated:,.2f} has been disbursed.',
+                        related_application=allocation.application
+                    )
+                
+                messages.success(
+                    request,
+                    f'Successfully disbursed {allocations.count()} allocations totaling KES {total_amount:,.2f}.'
+                )
+        
+        except Exception as e:
+            messages.error(request, f'Error processing bulk disbursement: {str(e)}')
+        
+        return redirect('disbursement_list')
+    
+    return redirect('pending_disbursement_list')
+
+
+# ============= BULK CHEQUES =============
+
+@login_required
+@user_passes_test(is_finance)
+def bulk_cheque_list(request):
+    """
+    View all bulk cheques
+    """
+    fiscal_year_id = request.GET.get('fiscal_year')
+    institution_id = request.GET.get('institution')
+    status = request.GET.get('status')
+    
+    bulk_cheques = BulkCheque.objects.all().select_related(
+        'institution',
+        'fiscal_year',
+        'created_by',
+        'assigned_by'
+    ).order_by('-created_date')
+    
+    # Apply filters
+    if fiscal_year_id:
+        bulk_cheques = bulk_cheques.filter(fiscal_year_id=fiscal_year_id)
+    
+    if institution_id:
+        bulk_cheques = bulk_cheques.filter(institution_id=institution_id)
+    
+    if status == 'collected':
+        bulk_cheques = bulk_cheques.filter(is_collected=True)
+    elif status == 'pending':
+        bulk_cheques = bulk_cheques.filter(is_collected=False)
+    
+    # Statistics
+    total_amount = bulk_cheques.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+    total_students = bulk_cheques.aggregate(Sum('student_count'))['student_count__sum'] or 0
+    collected_count = bulk_cheques.filter(is_collected=True).count()
+    pending_count = bulk_cheques.filter(is_collected=False).count()
+    
+    # Pagination
+    paginator = Paginator(bulk_cheques, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'bulk_cheques': page_obj,
+        'total_amount': total_amount,
+        'total_students': total_students,
+        'collected_count': collected_count,
+        'pending_count': pending_count,
+        'fiscal_years': FiscalYear.objects.all(),
+        'institutions': Institution.objects.all(),
+    }
+    return render(request, 'finance/bulk_cheque_list.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def bulk_cheque_detail(request, cheque_id):
+    """
+    View bulk cheque details
+    """
+    bulk_cheque = get_object_or_404(
+        BulkCheque.objects.select_related(
+            'institution',
+            'fiscal_year',
+            'created_by',
+            'assigned_by'
+        ),
+        id=cheque_id
+    )
+    
+    # Get all allocations in this bulk cheque
+    allocations = BulkChequeAllocation.objects.filter(
+        bulk_cheque=bulk_cheque
+    ).select_related(
+        'allocation__application__applicant__user',
+        'allocation__application'
+    )
+    
+    context = {
+        'bulk_cheque': bulk_cheque,
+        'allocations': allocations,
+    }
+    return render(request, 'finance/bulk_cheque_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def mark_bulk_cheque_collected(request, cheque_id):
+    """
+    Mark bulk cheque as collected
+    """
+    bulk_cheque = get_object_or_404(BulkCheque, id=cheque_id)
+    
+    if request.method == 'POST':
+        collector_id = request.POST.get('collector_id_number')
+        
+        bulk_cheque.is_collected = True
+        bulk_cheque.collection_date = timezone.now()
+        bulk_cheque.collector_id_number = collector_id
+        bulk_cheque.save()
+        
+        # Update all related allocations
+        for bca in bulk_cheque.allocations.all():
+            allocation = bca.allocation
+            allocation.is_disbursed = True
+            allocation.disbursement_date = timezone.now().date()
+            allocation.disbursed_by = request.user
+            allocation.save()
+            
+            # Update application status
+            allocation.application.status = 'disbursed'
+            allocation.application.save()
+            
+            # Send notification
+            if not bca.is_notified:
+                Notification.objects.create(
+                    user=allocation.application.applicant.user,
+                    notification_type='disbursement',
+                    title='Bursary Disbursed',
+                    message=f'Your bursary has been disbursed to {bulk_cheque.institution.name}.',
+                    related_application=allocation.application
+                )
+                bca.is_notified = True
+                bca.notification_sent_date = timezone.now()
+                bca.save()
+        
+        messages.success(request, f'Bulk cheque {bulk_cheque.cheque_number} marked as collected.')
+        return redirect('bulk_cheque_list')
+    
+    context = {
+        'bulk_cheque': bulk_cheque,
+    }
+    return render(request, 'finance/mark_bulk_cheque_collected.html', context)
+
+
+# ============= BUDGET MANAGEMENT =============
+
+@login_required
+@user_passes_test(is_finance)
+def budget_management(request):
+    """
+    Budget overview and management
+    """
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not current_fiscal_year:
+        messages.warning(request, 'No active fiscal year found.')
+        return redirect('finance_dashboard')
+    
+    # Overall budget statistics
+    total_budget = current_fiscal_year.total_bursary_allocation
+    total_allocated = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    total_disbursed = Allocation.objects.filter(
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=True
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    budget_balance = total_budget - total_allocated
+    utilization_rate = (total_allocated / total_budget * 100) if total_budget > 0 else 0
+    disbursement_rate = (total_disbursed / total_allocated * 100) if total_allocated > 0 else 0
+    
+    # Category-wise budget breakdown
+    category_budgets = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    ).annotate(
+        allocated=Sum('application__allocation__amount_allocated'),
+        disbursed=Sum(
+            'application__allocation__amount_allocated',
+            filter=Q(application__allocation__is_disbursed=True)
+        )
+    )
+    
+    # Ward-wise allocation
+    ward_allocations = WardAllocation.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).select_related('ward').annotate(
+        balance=F('allocated_amount') - F('spent_amount'),
+        utilization=F('spent_amount') * 100.0 / F('allocated_amount')
+    ).order_by('ward__name')
+    
+    # Disbursement rounds
+    disbursement_rounds = DisbursementRound.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).annotate(
+        actual_disbursed=Sum('application__allocation__amount_allocated',
+                           filter=Q(application__allocation__is_disbursed=True))
+    )
+    
+    context = {
+        'current_fiscal_year': current_fiscal_year,
+        'total_budget': total_budget,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'budget_balance': budget_balance,
+        'utilization_rate': utilization_rate,
+        'disbursement_rate': disbursement_rate,
+        'category_budgets': category_budgets,
+        'ward_allocations': ward_allocations,
+        'disbursement_rounds': disbursement_rounds,
+    }
+    return render(request, 'finance/budget_management.html', context)
+
+
+# ============= REPORTS =============
+
+@login_required
+@user_passes_test(is_finance)
+def disbursement_reports(request):
+    """
+    Comprehensive disbursement reports
+    """
+    fiscal_year_id = request.GET.get('fiscal_year')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    # Get fiscal year
+    if fiscal_year_id:
+        fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Base queryset
+    disbursements = Allocation.objects.filter(is_disbursed=True)
+    
+    if fiscal_year:
+        disbursements = disbursements.filter(application__fiscal_year=fiscal_year)
+    
+    if date_from:
+        disbursements = disbursements.filter(disbursement_date__gte=date_from)
+    
+    if date_to:
+        disbursements = disbursements.filter(disbursement_date__lte=date_to)
+    
+    # Summary statistics
+    total_disbursed = disbursements.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    total_beneficiaries = disbursements.count()
+    average_amount = disbursements.aggregate(Avg('amount_allocated'))['amount_allocated__avg'] or 0
+    
+    # Institution-wise breakdown
+    institution_breakdown = disbursements.values(
+        'application__institution__name',
+        'application__institution__institution_type'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Ward-wise breakdown
+    ward_breakdown = disbursements.values(
+        'application__applicant__ward__name'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Payment method breakdown
+    payment_method_breakdown = disbursements.values('payment_method').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    # Gender breakdown
+    gender_breakdown = disbursements.values(
+        'application__applicant__gender'
+    ).annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    # Monthly trend
+    monthly_trend = disbursements.extra(
+        select={'month': "DATE_TRUNC('month', disbursement_date)"}
+    ).values('month').annotate(
+        total=Sum('amount_allocated'),
+        count=Count('id')
+    ).order_by('month')
+    
+    context = {
+        'fiscal_year': fiscal_year,
+        'total_disbursed': total_disbursed,
+        'total_beneficiaries': total_beneficiaries,
+        'average_amount': average_amount,
+        'institution_breakdown': institution_breakdown,
+        'ward_breakdown': ward_breakdown,
+        'payment_method_breakdown': payment_method_breakdown,
+        'gender_breakdown': gender_breakdown,
+        'monthly_trend': monthly_trend,
+        'fiscal_years': FiscalYear.objects.all(),
+    }
+    return render(request, 'finance/disbursement_reports.html', context)
+
+
+@login_required
+@user_passes_test(is_finance)
+def budget_utilization_report(request):
+    """
+    Budget utilization analysis
+    """
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    if fiscal_year_id:
+        fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not fiscal_year:
+        messages.warning(request, 'No fiscal year selected.')
+        return redirect('finance_dashboard')
+    
+    # Overall budget performance
+    total_budget = fiscal_year.total_bursary_allocation
+    total_allocated = Allocation.objects.filter(
+        application__fiscal_year=fiscal_year
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    total_disbursed = Allocation.objects.filter(
+        application__fiscal_year=fiscal_year,
+        is_disbursed=True
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    # Category performance
+    category_performance = BursaryCategory.objects.filter(
+        fiscal_year=fiscal_year
+    ).annotate(
+        total_allocated=Sum('application__allocation__amount_allocated'),
+        total_disbursed=Sum(
+            'application__allocation__amount_allocated',
+            filter=Q(application__allocation__is_disbursed=True)
+        ),
+        beneficiaries=Count('application__allocation', distinct=True)
+    ).annotate(
+        remaining=F('allocation_amount') - F('total_allocated'),
+        utilization_rate=F('total_allocated') * 100.0 / F('allocation_amount')
+    )
+    
+    # Ward performance
+    ward_performance = WardAllocation.objects.filter(
+        fiscal_year=fiscal_year
+    ).select_related('ward').annotate(
+        balance=F('allocated_amount') - F('spent_amount'),
+        utilization_rate=F('spent_amount') * 100.0 / F('allocated_amount')
+    ).order_by('-utilization_rate')
+    
+    # Institution performance
+    institution_performance = Institution.objects.filter(
+        application__fiscal_year=fiscal_year,
+        application__allocation__isnull=False
+    ).annotate(
+        total_allocated=Sum('application__allocation__amount_allocated'),
+        total_disbursed=Sum(
+            'application__allocation__amount_allocated',
+            filter=Q(application__allocation__is_disbursed=True)
+        ),
+        student_count=Count('application__allocation', distinct=True)
+    ).order_by('-total_allocated')[:20]
+    
+    context = {
+        'fiscal_year': fiscal_year,
+        'total_budget': total_budget,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'category_performance': category_performance,
+        'ward_performance': ward_performance,
+        'institution_performance': institution_performance,
+        'fiscal_years': FiscalYear.objects.all(),
+    }
+    return render(request, 'finance/budget_utilization_report.html', context)
+
+
+# ============= AJAX VIEWS =============
+
+@login_required
+@user_passes_test(is_finance)
+def get_allocation_details(request, allocation_id):
+    """
+    Get allocation details via AJAX
+    """
+    allocation = get_object_or_404(
+        Allocation.objects.select_related(
+            'application__applicant__user',
+            'application__institution',
+            'application__applicant__ward'
+        ),
+        id=allocation_id
+    )
+    
+    data = {
+        'id': allocation.id,
+        'application_number': allocation.application.application_number,
+        'applicant_name': f"{allocation.application.applicant.user.first_name} {allocation.application.applicant.user.last_name}",
+        'institution': allocation.application.institution.name,
+        'ward': allocation.application.applicant.ward.name if allocation.application.applicant.ward else 'N/A',
+        'amount': float(allocation.amount_allocated),
+        'is_disbursed': allocation.is_disbursed,
+        'disbursement_date': allocation.disbursement_date.strftime('%Y-%m-%d') if allocation.disbursement_date else None,
+        'payment_method': allocation.payment_method,
+        'cheque_number': allocation.cheque_number or '',
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(is_finance)
+def export_disbursements_csv(request):
+    """
+    Export disbursements to CSV
+    """
+    import csv
+    from django.utils.text import slugify
+    
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    disbursements = Allocation.objects.filter(is_disbursed=True).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'application__applicant__ward'
+    )
+    
+    if fiscal_year_id:
+        disbursements = disbursements.filter(application__fiscal_year_id=fiscal_year_id)
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="disbursements_{timezone.now().date()}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Application Number', 'Student Name', 'ID Number', 'Institution',
+        'Ward', 'Amount', 'Payment Method', 'Cheque Number',
+        'Disbursement Date', 'Disbursed By'
+    ])
+    
+    for d in disbursements:
+        writer.writerow([
+            d.application.application_number,
+            f"{d.application.applicant.user.first_name} {d.application.applicant.user.last_name}",
+            d.application.applicant.id_number,
+            d.application.institution.name,
+            d.application.applicant.ward.name if d.application.applicant.ward else 'N/A',
+            d.amount_allocated,
+            d.get_payment_method_display(),
+            d.cheque_number or '',
+            d.disbursement_date,
+            d.disbursed_by.get_full_name() if d.disbursed_by else ''
+        ])
+    
+    return response
 
 # Application Views
 from django.shortcuts import render

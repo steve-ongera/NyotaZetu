@@ -10,8 +10,36 @@ urlpatterns = [
     # Dashboards
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('reviewer-dashboard/', views.reviewer_dashboard, name='reviewer_dashboard'),
-    path('finance-dashboard/', views.finance_dashboard, name='finance_dashboard'),
     
+    
+    # ============= FINANCE DASHBOARD =============
+    path('finance/dashboard/', views.finance_dashboard, name='finance_dashboard'),
+    
+    # ============= ALLOCATIONS =============
+    path('finance/allocations/', views.allocation_list, name='finance_allocation_list'),
+    path('finance/allocations/pending/', views.pending_disbursement_list, name='finance_pending_disbursement'),
+    path('finance/allocations/<int:allocation_id>/process/', views.process_disbursement, name='finance_process_disbursement'),
+    path('finance/allocations/bulk-disbursement/', views.bulk_disbursement, name='finance_bulk_disbursement'),
+    
+    # ============= DISBURSEMENTS =============
+    path('finance/disbursements/', views.disbursement_list, name='finance_disbursement_list'),
+    
+    # ============= BULK CHEQUES =============
+    path('finance/bulk-cheques/', views.bulk_cheque_list, name='finance_bulk_cheque_list'),
+    path('finance/bulk-cheques/<int:cheque_id>/', views.bulk_cheque_detail, name='finance_bulk_cheque_detail'),
+    path('finance/bulk-cheques/<int:cheque_id>/mark-collected/', views.mark_bulk_cheque_collected, name='finance_mark_bulk_cheque_collected'),
+    
+    # ============= BUDGET MANAGEMENT =============
+    path('finance/budget/', views.budget_management, name='finance_budget_management'),
+    
+    # ============= REPORTS =============
+    path('finance/reports/disbursements/', views.disbursement_reports, name='finance_disbursement_reports'),
+    path('finance/reports/budget-utilization/', views.budget_utilization_report, name='finance_budget_utilization_report'),
+    
+    # ============= AJAX & EXPORT =============
+    path('finance/allocations/<int:allocation_id>/details/', views.get_allocation_details, name='finance_get_allocation_details'),
+    path('finance/disbursements/export-csv/', views.export_disbursements_csv, name='finance_export_disbursements_csv'),
+     
     # Applications
     path('applications/', views.application_list, name='application_list'),
     path('applications/create/', views.create_application_view , name='create_application'), #by admin
