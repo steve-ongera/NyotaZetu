@@ -1,0 +1,60 @@
+<!-- Sidebar for Applicant/Student -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <img src="{% static 'images/logo.png' %}" alt="Logo">
+        </div>
+        <span class="logo-text">Student Portal</span>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Main Menu</div>
+        <a href="#" class="menu-item">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">My Applications</div>
+        
+        <div class="menu-item has-submenu" data-submenu="applications">
+            <i class="fas fa-file-alt"></i>
+            <span>Applications</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-applications">
+            <a href="#" class="submenu-item">My Applications</a>
+            <a href="#" class="submenu-item">New Application</a>
+        </div>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-upload"></i>
+            <span>Upload Documents</span>
+        </a>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-money-check-alt"></i>
+            <span>My Allocations</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Information</div>
+        
+        <a href="#" class="menu-item">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+        </a>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-user"></i>
+            <span>My Profile</span>
+        </a>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Help & Support</span>
+        </a>
+    </div>
+</div>

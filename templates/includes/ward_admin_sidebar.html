@@ -1,0 +1,50 @@
+<!-- Sidebar for Ward Administrator -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <img src="{% static 'images/logo.png' %}" alt="Logo">
+        </div>
+        <span class="logo-text">Ward Admin</span>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Main Menu</div>
+        <a href="#" class="menu-item">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Ward Management</div>
+        
+        <div class="menu-item has-submenu" data-submenu="applications">
+            <i class="fas fa-file-alt"></i>
+            <span>Applications</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-applications">
+            <a href="#" class="submenu-item">Ward Applications</a>
+            <a href="#" class="submenu-item">Pending Review</a>
+        </div>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-users"></i>
+            <span>Applicants</span>
+        </a>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Ward Budget</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Reports</div>
+        
+        <a href="#" class="menu-item">
+            <i class="fas fa-chart-pie"></i>
+            <span>Ward Reports</span>
+        </a>
+    </div>
+</div>

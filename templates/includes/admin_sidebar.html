@@ -1,0 +1,172 @@
+<!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img src="{% static 'images/logo.png' %}" alt="Logo">
+            </div>
+            <span class="logo-text">Admin Panel</span>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">Main Menu</div>
+            <a href="{% url 'admin_dashboard'%}" class="menu-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">Management</div>
+            
+            <div class="menu-item has-submenu" data-submenu="applications">
+                <i class="fas fa-file-alt"></i>
+                <span>Applications</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-applications">
+                <a href="{% url 'application_list'%}" class="submenu-item">All Applications</a>
+                <a href="{% url 'create_application'%}" class="submenu-item">Create Application</a>
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="applicants">
+                <i class="fas fa-users"></i>
+                <span>Applicants</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-applicants">
+                <a href="{% url 'applicant_list'%}" class="submenu-item">All Applicants</a>
+                
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="reviews">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Review & Approval</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-reviews">
+                <a href="{% url 'proposal_management'%}" class="submenu-item">All Reviews</a>
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="budget">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Budget & Finance</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-budget">
+                <a href="{% url 'fiscal_year_list'%}" class="submenu-item">Fiscal Years</a>
+                <a href="{% url 'bursary_category_list'%}" class="submenu-item">Budget Categories</a>
+                <a href="{% url 'allocation_list'%}" class="submenu-item">Allocations</a>
+                <a href="#" class="submenu-item">Ward Allocations</a>
+                <a href="{% url 'disbursement_round_list'%}" class="submenu-item">Disbursement Rounds</a>
+                <a href="{% url 'bulk_cheque_assignment'%}" class="submenu-item">Bulk Cheques</a>
+                <a href="{% url 'ai_dashboard'%}" class="submenu-item">AI Analysis</a>
+            </div>
+
+
+            <a href="{% url 'institution_list'%}" class="menu-item">
+                <i class="fas fa-building"></i>
+                <span>Institutions</span>
+            </a>
+
+            <div class="menu-item has-submenu" data-submenu="geography">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Geographic Setup</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-geography">
+                <a href="{% url 'constituency_management'%}" class="submenu-item">Constituencies</a>
+                <a href="{% url 'ward_management'%}" class="submenu-item">Wards</a>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">Analytics</div>
+            
+            <div class="menu-item has-submenu" data-submenu="reports">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics & Reports</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-reports">
+                <a href="{% url 'application_reports'%}" class="submenu-item">Application Reports</a>
+                <a href="{% url 'financial_reports'%}" class="submenu-item">Financial Reports</a>
+                <a href="{% url 'ward_reports'%}" class="submenu-item">Ward Reports</a>
+                <a href="{% url 'institution_reports'%}" class="submenu-item">Institution Reports</a>
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="ai">
+                <i class="fas fa-brain"></i>
+                <span>AI & Predictions</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-ai">
+                <a href="{% url 'ai_dashboard'%}" class="submenu-item">AI Dashboard</a>
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="transparency">
+                <i class="fas fa-eye"></i>
+                <span>Transparency</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-transparency">
+                <a href="{% url 'public_reports'%}" class="submenu-item">Public Reports</a>
+                <a href="{% url 'beneficiaries_list'%}" class="submenu-item">Beneficiaries List</a>
+                <a href="{% url 'budget_utilization'%}" class="submenu-item">Budget Utilization</a>
+                <a href="{% url 'testimonials'%}" class="submenu-item">Testimonials</a>
+                <a href="{% url 'annual_reports'%}" class="submenu-item">Annual Reports</a>
+                <a href="{% url 'quarterly_reports'%}" class="submenu-item">Quarterly Reports</a>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">System</div>
+            
+            <div class="menu-item has-submenu" data-submenu="users">
+                <i class="fas fa-user-cog"></i>
+                <span>User Management</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-users">
+                <a href="{% url 'user_management'%}" class="submenu-item">All Users</a>
+            </div>
+
+            <a href="{% url 'admin_communication'%}" class="menu-item">
+                <i class="fas fa-comments"></i>
+                <span>Communications</span>
+            </a>
+
+            <div class="menu-item has-submenu" data-submenu="notifications">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-notifications">
+                <a href="{% url 'all_notifications'%}" class="submenu-item">All Notifications</a>
+                <a href="{% url 'bulk_sms'%}" class="submenu-item">Send Bulk SMS</a>
+                <a href="{% url 'bulk_email'%}" class="submenu-item">Send Bulk Email</a>
+            </div>
+
+            
+
+            <div class="menu-item has-submenu" data-submenu="security">
+                <i class="fas fa-shield-alt"></i>
+                <span>Security & Audit</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-security">
+                <a href="{% url 'admin_security_audit'%}" class="submenu-item">Audit Logs</a>
+                
+            </div>
+
+            <div class="menu-item has-submenu" data-submenu="help">
+                <i class="fas fa-question-circle"></i>
+                <span>Help & Support</span>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+            <div class="submenu" id="submenu-help">
+                <a href="{% url 'documentation'%}" class="submenu-item">Documentation</a>
+                <a href="{% url 'user_guide'%}" class="submenu-item">User Guide</a>
+                <a href="{% url 'contact_support'%}" class="submenu-item">Contact Support</a>
+            </div>
+        </div>
+    </div>

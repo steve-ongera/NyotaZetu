@@ -1,0 +1,50 @@
+<!-- Sidebar for Reviewer -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <img src="{% static 'images/logo.png' %}" alt="Logo">
+        </div>
+        <span class="logo-text">Reviewer Panel</span>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Main Menu</div>
+        <a href="#" class="menu-item">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Review Management</div>
+        
+        <div class="menu-item has-submenu" data-submenu="applications">
+            <i class="fas fa-file-alt"></i>
+            <span>Applications</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-applications">
+            <a href="#" class="submenu-item">Pending Review</a>
+            <a href="#" class="submenu-item">Reviewed Applications</a>
+        </div>
+
+        <div class="menu-item has-submenu" data-submenu="reviews">
+            <i class="fas fa-clipboard-check"></i>
+            <span>My Reviews</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-reviews">
+            <a href="#" class="submenu-item">All Reviews</a>
+            <a href="#" class="submenu-item">Statistics</a>
+        </div>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Reports</div>
+        
+        <a href="#" class="menu-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Review Reports</span>
+        </a>
+    </div>
+</div>

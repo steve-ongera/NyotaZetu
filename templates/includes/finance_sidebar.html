@@ -1,0 +1,60 @@
+<!-- Sidebar for Finance Officer -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <img src="{% static 'images/logo.png' %}" alt="Logo">
+        </div>
+        <span class="logo-text">Finance Panel</span>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Main Menu</div>
+        <a href="#" class="menu-item">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Finance Management</div>
+        
+        <div class="menu-item has-submenu" data-submenu="allocations">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Allocations</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-allocations">
+            <a href="#" class="submenu-item">All Allocations</a>
+            <a href="#" class="submenu-item">Pending Disbursement</a>
+        </div>
+
+        <div class="menu-item has-submenu" data-submenu="disbursements">
+            <i class="fas fa-hand-holding-usd"></i>
+            <span>Disbursements</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-disbursements">
+            <a href="#" class="submenu-item">All Disbursements</a>
+            <a href="#" class="submenu-item">Bulk Cheques</a>
+        </div>
+
+        <a href="#" class="menu-item">
+            <i class="fas fa-calculator"></i>
+            <span>Budget Management</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Reports</div>
+        
+        <div class="menu-item has-submenu" data-submenu="reports">
+            <i class="fas fa-chart-line"></i>
+            <span>Financial Reports</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-reports">
+            <a href="#" class="submenu-item">Disbursement Reports</a>
+            <a href="#" class="submenu-item">Budget Utilization</a>
+        </div>
+    </div>
+</div>
