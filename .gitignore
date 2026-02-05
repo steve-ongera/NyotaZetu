@@ -1,15 +1,34 @@
+# =========================
 # Environment variables
+# =========================
 .env
 
-# Django stuff:
+# =========================
+# Django
+# =========================
 *.log
 *.pot
 *.pyc
 __pycache__/
 db.sqlite3
+
 media/
 staticfiles/
 
-# VS Code / PyCharm
+# =========================
+# Ignore sensitive app logic
+# =========================
+main_application/models.py
+main_application/migrations/
+main_application/admin.py
+main_application/management/commands/
+
+# Optional: ignore services / business logic
+main_application/services/
+main_application/utils/
+
+# =========================
+# IDEs
+# =========================
 .vscode/
 .idea/
