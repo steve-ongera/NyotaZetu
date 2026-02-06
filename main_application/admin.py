@@ -17,27 +17,51 @@ from .models import (
 
 
 # ============= CUSTOM USER ADMIN =============
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ['username', 'email', 'first_name', 'last_name', 'user_type', 'is_active', 'date_joined']
+    list_display = [
+        'username', 
+        'email', 
+        'first_name', 
+        'last_name', 
+        'user_type', 
+        'get_assigned_area_name',
+        'is_active', 
+        'date_joined'
+    ]
     list_filter = ['user_type', 'is_active', 'is_staff', 'date_joined']
     search_fields = ['username', 'email', 'first_name', 'last_name', 'id_number', 'phone_number']
 
-    # FIX: Convert existing fieldsets to list
     fieldsets = list(BaseUserAdmin.fieldsets) + [
-        ('Additional Info', {
+        ('User Type & Contact', {
             'fields': ('user_type', 'id_number', 'phone_number'),
         }),
-    ]
-
-    # FIX: Convert existing add_fieldsets to list
-    add_fieldsets = list(BaseUserAdmin.add_fieldsets) + [
-        ('Additional Info', {
-            'fields': ('user_type', 'id_number', 'phone_number', 'email', 'first_name', 'last_name'),
+        ('Administrative Assignments', {
+            'fields': ('assigned_county', 'assigned_constituency', 'assigned_ward'),
+            'description': 'Assign administrative areas based on user type'
         }),
     ]
 
+    add_fieldsets = list(BaseUserAdmin.add_fieldsets) + [
+        ('User Information', {
+            'fields': ('email', 'first_name', 'last_name', 'user_type'),
+        }),
+        ('Contact & ID', {
+            'fields': ('id_number', 'phone_number'),
+        }),
+        ('Administrative Assignments', {
+            'fields': ('assigned_county', 'assigned_constituency', 'assigned_ward'),
+        }),
+    ]
+
+    def get_assigned_area_name(self, obj):
+        """Display assigned area in list"""
+        return obj.get_assigned_area_name()
+    get_assigned_area_name.short_description = 'Assigned Area'
 
 
 # ============= SECURITY MODELS ADMIN =============
