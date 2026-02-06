@@ -16370,52 +16370,353 @@ from .utils import create_audit_log, send_sms_notification, send_email_notificat
 
 # ============= DASHBOARD & OVERVIEW =============
 
-@login_required
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Sum, Count, Q, Avg
+from django.utils import timezone
+from datetime import timedelta, datetime
+from decimal import Decimal
+import json
+from .models import *
 
+def is_constituency_admin(user):
+    """Check if user is a constituency administrator"""
+    return user.user_type == 'constituency_admin'
+
+def create_audit_log(user, action, table, record_id, description, request):
+    """Helper function to create audit logs"""
+    try:
+        AuditLog.objects.create(
+            user=user,
+            action=action,
+            table_affected=table,
+            record_id=record_id,
+            description=description,
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+    except:
+        pass
+
+def get_client_ip(request):
+    """Get client IP address"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+@login_required
+@user_passes_test(is_constituency_admin)
 def constituency_dashboard(request):
     """
     Main dashboard for constituency admin
-    Shows CDF bursary overview and key metrics
+    Shows CDF bursary overview and key metrics with multiple charts
     """
-    constituency = request.user.applicant_profile.constituency if hasattr(request.user, 'applicant_profile') else None
+    # Get constituency from the user's assignment
+    constituency = request.user.assigned_constituency
     
     if not constituency:
-        messages.error(request, "You are not assigned to any constituency.")
-        return redirect('home')
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
     
+    # Get active fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
-    # CDF Applications Statistics
+    if not current_fiscal_year:
+        messages.warning(request, "No active fiscal year found.")
+        context = {
+            'constituency': constituency,
+            'error': True,
+            'error_message': "No active fiscal year"
+        }
+        return render(request, 'constituency_admin/dashboard.html', context)
+    
+    # ==================== CDF APPLICATIONS STATISTICS ====================
     cdf_applications = Application.objects.filter(
         applicant__constituency=constituency,
         bursary_source__in=['cdf', 'both'],
         fiscal_year=current_fiscal_year
     )
     
+    # Basic Statistics
+    total_applications = cdf_applications.count()
+    pending_applications = cdf_applications.filter(status='submitted').count()
+    under_review = cdf_applications.filter(status='under_review').count()
+    approved_applications = cdf_applications.filter(status='approved').count()
+    rejected_applications = cdf_applications.filter(status='rejected').count()
+    disbursed_applications = cdf_applications.filter(status='disbursed').count()
+    
+    # Calculate approval rate
+    approval_rate = 0
+    if total_applications > 0:
+        approval_rate = round((approved_applications / total_applications) * 100, 1)
+    
     stats = {
-        'total_applications': cdf_applications.count(),
-        'pending_review': cdf_applications.filter(status='submitted').count(),
-        'under_review': cdf_applications.filter(status='under_review').count(),
-        'approved': cdf_applications.filter(status='approved').count(),
-        'rejected': cdf_applications.filter(status='rejected').count(),
-        'disbursed': cdf_applications.filter(status='disbursed').count(),
+        'total_applications': total_applications,
+        'pending_review': pending_applications,
+        'under_review': under_review,
+        'approved': approved_applications,
+        'rejected': rejected_applications,
+        'disbursed': disbursed_applications,
     }
     
-    # Financial Overview
+    # ==================== FINANCIAL OVERVIEW ====================
     total_requested = cdf_applications.aggregate(
         total=Sum('amount_requested')
-    )['total'] or 0
+    )['total'] or Decimal('0')
     
     total_allocated = Allocation.objects.filter(
         application__in=cdf_applications
-    ).aggregate(total=Sum('amount_allocated'))['total'] or 0
+    ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
     
     total_disbursed = Disbursement.objects.filter(
         application__in=cdf_applications,
         status='completed'
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
     
-    # Ward-wise breakdown
+    # Budget details
+    cdf_budget = constituency.cdf_bursary_allocation or Decimal('0')
+    budget_allocated = total_allocated
+    budget_utilized = total_disbursed
+    budget_remaining = cdf_budget - total_allocated
+    budget_utilization_percentage = 0
+    if cdf_budget > 0:
+        budget_utilization_percentage = round((float(total_allocated) / float(cdf_budget)) * 100, 1)
+    
+    # ==================== APPLICANT STATISTICS ====================
+    total_applicants = Applicant.objects.filter(
+        constituency=constituency
+    ).count()
+    
+    # Applications needing review
+    applications_needing_review = cdf_applications.filter(
+        status='submitted'
+    ).count()
+    
+    # Allocations pending disbursement
+    allocations_pending_disbursement = Allocation.objects.filter(
+        application__in=cdf_applications,
+        is_disbursed=False
+    ).count()
+    
+    # ==================== CHART 1: APPLICATIONS BY STATUS (Donut Chart) ====================
+    status_chart_data = {
+        'labels': ['Submitted', 'Under Review', 'Approved', 'Rejected', 'Disbursed'],
+        'data': [
+            pending_applications,
+            under_review,
+            approved_applications,
+            rejected_applications,
+            disbursed_applications
+        ],
+        'colors': ['#F59E0B', '#3498db', '#10B981', '#EF4444', '#8B5CF6']
+    }
+    
+    # ==================== CHART 2: APPLICATIONS BY WARD (Bar Chart) ====================
+    ward_data = []
+    ward_labels = []
+    
+    for ward in constituency.wards.all().order_by('name'):
+        ward_apps = cdf_applications.filter(applicant__ward=ward)
+        ward_labels.append(ward.name)
+        ward_data.append(ward_apps.count())
+    
+    ward_chart_data = {
+        'labels': ward_labels,
+        'data': ward_data
+    }
+    
+    # ==================== CHART 3: MONTHLY APPLICATIONS TREND (Line Chart) ====================
+    # Get last 6 months of data
+    today = timezone.now()
+    months_data = []
+    months_labels = []
+    
+    for i in range(5, -1, -1):
+        month_date = today - timedelta(days=30*i)
+        month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate next month start
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+        
+        count = cdf_applications.filter(
+            date_submitted__gte=month_start,
+            date_submitted__lt=month_end
+        ).count()
+        
+        months_labels.append(month_start.strftime('%b %Y'))
+        months_data.append(count)
+    
+    monthly_chart_data = {
+        'labels': months_labels,
+        'data': months_data
+    }
+    
+    # ==================== CHART 4: FINANCIAL TIMELINE (Line Chart) ====================
+    # Allocations vs Disbursements over last 6 months
+    financial_labels = []
+    allocations_timeline = []
+    disbursements_timeline = []
+    
+    for i in range(5, -1, -1):
+        month_date = today - timedelta(days=30*i)
+        month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+        
+        # Allocations in this month
+        month_allocations = Allocation.objects.filter(
+            application__in=cdf_applications,
+            allocation_date__gte=month_start.date(),
+            allocation_date__lt=month_end.date()
+        ).aggregate(total=Sum('amount_allocated'))['total'] or 0
+        
+        # Disbursements in this month
+        month_disbursements = Disbursement.objects.filter(
+            application__in=cdf_applications,
+            disbursement_date__gte=month_start.date(),
+            disbursement_date__lt=month_end.date(),
+            status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        financial_labels.append(month_start.strftime('%b %Y'))
+        allocations_timeline.append(float(month_allocations))
+        disbursements_timeline.append(float(month_disbursements))
+    
+    financial_timeline_data = {
+        'labels': financial_labels,
+        'allocations': allocations_timeline,
+        'disbursements': disbursements_timeline
+    }
+    
+    # ==================== CHART 5: APPLICATIONS BY CATEGORY (Pie Chart) ====================
+    category_labels = []
+    category_data = []
+    
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    )
+    
+    for category in categories:
+        cat_count = cdf_applications.filter(bursary_category=category).count()
+        if cat_count > 0:
+            category_labels.append(category.name)
+            category_data.append(cat_count)
+    
+    category_chart_data = {
+        'labels': category_labels,
+        'data': category_data
+    }
+    
+    # ==================== CHART 6: INSTITUTION TYPE DISTRIBUTION (Bar Chart) ====================
+    institution_type_labels = []
+    institution_type_data = []
+    
+    institution_types = [
+        ('highschool', 'High School'),
+        ('college', 'College'),
+        ('university', 'University'),
+        ('technical_institute', 'Technical Institute'),
+        ('special_school', 'Special School'),
+    ]
+    
+    for inst_type, inst_label in institution_types:
+        count = cdf_applications.filter(
+            institution__institution_type=inst_type
+        ).count()
+        if count > 0:
+            institution_type_labels.append(inst_label)
+            institution_type_data.append(count)
+    
+    institution_type_chart_data = {
+        'labels': institution_type_labels,
+        'data': institution_type_data
+    }
+    
+    # ==================== CHART 7: GENDER DISTRIBUTION (Donut Chart) ====================
+    male_count = cdf_applications.filter(applicant__gender='M').count()
+    female_count = cdf_applications.filter(applicant__gender='F').count()
+    
+    gender_chart_data = {
+        'labels': ['Male', 'Female'],
+        'data': [male_count, female_count],
+        'colors': ['#3498db', '#EC4899']
+    }
+    
+    # ==================== CHART 8: TOP INSTITUTIONS (Horizontal Bar Chart) ====================
+    top_institutions = cdf_applications.values(
+        'institution__name'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    top_institutions_labels = [item['institution__name'] for item in top_institutions]
+    top_institutions_data = [item['count'] for item in top_institutions]
+    
+    top_institutions_chart_data = {
+        'labels': top_institutions_labels,
+        'data': top_institutions_data
+    }
+    
+    # ==================== CHART 9: WARD ALLOCATION UTILIZATION (Grouped Bar Chart) ====================
+    ward_allocation_labels = []
+    ward_allocated = []
+    ward_spent = []
+    
+    ward_allocations = WardAllocation.objects.filter(
+        fiscal_year=current_fiscal_year,
+        ward__constituency=constituency
+    ).select_related('ward')
+    
+    for ward_alloc in ward_allocations:
+        ward_allocation_labels.append(ward_alloc.ward.name)
+        ward_allocated.append(float(ward_alloc.allocated_amount))
+        ward_spent.append(float(ward_alloc.spent_amount))
+    
+    ward_allocation_chart_data = {
+        'labels': ward_allocation_labels,
+        'allocated': ward_allocated,
+        'spent': ward_spent
+    }
+    
+    # ==================== CHART 10: DAILY APPLICATIONS (Last 30 Days) ====================
+    daily_labels = []
+    daily_data = []
+    
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        
+        count = cdf_applications.filter(
+            date_submitted__gte=day_start,
+            date_submitted__lt=day_end
+        ).count()
+        
+        daily_labels.append(day.strftime('%b %d'))
+        daily_data.append(count)
+    
+    daily_chart_data = {
+        'labels': daily_labels,
+        'data': daily_data
+    }
+    
+    # ==================== WARD-WISE BREAKDOWN ====================
     ward_stats = []
     for ward in constituency.wards.all():
         ward_apps = cdf_applications.filter(applicant__ward=ward)
@@ -16426,21 +16727,17 @@ def constituency_dashboard(request):
             'amount_requested': ward_apps.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
         })
     
-    # Recent applications
+    # ==================== RECENT APPLICATIONS ====================
     recent_applications = cdf_applications.order_by('-date_submitted')[:10]
     
-    # Pending reviews assigned to this admin
+    # ==================== PENDING REVIEWS ====================
     pending_reviews = cdf_applications.filter(
         status='under_review'
     ).exclude(
         reviews__reviewer=request.user
     )[:5]
     
-    # Budget utilization
-    cdf_budget = constituency.cdf_bursary_allocation or 0
-    budget_utilization = (total_allocated / cdf_budget * 100) if cdf_budget > 0 else 0
-    
-    # Alerts and notifications
+    # ==================== ALERTS AND NOTIFICATIONS ====================
     alerts = []
     
     # Check for pending applications older than 7 days
@@ -16455,28 +16752,76 @@ def constituency_dashboard(request):
         })
     
     # Check budget exhaustion
-    if budget_utilization > 90:
+    if budget_utilization_percentage > 90:
         alerts.append({
             'type': 'danger',
-            'message': f'CDF budget {budget_utilization:.1f}% utilized - nearly exhausted'
+            'message': f'CDF budget {budget_utilization_percentage}% utilized - nearly exhausted'
         })
     
+    # Check for applications without reviews
+    no_reviews = cdf_applications.filter(
+        status='under_review',
+        reviews__isnull=True
+    ).count()
+    if no_reviews > 0:
+        alerts.append({
+            'type': 'info',
+            'message': f'{no_reviews} applications under review but not yet reviewed'
+        })
+    
+    # ==================== CONTEXT ====================
     context = {
+        # Basic Info
         'constituency': constituency,
+        'county': constituency.county,
         'current_fiscal_year': current_fiscal_year,
+        'active_fiscal_year': current_fiscal_year,
+        
+        # Statistics
         'stats': stats,
+        'total_applications': total_applications,
+        'pending_applications': pending_applications,
+        'approved_applications': approved_applications,
+        'approval_rate': approval_rate,
+        'total_applicants': total_applicants,
+        'applications_needing_review': applications_needing_review,
+        'allocations_pending_disbursement': allocations_pending_disbursement,
+        
+        # Financial Data
         'total_requested': total_requested,
         'total_allocated': total_allocated,
         'total_disbursed': total_disbursed,
         'cdf_budget': cdf_budget,
-        'budget_available': cdf_budget - total_allocated,
-        'budget_utilization': budget_utilization,
+        'budget_allocated': budget_allocated,
+        'budget_utilized': budget_utilized,
+        'budget_available': budget_remaining,
+        'budget_remaining': budget_remaining,
+        'budget_utilization_percentage': budget_utilization_percentage,
+        
+        # Ward Statistics
         'ward_stats': ward_stats,
+        
+        # Recent Data
         'recent_applications': recent_applications,
         'pending_reviews': pending_reviews,
+        
+        # Alerts
         'alerts': alerts,
+        
+        # Chart Data (JSON serialized for JavaScript)
+        'status_chart_data': json.dumps(status_chart_data),
+        'ward_chart_data': json.dumps(ward_chart_data),
+        'monthly_chart_data': json.dumps(monthly_chart_data),
+        'financial_timeline_data': json.dumps(financial_timeline_data),
+        'category_chart_data': json.dumps(category_chart_data),
+        'institution_type_chart_data': json.dumps(institution_type_chart_data),
+        'gender_chart_data': json.dumps(gender_chart_data),
+        'top_institutions_chart_data': json.dumps(top_institutions_chart_data),
+        'ward_allocation_chart_data': json.dumps(ward_allocation_chart_data),
+        'daily_chart_data': json.dumps(daily_chart_data),
     }
     
+    # Create audit log
     create_audit_log(
         request.user, 'view', 'Dashboard', None,
         f"Viewed constituency dashboard for {constituency.name}",
