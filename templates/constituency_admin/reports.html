@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> - Constituency Admin</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #1a5f7a;
+            --secondary-color: #2c7873;
+            --accent-color: #ffc107;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        .sidebar {
+            background-color: var(--primary-color);
+            min-height: 100vh;
+            color: white;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-brand {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            margin: 2px 0;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .page-header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card .icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .data-table {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table th {
+            background-color: var(--light-bg);
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-submitted { background-color: #fff3cd; color: #856404; }
+        .status-approved { background-color: #d4edda; color: #155724; }
+        .status-rejected { background-color: #f8d7da; color: #721c24; }
+        .status-disbursed { background-color: #d1ecf1; color: #0c5460; }
+        
+        .alert-custom {
+            border-left: 4px solid;
+            border-radius: 4px;
+        }
+        
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filter-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .profile-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="sidebar-brand">
+                    <h4><i class="fas fa-landmark"></i> CDF Admin</h4>
+                    <small class="text-muted">Constituency Portal</small>
+                </div>
+                
+                <div class="sidebar-nav">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-file-alt me-2"></i> Applications
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-users me-2"></i> Beneficiaries
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-map-marker-alt me-2"></i> Ward Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-money-check-alt me-2"></i> Disbursements
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-university me-2"></i> Institutions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">
+                                <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-file-upload me-2"></i> Document Verification
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link " href="#">
+                                <i class="fas fa-cog me-2"></i> Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="mt-4 px-3">
+                    <div class="card bg-dark text-white">
+                        <div class="card-body">
+                            <h6><i class="fas fa-user-circle me-2"></i> Admin Profile</h6>
+                            <p class="small mb-1">Constituency: <strong>N/A</strong></p>
+                            <p class="small mb-0">Last Login: <strong>--/--/----</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="h3 mb-0">
+                                Reports
+                            </h1>
+                            <p class="text-muted mb-0">
+                                Generate various reports and exports
+                            </p>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-download me-2"></i> Export
+                                </button>
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-print me-2"></i> Print
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Template-specific content area -->
+                <div class="content-area">
+                    <div class="alert alert-info alert-custom">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Template Placeholder:</strong> This is the Reports template. Content will be dynamically loaded here.
+                    </div>
+                    
+                    <!-- Dynamic content will be loaded here based on view context -->
+                    <div class="placeholder-content text-center py-5">
+                        <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Report Generation Panel</h4>
+                        <p class="text-muted">This content will be dynamically populated by Django view context.</p>
+                        
+                        <!-- Sample data table for list views -->
+                        
+                        
+                        <!-- Sample form for form views -->
+                        
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <footer class="mt-4 text-center text-muted">
+                    <hr>
+                    <p class="small">
+                        <i class="fas fa-copyright"></i> 2026 NG-CDF Bursary Management System | 
+                        Constituency Admin Portal | Version 1.0
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Template-specific initialization
+        
+        
+        // Common functionality
+                // Toggle sidebar on mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('d-none');
+        }
+        
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = 
+                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        }
+        
+        // Initialize
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+    </script>
+</body>
+</html>

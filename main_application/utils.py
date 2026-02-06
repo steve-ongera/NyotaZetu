@@ -452,3 +452,455 @@ class ThreatDetector:
                 pass
         
         return list(set(threats))  # Remove duplicates
+    
+    
+    
+"""
+Decorators and Utility Functions for Constituency Admin
+"""
+
+from django.shortcuts import redirect
+from django.contrib import messages
+from functools import wraps
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+import requests
+
+
+def constituency_admin_required(view_func):
+    """
+    Decorator to ensure user is a constituency admin
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "Please log in to access this page.")
+            return redirect('login')
+        
+        if request.user.user_type != 'constituency_admin':
+            messages.error(request, "You don't have permission to access this page.")
+            return redirect('home')
+        
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
+
+def create_audit_log(user, action, table_affected, record_id, description, request):
+    """
+    Create an audit log entry
+    """
+    from .models import AuditLog
+    
+    # Get IP address
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip_address = x_forwarded_for.split(',')[0]
+    else:
+        ip_address = request.META.get('REMOTE_ADDR')
+    
+    # Get user agent
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    AuditLog.objects.create(
+        user=user,
+        action=action,
+        table_affected=table_affected,
+        record_id=str(record_id) if record_id else None,
+        description=description,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+
+
+def send_sms_notification(phone_number, message):
+    """
+    Send SMS notification via SMS gateway
+    Configure your SMS provider here (Africa's Talking, Twilio, etc.)
+    """
+    from .models import SMSLog
+    
+    try:
+        # Example using Africa's Talking (configure your credentials)
+        # You'll need to install africas_talking package
+        # pip install africastalking
+        
+        # import africastalking
+        # africastalking.initialize(
+        #     username=settings.AFRICASTALKING_USERNAME,
+        #     api_key=settings.AFRICASTALKING_API_KEY
+        # )
+        # sms = africastalking.SMS
+        # response = sms.send(message, [phone_number])
+        
+        # For now, just log the SMS
+        sms_log = SMSLog.objects.create(
+            phone_number=phone_number,
+            message=message,
+            status='sent'  # Change to 'pending' in production
+        )
+        
+        return True
+    
+    except Exception as e:
+        # Log failed SMS
+        SMSLog.objects.create(
+            phone_number=phone_number,
+            message=message,
+            status='failed',
+            gateway_response=str(e)
+        )
+        return False
+
+
+def send_email_notification(email_address, subject, message):
+    """
+    Send email notification
+    """
+    from .models import EmailLog
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email_address],
+            fail_silently=False,
+        )
+        
+        EmailLog.objects.create(
+            email_address=email_address,
+            subject=subject,
+            message=message,
+            status='sent'
+        )
+        
+        return True
+    
+    except Exception as e:
+        EmailLog.objects.create(
+            email_address=email_address,
+            subject=subject,
+            message=message,
+            status='failed'
+        )
+        return False
+
+
+def calculate_priority_score(application):
+    """
+    Calculate priority score for application ranking
+    Based on multiple factors
+    """
+    score = 0
+    
+    # Orphan status (high priority)
+    if application.is_total_orphan:
+        score += 30
+    elif application.is_orphan:
+        score += 20
+    
+    # Special needs
+    if application.is_disabled:
+        score += 15
+    
+    # Chronic illness
+    if application.has_chronic_illness:
+        score += 10
+    
+    # Household income (lower income = higher score)
+    if application.household_monthly_income:
+        if application.household_monthly_income < 10000:
+            score += 20
+        elif application.household_monthly_income < 20000:
+            score += 15
+        elif application.household_monthly_income < 30000:
+            score += 10
+    
+    # Number of siblings in school
+    if application.number_of_siblings_in_school >= 4:
+        score += 15
+    elif application.number_of_siblings_in_school >= 2:
+        score += 10
+    
+    # Academic performance (merit component)
+    if application.previous_academic_year_average:
+        if application.previous_academic_year_average >= 70:
+            score += 10
+        elif application.previous_academic_year_average >= 60:
+            score += 5
+    
+    # Fee balance (higher balance = higher need)
+    if application.fees_balance >= 50000:
+        score += 10
+    elif application.fees_balance >= 30000:
+        score += 5
+    
+    return min(score, 100)  # Cap at 100
+
+
+def get_constituency_budget_status(constituency, fiscal_year):
+    """
+    Get budget utilization status for constituency
+    """
+    from .models import Application, Allocation
+    from django.db.models import Sum
+    
+    cdf_budget = constituency.cdf_bursary_allocation or 0
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=fiscal_year
+    )
+    
+    total_allocated = Allocation.objects.filter(
+        application__in=applications
+    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+    
+    utilization_rate = (total_allocated / cdf_budget * 100) if cdf_budget > 0 else 0
+    
+    return {
+        'budget': cdf_budget,
+        'allocated': total_allocated,
+        'available': cdf_budget - total_allocated,
+        'utilization_rate': utilization_rate
+    }
+
+
+def export_applications_to_excel(applications, filename='applications.xlsx'):
+    """
+    Export applications to Excel file
+    """
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Applications'
+    
+    # Headers
+    headers = [
+        'Application No.', 'Name', 'ID Number', 'Gender', 'Ward',
+        'Institution', 'Course', 'Year', 'Amount Requested',
+        'Status', 'Date Submitted'
+    ]
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True, size=12)
+        cell.fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Data rows
+    for row, app in enumerate(applications, 2):
+        ws.cell(row=row, column=1, value=app.application_number)
+        ws.cell(row=row, column=2, value=app.applicant.user.get_full_name())
+        ws.cell(row=row, column=3, value=app.applicant.id_number)
+        ws.cell(row=row, column=4, value=app.applicant.get_gender_display())
+        ws.cell(row=row, column=5, value=app.applicant.ward.name if app.applicant.ward else 'N/A')
+        ws.cell(row=row, column=6, value=app.institution.name)
+        ws.cell(row=row, column=7, value=app.course_name or 'N/A')
+        ws.cell(row=row, column=8, value=app.year_of_study)
+        ws.cell(row=row, column=9, value=float(app.amount_requested))
+        ws.cell(row=row, column=10, value=app.get_status_display())
+        ws.cell(row=row, column=11, value=app.date_submitted.strftime('%Y-%m-%d') if app.date_submitted else 'N/A')
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+    wb.save(response)
+    
+    return response
+
+
+def generate_payment_voucher(allocation):
+    """
+    Generate payment voucher for allocation
+    Returns PDF file
+    """
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import inch
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.styles import getSampleStyleSheet
+    from io import BytesIO
+    from django.http import HttpResponse
+    
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Header
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(width/2, height - 1*inch, "CONSTITUENCY DEVELOPMENT FUND")
+    p.drawCentredString(width/2, height - 1.3*inch, f"{allocation.application.applicant.constituency.name.upper()} CONSTITUENCY")
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawCentredString(width/2, height - 1.7*inch, "BURSARY PAYMENT VOUCHER")
+    
+    # Voucher details
+    y_position = height - 2.3*inch
+    p.setFont("Helvetica", 11)
+    
+    details = [
+        ("Voucher No:", allocation.cheque_number or 'N/A'),
+        ("Date:", allocation.allocation_date.strftime('%d/%m/%Y')),
+        ("Payee:", allocation.application.institution.name),
+        ("Student Name:", allocation.application.applicant.user.get_full_name()),
+        ("ID Number:", allocation.application.applicant.id_number),
+        ("Admission No:", allocation.application.admission_number),
+        ("Course:", allocation.application.course_name or 'N/A'),
+        ("Year of Study:", str(allocation.application.year_of_study)),
+        ("Amount:", f"KES {allocation.amount_allocated:,.2f}"),
+    ]
+    
+    for label, value in details:
+        p.setFont("Helvetica-Bold", 11)
+        p.drawString(1*inch, y_position, label)
+        p.setFont("Helvetica", 11)
+        p.drawString(2.5*inch, y_position, str(value))
+        y_position -= 0.3*inch
+    
+    # Signatures
+    y_position -= 0.5*inch
+    p.line(1*inch, y_position, 3.5*inch, y_position)
+    p.drawString(1*inch, y_position - 0.2*inch, "Prepared by")
+    
+    p.line(4.5*inch, y_position, 7*inch, y_position)
+    p.drawString(4.5*inch, y_position - 0.2*inch, "Approved by")
+    
+    # Footer
+    p.setFont("Helvetica", 9)
+    p.drawCentredString(width/2, 0.5*inch, "This is a computer-generated document")
+    
+    p.showPage()
+    p.save()
+    
+    buffer.seek(0)
+    return buffer
+
+
+def validate_application_documents(application):
+    """
+    Validate if application has all required documents
+    """
+    from .models import Document
+    
+    required_docs = [
+        'id_card',
+        'admission_letter',
+        'fee_structure',
+    ]
+    
+    uploaded_docs = application.documents.filter(
+        document_type__in=required_docs
+    ).values_list('document_type', flat=True)
+    
+    missing_docs = set(required_docs) - set(uploaded_docs)
+    
+    return {
+        'is_complete': len(missing_docs) == 0,
+        'missing_documents': list(missing_docs),
+        'total_uploaded': application.documents.count()
+    }
+
+
+def get_ward_allocation_summary(ward, fiscal_year):
+    """
+    Get allocation summary for a specific ward
+    """
+    from .models import Application, Allocation
+    from django.db.models import Sum, Count
+    
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    )
+    
+    allocations = Allocation.objects.filter(
+        application__in=applications
+    )
+    
+    summary = {
+        'total_applications': applications.count(),
+        'approved_count': applications.filter(status='approved').count(),
+        'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        'total_allocated': allocations.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+        'male_beneficiaries': applications.filter(
+            applicant__gender='M',
+            status__in=['approved', 'disbursed']
+        ).count(),
+        'female_beneficiaries': applications.filter(
+            applicant__gender='F',
+            status__in=['approved', 'disbursed']
+        ).count(),
+    }
+    
+    return summary
+
+
+def check_duplicate_application(applicant, fiscal_year):
+    """
+    Check if applicant has already applied in the same fiscal year
+    """
+    from .models import Application
+    
+    existing = Application.objects.filter(
+        applicant=applicant,
+        fiscal_year=fiscal_year,
+        bursary_source__in=['cdf', 'both']
+    ).exists()
+    
+    return existing
+
+
+def get_user_constituency(user):
+    """
+    Get the constituency assigned to the user based on their role
+    Returns: Constituency object or None
+    """
+    try:
+        # For applicants - get from their profile
+        if hasattr(user, 'applicant_profile'):
+            return user.applicant_profile.constituency
+        
+        # For other user types, you might need additional logic
+        # based on your user model structure
+        return None
+        
+    except Exception as e:
+        return None
+    
+def get_user_ward(user):
+    """
+    Get the ward assigned to the user based on their role
+    Returns: Ward object or None
+    """
+    try:
+        # For applicants - get from their profile
+        if hasattr(user, 'applicant_profile'):
+            return user.applicant_profile.ward
+        
+        # For other user types
+        return None
+        
+    except Exception as e:
+        return None

@@ -295,4 +295,95 @@ urlpatterns = [
     path('admin-notifications/email-logs/', views.email_logs, name='email_logs'),
     path('api/notifications/recipient-count/', views.get_recipient_count, name='get_recipient_count'),
     
+    # ============= DASHBOARD & OVERVIEW =============
+    path('constituency/dashboard/', 
+         views.constituency_dashboard, 
+         name='constituency_dashboard'),
+    
+    path('constituency/analytics/', 
+         views.constituency_analytics, 
+         name='constituency_analytics'),
+    
+    
+    # ============= APPLICATION MANAGEMENT =============
+    path('constituency/applications/', 
+         views.constituency_applications_list, 
+         name='constituency_applications_list'),
+    
+    path('constituency/applications/<int:application_id>/', 
+         views.constituency_application_detail, 
+         name='constituency_application_detail'),
+    
+    path('constituency/applications/<int:application_id>/review/', 
+         views.constituency_review_application, 
+         name='constituency_review_application'),
+    
+    path('constituency/applications/bulk-approve/', 
+         views.constituency_bulk_approve, 
+         name='constituency_bulk_approve'),
+    
+    
+    # ============= WARD MANAGEMENT =============
+    path('constituency/wards/', 
+         views.constituency_wards_overview, 
+         name='constituency_wards_overview'),
+    
+    path('constituency/wards/<int:ward_id>/', 
+         views.constituency_ward_detail, 
+         name='constituency_ward_detail'),
+    
+    
+    # ============= DISBURSEMENT MANAGEMENT =============
+    path('constituency/disbursements/', 
+         views.constituency_disbursements, 
+         name='constituency_disbursements'),
+    
+    path('constituency/disbursements/<int:allocation_id>/process/', 
+         views.constituency_process_disbursement, 
+         name='constituency_process_disbursement'),
+    
+    path('constituency/bulk-cheques/', 
+         views.constituency_bulk_cheques, 
+         name='constituency_bulk_cheques'),
+    
+    path('constituency/bulk-cheques/create/', 
+         views.constituency_create_bulk_cheque, 
+         name='constituency_create_bulk_cheque'),
+    
+    
+    # ============= REPORTING & EXPORTS =============
+    path('constituency/reports/', 
+         views.constituency_reports, 
+         name='constituency_reports'),
+    
+    path('constituency/reports/beneficiary-list/', 
+         views.constituency_generate_beneficiary_list, 
+         name='constituency_generate_beneficiary_list'),
+    
+    path('constituency/reports/financial/', 
+         views.constituency_financial_report, 
+         name='constituency_financial_report'),
+    
+    
+    # ============= BENEFICIARY MANAGEMENT =============
+    path('constituency/beneficiaries/', 
+         views.constituency_beneficiaries, 
+         name='constituency_beneficiaries'),
+    
+    path('constituency/beneficiaries/<int:applicant_id>/', 
+         views.constituency_beneficiary_profile, 
+         name='constituency_beneficiary_profile'),
+    
+    
+    # ============= SETTINGS & CONFIGURATION =============
+    path('constituency/settings/', 
+         views.constituency_settings, 
+         name='constituency_settings'),
+    
+    
+    # ============= NOTIFICATIONS =============
+    path('constituency/notifications/send/', 
+         views.constituency_send_notifications, 
+         name='constituency_send_notifications'),
+    
 ]

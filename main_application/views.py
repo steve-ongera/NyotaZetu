@@ -277,6 +277,8 @@ def login_view(request):
                         return redirect('admin_dashboard')
                     elif user.user_type == 'reviewer':
                         return redirect('reviewer_dashboard')
+                    elif user.user_type == 'constituency_admin':
+                        return redirect('constituency_dashboard')#constituency_admin
                     elif user.user_type == 'finance':
                         return redirect('finance_dashboard')
                 else:
@@ -16312,3 +16314,1927 @@ def get_recipient_count(request):
             'success': False,
             'message': f'Error: {str(e)}'
         }, status=500)
+        
+    
+"""
+Constituency Admin Views
+Handles NG-CDF Bursary Management and Operations
+
+The Constituency Admin role is crucial as they manage:
+1. CDF Bursary Applications (separate from county bursaries)
+2. Ward-level coordination within their constituency
+3. MP's office liaison
+4. CDF fund allocation and disbursement
+5. Beneficiary tracking and reporting
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Sum, Count, Avg, F
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.db import transaction
+from datetime import datetime, timedelta
+from decimal import Decimal
+import json
+
+from .models import (
+    User, Constituency, Ward, Application, Allocation, 
+    Disbursement, FiscalYear, BursaryCategory, Institution,
+    Applicant, Review, Document, BulkCheque, Notification,
+    DisbursementRound, WardAllocation, AuditLog, PublicReport,
+    AIAnalysisReport, DataSnapshot
+)
+
+from .utils import create_audit_log, send_sms_notification, send_email_notification
+
+
+# ============= DASHBOARD & OVERVIEW =============
+
+@login_required
+
+def constituency_dashboard(request):
+    """
+    Main dashboard for constituency admin
+    Shows CDF bursary overview and key metrics
+    """
+    constituency = request.user.applicant_profile.constituency if hasattr(request.user, 'applicant_profile') else None
+    
+    if not constituency:
+        messages.error(request, "You are not assigned to any constituency.")
+        return redirect('home')
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # CDF Applications Statistics
+    cdf_applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    stats = {
+        'total_applications': cdf_applications.count(),
+        'pending_review': cdf_applications.filter(status='submitted').count(),
+        'under_review': cdf_applications.filter(status='under_review').count(),
+        'approved': cdf_applications.filter(status='approved').count(),
+        'rejected': cdf_applications.filter(status='rejected').count(),
+        'disbursed': cdf_applications.filter(status='disbursed').count(),
+    }
+    
+    # Financial Overview
+    total_requested = cdf_applications.aggregate(
+        total=Sum('amount_requested')
+    )['total'] or 0
+    
+    total_allocated = Allocation.objects.filter(
+        application__in=cdf_applications
+    ).aggregate(total=Sum('amount_allocated'))['total'] or 0
+    
+    total_disbursed = Disbursement.objects.filter(
+        application__in=cdf_applications,
+        status='completed'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Ward-wise breakdown
+    ward_stats = []
+    for ward in constituency.wards.all():
+        ward_apps = cdf_applications.filter(applicant__ward=ward)
+        ward_stats.append({
+            'ward': ward,
+            'applications': ward_apps.count(),
+            'approved': ward_apps.filter(status='approved').count(),
+            'amount_requested': ward_apps.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        })
+    
+    # Recent applications
+    recent_applications = cdf_applications.order_by('-date_submitted')[:10]
+    
+    # Pending reviews assigned to this admin
+    pending_reviews = cdf_applications.filter(
+        status='under_review'
+    ).exclude(
+        reviews__reviewer=request.user
+    )[:5]
+    
+    # Budget utilization
+    cdf_budget = constituency.cdf_bursary_allocation or 0
+    budget_utilization = (total_allocated / cdf_budget * 100) if cdf_budget > 0 else 0
+    
+    # Alerts and notifications
+    alerts = []
+    
+    # Check for pending applications older than 7 days
+    old_pending = cdf_applications.filter(
+        status='submitted',
+        date_submitted__lt=timezone.now() - timedelta(days=7)
+    ).count()
+    if old_pending > 0:
+        alerts.append({
+            'type': 'warning',
+            'message': f'{old_pending} applications pending review for over 7 days'
+        })
+    
+    # Check budget exhaustion
+    if budget_utilization > 90:
+        alerts.append({
+            'type': 'danger',
+            'message': f'CDF budget {budget_utilization:.1f}% utilized - nearly exhausted'
+        })
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'stats': stats,
+        'total_requested': total_requested,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'cdf_budget': cdf_budget,
+        'budget_available': cdf_budget - total_allocated,
+        'budget_utilization': budget_utilization,
+        'ward_stats': ward_stats,
+        'recent_applications': recent_applications,
+        'pending_reviews': pending_reviews,
+        'alerts': alerts,
+    }
+    
+    create_audit_log(
+        request.user, 'view', 'Dashboard', None,
+        f"Viewed constituency dashboard for {constituency.name}",
+        request
+    )
+    
+    return render(request, 'constituency_admin/dashboard.html', context)
+
+
+@login_required
+
+def constituency_analytics(request):
+    """
+    Advanced analytics and insights for CDF bursary program
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get applications
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    # Gender distribution
+    gender_dist = applications.values('applicant__gender').annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    )
+    
+    # Institution type distribution
+    institution_dist = applications.values(
+        'institution__institution_type',
+        'institution__name'
+    ).annotate(
+        count=Count('id'),
+        total_allocated=Sum('allocation__amount_allocated')
+    ).order_by('-count')[:10]
+    
+    # Ward distribution
+    ward_dist = applications.values('applicant__ward__name').annotate(
+        count=Count('id'),
+        approved=Count('id', filter=Q(status='approved')),
+        total_requested=Sum('amount_requested'),
+        total_allocated=Sum('allocation__amount_allocated')
+    ).order_by('-count')
+    
+    # Monthly trends
+    monthly_trends = applications.filter(
+        date_submitted__gte=current_fiscal_year.start_date
+    ).extra(
+        select={'month': "DATE_TRUNC('month', date_submitted)"}
+    ).values('month').annotate(
+        applications=Count('id'),
+        approved=Count('id', filter=Q(status='approved'))
+    ).order_by('month')
+    
+    # Category distribution
+    category_dist = applications.values(
+        'bursary_category__name',
+        'bursary_category__category_type'
+    ).annotate(
+        count=Count('id'),
+        total_allocated=Sum('allocation__amount_allocated')
+    )
+    
+    # Orphan statistics
+    orphan_stats = {
+        'total_orphans': applications.filter(is_orphan=True).count(),
+        'total_orphans_amount': applications.filter(is_orphan=True).aggregate(
+            Sum('allocation__amount_allocated')
+        )['allocation__amount_allocated__sum'] or 0,
+    }
+    
+    # Special needs statistics
+    special_needs_stats = {
+        'total_special_needs': applications.filter(applicant__special_needs=True).count(),
+        'total_special_needs_amount': applications.filter(
+            applicant__special_needs=True
+        ).aggregate(
+            Sum('allocation__amount_allocated')
+        )['allocation__amount_allocated__sum'] or 0,
+    }
+    
+    # Success rate by ward
+    ward_success_rate = []
+    for ward in constituency.wards.all():
+        ward_apps = applications.filter(applicant__ward=ward)
+        total = ward_apps.count()
+        approved = ward_apps.filter(status='approved').count()
+        success_rate = (approved / total * 100) if total > 0 else 0
+        ward_success_rate.append({
+            'ward': ward.name,
+            'total': total,
+            'approved': approved,
+            'success_rate': success_rate
+        })
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'gender_dist': gender_dist,
+        'institution_dist': institution_dist,
+        'ward_dist': ward_dist,
+        'monthly_trends': list(monthly_trends),
+        'category_dist': category_dist,
+        'orphan_stats': orphan_stats,
+        'special_needs_stats': special_needs_stats,
+        'ward_success_rate': ward_success_rate,
+    }
+    
+    return render(request, 'constituency_admin/analytics.html', context)
+
+
+# ============= APPLICATION MANAGEMENT =============
+
+@login_required
+
+def constituency_applications_list(request):
+    """
+    List all CDF bursary applications for the constituency
+    With advanced filtering and search
+    """
+    constituency = get_user_constituency(request.user)
+    
+    # Base queryset
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both']
+    ).select_related(
+        'applicant__user',
+        'institution',
+        'fiscal_year',
+        'bursary_category',
+        'applicant__ward'
+    ).prefetch_related('documents', 'reviews')
+    
+    # Filters
+    status = request.GET.get('status')
+    ward = request.GET.get('ward')
+    institution_type = request.GET.get('institution_type')
+    fiscal_year_id = request.GET.get('fiscal_year')
+    category = request.GET.get('category')
+    search = request.GET.get('search')
+    
+    if status:
+        applications = applications.filter(status=status)
+    
+    if ward:
+        applications = applications.filter(applicant__ward_id=ward)
+    
+    if institution_type:
+        applications = applications.filter(institution__institution_type=institution_type)
+    
+    if fiscal_year_id:
+        applications = applications.filter(fiscal_year_id=fiscal_year_id)
+    
+    if category:
+        applications = applications.filter(bursary_category_id=category)
+    
+    if search:
+        applications = applications.filter(
+            Q(application_number__icontains=search) |
+            Q(applicant__user__first_name__icontains=search) |
+            Q(applicant__user__last_name__icontains=search) |
+            Q(applicant__id_number__icontains=search) |
+            Q(institution__name__icontains=search)
+        )
+    
+    # Sorting
+    sort_by = request.GET.get('sort', '-date_submitted')
+    applications = applications.order_by(sort_by)
+    
+    # Pagination
+    paginator = Paginator(applications, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options
+    wards = Ward.objects.filter(constituency=constituency)
+    fiscal_years = FiscalYear.objects.all()
+    categories = BursaryCategory.objects.filter(fiscal_year__is_active=True)
+    
+    context = {
+        'page_obj': page_obj,
+        'wards': wards,
+        'fiscal_years': fiscal_years,
+        'categories': categories,
+        'current_filters': request.GET,
+        'total_count': applications.count(),
+    }
+    
+    return render(request, 'constituency_admin/applications_list.html', context)
+
+
+@login_required
+
+def constituency_application_detail(request, application_id):
+    """
+    Detailed view of a single CDF application
+    """
+    constituency = get_user_constituency(request.user)
+    
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'applicant__ward',
+            'applicant__constituency',
+            'institution',
+            'fiscal_year',
+            'bursary_category'
+        ).prefetch_related(
+            'documents',
+            'reviews__reviewer',
+            'applicant__guardians'
+        ),
+        id=application_id,
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both']
+    )
+    
+    # Get related data
+    guardians = application.applicant.guardians.all()
+    siblings = application.applicant.siblings.all()
+    documents = application.documents.all()
+    reviews = application.reviews.order_by('-review_date')
+    
+    # Check if allocation exists
+    try:
+        allocation = application.allocation
+    except Allocation.DoesNotExist:
+        allocation = None
+    
+    # Check if current user has reviewed
+    user_review = reviews.filter(reviewer=request.user).first()
+    
+    # Calculate completeness score
+    completeness_items = {
+        'Personal Info': application.applicant.id_number is not None,
+        'Guardians': guardians.exists(),
+        'Documents': documents.filter(is_verified=True).count() >= 3,
+        'Academic Info': application.admission_number is not None,
+        'Financial Info': application.total_fees_payable > 0,
+    }
+    completeness_score = sum(completeness_items.values()) / len(completeness_items) * 100
+    
+    context = {
+        'application': application,
+        'guardians': guardians,
+        'siblings': siblings,
+        'documents': documents,
+        'reviews': reviews,
+        'allocation': allocation,
+        'user_review': user_review,
+        'completeness_items': completeness_items,
+        'completeness_score': completeness_score,
+    }
+    
+    create_audit_log(
+        request.user, 'view', 'Application', application.id,
+        f"Viewed application {application.application_number}",
+        request
+    )
+    
+    return render(request, 'constituency_admin/application_detail.html', context)
+
+
+@login_required
+
+def constituency_review_application(request, application_id):
+    """
+    Review and recommend action on CDF application
+    """
+    constituency = get_user_constituency(request.user)
+    
+    application = get_object_or_404(
+        Application,
+        id=application_id,
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both']
+    )
+    
+    if request.method == 'POST':
+        recommendation = request.POST.get('recommendation')
+        comments = request.POST.get('comments')
+        recommended_amount = request.POST.get('recommended_amount')
+        need_score = request.POST.get('need_score')
+        merit_score = request.POST.get('merit_score')
+        vulnerability_score = request.POST.get('vulnerability_score')
+        
+        # Validate
+        if not recommendation or not comments:
+            messages.error(request, "Recommendation and comments are required.")
+            return redirect('constituency_application_detail', application_id)
+        
+        try:
+            with transaction.atomic():
+                # Create review
+                review = Review.objects.create(
+                    application=application,
+                    reviewer=request.user,
+                    review_level='constituency',
+                    recommendation=recommendation,
+                    comments=comments,
+                    recommended_amount=Decimal(recommended_amount) if recommended_amount else None,
+                    need_score=int(need_score) if need_score else None,
+                    merit_score=int(merit_score) if merit_score else None,
+                    vulnerability_score=int(vulnerability_score) if vulnerability_score else None
+                )
+                
+                # Update application status based on recommendation
+                if recommendation == 'approve':
+                    application.status = 'approved'
+                    
+                    # Create allocation if amount recommended
+                    if recommended_amount:
+                        Allocation.objects.create(
+                            application=application,
+                            amount_allocated=Decimal(recommended_amount),
+                            approved_by=request.user,
+                            applicant=application.applicant,
+                            fiscal_year=application.fiscal_year
+                        )
+                    
+                elif recommendation == 'reject':
+                    application.status = 'rejected'
+                    
+                elif recommendation == 'more_info':
+                    application.status = 'pending_documents'
+                    
+                elif recommendation == 'forward':
+                    application.status = 'under_review'
+                
+                application.save()
+                
+                # Create notification for applicant
+                Notification.objects.create(
+                    user=application.applicant.user,
+                    notification_type='review_comment',
+                    title=f'Application {application.application_number} Updated',
+                    message=f'Your CDF bursary application has been reviewed. Status: {application.get_status_display()}',
+                    related_application=application
+                )
+                
+                # Send SMS/Email
+                send_sms_notification(
+                    application.applicant.user.phone_number,
+                    f'Your CDF bursary application {application.application_number} status: {application.get_status_display()}'
+                )
+                
+                create_audit_log(
+                    request.user, 'update', 'Application', application.id,
+                    f"Reviewed application {application.application_number} - {recommendation}",
+                    request
+                )
+                
+                messages.success(request, f'Application reviewed successfully: {recommendation}')
+                return redirect('constituency_applications_list')
+                
+        except Exception as e:
+            messages.error(request, f'Error reviewing application: {str(e)}')
+            return redirect('constituency_application_detail', application_id)
+    
+    return redirect('constituency_application_detail', application_id)
+
+
+@login_required
+
+def constituency_bulk_approve(request):
+    """
+    Bulk approve multiple applications
+    """
+    if request.method == 'POST':
+        application_ids = request.POST.getlist('application_ids')
+        default_amount = request.POST.get('default_amount')
+        
+        if not application_ids:
+            messages.error(request, "No applications selected.")
+            return redirect('constituency_applications_list')
+        
+        constituency = get_user_constituency(request.user)
+        
+        try:
+            with transaction.atomic():
+                approved_count = 0
+                
+                for app_id in application_ids:
+                    application = Application.objects.get(
+                        id=app_id,
+                        applicant__constituency=constituency,
+                        bursary_source__in=['cdf', 'both']
+                    )
+                    
+                    # Create review
+                    Review.objects.create(
+                        application=application,
+                        reviewer=request.user,
+                        review_level='constituency',
+                        recommendation='approve',
+                        comments='Bulk approval by constituency admin',
+                        recommended_amount=Decimal(default_amount) if default_amount else None
+                    )
+                    
+                    # Update status
+                    application.status = 'approved'
+                    application.save()
+                    
+                    # Create allocation
+                    if default_amount:
+                        Allocation.objects.create(
+                            application=application,
+                            amount_allocated=Decimal(default_amount),
+                            approved_by=request.user,
+                            applicant=application.applicant,
+                            fiscal_year=application.fiscal_year
+                        )
+                    
+                    approved_count += 1
+                
+                create_audit_log(
+                    request.user, 'update', 'Application', None,
+                    f"Bulk approved {approved_count} applications",
+                    request
+                )
+                
+                messages.success(request, f'Successfully approved {approved_count} applications.')
+                
+        except Exception as e:
+            messages.error(request, f'Error in bulk approval: {str(e)}')
+        
+        return redirect('constituency_applications_list')
+    
+    return redirect('constituency_applications_list')
+
+
+# ============= WARD MANAGEMENT =============
+
+@login_required
+
+def constituency_wards_overview(request):
+    """
+    Overview of all wards in the constituency
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    ward_data = []
+    
+    for ward in constituency.wards.all():
+        applications = Application.objects.filter(
+            applicant__ward=ward,
+            bursary_source__in=['cdf', 'both'],
+            fiscal_year=current_fiscal_year
+        )
+        
+        ward_info = {
+            'ward': ward,
+            'total_applications': applications.count(),
+            'approved': applications.filter(status='approved').count(),
+            'pending': applications.filter(status='submitted').count(),
+            'rejected': applications.filter(status='rejected').count(),
+            'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+            'total_allocated': Allocation.objects.filter(
+                application__in=applications
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+            'beneficiaries': applications.filter(status__in=['approved', 'disbursed']).count(),
+        }
+        
+        ward_data.append(ward_info)
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'ward_data': ward_data,
+    }
+    
+    return render(request, 'constituency_admin/wards_overview.html', context)
+
+
+@login_required
+
+def constituency_ward_detail(request, ward_id):
+    """
+    Detailed view of ward applications and statistics
+    """
+    constituency = get_user_constituency(request.user)
+    ward = get_object_or_404(Ward, id=ward_id, constituency=constituency)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    ).select_related('applicant__user', 'institution')
+    
+    # Statistics
+    stats = {
+        'total': applications.count(),
+        'approved': applications.filter(status='approved').count(),
+        'pending': applications.filter(status='submitted').count(),
+        'under_review': applications.filter(status='under_review').count(),
+        'rejected': applications.filter(status='rejected').count(),
+    }
+    
+    # Financial summary
+    financial = {
+        'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        'total_allocated': Allocation.objects.filter(
+            application__in=applications
+        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+    }
+    
+    # Recent applications
+    recent_apps = applications.order_by('-date_submitted')[:10]
+    
+    context = {
+        'ward': ward,
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'stats': stats,
+        'financial': financial,
+        'recent_apps': recent_apps,
+    }
+    
+    return render(request, 'constituency_admin/ward_detail.html', context)
+
+
+# ============= DISBURSEMENT MANAGEMENT =============
+
+@login_required
+
+def constituency_disbursements(request):
+    """
+    Manage CDF bursary disbursements
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get all approved allocations pending disbursement
+    pending_disbursements = Allocation.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both'],
+        application__fiscal_year=current_fiscal_year,
+        is_disbursed=False
+    ).select_related(
+        'application__applicant__user',
+        'application__institution'
+    )
+    
+    # Get completed disbursements
+    completed_disbursements = Disbursement.objects.filter(
+        applicant__constituency=constituency,
+        fiscal_year=current_fiscal_year,
+        status='completed'
+    ).select_related('applicant__user', 'allocation__application__institution')
+    
+    # Summary statistics
+    total_pending_amount = pending_disbursements.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    total_disbursed_amount = completed_disbursements.aggregate(
+        Sum('amount')
+    )['amount__sum'] or 0
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'pending_disbursements': pending_disbursements,
+        'completed_disbursements': completed_disbursements,
+        'total_pending_amount': total_pending_amount,
+        'total_disbursed_amount': total_disbursed_amount,
+    }
+    
+    return render(request, 'constituency_admin/disbursements.html', context)
+
+
+@login_required
+
+def constituency_process_disbursement(request, allocation_id):
+    """
+    Process individual disbursement
+    """
+    constituency = get_user_constituency(request.user)
+    
+    allocation = get_object_or_404(
+        Allocation,
+        id=allocation_id,
+        application__applicant__constituency=constituency
+    )
+    
+    if request.method == 'POST':
+        payment_method = request.POST.get('payment_method')
+        reference_number = request.POST.get('reference_number')
+        cheque_number = request.POST.get('cheque_number')
+        disbursement_date = request.POST.get('disbursement_date')
+        remarks = request.POST.get('remarks')
+        
+        try:
+            with transaction.atomic():
+                # Create disbursement record
+                disbursement = Disbursement.objects.create(
+                    allocation=allocation,
+                    applicant=allocation.applicant,
+                    fiscal_year=allocation.fiscal_year,
+                    amount=allocation.amount_allocated,
+                    payment_method=payment_method,
+                    reference_number=reference_number,
+                    cheque_number=cheque_number,
+                    disbursement_date=disbursement_date,
+                    status='completed',
+                    processed_by=request.user,
+                    remarks=remarks
+                )
+                
+                # Update allocation
+                allocation.is_disbursed = True
+                allocation.disbursement_date = disbursement_date
+                allocation.disbursed_by = request.user
+                allocation.save()
+                
+                # Update application status
+                allocation.application.status = 'disbursed'
+                allocation.application.save()
+                
+                # Send notification
+                Notification.objects.create(
+                    user=allocation.applicant.user,
+                    notification_type='disbursement',
+                    title='Bursary Disbursed',
+                    message=f'Your CDF bursary of KES {allocation.amount_allocated:,.2f} has been disbursed.',
+                    related_application=allocation.application
+                )
+                
+                create_audit_log(
+                    request.user, 'create', 'Disbursement', disbursement.id,
+                    f"Processed disbursement for {allocation.application.application_number}",
+                    request
+                )
+                
+                messages.success(request, 'Disbursement processed successfully.')
+                return redirect('constituency_disbursements')
+                
+        except Exception as e:
+            messages.error(request, f'Error processing disbursement: {str(e)}')
+    
+    context = {
+        'allocation': allocation,
+    }
+    
+    return render(request, 'constituency_admin/process_disbursement.html', context)
+
+
+@login_required
+
+def constituency_bulk_cheques(request):
+    """
+    Manage bulk cheques for institutions
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    bulk_cheques = BulkCheque.objects.filter(
+        institution__county=constituency.county,
+        fiscal_year=current_fiscal_year
+    ).select_related('institution').prefetch_related('allocations')
+    
+    context = {
+        'bulk_cheques': bulk_cheques,
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+    }
+    
+    return render(request, 'constituency_admin/bulk_cheques.html', context)
+
+
+@login_required
+
+def constituency_create_bulk_cheque(request):
+    """
+    Create bulk cheque for an institution
+    """
+    constituency = get_user_constituency(request.user)
+    
+    if request.method == 'POST':
+        institution_id = request.POST.get('institution')
+        allocation_ids = request.POST.getlist('allocation_ids')
+        cheque_number = request.POST.get('cheque_number')
+        cheque_holder_name = request.POST.get('cheque_holder_name')
+        cheque_holder_id = request.POST.get('cheque_holder_id')
+        cheque_holder_phone = request.POST.get('cheque_holder_phone')
+        
+        try:
+            institution = Institution.objects.get(id=institution_id)
+            allocations = Allocation.objects.filter(
+                id__in=allocation_ids,
+                application__applicant__constituency=constituency
+            )
+            
+            total_amount = allocations.aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+            student_count = allocations.count()
+            
+            with transaction.atomic():
+                # Create bulk cheque
+                bulk_cheque = BulkCheque.objects.create(
+                    cheque_number=cheque_number,
+                    institution=institution,
+                    fiscal_year=allocations.first().fiscal_year,
+                    total_amount=total_amount,
+                    student_count=student_count,
+                    cheque_holder_name=cheque_holder_name,
+                    cheque_holder_id=cheque_holder_id,
+                    cheque_holder_phone=cheque_holder_phone,
+                    cheque_holder_position=request.POST.get('cheque_holder_position', 'Principal'),
+                    created_by=request.user,
+                    assigned_by=request.user,
+                    assigned_date=timezone.now()
+                )
+                
+                # Link allocations to bulk cheque
+                from .models import BulkChequeAllocation
+                for allocation in allocations:
+                    BulkChequeAllocation.objects.create(
+                        bulk_cheque=bulk_cheque,
+                        allocation=allocation
+                    )
+                    
+                    # Update allocation
+                    allocation.payment_method = 'bulk_cheque'
+                    allocation.cheque_number = cheque_number
+                    allocation.save()
+                
+                create_audit_log(
+                    request.user, 'create', 'BulkCheque', bulk_cheque.id,
+                    f"Created bulk cheque {cheque_number} for {institution.name}",
+                    request
+                )
+                
+                messages.success(request, f'Bulk cheque created: {cheque_number} for {student_count} students, total KES {total_amount:,.2f}')
+                return redirect('constituency_bulk_cheques')
+                
+        except Exception as e:
+            messages.error(request, f'Error creating bulk cheque: {str(e)}')
+    
+    # GET request - show form
+    institutions = Institution.objects.filter(county=constituency.county)
+    pending_allocations = Allocation.objects.filter(
+        application__applicant__constituency=constituency,
+        is_disbursed=False
+    ).select_related('application__institution', 'application__applicant__user')
+    
+    context = {
+        'institutions': institutions,
+        'pending_allocations': pending_allocations,
+    }
+    
+    return render(request, 'constituency_admin/create_bulk_cheque.html', context)
+
+
+# ============= REPORTING & EXPORTS =============
+
+@login_required
+
+def constituency_reports(request):
+    """
+    Generate various reports for CDF bursary
+    """
+    constituency = get_user_constituency(request.user)
+    fiscal_years = FiscalYear.objects.all()
+    
+    context = {
+        'constituency': constituency,
+        'fiscal_years': fiscal_years,
+    }
+    
+    return render(request, 'constituency_admin/reports.html', context)
+
+
+@login_required
+
+def constituency_generate_beneficiary_list(request):
+    """
+    Generate beneficiary list for transparency
+    """
+    constituency = get_user_constituency(request.user)
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    if not fiscal_year_id:
+        messages.error(request, "Please select a fiscal year.")
+        return redirect('constituency_reports')
+    
+    fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    
+    beneficiaries = Allocation.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both'],
+        application__fiscal_year=fiscal_year
+    ).select_related(
+        'application__applicant__user',
+        'application__applicant__ward',
+        'application__institution'
+    ).order_by('application__applicant__ward__name', 'application__applicant__user__last_name')
+    
+    # Create Excel file
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'CDF Beneficiaries'
+    
+    # Headers
+    headers = [
+        'No.', 'Name', 'ID Number', 'Ward', 'Institution',
+        'Course/Year', 'Amount Allocated', 'Disbursement Status'
+    ]
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color='CCE5FF', end_color='CCE5FF', fill_type='solid')
+    
+    # Data
+    for row, beneficiary in enumerate(beneficiaries, 2):
+        ws.cell(row=row, column=1, value=row-1)
+        ws.cell(row=row, column=2, value=beneficiary.application.applicant.user.get_full_name())
+        ws.cell(row=row, column=3, value=beneficiary.application.applicant.id_number)
+        ws.cell(row=row, column=4, value=beneficiary.application.applicant.ward.name)
+        ws.cell(row=row, column=5, value=beneficiary.application.institution.name)
+        ws.cell(row=row, column=6, value=f"{beneficiary.application.course_name or 'N/A'} - Year {beneficiary.application.year_of_study}")
+        ws.cell(row=row, column=7, value=float(beneficiary.amount_allocated))
+        ws.cell(row=row, column=8, value='Disbursed' if beneficiary.is_disbursed else 'Pending')
+    
+    # Save to response
+    from django.http import HttpResponse
+    response = HttpResponse( 
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename=CDF_Beneficiaries_{constituency.name}_{fiscal_year.name}.xlsx'
+    wb.save(response)
+    
+    create_audit_log(
+        request.user, 'export', 'Report', None,
+        f"Exported beneficiary list for {fiscal_year.name}",
+        request
+    )
+    
+    return response
+
+
+@login_required
+
+def constituency_financial_report(request):
+    """
+    Comprehensive financial report
+    """
+    constituency = get_user_constituency(request.user)
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    if not fiscal_year_id:
+        messages.error(request, "Please select a fiscal year.")
+        return redirect('constituency_reports')
+    
+    fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=fiscal_year
+    )
+    
+    # Summary data
+    summary = {
+        'total_applications': applications.count(),
+        'approved_applications': applications.filter(status='approved').count(),
+        'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        'total_allocated': Allocation.objects.filter(
+            application__in=applications
+        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+        'total_disbursed': Disbursement.objects.filter(
+            allocation__application__in=applications,
+            status='completed'
+        ).aggregate(Sum('amount'))['amount__sum'] or 0,
+    }
+    
+    # Ward breakdown
+    ward_breakdown = []
+    for ward in constituency.wards.all():
+        ward_apps = applications.filter(applicant__ward=ward)
+        ward_data = {
+            'ward': ward.name,
+            'applications': ward_apps.count(),
+            'allocated': Allocation.objects.filter(
+                application__in=ward_apps
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+        }
+        ward_breakdown.append(ward_data)
+    
+    context = {
+        'constituency': constituency,
+        'fiscal_year': fiscal_year,
+        'summary': summary,
+        'ward_breakdown': ward_breakdown,
+    }
+    
+    return render(request, 'constituency_admin/financial_report.html', context)
+
+
+# ============= BENEFICIARY MANAGEMENT =============
+
+@login_required
+
+def constituency_beneficiaries(request):
+    """
+    Manage and track all beneficiaries
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    beneficiaries = Allocation.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both'],
+        application__fiscal_year=current_fiscal_year
+    ).select_related(
+        'application__applicant__user',
+        'application__applicant__ward',
+        'application__institution'
+    )
+    
+    # Filter by ward if specified
+    ward = request.GET.get('ward')
+    if ward:
+        beneficiaries = beneficiaries.filter(application__applicant__ward_id=ward)
+    
+    # Search
+    search = request.GET.get('search')
+    if search:
+        beneficiaries = beneficiaries.filter(
+            Q(application__applicant__user__first_name__icontains=search) |
+            Q(application__applicant__user__last_name__icontains=search) |
+            Q(application__applicant__id_number__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(beneficiaries, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    wards = Ward.objects.filter(constituency=constituency)
+    
+    context = {
+        'page_obj': page_obj,
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'wards': wards,
+    }
+    
+    return render(request, 'constituency_admin/beneficiaries.html', context)
+
+
+@login_required
+
+def constituency_beneficiary_profile(request, applicant_id):
+    """
+    Detailed beneficiary profile with history
+    """
+    constituency = get_user_constituency(request.user)
+    
+    applicant = get_object_or_404(
+        Applicant,
+        id=applicant_id,
+        constituency=constituency
+    )
+    
+    # Get all applications by this beneficiary
+    applications = Application.objects.filter(
+        applicant=applicant,
+        bursary_source__in=['cdf', 'both']
+    ).select_related('fiscal_year', 'institution').order_by('-fiscal_year__start_date')
+    
+    # Get all allocations
+    allocations = Allocation.objects.filter(
+        applicant=applicant
+    ).select_related('application__fiscal_year')
+    
+    # Calculate totals
+    total_received = allocations.aggregate(
+        Sum('amount_allocated')
+    )['amount_allocated__sum'] or 0
+    
+    context = {
+        'applicant': applicant,
+        'applications': applications,
+        'allocations': allocations,
+        'total_received': total_received,
+    }
+    
+    return render(request, 'constituency_admin/beneficiary_profile.html', context)
+
+
+# ============= SETTINGS & CONFIGURATION =============
+
+@login_required
+
+def constituency_settings(request):
+    """
+    Constituency-specific settings and information
+    """
+    constituency = get_user_constituency(request.user)
+    
+    if request.method == 'POST':
+        # Update constituency information
+        constituency.current_mp = request.POST.get('current_mp')
+        constituency.cdf_office_email = request.POST.get('cdf_office_email')
+        constituency.cdf_office_phone = request.POST.get('cdf_office_phone')
+        constituency.cdf_office_location = request.POST.get('cdf_office_location')
+        constituency.save()
+        
+        create_audit_log(
+            request.user, 'update', 'Constituency', constituency.id,
+            f"Updated constituency settings for {constituency.name}",
+            request
+        )
+        
+        messages.success(request, 'Constituency settings updated successfully.')
+        return redirect('constituency_settings')
+    
+    context = {
+        'constituency': constituency,
+    }
+    
+    return render(request, 'constituency_admin/settings.html', context)
+
+
+# ============= NOTIFICATIONS =============
+
+@login_required
+
+def constituency_send_notifications(request):
+    """
+    Send bulk notifications to applicants/beneficiaries
+    """
+    constituency = get_user_constituency(request.user)
+    
+    if request.method == 'POST':
+        recipient_type = request.POST.get('recipient_type')  # all, approved, pending, etc.
+        message_title = request.POST.get('message_title')
+        message_text = request.POST.get('message_text')
+        send_sms = request.POST.get('send_sms') == 'on'
+        send_email = request.POST.get('send_email') == 'on'
+        
+        # Get recipients based on type
+        applications = Application.objects.filter(
+            applicant__constituency=constituency,
+            bursary_source__in=['cdf', 'both']
+        )
+        
+        if recipient_type == 'approved':
+            applications = applications.filter(status='approved')
+        elif recipient_type == 'pending':
+            applications = applications.filter(status='submitted')
+        elif recipient_type == 'disbursed':
+            applications = applications.filter(status='disbursed')
+        
+        recipients = applications.values_list('applicant__user', flat=True).distinct()
+        
+        count = 0
+        for user_id in recipients:
+            user = User.objects.get(id=user_id)
+            
+            # Create notification
+            Notification.objects.create(
+                user=user,
+                notification_type='system',
+                title=message_title,
+                message=message_text
+            )
+            
+            # Send SMS if requested
+            if send_sms and user.phone_number:
+                send_sms_notification(user.phone_number, message_text[:160])
+            
+            # Send email if requested
+            if send_email and user.email:
+                send_email_notification(
+                    user.email,
+                    message_title,
+                    message_text
+                )
+            
+            count += 1
+        
+        create_audit_log(
+            request.user, 'create', 'Notification', None,
+            f"Sent bulk notifications to {count} recipients",
+            request
+        )
+        
+        messages.success(request, f'Notifications sent to {count} recipients.')
+        return redirect('constituency_dashboard')
+    
+    context = {
+        'constituency': constituency,
+    }
+    
+    return render(request, 'constituency_admin/send_notifications.html', context)
+
+
+# ============= HELPER FUNCTIONS =============
+
+def get_user_constituency(user):
+    """
+    Get the constituency assigned to the user
+    """
+    try:
+        # Check if user has an applicant profile
+        if hasattr(user, 'applicant_profile'):
+            applicant = user.applicant_profile
+            # Return the constituency from the applicant's profile
+            return applicant.constituency
+        
+        # For admin users or users without applicant profile
+        # You might want to handle this differently based on your requirements
+        return None
+        
+    except Exception as e:
+        # Log the error if you have logging set up
+        # logger.error(f"Error getting constituency for user {user.id}: {str(e)}")
+        return None
+
+
+"""
+Additional Advanced Views for Constituency Admin
+Document verification, statistics, performance tracking, and more
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Sum, Count, Avg, F, Case, When, IntegerField
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.db import transaction
+from datetime import datetime, timedelta
+from decimal import Decimal
+import json
+
+from .models import (
+    User, Constituency, Ward, Application, Allocation, 
+    Document, FiscalYear, Institution, Applicant, Review
+)
+
+from .utils import (
+    create_audit_log, get_user_constituency, 
+    validate_application_documents, export_applications_to_excel
+)
+
+
+# ============= DOCUMENT VERIFICATION =============
+
+@login_required
+
+def constituency_document_verification(request):
+    """
+    Document verification dashboard
+    """
+    constituency = get_user_constituency(request.user)
+    
+    # Get applications with unverified documents
+    pending_verification = Document.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both'],
+        is_verified=False
+    ).select_related(
+        'application__applicant__user',
+        'application'
+    ).order_by('-uploaded_at')
+    
+    # Statistics
+    total_documents = Document.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both']
+    ).count()
+    
+    verified_count = Document.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both'],
+        is_verified=True
+    ).count()
+    
+    # Document type breakdown
+    doc_type_stats = Document.objects.filter(
+        application__applicant__constituency=constituency,
+        application__bursary_source__in=['cdf', 'both']
+    ).values('document_type').annotate(
+        total=Count('id'),
+        verified=Count('id', filter=Q(is_verified=True))
+    )
+    
+    context = {
+        'constituency': constituency,
+        'pending_verification': pending_verification[:50],
+        'total_documents': total_documents,
+        'verified_count': verified_count,
+        'pending_count': total_documents - verified_count,
+        'doc_type_stats': doc_type_stats,
+    }
+    
+    return render(request, 'constituency_admin/document_verification.html', context)
+
+
+@login_required
+
+def constituency_verify_document(request, document_id):
+    """
+    Verify or reject a document
+    """
+    constituency = get_user_constituency(request.user)
+    
+    document = get_object_or_404(
+        Document,
+        id=document_id,
+        application__applicant__constituency=constituency
+    )
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')  # 'verify' or 'reject'
+        
+        if action == 'verify':
+            document.is_verified = True
+            document.verified_by = request.user
+            document.save()
+            
+            messages.success(request, f'{document.get_document_type_display()} verified successfully.')
+            
+            # Check if all required documents are verified
+            validation = validate_application_documents(document.application)
+            if validation['is_complete']:
+                # Notify applicant
+                from .models import Notification
+                Notification.objects.create(
+                    user=document.application.applicant.user,
+                    notification_type='document_request',
+                    title='All Documents Verified',
+                    message='All your submitted documents have been verified. Your application is being processed.',
+                    related_application=document.application
+                )
+        
+        elif action == 'reject':
+            rejection_reason = request.POST.get('rejection_reason')
+            # You might want to add a rejection_reason field to Document model
+            document.is_verified = False
+            document.save()
+            
+            # Notify applicant about rejection
+            from .models import Notification
+            Notification.objects.create(
+                user=document.application.applicant.user,
+                notification_type='document_request',
+                title='Document Rejected',
+                message=f'Your {document.get_document_type_display()} was rejected. Reason: {rejection_reason}. Please upload a new document.',
+                related_application=document.application
+            )
+            
+            messages.warning(request, f'{document.get_document_type_display()} rejected.')
+        
+        create_audit_log(
+            request.user, 'update', 'Document', document.id,
+            f"{action} document {document.get_document_type_display()} for application {document.application.application_number}",
+            request
+        )
+        
+        return redirect('constituency_document_verification')
+    
+    context = {
+        'document': document,
+    }
+    
+    return render(request, 'constituency_admin/verify_document.html', context)
+
+
+# ============= PERFORMANCE TRACKING =============
+
+@login_required
+
+def constituency_performance_metrics(request):
+    """
+    Track constituency performance metrics
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get date range
+    start_date = current_fiscal_year.start_date if current_fiscal_year else timezone.now() - timedelta(days=365)
+    end_date = timezone.now()
+    
+    # Processing speed metrics
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    # Average processing time
+    processed_apps = applications.exclude(status='draft').exclude(date_submitted__isnull=True)
+    
+    processing_times = []
+    for app in processed_apps:
+        if app.date_submitted and app.allocation:
+            delta = (app.allocation.allocation_date - app.date_submitted.date()).days
+            processing_times.append(delta)
+    
+    avg_processing_time = sum(processing_times) / len(processing_times) if processing_times else 0
+    
+    # Approval rate
+    total_submitted = applications.filter(status__in=['approved', 'rejected']).count()
+    approved_count = applications.filter(status='approved').count()
+    approval_rate = (approved_count / total_submitted * 100) if total_submitted > 0 else 0
+    
+    # Disbursement rate
+    total_approved = applications.filter(status='approved').count()
+    disbursed_count = applications.filter(status='disbursed').count()
+    disbursement_rate = (disbursed_count / total_approved * 100) if total_approved > 0 else 0
+    
+    # Monthly trends
+    monthly_stats = []
+    for i in range(6):
+        month_start = end_date - timedelta(days=30*(i+1))
+        month_end = end_date - timedelta(days=30*i)
+        
+        month_apps = applications.filter(
+            date_submitted__gte=month_start,
+            date_submitted__lt=month_end
+        )
+        
+        monthly_stats.append({
+            'month': month_start.strftime('%B %Y'),
+            'applications': month_apps.count(),
+            'approved': month_apps.filter(status='approved').count(),
+            'amount_allocated': Allocation.objects.filter(
+                application__in=month_apps
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+        })
+    
+    monthly_stats.reverse()
+    
+    # Ward performance comparison
+    ward_performance = []
+    for ward in constituency.wards.all():
+        ward_apps = applications.filter(applicant__ward=ward)
+        
+        ward_processed = ward_apps.exclude(status='draft')
+        ward_processing_times = []
+        
+        for app in ward_processed:
+            if app.date_submitted and hasattr(app, 'allocation') and app.allocation:
+                delta = (app.allocation.allocation_date - app.date_submitted.date()).days
+                ward_processing_times.append(delta)
+        
+        ward_performance.append({
+            'ward': ward.name,
+            'applications': ward_apps.count(),
+            'approval_rate': (ward_apps.filter(status='approved').count() / ward_apps.count() * 100) if ward_apps.count() > 0 else 0,
+            'avg_processing_days': sum(ward_processing_times) / len(ward_processing_times) if ward_processing_times else 0
+        })
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'avg_processing_time': avg_processing_time,
+        'approval_rate': approval_rate,
+        'disbursement_rate': disbursement_rate,
+        'monthly_stats': monthly_stats,
+        'ward_performance': ward_performance,
+    }
+    
+    return render(request, 'constituency_admin/performance_metrics.html', context)
+
+
+# ============= INSTITUTION MANAGEMENT =============
+
+@login_required
+
+def constituency_institutions(request):
+    """
+    Manage institutions and their beneficiaries
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get institutions with students from this constituency
+    institutions_data = []
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    institutions = Institution.objects.filter(
+        id__in=applications.values_list('institution', flat=True).distinct()
+    )
+    
+    for institution in institutions:
+        inst_apps = applications.filter(institution=institution)
+        
+        institutions_data.append({
+            'institution': institution,
+            'student_count': inst_apps.count(),
+            'approved_count': inst_apps.filter(status='approved').count(),
+            'total_allocated': Allocation.objects.filter(
+                application__in=inst_apps
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+            'disbursed_count': inst_apps.filter(status='disbursed').count(),
+        })
+    
+    # Sort by student count
+    institutions_data.sort(key=lambda x: x['student_count'], reverse=True)
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'institutions_data': institutions_data,
+    }
+    
+    return render(request, 'constituency_admin/institutions.html', context)
+
+
+@login_required
+
+def constituency_institution_detail(request, institution_id):
+    """
+    Detailed view of institution beneficiaries
+    """
+    constituency = get_user_constituency(request.user)
+    institution = get_object_or_404(Institution, id=institution_id)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get all applications for this institution from this constituency
+    applications = Application.objects.filter(
+        institution=institution,
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    ).select_related('applicant__user', 'applicant__ward')
+    
+    # Statistics
+    stats = {
+        'total_students': applications.count(),
+        'approved': applications.filter(status='approved').count(),
+        'pending': applications.filter(status='submitted').count(),
+        'disbursed': applications.filter(status='disbursed').count(),
+    }
+    
+    # Financial summary
+    financial = {
+        'total_allocated': Allocation.objects.filter(
+            application__in=applications
+        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+        'total_disbursed': applications.filter(
+            status='disbursed'
+        ).aggregate(Sum('allocation__amount_allocated'))['allocation__amount_allocated__sum'] or 0,
+    }
+    
+    # Ward breakdown
+    ward_breakdown = applications.values(
+        'applicant__ward__name'
+    ).annotate(
+        count=Count('id'),
+        allocated=Sum('allocation__amount_allocated')
+    ).order_by('-count')
+    
+    context = {
+        'institution': institution,
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'applications': applications,
+        'stats': stats,
+        'financial': financial,
+        'ward_breakdown': ward_breakdown,
+    }
+    
+    return render(request, 'constituency_admin/institution_detail.html', context)
+
+
+# ============= COMPARISON & BENCHMARKING =============
+
+@login_required
+
+def constituency_ward_comparison(request):
+    """
+    Compare performance across wards
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    ward_comparison = []
+    
+    for ward in constituency.wards.all():
+        applications = Application.objects.filter(
+            applicant__ward=ward,
+            bursary_source__in=['cdf', 'both'],
+            fiscal_year=current_fiscal_year
+        )
+        
+        total_apps = applications.count()
+        approved = applications.filter(status='approved').count()
+        
+        ward_data = {
+            'ward': ward,
+            'population': ward.population or 0,
+            'total_applications': total_apps,
+            'approved_applications': approved,
+            'approval_rate': (approved / total_apps * 100) if total_apps > 0 else 0,
+            'total_allocated': Allocation.objects.filter(
+                application__in=applications
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0,
+            'per_capita_allocation': 0,
+            'gender_balance': {
+                'male': applications.filter(applicant__gender='M', status='approved').count(),
+                'female': applications.filter(applicant__gender='F', status='approved').count(),
+            }
+        }
+        
+        # Calculate per capita if population is available
+        if ward.population and ward.population > 0:
+            ward_data['per_capita_allocation'] = ward_data['total_allocated'] / ward.population
+        
+        ward_comparison.append(ward_data)
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'ward_comparison': ward_comparison,
+    }
+    
+    return render(request, 'constituency_admin/ward_comparison.html', context)
+
+
+# ============= EXPORT & DATA MANAGEMENT =============
+
+@login_required
+
+def constituency_export_data(request):
+    """
+    Export constituency data in various formats
+    """
+    constituency = get_user_constituency(request.user)
+    
+    export_type = request.GET.get('type')
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    if not fiscal_year_id:
+        messages.error(request, "Please select a fiscal year.")
+        return redirect('constituency_reports')
+    
+    fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=fiscal_year
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'bursary_category'
+    )
+    
+    if export_type == 'all_applications':
+        filename = f'CDF_Applications_{constituency.name}_{fiscal_year.name}.xlsx'
+        return export_applications_to_excel(applications, filename)
+    
+    elif export_type == 'approved_only':
+        approved_apps = applications.filter(status='approved')
+        filename = f'CDF_Approved_{constituency.name}_{fiscal_year.name}.xlsx'
+        return export_applications_to_excel(approved_apps, filename)
+    
+    elif export_type == 'disbursed_only':
+        disbursed_apps = applications.filter(status='disbursed')
+        filename = f'CDF_Disbursed_{constituency.name}_{fiscal_year.name}.xlsx'
+        return export_applications_to_excel(disbursed_apps, filename)
+    
+    messages.error(request, "Invalid export type.")
+    return redirect('constituency_reports')
+
+
+@login_required
+
+def constituency_print_cheque_list(request):
+    """
+    Generate printable cheque collection list
+    """
+    from .models import BulkCheque
+    
+    constituency = get_user_constituency(request.user)
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    if not fiscal_year_id:
+        messages.error(request, "Please select a fiscal year.")
+        return redirect('constituency_bulk_cheques')
+    
+    fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    
+    bulk_cheques = BulkCheque.objects.filter(
+        institution__county=constituency.county,
+        fiscal_year=fiscal_year
+    ).select_related('institution').prefetch_related('allocations')
+    
+    context = {
+        'constituency': constituency,
+        'fiscal_year': fiscal_year,
+        'bulk_cheques': bulk_cheques,
+        'generated_date': timezone.now(),
+    }
+    
+    return render(request, 'constituency_admin/print_cheque_list.html', context)
+
+
+# ============= AJAX ENDPOINTS =============
+
+@login_required
+
+def constituency_ajax_ward_stats(request, ward_id):
+    """
+    AJAX endpoint for ward statistics
+    """
+    constituency = get_user_constituency(request.user)
+    ward = get_object_or_404(Ward, id=ward_id, constituency=constituency)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    data = {
+        'ward_name': ward.name,
+        'total_applications': applications.count(),
+        'approved': applications.filter(status='approved').count(),
+        'pending': applications.filter(status='submitted').count(),
+        'rejected': applications.filter(status='rejected').count(),
+        'total_allocated': float(
+            Allocation.objects.filter(
+                application__in=applications
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+        )
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+
+def constituency_ajax_application_search(request):
+    """
+    AJAX search for applications
+    """
+    constituency = get_user_constituency(request.user)
+    query = request.GET.get('q', '')
+    
+    if len(query) < 3:
+        return JsonResponse({'results': []})
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both']
+    ).filter(
+        Q(application_number__icontains=query) |
+        Q(applicant__user__first_name__icontains=query) |
+        Q(applicant__user__last_name__icontains=query) |
+        Q(applicant__id_number__icontains=query)
+    )[:10]
+    
+    results = []
+    for app in applications:
+        results.append({
+            'id': app.id,
+            'application_number': app.application_number,
+            'name': app.applicant.user.get_full_name(),
+            'id_number': app.applicant.id_number,
+            'status': app.get_status_display(),
+            'ward': app.applicant.ward.name if app.applicant.ward else 'N/A'
+        })
+    
+    return JsonResponse({'results': results})
+
+
+@login_required
+
+def constituency_ajax_quick_stats(request):
+    """
+    Quick stats for dashboard refresh
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    )
+    
+    data = {
+        'total_applications': applications.count(),
+        'pending_review': applications.filter(status='submitted').count(),
+        'approved': applications.filter(status='approved').count(),
+        'total_allocated': float(
+            Allocation.objects.filter(
+                application__in=applications
+            ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
+        ),
+        'last_updated': timezone.now().isoformat()
+    }
+    
+    return JsonResponse(data)
+
+
+# ============= QUALITY ASSURANCE =============
+
+@login_required
+
+def constituency_quality_checks(request):
+    """
+    Quality assurance checks for applications
+    """
+    constituency = get_user_constituency(request.user)
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
+        fiscal_year=current_fiscal_year
+    ).select_related('applicant__user', 'institution')
+    
+    issues = {
+        'missing_documents': [],
+        'incomplete_info': [],
+        'high_amounts': [],
+        'duplicate_risk': [],
+    }
+    
+    # Check for missing documents
+    for app in applications.filter(status__in=['submitted', 'under_review']):
+        doc_count = app.documents.filter(is_verified=True).count()
+        if doc_count < 3:
+            issues['missing_documents'].append(app)
+    
+    # Check for incomplete information
+    for app in applications:
+        if not app.applicant.guardians.exists():
+            issues['incomplete_info'].append(app)
+    
+    # Check for unusually high amounts
+    avg_amount = applications.aggregate(Avg('amount_requested'))['amount_requested__avg'] or 0
+    for app in applications:
+        if app.amount_requested > avg_amount * 2:
+            issues['high_amounts'].append(app)
+    
+    # Check for potential duplicates (same ID number)
+    duplicates = applications.values('applicant__id_number').annotate(
+        count=Count('id')
+    ).filter(count__gt=1)
+    
+    for dup in duplicates:
+        apps = applications.filter(applicant__id_number=dup['applicant__id_number'])
+        issues['duplicate_risk'].extend(apps)
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'issues': issues,
+    }
+    
+    return render(request, 'constituency_admin/quality_checks.html', context)
