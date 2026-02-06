@@ -10,14 +10,18 @@
 
     <div class="menu-section">
         <div class="menu-title">Main Menu</div>
-        <a href="#" class="menu-item">
+        <a href="{% url 'constituency_dashboard' %}" class="menu-item">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
+        </a>
+        <a href="{% url 'constituency_analytics' %}" class="menu-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
         </a>
     </div>
 
     <div class="menu-section">
-        <div class="menu-title">Constituency Management</div>
+        <div class="menu-title">Application Management</div>
         
         <div class="menu-item has-submenu" data-submenu="applications">
             <i class="fas fa-file-alt"></i>
@@ -25,27 +29,103 @@
             <i class="fas fa-chevron-right arrow"></i>
         </div>
         <div class="submenu" id="submenu-applications">
-            <a href="#" class="submenu-item">Constituency Applications</a>
-            <a href="#" class="submenu-item">Ward Breakdown</a>
+            <a href="{% url 'constituency_applications_list' %}" class="submenu-item">All Applications</a>
+            <a href="{% url 'constituency_applications_list' %}?status=submitted" class="submenu-item">Pending Review</a>
+            <a href="{% url 'constituency_applications_list' %}?status=approved" class="submenu-item">Approved</a>
+            <a href="{% url 'constituency_applications_list' %}?status=rejected" class="submenu-item">Rejected</a>
         </div>
 
-        <a href="#" class="menu-item">
+        <a href="{% url 'constituency_wards_overview' %}" class="menu-item">
             <i class="fas fa-map-marker-alt"></i>
             <span>Ward Overview</span>
         </a>
 
-        <a href="#" class="menu-item">
+        <a href="{% url 'constituency_beneficiaries' %}" class="menu-item">
             <i class="fas fa-users"></i>
             <span>Beneficiaries</span>
         </a>
     </div>
 
     <div class="menu-section">
-        <div class="menu-title">Reports</div>
+        <div class="menu-title">Financial Management</div>
         
-        <a href="#" class="menu-item">
+        <div class="menu-item has-submenu" data-submenu="disbursements">
+            <i class="fas fa-money-check-alt"></i>
+            <span>Disbursements</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-disbursements">
+            <a href="{% url 'constituency_disbursements' %}" class="submenu-item">All Disbursements</a>
+            <a href="{% url 'constituency_disbursements' %}?status=pending" class="submenu-item">Pending</a>
+            <a href="{% url 'constituency_disbursements' %}?status=completed" class="submenu-item">Completed</a>
+        </div>
+
+        <div class="menu-item has-submenu" data-submenu="bulk-cheques">
+            <i class="fas fa-receipt"></i>
+            <span>Bulk Cheques</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-bulk-cheques">
+            <a href="{% url 'constituency_bulk_cheques' %}" class="submenu-item">All Bulk Cheques</a>
+            <a href="{% url 'constituency_create_bulk_cheque' %}" class="submenu-item">Create New</a>
+        </div>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Reports & Documents</div>
+        
+        <div class="menu-item has-submenu" data-submenu="reports">
             <i class="fas fa-chart-bar"></i>
-            <span>Constituency Reports</span>
+            <span>Reports</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-reports">
+            <a href="{% url 'constituency_reports' %}" class="submenu-item">All Reports</a>
+            <a href="{% url 'constituency_generate_beneficiary_list' %}" class="submenu-item">Beneficiary List</a>
+            <a href="{% url 'constituency_financial_report' %}" class="submenu-item">Financial Report</a>
+        </div>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Communication</div>
+        
+        <a href="{% url 'constituency_send_notifications' %}" class="menu-item">
+            <i class="fas fa-bell"></i>
+            <span>Send Notifications</span>
+        </a>
+
+        <a href="{% url 'bulk_sms' %}" class="menu-item">
+            <i class="fas fa-sms"></i>
+            <span>Bulk SMS</span>
+        </a>
+
+        <a href="{% url 'bulk_email' %}" class="menu-item">
+            <i class="fas fa-envelope"></i>
+            <span>Bulk Email</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-title">Settings</div>
+        
+        <a href="{% url 'constituency_settings' %}" class="menu-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+
+        <a href="{% url 'admin_profile_settings' %}" class="menu-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+
+        <a href="{% url 'admin_help_support' %}" class="menu-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Help & Support</span>
+        </a>
+
+        <a href="{% url 'logout_view' %}" class="menu-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
         </a>
     </div>
 </div>
