@@ -16408,6 +16408,44 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Sum, Count, Q, Avg
+from django.utils import timezone
+from datetime import timedelta, datetime
+from decimal import Decimal
+import json
+from .models import *
+
+def is_constituency_admin(user):
+    """Check if user is a constituency administrator"""
+    return user.user_type == 'constituency_admin'
+
+def create_audit_log(user, action, table, record_id, description, request):
+    """Helper function to create audit logs"""
+    try:
+        AuditLog.objects.create(
+            user=user,
+            action=action,
+            table_affected=table,
+            record_id=record_id,
+            description=description,
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+    except:
+        pass
+
+def get_client_ip(request):
+    """Get client IP address"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 @login_required
 @user_passes_test(is_constituency_admin)
 def constituency_dashboard(request):
@@ -16477,8 +16515,13 @@ def constituency_dashboard(request):
         application__in=cdf_applications
     ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
     
+    # Get allocations for CDF applications
+    cdf_allocations = Allocation.objects.filter(
+        application__in=cdf_applications
+    )
+    
     total_disbursed = Disbursement.objects.filter(
-        application__in=cdf_applications,
+        allocation__in=cdf_allocations,
         status='completed'
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
     
@@ -16587,7 +16630,7 @@ def constituency_dashboard(request):
         
         # Disbursements in this month
         month_disbursements = Disbursement.objects.filter(
-            application__in=cdf_applications,
+            allocation__application__in=cdf_applications,
             disbursement_date__gte=month_start.date(),
             disbursement_date__lt=month_end.date(),
             status='completed'
