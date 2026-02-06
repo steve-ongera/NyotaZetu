@@ -1,311 +1,492 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> - Constituency Admin</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #1a5f7a;
-            --secondary-color: #2c7873;
-            --accent-color: #ffc107;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-        }
-        
-        .sidebar {
-            background-color: var(--primary-color);
-            min-height: 100vh;
-            color: white;
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-brand {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-nav {
-            padding: 20px 0;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 2px 0;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left: 4px solid var(--accent-color);
-        }
-        
-        .main-content {
-            padding: 20px;
-        }
-        
-        .page-header {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .icon {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .data-table {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background-color: var(--light-bg);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status-submitted { background-color: #fff3cd; color: #856404; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .status-disbursed { background-color: #d1ecf1; color: #0c5460; }
-        
-        .alert-custom {
-            border-left: 4px solid;
-            border-radius: 4px;
-        }
-        
-        .chart-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .filter-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .profile-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                min-height: auto;
-            }
-            
-            .main-content {
-                padding: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="sidebar-brand">
-                    <h4><i class="fas fa-landmark"></i> CDF Admin</h4>
-                    <small class="text-muted">Constituency Portal</small>
-                </div>
-                
-                <div class="sidebar-nav">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-alt me-2"></i> Applications
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-users me-2"></i> Beneficiaries
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-map-marker-alt me-2"></i> Ward Management
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-money-check-alt me-2"></i> Disbursements
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-university me-2"></i> Institutions
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-upload me-2"></i> Document Verification
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-cog me-2"></i> Settings
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="mt-4 px-3">
-                    <div class="card bg-dark text-white">
-                        <div class="card-body">
-                            <h6><i class="fas fa-user-circle me-2"></i> Admin Profile</h6>
-                            <p class="small mb-1">Constituency: <strong>N/A</strong></p>
-                            <p class="small mb-0">Last Login: <strong>--/--/----</strong></p>
-                        </div>
-                    </div>
-                </div>
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Financial Report - {{ constituency.name }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <a href="{% url 'constituency_reports' %}">Reports</a>
+        <span class="separator">/</span>
+        <span class="current">Financial Report</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Financial Report</h1>
+            <p>{{ constituency.name }} Constituency - {{ fiscal_year.name }}</p>
+        </div>
+        <div class="header-actions">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="icon-print"></i> Print Report
+            </button>
+            <a href="{% url 'constituency_export_data' %}?type=financial&fiscal_year={{ fiscal_year.id }}" 
+               class="btn btn-primary">
+                <i class="icon-download"></i> Export to Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Period -->
+    <div class="report-period">
+        <h3>Report Period</h3>
+        <div class="period-info">
+            <div class="period-item">
+                <label>Fiscal Year</label>
+                <p>{{ fiscal_year.name }}</p>
             </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
-                <!-- Page Header -->
-                <div class="page-header">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h1 class="h3 mb-0">
-                                Financial Report
-                            </h1>
-                            <p class="text-muted mb-0">
-                                Comprehensive financial reporting
-                            </p>
-                        </div>
-                        <div class="col-auto">
-                            <div class="btn-group">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-download me-2"></i> Export
-                                </button>
-                                <button class="btn btn-outline-primary">
-                                    <i class="fas fa-print me-2"></i> Print
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Template-specific content area -->
-                <div class="content-area">
-                    <div class="alert alert-info alert-custom">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Template Placeholder:</strong> This is the Financial Report template. Content will be dynamically loaded here.
-                    </div>
-                    
-                    <!-- Dynamic content will be loaded here based on view context -->
-                    <div class="placeholder-content text-center py-5">
-                        <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
-                        <h4 class="text-muted">Financial Report Viewer</h4>
-                        <p class="text-muted">This content will be dynamically populated by Django view context.</p>
-                        
-                        <!-- Sample data table for list views -->
-                        
-                        
-                        <!-- Sample form for form views -->
-                        
-                    </div>
-                </div>
-                
-                <!-- Footer -->
-                <footer class="mt-4 text-center text-muted">
-                    <hr>
-                    <p class="small">
-                        <i class="fas fa-copyright"></i> 2026 NG-CDF Bursary Management System | 
-                        Constituency Admin Portal | Version 1.0
-                    </p>
-                </footer>
+            <div class="period-item">
+                <label>Start Date</label>
+                <p>{{ fiscal_year.start_date|date:"M d, Y" }}</p>
+            </div>
+            <div class="period-item">
+                <label>End Date</label>
+                <p>{{ fiscal_year.end_date|date:"M d, Y" }}</p>
+            </div>
+            <div class="period-item">
+                <label>Report Generated</label>
+                <p>{{ now|date:"M d, Y H:i" }}</p>
             </div>
         </div>
     </div>
+
+    <!-- Summary Statistics -->
+    <div class="content-section">
+        <h2>Financial Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-applications"></i>
+                    <span>Applications</span>
+                </div>
+                <div class="stat-value">{{ summary.total_applications|intcomma }}</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-check"></i>
+                    <span>Approved</span>
+                </div>
+                <div class="stat-value">{{ summary.approved_applications|intcomma }}</div>
+                <div class="stat-label">Approved Applications</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-money"></i>
+                    <span>Requested</span>
+                </div>
+                <div class="stat-value">KES {{ summary.total_requested|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Amount Requested</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-wallet"></i>
+                    <span>Allocated</span>
+                </div>
+                <div class="stat-value">KES {{ summary.total_allocated|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Amount Allocated</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-cash"></i>
+                    <span>Disbursed</span>
+                </div>
+                <div class="stat-value">KES {{ summary.total_disbursed|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Amount Disbursed</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="icon-percent"></i>
+                    <span>Utilization</span>
+                </div>
+                <div class="stat-value">
+                    {% if summary.total_requested > 0 %}
+                    {% widthratio summary.total_allocated summary.total_requested 100 %}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </div>
+                <div class="stat-label">Budget Utilization</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ward Breakdown -->
+    <div class="content-section">
+        <h2>Ward-wise Financial Breakdown</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ward Name</th>
+                        <th>Applications</th>
+                        <th>Amount Allocated</th>
+                        <th>Percentage of Total</th>
+                        <th>Per Capita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ward in ward_breakdown %}
+                    <tr>
+                        <td><strong>{{ ward.ward }}</strong></td>
+                        <td>{{ ward.applications }}</td>
+                        <td>KES {{ ward.allocated|floatformat:2|intcomma }}</td>
+                        <td>
+                            {% if summary.total_allocated > 0 %}
+                            {% widthratio ward.allocated summary.total_allocated 100 %}%
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ward.applications > 0 %}
+                            KES {% widthratio ward.allocated ward.applications 1 %}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No ward data available</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>{{ summary.total_applications }}</strong></td>
+                        <td><strong>KES {{ summary.total_allocated|floatformat:2|intcomma }}</strong></td>
+                        <td><strong>100%</strong></td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Budget Analysis -->
+    <div class="content-section">
+        <h2>Budget Analysis</h2>
+        <div class="budget-analysis">
+            <div class="budget-item">
+                <div class="budget-label">CDF Bursary Budget</div>
+                <div class="budget-amount">KES {{ constituency.cdf_bursary_allocation|floatformat:2|intcomma }}</div>
+                <div class="budget-bar">
+                    <div class="budget-bar-fill" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="budget-item">
+                <div class="budget-label">Amount Allocated</div>
+                <div class="budget-amount">KES {{ summary.total_allocated|floatformat:2|intcomma }}</div>
+                <div class="budget-bar">
+                    <div class="budget-bar-fill allocated" 
+                         style="width: {% if constituency.cdf_bursary_allocation > 0 %}{% widthratio summary.total_allocated constituency.cdf_bursary_allocation 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="budget-percentage">
+                    {% if constituency.cdf_bursary_allocation > 0 %}
+                    {% widthratio summary.total_allocated constituency.cdf_bursary_allocation 100 %}% of budget
+                    {% else %}
+                    0% of budget
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="budget-item">
+                <div class="budget-label">Amount Disbursed</div>
+                <div class="budget-amount">KES {{ summary.total_disbursed|floatformat:2|intcomma }}</div>
+                <div class="budget-bar">
+                    <div class="budget-bar-fill disbursed" 
+                         style="width: {% if summary.total_allocated > 0 %}{% widthratio summary.total_disbursed summary.total_allocated 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+                <div class="budget-percentage">
+                    {% if summary.total_allocated > 0 %}
+                    {% widthratio summary.total_disbursed summary.total_allocated 100 %}% of allocated
+                    {% else %}
+                    0% of allocated
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="budget-item">
+                <div class="budget-label">Remaining Budget</div>
+                <div class="budget-amount remaining">
+                    KES {% widthratio constituency.cdf_bursary_allocation 1 1 %}
+                </div>
+                <div class="budget-note">
+                    Available for future allocations
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="content-section">
+        <h2>Key Performance Indicators</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Average Allocation per Student</div>
+                <div class="metric-value">
+                    {% if summary.approved_applications > 0 %}
+                    KES {% widthratio summary.total_allocated summary.approved_applications 1 %}
+                    {% else %}
+                    KES 0
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Approval Rate</div>
+                <div class="metric-value">
+                    {% if summary.total_applications > 0 %}
+                    {% widthratio summary.approved_applications summary.total_applications 100 %}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Disbursement Rate</div>
+                <div class="metric-value">
+                    {% if summary.approved_applications > 0 %}
+                    {% widthratio summary.total_disbursed summary.total_allocated 100 %}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Number of Wards Served</div>
+                <div class="metric-value">{{ ward_breakdown|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Footer -->
+    <div class="report-footer">
+        <div class="footer-content">
+            <p><strong>Report Generated:</strong> {{ now|date:"F d, Y \a\\t H:i" }}</p>
+            <p><strong>Generated By:</strong> {{ request.user.get_full_name }}</p>
+            <p><strong>Constituency:</strong> {{ constituency.name }}</p>
+            <p><strong>Fiscal Year:</strong> {{ fiscal_year.name }}</p>
+        </div>
+        <div class="footer-note">
+            <p>This is a system-generated report. All figures are as of the generation date.</p>
+            <p>For inquiries, contact: {{ constituency.cdf_office_email|default:"N/A" }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.report-period {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.report-period h3 {
+    margin: 0 0 15px 0;
+}
+
+.period-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.period-item label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.period-item p {
+    margin: 0;
+    font-weight: bold;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: #666;
+    font-size: 14px;
+}
+
+.stat-header i {
+    font-size: 20px;
+    color: #0066cc;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #666;
+}
+
+.total-row {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+.budget-analysis {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.budget-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.budget-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.budget-amount {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.budget-amount.remaining {
+    color: #10b981;
+}
+
+.budget-bar {
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.budget-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0066cc, #0088ff);
+    transition: width 0.3s;
+}
+
+.budget-bar-fill.allocated {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.budget-bar-fill.disbursed {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.budget-percentage {
+    font-size: 13px;
+    color: #666;
+}
+
+.budget-note {
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #0066cc 0%, #0088ff 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 14px;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.metric-value {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.report-footer {
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 2px solid #ddd;
+}
+
+.footer-content {
+    margin-bottom: 20px;
+}
+
+.footer-content p {
+    margin: 5px 0;
+    color: #666;
+}
+
+.footer-note {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #0066cc;
+}
+
+.footer-note p {
+    margin: 5px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+@media print {
+    .page-header .header-actions,
+    .breadcrumb {
+        display: none;
+    }
     
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-        // Template-specific initialization
-        
-        
-        // Common functionality
-                // Toggle sidebar on mobile
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('d-none');
-        }
-        
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').textContent = 
-                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-        }
-        
-        // Initialize
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+    .content-section {
+        page-break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}

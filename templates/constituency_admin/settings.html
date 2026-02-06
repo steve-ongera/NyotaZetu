@@ -1,311 +1,248 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> - Constituency Admin</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #1a5f7a;
-            --secondary-color: #2c7873;
-            --accent-color: #ffc107;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-        }
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Settings - {{ constituency.name }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <span class="current">Settings</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Constituency Settings</h1>
+        <p>Manage {{ constituency.name }} Constituency Information</p>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="content-section">
+        <h2>CDF Office Information</h2>
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-        }
-        
-        .sidebar {
-            background-color: var(--primary-color);
-            min-height: 100vh;
-            color: white;
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-brand {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-nav {
-            padding: 20px 0;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 2px 0;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left: 4px solid var(--accent-color);
-        }
-        
-        .main-content {
-            padding: 20px;
-        }
-        
-        .page-header {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .icon {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .data-table {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background-color: var(--light-bg);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status-submitted { background-color: #fff3cd; color: #856404; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .status-disbursed { background-color: #d1ecf1; color: #0c5460; }
-        
-        .alert-custom {
-            border-left: 4px solid;
-            border-radius: 4px;
-        }
-        
-        .chart-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .filter-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .profile-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                min-height: auto;
-            }
+        <form method="post">
+            {% csrf_token %}
             
-            .main-content {
-                padding: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="sidebar-brand">
-                    <h4><i class="fas fa-landmark"></i> CDF Admin</h4>
-                    <small class="text-muted">Constituency Portal</small>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="current_mp">Current Member of Parliament</label>
+                    <input type="text" name="current_mp" id="current_mp" class="form-control" 
+                           value="{{ constituency.current_mp }}" placeholder="Enter MP name">
                 </div>
-                
-                <div class="sidebar-nav">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-alt me-2"></i> Applications
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-users me-2"></i> Beneficiaries
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-map-marker-alt me-2"></i> Ward Management
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-money-check-alt me-2"></i> Disbursements
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-university me-2"></i> Institutions
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-upload me-2"></i> Document Verification
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#">
-                                <i class="fas fa-cog me-2"></i> Settings
-                            </a>
-                        </li>
-                    </ul>
+
+                <div class="form-group">
+                    <label for="cdf_office_email">CDF Office Email</label>
+                    <input type="email" name="cdf_office_email" id="cdf_office_email" class="form-control" 
+                           value="{{ constituency.cdf_office_email }}" placeholder="cdf@example.com">
                 </div>
-                
-                <div class="mt-4 px-3">
-                    <div class="card bg-dark text-white">
-                        <div class="card-body">
-                            <h6><i class="fas fa-user-circle me-2"></i> Admin Profile</h6>
-                            <p class="small mb-1">Constituency: <strong>N/A</strong></p>
-                            <p class="small mb-0">Last Login: <strong>--/--/----</strong></p>
-                        </div>
-                    </div>
+
+                <div class="form-group">
+                    <label for="cdf_office_phone">CDF Office Phone</label>
+                    <input type="tel" name="cdf_office_phone" id="cdf_office_phone" class="form-control" 
+                           value="{{ constituency.cdf_office_phone }}" placeholder="+254XXXXXXXXX">
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="cdf_office_location">CDF Office Location/Address</label>
+                    <textarea name="cdf_office_location" id="cdf_office_location" class="form-control" 
+                              rows="3" placeholder="Enter office location">{{ constituency.cdf_office_location }}</textarea>
                 </div>
             </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
-                <!-- Page Header -->
-                <div class="page-header">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h1 class="h3 mb-0">
-                                Settings
-                            </h1>
-                            <p class="text-muted mb-0">
-                                Constituency settings and configuration
-                            </p>
-                        </div>
-                        <div class="col-auto">
-                            <div class="btn-group">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-download me-2"></i> Export
-                                </button>
-                                <button class="btn btn-outline-primary">
-                                    <i class="fas fa-print me-2"></i> Print
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Template-specific content area -->
-                <div class="content-area">
-                    <div class="alert alert-info alert-custom">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Template Placeholder:</strong> This is the Settings template. Content will be dynamically loaded here.
-                    </div>
-                    
-                    <!-- Dynamic content will be loaded here based on view context -->
-                    <div class="placeholder-content text-center py-5">
-                        <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
-                        <h4 class="text-muted">Settings Configuration Panel</h4>
-                        <p class="text-muted">This content will be dynamically populated by Django view context.</p>
-                        
-                        <!-- Sample data table for list views -->
-                        
-                        
-                        <!-- Sample form for form views -->
-                        
-                    </div>
-                </div>
-                
-                <!-- Footer -->
-                <footer class="mt-4 text-center text-muted">
-                    <hr>
-                    <p class="small">
-                        <i class="fas fa-copyright"></i> 2026 NG-CDF Bursary Management System | 
-                        Constituency Admin Portal | Version 1.0
-                    </p>
-                </footer>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="icon-save"></i> Save Changes
+                </button>
+                <a href="{% url 'constituency_dashboard' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Constituency Information (Read-only) -->
+    <div class="content-section">
+        <h2>Constituency Information</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Constituency Name</label>
+                <p>{{ constituency.name }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Constituency Code</label>
+                <p>{{ constituency.code }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>County</label>
+                <p>{{ constituency.county.name }}</p>
+            </div>
+
+            {% if constituency.population %}
+            <div class="info-item">
+                <label>Population</label>
+                <p>{{ constituency.population|intcomma }}</p>
+            </div>
+            {% endif %}
+
+            <div class="info-item">
+                <label>Number of Wards</label>
+                <p>{{ constituency.wards.count }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Status</label>
+                <p>
+                    {% if constituency.is_active %}
+                    <span class="badge badge-success">Active</span>
+                    {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </p>
             </div>
         </div>
+
+        <div class="info-note">
+            <p><strong>Note:</strong> To update constituency name, code, or other core information, please contact the system administrator.</p>
+        </div>
     </div>
-    
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-        // Template-specific initialization
-        
-        
-        // Common functionality
-                // Toggle sidebar on mobile
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('d-none');
-        }
-        
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').textContent = 
-                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-        }
-        
-        // Initialize
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+
+    <!-- CDF Budget Information (Read-only) -->
+    <div class="content-section">
+        <h2>CDF Budget Information</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Annual CDF Allocation</label>
+                <p>KES {{ constituency.annual_cdf_allocation|floatformat:2|intcomma }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>CDF Bursary Allocation</label>
+                <p>KES {{ constituency.cdf_bursary_allocation|floatformat:2|intcomma }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Bursary Percentage</label>
+                <p>
+                    {% if constituency.annual_cdf_allocation > 0 %}
+                    {{ constituency.cdf_bursary_allocation|floatformat:0|intcomma|div:constituency.annual_cdf_allocation|mul:100|floatformat:1 }}%
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="info-note">
+            <p><strong>Note:</strong> Budget allocations are set at the national level. Contact the CDF Board for budget adjustments.</p>
+        </div>
+    </div>
+
+    <!-- Ward List -->
+    <div class="content-section">
+        <div class="section-header">
+            <h2>Wards in {{ constituency.name }}</h2>
+            <a href="{% url 'constituency_wards_overview' %}" class="btn btn-link">
+                View Ward Details
+            </a>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ward Name</th>
+                        <th>Current MCA</th>
+                        <th>Population</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ward in constituency.wards.all %}
+                    <tr>
+                        <td>{{ ward.name }}</td>
+                        <td>{{ ward.current_mca|default:"N/A" }}</td>
+                        <td>{{ ward.population|intcomma|default:"N/A" }}</td>
+                        <td>
+                            {% if ward.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="content-section">
+        <h2>System Information</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Your Role</label>
+                <p>Constituency Administrator</p>
+            </div>
+
+            <div class="info-item">
+                <label>Account Email</label>
+                <p>{{ request.user.email }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Account Phone</label>
+                <p>{{ request.user.phone_number }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Last Login</label>
+                <p>{{ request.user.last_login|date:"M d, Y H:i" }}</p>
+            </div>
+        </div>
+
+        <div class="system-actions">
+            <a href="#" class="btn btn-secondary">
+                <i class="icon-password"></i> Change Password
+            </a>
+            <a href="#" class="btn btn-secondary">
+                <i class="icon-help"></i> Help & Support
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group.full-width {
+    grid-column: span 2;
+}
+
+.info-note {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-left: 4px solid #0066cc;
+}
+
+.info-note p {
+    margin: 0;
+    color: #666;
+}
+
+.system-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+}
+</style>
+{% endblock %}

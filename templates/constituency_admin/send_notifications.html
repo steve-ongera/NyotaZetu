@@ -1,340 +1,338 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> - Constituency Admin</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #1a5f7a;
-            --secondary-color: #2c7873;
-            --accent-color: #ffc107;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-        }
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Send Notifications - {{ constituency.name }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <span class="current">Send Notifications</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Send Bulk Notifications</h1>
+        <p>Send notifications to applicants and beneficiaries</p>
+    </div>
+
+    <!-- Notification Form -->
+    <div class="content-section">
+        <h2>Compose Notification</h2>
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-        }
-        
-        .sidebar {
-            background-color: var(--primary-color);
-            min-height: 100vh;
-            color: white;
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-brand {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-nav {
-            padding: 20px 0;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 2px 0;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left: 4px solid var(--accent-color);
-        }
-        
-        .main-content {
-            padding: 20px;
-        }
-        
-        .page-header {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .icon {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .data-table {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background-color: var(--light-bg);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status-submitted { background-color: #fff3cd; color: #856404; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .status-disbursed { background-color: #d1ecf1; color: #0c5460; }
-        
-        .alert-custom {
-            border-left: 4px solid;
-            border-radius: 4px;
-        }
-        
-        .chart-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .filter-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .profile-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                min-height: auto;
-            }
+        <form method="post">
+            {% csrf_token %}
             
-            .main-content {
-                padding: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="sidebar-brand">
-                    <h4><i class="fas fa-landmark"></i> CDF Admin</h4>
-                    <small class="text-muted">Constituency Portal</small>
+            <div class="form-group">
+                <label for="recipient_type">Recipient Group</label>
+                <select name="recipient_type" id="recipient_type" class="form-control" required>
+                    <option value="">Select recipient group</option>
+                    <option value="all">All Applicants</option>
+                    <option value="pending">Pending Applications</option>
+                    <option value="approved">Approved Applications</option>
+                    <option value="rejected">Rejected Applications</option>
+                    <option value="disbursed">Disbursed Applications</option>
+                    <option value="under_review">Applications Under Review</option>
+                </select>
+                <small class="form-help">Select which group of applicants to notify</small>
+            </div>
+
+            <div class="form-group">
+                <label for="message_title">Message Title</label>
+                <input type="text" name="message_title" id="message_title" class="form-control" 
+                       required placeholder="Enter notification title" maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label for="message_text">Message Content</label>
+                <textarea name="message_text" id="message_text" class="form-control" 
+                          rows="8" required placeholder="Enter your message here..."></textarea>
+                <small class="form-help">
+                    Character count: <span id="char-count">0</span> / 500
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>Delivery Methods</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="send_sms" id="send_sms">
+                        <label for="send_sms">Send via SMS</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="send_email" id="send_email">
+                        <label for="send_email">Send via Email</label>
+                    </div>
                 </div>
-                
-                <div class="sidebar-nav">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-alt me-2"></i> Applications
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-users me-2"></i> Beneficiaries
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-map-marker-alt me-2"></i> Ward Management
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-money-check-alt me-2"></i> Disbursements
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-university me-2"></i> Institutions
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-upload me-2"></i> Document Verification
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-cog me-2"></i> Settings
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="mt-4 px-3">
-                    <div class="card bg-dark text-white">
-                        <div class="card-body">
-                            <h6><i class="fas fa-user-circle me-2"></i> Admin Profile</h6>
-                            <p class="small mb-1">Constituency: <strong>N/A</strong></p>
-                            <p class="small mb-0">Last Login: <strong>--/--/----</strong></p>
-                        </div>
+                <small class="form-help">
+                    Select at least one delivery method. In-app notifications will always be sent.
+                </small>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <h3>Preview</h3>
+                <div class="notification-preview">
+                    <div class="preview-title" id="preview-title">Message Title</div>
+                    <div class="preview-content" id="preview-content">Message content will appear here...</div>
+                    <div class="preview-meta">
+                        <span>From: {{ constituency.name }} CDF Office</span>
+                        <span id="recipient-count">Recipients: 0</span>
                     </div>
                 </div>
             </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
-                <!-- Page Header -->
-                <div class="page-header">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h1 class="h3 mb-0">
-                                Send Notifications
-                            </h1>
-                            <p class="text-muted mb-0">
-                                Send bulk notifications to applicants and beneficiaries
-                            </p>
-                        </div>
-                        <div class="col-auto">
-                            <div class="btn-group">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-download me-2"></i> Export
-                                </button>
-                                <button class="btn btn-outline-primary">
-                                    <i class="fas fa-print me-2"></i> Print
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="icon-send"></i> Send Notifications
+                </button>
+                <a href="{% url 'constituency_dashboard' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Guidelines -->
+    <div class="content-section">
+        <h2>Notification Guidelines</h2>
+        <div class="guidelines-content">
+            <h3>Best Practices</h3>
+            <ul>
+                <li>Keep messages clear and concise</li>
+                <li>Include all relevant information (dates, amounts, next steps)</li>
+                <li>Be professional and respectful in tone</li>
+                <li>Double-check all details before sending</li>
+                <li>For SMS, keep messages under 160 characters for single message delivery</li>
+            </ul>
+
+            <h3>What to Include</h3>
+            <ul>
+                <li>Purpose of the notification</li>
+                <li>Any action required from the recipient</li>
+                <li>Relevant dates or deadlines</li>
+                <li>Contact information for follow-up questions</li>
+            </ul>
+
+            <h3>Important Notes</h3>
+            <ul>
+                <li>SMS notifications may incur costs - use wisely</li>
+                <li>Email notifications are free but may take longer to deliver</li>
+                <li>All sent notifications are logged for audit purposes</li>
+                <li>Recipients may not receive SMS/email immediately</li>
+                <li>Consider sending test notifications to yourself first</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="content-section">
+        <h2>Recent Notifications Sent</h2>
+        <div class="notifications-list">
+            <div class="notification-item">
+                <div class="notification-header">
+                    <h4>Sample: Application Review Update</h4>
+                    <span class="notification-date">Jan 15, 2025</span>
                 </div>
-                
-                <!-- Template-specific content area -->
-                <div class="content-area">
-                    <div class="alert alert-info alert-custom">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Template Placeholder:</strong> This is the Send Notifications template. Content will be dynamically loaded here.
-                    </div>
-                    
-                    <!-- Dynamic content will be loaded here based on view context -->
-                    <div class="placeholder-content text-center py-5">
-                        <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
-                        <h4 class="text-muted">Notification Sending Interface</h4>
-                        <p class="text-muted">This content will be dynamically populated by Django view context.</p>
-                        
-                        <!-- Sample data table for list views -->
-                        
-                        
-                        <!-- Sample form for form views -->
-                                                <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="profile-card">
-                                    <form>
-                                        <div class="mb-3">
-                                            <label for="exampleInput" class="form-label">Sample Field</label>
-                                            <input type="text" class="form-control" id="exampleInput" placeholder="Enter value">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="exampleSelect" class="form-label">Sample Select</label>
-                                            <select class="form-select" id="exampleSelect">
-                                                <option selected>Select an option</option>
-                                                <option value="1">Option 1</option>
-                                                <option value="2">Option 2</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="exampleTextarea" class="form-label">Sample Textarea</label>
-                                            <textarea class="form-control" id="exampleTextarea" rows="3"></textarea>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save me-2"></i> Submit
-                                        </button>
-                                        <button type="reset" class="btn btn-outline-secondary">
-                                            <i class="fas fa-times me-2"></i> Cancel
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <p class="notification-content">
+                    Your CDF bursary application has been reviewed and approved...
+                </p>
+                <div class="notification-meta">
+                    <span>Recipients: 45</span>
+                    <span>Via: SMS, Email</span>
+                    <span class="badge badge-success">Delivered</span>
                 </div>
-                
-                <!-- Footer -->
-                <footer class="mt-4 text-center text-muted">
-                    <hr>
-                    <p class="small">
-                        <i class="fas fa-copyright"></i> 2026 NG-CDF Bursary Management System | 
-                        Constituency Admin Portal | Version 1.0
-                    </p>
-                </footer>
+            </div>
+
+            <div class="notification-item">
+                <div class="notification-header">
+                    <h4>Sample: Disbursement Notice</h4>
+                    <span class="notification-date">Jan 10, 2025</span>
+                </div>
+                <p class="notification-content">
+                    Your bursary has been disbursed to your institution...
+                </p>
+                <div class="notification-meta">
+                    <span>Recipients: 32</span>
+                    <span>Via: SMS, Email</span>
+                    <span class="badge badge-success">Delivered</span>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-        // Template-specific initialization
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageTitle = document.getElementById('message_title');
+    const messageText = document.getElementById('message_text');
+    const previewTitle = document.getElementById('preview-title');
+    const previewContent = document.getElementById('preview-content');
+    const charCount = document.getElementById('char-count');
+    const recipientType = document.getElementById('recipient_type');
+    const recipientCount = document.getElementById('recipient-count');
+
+    // Update preview on input
+    messageTitle.addEventListener('input', function() {
+        previewTitle.textContent = this.value || 'Message Title';
+    });
+
+    messageText.addEventListener('input', function() {
+        previewContent.textContent = this.value || 'Message content will appear here...';
+        charCount.textContent = this.value.length;
+    });
+
+    // Update recipient count (would be AJAX in real implementation)
+    recipientType.addEventListener('change', function() {
+        // This would typically be an AJAX call to get actual count
+        const counts = {
+            'all': 150,
+            'pending': 45,
+            'approved': 80,
+            'rejected': 15,
+            'disbursed': 60,
+            'under_review': 25
+        };
+        recipientCount.textContent = 'Recipients: ' + (counts[this.value] || 0);
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const sendSMS = document.getElementById('send_sms').checked;
+        const sendEmail = document.getElementById('send_email').checked;
         
-        
-        // Common functionality
-                // Toggle sidebar on mobile
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('d-none');
+        if (!sendSMS && !sendEmail) {
+            e.preventDefault();
+            alert('Please select at least one delivery method (SMS or Email)');
+            return false;
         }
-        
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').textContent = 
-                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+
+        if (messageText.value.length > 500) {
+            e.preventDefault();
+            alert('Message is too long. Maximum 500 characters allowed.');
+            return false;
         }
-        
-        // Initialize
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+
+        return confirm('Are you sure you want to send this notification to ' + recipientCount.textContent.split(': ')[1] + ' recipients?');
+    });
+});
+</script>
+
+<style>
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.preview-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.notification-preview {
+    background: white;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.preview-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.preview-content {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.preview-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #666;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.form-help {
+    display: block;
+    margin-top: 5px;
+    font-size: 13px;
+    color: #666;
+}
+
+.guidelines-content h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.guidelines-content ul {
+    margin-left: 20px;
+    line-height: 1.8;
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.notification-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #0066cc;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.notification-header h4 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.notification-date {
+    font-size: 13px;
+    color: #666;
+}
+
+.notification-content {
+    margin: 10px 0;
+    color: #333;
+}
+
+.notification-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: #666;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+</style>
+{% endblock %}

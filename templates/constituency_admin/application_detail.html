@@ -1,311 +1,532 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> - Constituency Admin</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary-color: #1a5f7a;
-            --secondary-color: #2c7873;
-            --accent-color: #ffc107;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-        }
-        
-        .sidebar {
-            background-color: var(--primary-color);
-            min-height: 100vh;
-            color: white;
-            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-brand {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-nav {
-            padding: 20px 0;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 2px 0;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left: 4px solid var(--accent-color);
-        }
-        
-        .main-content {
-            padding: 20px;
-        }
-        
-        .page-header {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .icon {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .data-table {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background-color: var(--light-bg);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status-submitted { background-color: #fff3cd; color: #856404; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .status-disbursed { background-color: #d1ecf1; color: #0c5460; }
-        
-        .alert-custom {
-            border-left: 4px solid;
-            border-radius: 4px;
-        }
-        
-        .chart-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .filter-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .profile-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                min-height: auto;
-            }
-            
-            .main-content {
-                padding: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="sidebar-brand">
-                    <h4><i class="fas fa-landmark"></i> CDF Admin</h4>
-                    <small class="text-muted">Constituency Portal</small>
-                </div>
-                
-                <div class="sidebar-nav">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-alt me-2"></i> Applications
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-users me-2"></i> Beneficiaries
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-map-marker-alt me-2"></i> Ward Management
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-money-check-alt me-2"></i> Disbursements
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-university me-2"></i> Institutions
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-file-upload me-2"></i> Document Verification
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link " href="#">
-                                <i class="fas fa-cog me-2"></i> Settings
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="mt-4 px-3">
-                    <div class="card bg-dark text-white">
-                        <div class="card-body">
-                            <h6><i class="fas fa-user-circle me-2"></i> Admin Profile</h6>
-                            <p class="small mb-1">Constituency: <strong>N/A</strong></p>
-                            <p class="small mb-0">Last Login: <strong>--/--/----</strong></p>
-                        </div>
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Application {{ application.application_number }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
+        <span class="separator">/</span>
+        <a href="{% url 'constituency_applications_list' %}">Applications</a>
+        <span class="separator">/</span>
+        <span class="current">{{ application.application_number }}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Application {{ application.application_number }}</h1>
+            <p>{{ application.applicant.user.get_full_name }} - {{ application.institution.name }}</p>
+        </div>
+        <div class="header-actions">
+            {% if application.status == 'submitted' or application.status == 'under_review' %}
+            <a href="#review-section" class="btn btn-primary">
+                <i class="icon-review"></i> Review Application
+            </a>
+            {% endif %}
+            <a href="{% url 'constituency_applications_list' %}" class="btn btn-secondary">
+                <i class="icon-back"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Application Status Banner -->
+    <div class="status-banner status-{{ application.status }}">
+        <div class="status-info">
+            <h3>Status: {{ application.get_status_display }}</h3>
+            <p>Last updated: {{ application.last_updated|date:"M d, Y H:i" }}</p>
+        </div>
+        {% if allocation %}
+        <div class="allocation-info">
+            <p><strong>Amount Allocated:</strong> KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</p>
+            <p><strong>Allocation Date:</strong> {{ allocation.allocation_date|date:"M d, Y" }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Completeness Score -->
+    <div class="completeness-section">
+        <h3>Application Completeness: {{ completeness_score|floatformat:0 }}%</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ completeness_score }}%"></div>
+        </div>
+        <div class="completeness-items">
+            {% for item, completed in completeness_items.items %}
+            <div class="completeness-item {% if completed %}completed{% endif %}">
+                <i class="icon-{% if completed %}check{% else %}times{% endif %}"></i>
+                <span>{{ item }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <!-- Left Column -->
+        <div class="main-content">
+            <!-- Applicant Information -->
+            <div class="content-section">
+                <h2>Applicant Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Full Name</label>
+                        <p>{{ application.applicant.user.get_full_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>ID Number</label>
+                        <p>{{ application.applicant.id_number }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Gender</label>
+                        <p>{{ application.applicant.get_gender_display }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Date of Birth</label>
+                        <p>{{ application.applicant.date_of_birth|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Phone Number</label>
+                        <p>{{ application.applicant.user.phone_number }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Email</label>
+                        <p>{{ application.applicant.user.email }}</p>
                     </div>
                 </div>
             </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
-                <!-- Page Header -->
-                <div class="page-header">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h1 class="h3 mb-0">
-                                Application Details
-                            </h1>
-                            <p class="text-muted mb-0">
-                                Detailed view of individual application with review functionality
-                            </p>
-                        </div>
-                        <div class="col-auto">
-                            <div class="btn-group">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-download me-2"></i> Export
-                                </button>
-                                <button class="btn btn-outline-primary">
-                                    <i class="fas fa-print me-2"></i> Print
-                                </button>
-                            </div>
-                        </div>
+
+            <!-- Location Information -->
+            <div class="content-section">
+                <h2>Location Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Constituency</label>
+                        <p>{{ application.applicant.constituency.name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Ward</label>
+                        <p>{{ application.applicant.ward.name|default:"N/A" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Location</label>
+                        <p>{{ application.applicant.location.name|default:"N/A" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Sub-location</label>
+                        <p>{{ application.applicant.sublocation.name|default:"N/A" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Village</label>
+                        <p>{{ application.applicant.village.name|default:"N/A" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Physical Address</label>
+                        <p>{{ application.applicant.physical_address }}</p>
                     </div>
                 </div>
-                
-                <!-- Template-specific content area -->
-                <div class="content-area">
-                    <div class="alert alert-info alert-custom">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Template Placeholder:</strong> This is the Application Details template. Content will be dynamically loaded here.
+            </div>
+
+            <!-- Academic Information -->
+            <div class="content-section">
+                <h2>Academic Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Institution</label>
+                        <p>{{ application.institution.name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Institution Type</label>
+                        <p>{{ application.institution.get_institution_type_display }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Admission Number</label>
+                        <p>{{ application.admission_number }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Course Name</label>
+                        <p>{{ application.course_name|default:"N/A" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Year of Study</label>
+                        <p>Year {{ application.year_of_study }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Expected Completion</label>
+                        <p>{{ application.expected_completion_date|date:"M Y" }}</p>
+                    </div>
+                    {% if application.previous_academic_year_average %}
+                    <div class="info-item">
+                        <label>Previous Academic Average</label>
+                        <p>{{ application.previous_academic_year_average }}%</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="content-section">
+                <h2>Financial Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Total Fees Payable</label>
+                        <p>KES {{ application.total_fees_payable|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Fees Paid</label>
+                        <p>KES {{ application.fees_paid|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Fees Balance</label>
+                        <p>KES {{ application.fees_balance|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Amount Requested</label>
+                        <p>KES {{ application.amount_requested|floatformat:2|intcomma }}</p>
+                    </div>
+                    {% if application.household_monthly_income %}
+                    <div class="info-item">
+                        <label>Household Monthly Income</label>
+                        <p>KES {{ application.household_monthly_income|floatformat:2|intcomma }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if application.other_bursaries %}
+                <div class="subsection">
+                    <h3>Other Bursaries Received</h3>
+                    <p><strong>Source:</strong> {{ application.other_bursaries_source }}</p>
+                    <p><strong>Amount:</strong> KES {{ application.other_bursaries_amount|floatformat:2|intcomma }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Family Information -->
+            <div class="content-section">
+                <h2>Family Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Orphan Status</label>
+                        <p>
+                            {% if application.is_total_orphan %}
+                            Total Orphan
+                            {% elif application.is_orphan %}
+                            Single Orphan
+                            {% else %}
+                            Not an Orphan
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <label>Number of Siblings</label>
+                        <p>{{ application.number_of_siblings }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Siblings in School</label>
+                        <p>{{ application.number_of_siblings_in_school }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Special Needs</label>
+                        <p>{% if application.is_disabled %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                    {% if application.has_chronic_illness %}
+                    <div class="info-item full-width">
+                        <label>Chronic Illness</label>
+                        <p>{{ application.chronic_illness_description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Guardians -->
+            {% if guardians %}
+            <div class="content-section">
+                <h2>Guardian Information</h2>
+                {% for guardian in guardians %}
+                <div class="guardian-card">
+                    <h4>{{ guardian.name }} ({{ guardian.get_relationship_display }})</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Phone</label>
+                            <p>{{ guardian.phone_number }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Employment Status</label>
+                            <p>{{ guardian.get_employment_status_display }}</p>
+                        </div>
+                        {% if guardian.occupation %}
+                        <div class="info-item">
+                            <label>Occupation</label>
+                            <p>{{ guardian.occupation }}</p>
+                        </div>
+                        {% endif %}
+                        {% if guardian.monthly_income %}
+                        <div class="info-item">
+                            <label>Monthly Income</label>
+                            <p>KES {{ guardian.monthly_income|floatformat:2|intcomma }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Siblings -->
+            {% if siblings %}
+            <div class="content-section">
+                <h2>Siblings Information</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Education Level</th>
+                            <th>School</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sibling in siblings %}
+                        <tr>
+                            <td>{{ sibling.name }}</td>
+                            <td>{{ sibling.age }}</td>
+                            <td>{{ sibling.education_level }}</td>
+                            <td>{{ sibling.school_name|default:"N/A" }}</td>
+                            <td>{% if sibling.is_in_school %}In School{% else %}Not in School{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- Documents -->
+            <div class="content-section">
+                <h2>Uploaded Documents</h2>
+                <div class="documents-list">
+                    {% for doc in documents %}
+                    <div class="document-item">
+                        <div class="document-info">
+                            <h4>{{ doc.get_document_type_display }}</h4>
+                            <p>Uploaded: {{ doc.uploaded_at|date:"M d, Y H:i" }}</p>
+                            {% if doc.is_verified %}
+                            <span class="badge badge-success">Verified</span>
+                            {% else %}
+                            <span class="badge badge-warning">Pending Verification</span>
+                            {% endif %}
+                        </div>
+                        <div class="document-actions">
+                            <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm">View</a>
+                            <a href="{{ doc.file.url }}" download class="btn btn-sm">Download</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="empty-state">No documents uploaded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Reviews History -->
+            {% if reviews %}
+            <div class="content-section">
+                <h2>Review History</h2>
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="review-header">
+                        <h4>{{ review.get_review_level_display }}</h4>
+                        <span class="review-date">{{ review.review_date|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="review-info">
+                        <p><strong>Reviewer:</strong> {{ review.reviewer.get_full_name }}</p>
+                        <p><strong>Recommendation:</strong> {{ review.get_recommendation_display }}</p>
+                        {% if review.recommended_amount %}
+                        <p><strong>Recommended Amount:</strong> KES {{ review.recommended_amount|floatformat:2|intcomma }}</p>
+                        {% endif %}
+                    </div>
+                    {% if review.need_score or review.merit_score or review.vulnerability_score %}
+                    <div class="review-scores">
+                        {% if review.need_score %}
+                        <div class="score-item">
+                            <label>Need Score</label>
+                            <span>{{ review.need_score }}/10</span>
+                        </div>
+                        {% endif %}
+                        {% if review.merit_score %}
+                        <div class="score-item">
+                            <label>Merit Score</label>
+                            <span>{{ review.merit_score }}/10</span>
+                        </div>
+                        {% endif %}
+                        {% if review.vulnerability_score %}
+                        <div class="score-item">
+                            <label>Vulnerability Score</label>
+                            <span>{{ review.vulnerability_score }}/10</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="review-comments">
+                        <p><strong>Comments:</strong></p>
+                        <p>{{ review.comments }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Review Form -->
+            {% if application.status == 'submitted' or application.status == 'under_review' %}
+            <div class="content-section" id="review-section">
+                <h2>Review Application</h2>
+                <form method="post" action="{% url 'constituency_review_application' application.id %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="recommendation">Recommendation</label>
+                        <select name="recommendation" id="recommendation" class="form-control" required>
+                            <option value="">Select recommendation</option>
+                            <option value="approve">Approve</option>
+                            <option value="reject">Reject</option>
+                            <option value="more_info">Request More Information</option>
+                            <option value="forward">Forward to Next Level</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recommended_amount">Recommended Amount (KES)</label>
+                        <input type="number" name="recommended_amount" id="recommended_amount" 
+                               class="form-control" step="0.01" 
+                               placeholder="Enter amount if approving">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="need_score">Need Score (0-10)</label>
+                            <input type="number" name="need_score" id="need_score" 
+                                   class="form-control" min="0" max="10">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="merit_score">Merit Score (0-10)</label>
+                            <input type="number" name="merit_score" id="merit_score" 
+                                   class="form-control" min="0" max="10">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vulnerability_score">Vulnerability Score (0-10)</label>
+                            <input type="number" name="vulnerability_score" id="vulnerability_score" 
+                                   class="form-control" min="0" max="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="comments">Comments/Justification</label>
+                        <textarea name="comments" id="comments" class="form-control" 
+                                  rows="5" required placeholder="Provide detailed comments for your recommendation"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                        <a href="{% url 'constituency_applications_list' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="sidebar">
+            <!-- Quick Actions -->
+            <div class="sidebar-section">
+                <h3>Quick Actions</h3>
+                <div class="action-list">
+                    {% if application.status == 'submitted' or application.status == 'under_review' %}
+                    <a href="#review-section" class="action-link">
+                        <i class="icon-review"></i> Review Application
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'constituency_applications_list' %}" class="action-link">
+                        <i class="icon-list"></i> All Applications
+                    </a>
+                    <a href="{% url 'constituency_ward_detail' application.applicant.ward.id %}" class="action-link">
+                        <i class="icon-location"></i> Ward Applications
+                    </a>
+                </div>
+            </div>
+
+            <!-- Application Timeline -->
+            <div class="sidebar-section">
+                <h3>Application Timeline</h3>
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Submitted</h4>
+                            <p>{{ application.date_submitted|date:"M d, Y" }}</p>
+                        </div>
                     </div>
                     
-                    <!-- Dynamic content will be loaded here based on view context -->
-                    <div class="placeholder-content text-center py-5">
-                        <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
-                        <h4 class="text-muted">Application Details Panel</h4>
-                        <p class="text-muted">This content will be dynamically populated by Django view context.</p>
-                        
-                        <!-- Sample data table for list views -->
-                        
-                        
-                        <!-- Sample form for form views -->
-                        
+                    {% if application.status == 'under_review' or application.status == 'approved' or application.status == 'rejected' %}
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Under Review</h4>
+                            <p>{{ application.last_updated|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if application.status == 'approved' or application.status == 'disbursed' %}
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Approved</h4>
+                            {% if allocation %}
+                            <p>{{ allocation.allocation_date|date:"M d, Y" }}</p>
+                            <p>KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if application.status == 'disbursed' %}
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Disbursed</h4>
+                            {% if allocation.disbursement_date %}
+                            <p>{{ allocation.disbursement_date|date:"M d, Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Application Summary -->
+            <div class="sidebar-section">
+                <h3>Application Summary</h3>
+                <div class="summary-list">
+                    <div class="summary-item">
+                        <label>Fiscal Year</label>
+                        <p>{{ application.fiscal_year.name }}</p>
+                    </div>
+                    <div class="summary-item">
+                        <label>Category</label>
+                        <p>{{ application.bursary_category.name }}</p>
+                    </div>
+                    <div class="summary-item">
+                        <label>Bursary Source</label>
+                        <p>{{ application.get_bursary_source_display }}</p>
+                    </div>
+                    <div class="summary-item">
+                        <label>Priority Score</label>
+                        <p>{{ application.priority_score|floatformat:1 }}/100</p>
                     </div>
                 </div>
-                
-                <!-- Footer -->
-                <footer class="mt-4 text-center text-muted">
-                    <hr>
-                    <p class="small">
-                        <i class="fas fa-copyright"></i> 2026 NG-CDF Bursary Management System | 
-                        Constituency Admin Portal | Version 1.0
-                    </p>
-                </footer>
             </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-        // Template-specific initialization
-        
-        
-        // Common functionality
-                // Toggle sidebar on mobile
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('d-none');
-        }
-        
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').textContent = 
-                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-        }
-        
-        // Initialize
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
