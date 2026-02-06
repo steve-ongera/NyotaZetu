@@ -12,22 +12,6 @@ from .forms import *
 import json
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseForbidden
-
-# Bursray  Authentication Views
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.http import JsonResponse
-from django.db.models import Q, Sum, Count
-from django.core.paginator import Paginator
-from django.utils import timezone
-from django.forms.models import modelform_factory
-from .models import *
-from .forms import *
-import json
-from django.utils import timezone
-from django.http import HttpResponse, HttpResponseForbidden
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import timedelta
@@ -126,8 +110,9 @@ def handle_failed_login(username, ip_address, user_agent):
     
     try:
         user = User.objects.get(username=username)
-        # Only handle locking for admin users
-        if user.user_type in ['admin', 'reviewer', 'finance']:
+        # Handle locking for all staff/admin users (not applicants)
+        staff_types = ['admin', 'reviewer', 'finance', 'county_admin', 'constituency_admin', 'ward_admin']
+        if user.user_type in staff_types:
             account_lock, created = AccountLock.objects.get_or_create(
                 user=user,
                 defaults={'failed_attempts': 0, 'is_locked': False, 'last_attempt_ip': ip_address}
@@ -210,6 +195,29 @@ If you didn't request this code, please contact support immediately.
     
     return tfa_code
 
+def redirect_to_dashboard(user):
+    """
+    Redirect user to their appropriate dashboard based on user type
+    """
+    dashboard_map = {
+        'admin': 'admin_dashboard',
+        'reviewer': 'reviewer_dashboard',
+        'finance': 'finance_dashboard',
+        'county_admin': 'county_admin_dashboard',
+        'constituency_admin': 'constituency_dashboard',
+        'ward_admin': 'ward_admin_dashboard',
+        'applicant': 'student_dashboard',
+    }
+    
+    dashboard_name = dashboard_map.get(user.user_type)
+    
+    if dashboard_name:
+        return redirect(dashboard_name)
+    else:
+        # Fallback for any undefined user types
+        messages.warning(f'No specific dashboard configured for {user.get_user_type_display()}. Contact administrator.')
+        return redirect('login_view')
+
 # Authentication Views
 def login_view(request):
     # Check if session expired (from middleware)
@@ -257,7 +265,10 @@ def login_view(request):
                 account_lock.unlock_time = None
                 account_lock.save()
             
-            if user.user_type in ['admin', 'reviewer', 'finance']:
+            # Define user types that require 2FA (all staff/admin roles)
+            tfa_required_types = ['admin', 'reviewer', 'finance', 'county_admin', 'constituency_admin', 'ward_admin']
+            
+            if user.user_type in tfa_required_types:
                 # Skip 2FA if in DEBUG mode
                 if DEBUG_MODE:
                     # Direct login for admin users in development mode
@@ -273,14 +284,9 @@ def login_view(request):
                     if next_url and next_url != '/':
                         messages.success(request, 'Welcome back! You were redirected to your previous page.')
                         return redirect(next_url)
-                    elif user.user_type == 'admin':
-                        return redirect('admin_dashboard')
-                    elif user.user_type == 'reviewer':
-                        return redirect('reviewer_dashboard')
-                    elif user.user_type == 'constituency_admin':
-                        return redirect('constituency_dashboard')#constituency_admin
-                    elif user.user_type == 'finance':
-                        return redirect('finance_dashboard')
+                    else:
+                        # Redirect based on user type
+                        return redirect_to_dashboard(user)
                 else:
                     # Require 2FA for admin users in production
                     session_key = get_session_key(request)
@@ -301,7 +307,7 @@ def login_view(request):
                     })
             
             elif user.user_type == 'applicant':
-                # Direct login for applicants
+                # Direct login for applicants (no 2FA required)
                 login(request, user)
                 
                 # Initialize session activity tracking
@@ -316,6 +322,19 @@ def login_view(request):
                     return redirect(next_url)
                 else:
                     return redirect('student_dashboard')
+            
+            else:
+                # Handle any other user types (future-proofing)
+                login(request, user)
+                request.session['last_activity'] = timezone.now().isoformat()
+                request.session.pop('redirect_after_login', None)
+                
+                if next_url and next_url != '/':
+                    messages.success(request, 'Welcome back! You were redirected to your previous page.')
+                    return redirect(next_url)
+                else:
+                    messages.warning(request, f'No specific dashboard configured for {user.get_user_type_display()}. Contact administrator.')
+                    return redirect('login_view')
         else:
             # Handle failed login
             was_locked = handle_failed_login(username, ip_address, user_agent)
@@ -391,12 +410,8 @@ If this wasn't you, please contact support immediately.
             if stored_next_url and stored_next_url != '/':
                 messages.success(request, 'Welcome back! You were redirected to your previous page.')
                 return redirect(stored_next_url)
-            elif user.user_type == 'admin':
-                return redirect('admin_dashboard')
-            elif user.user_type == 'reviewer':
-                return redirect('reviewer_dashboard')
-            elif user.user_type == 'finance':
-                return redirect('finance_dashboard')
+            else:
+                return redirect_to_dashboard(user)
         else:
             messages.error(request, 'Invalid verification code.')
             return render(request, 'auth/login.html', {
@@ -425,7 +440,7 @@ def resend_tfa_code(request):
             ip_address = get_client_ip(request)
             
             # Generate new code
-            session_key = get_session_key(request)  # Fixed: Ensure session exists
+            session_key = get_session_key(request)
             tfa_code_obj = generate_tfa_code(user, ip_address, session_key)
             request.session['tfa_code_id'] = tfa_code_obj.id
             
@@ -447,6 +462,8 @@ def logout_view(request):
     request.session.pop('pending_login_user_id', None)
     request.session.pop('pending_login_time', None)
     request.session.pop('tfa_code_id', None)
+    request.session.pop('pending_next_url', None)
+    request.session.pop('redirect_after_login', None)
     
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
