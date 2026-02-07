@@ -1,0 +1,425 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Reviewer Dashboard - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Add your custom styles here */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Reviewer Dashboard</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-speedometer2"></i>
+                    Reviewer Dashboard
+                </h1>
+                <p class="page-subtitle">
+                    {{ assigned_ward.name }} Ward - {{ current_fiscal_year.name }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-folder2-open"></i>
+                </div>
+                <div class="stat-value">{{ total_applications|default:0 }}</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">{{ pending_review|default:0 }}</div>
+                <div class="stat-label">Pending Review</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <div class="stat-value">{{ under_review|default:0 }}</div>
+                <div class="stat-label">Under Review</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ approved|default:0 }}</div>
+                <div class="stat-label">Approved</div>
+            </div>
+            
+            <div class="stat-card stat-danger">
+                <div class="stat-icon">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <div class="stat-value">{{ rejected|default:0 }}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+            
+            <div class="stat-card stat-secondary">
+                <div class="stat-icon">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+                <div class="stat-value">{{ total_reviewed_by_me|default:0 }}</div>
+                <div class="stat-label">My Reviews</div>
+            </div>
+        </div>
+
+        <!-- My Review Statistics -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-bar-chart"></i>
+                My Review Statistics
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ approved_by_me|default:0 }}</div>
+                    <div class="stat-label">Approved by Me</div>
+                </div>
+                
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ rejected_by_me|default:0 }}</div>
+                    <div class="stat-label">Rejected by Me</div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-arrow-right-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ forwarded_by_me|default:0 }}</div>
+                    <div class="stat-label">Forwarded</div>
+                </div>
+                
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-calendar-week"></i>
+                    </div>
+                    <div class="stat-value">{{ weekly_reviews|default:0 }}</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Overview -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-cash-coin"></i>
+                Financial Overview
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_amount_requested|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Requested</div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_amount_recommended|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Recommended by Me</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Applications -->
+        <div class="section-container">
+            <div class="table-header">
+                <h6 class="table-title">
+                    <i class="bi bi-clock-history"></i>
+                    Pending My Review ({{ recent_pending|length }})
+                </h6>
+                <a href="{% url 'pending_applications' %}" class="export-btn">
+                    View All
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Application #</th>
+                            <th>Applicant</th>
+                            <th>Institution</th>
+                            <th>Amount</th>
+                            <th>Date Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in recent_pending %}
+                        <tr>
+                            <td>
+                                <span class="app-number">{{ application.application_number }}</span>
+                            </td>
+                            <td>
+                                <span class="applicant-name">{{ application.applicant.user.get_full_name }}</span>
+                                <span class="applicant-email">{{ application.applicant.user.email }}</span>
+                            </td>
+                            <td>
+                                <span class="institution-name">{{ application.institution.name }}</span>
+                            </td>
+                            <td>
+                                <span class="amount-requested">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+                            </td>
+                            <td>
+                                <span class="date-main">{{ application.date_submitted|date:"M d, Y" }}</span>
+                                <span class="date-time">{{ application.date_submitted|date:"g:i A" }}</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'application_detail' application.id %}" class="action-btn" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'submit_review' application.id %}" class="action-btn" title="Review">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Pending Applications</h3>
+                                    <p class="empty-text">
+                                        All applications have been reviewed.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Reviews -->
+        <div class="section-container">
+            <div class="table-header">
+                <h6 class="table-title">
+                    <i class="bi bi-clipboard-check"></i>
+                    My Recent Reviews ({{ recent_reviews|length }})
+                </h6>
+                <a href="{% url 'my_reviews_list' %}" class="export-btn">
+                    View All
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Application #</th>
+                            <th>Applicant</th>
+                            <th>Recommendation</th>
+                            <th>Recommended Amount</th>
+                            <th>Review Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in recent_reviews %}
+                        <tr>
+                            <td>
+                                <span class="app-number">{{ review.application.application_number }}</span>
+                            </td>
+                            <td>
+                                <span class="applicant-name">{{ review.application.applicant.user.get_full_name }}</span>
+                            </td>
+                            <td>
+                                {% if review.recommendation == 'approve' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif review.recommendation == 'reject' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% elif review.recommendation == 'forward' %}
+                                    <span class="status-badge status-under-review">Forwarded</span>
+                                {% elif review.recommendation == 'more_info' %}
+                                    <span class="status-badge status-submitted">More Info</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if review.recommended_amount %}
+                                <span class="amount-requested">KSh {{ review.recommended_amount|floatformat:0|intcomma }}</span>
+                                {% else %}
+                                <span class="applicant-email">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="date-main">{{ review.review_date|date:"M d, Y" }}</span>
+                                <span class="date-time">{{ review.review_date|date:"g:i A" }}</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'application_detail' review.application.id %}" class="action-btn" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Reviews Yet</h3>
+                                    <p class="empty-text">
+                                        You haven't reviewed any applications yet.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-pie-chart"></i>
+                Applications by Category
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Applications</th>
+                            <th>Total Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in category_breakdown %}
+                        <tr>
+                            <td>
+                                <span class="applicant-name">{{ category.bursary_category__name }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ category.count }}</span>
+                            </td>
+                            <td>
+                                <span class="amount-requested">KSh {{ category.total_requested|floatformat:0|intcomma }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Data Available</h3>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Institution Breakdown -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-building"></i>
+                Top Institutions (Top 10)
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Institution</th>
+                            <th>Type</th>
+                            <th>Applications</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for institution in institution_breakdown %}
+                        <tr>
+                            <td>
+                                <span class="institution-name">{{ institution.institution__name }}</span>
+                            </td>
+                            <td>
+                                <span class="applicant-email">{{ institution.institution__institution_type }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ institution.count }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Data Available</h3>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Urgent Notifications -->
+        {% if urgent_reviews > 0 %}
+        <div class="section-container">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Urgent:</strong> {{ urgent_reviews }} application(s) need review. 
+                {% if days_to_deadline %}
+                Application deadline in {{ days_to_deadline }} day(s).
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add your custom JavaScript here
+</script>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Help Center - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Help Center</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-question-circle"></i>
+                    Help Center
+                </h1>
+                <p class="page-subtitle">
+                    Find answers to frequently asked questions and guidelines
+                </p>
+            </div>
+        </div>
+
+        <!-- Recent Announcements -->
+        {% if announcements %}
+        <div class="announcements-section">
+            <h2 class="section-title">
+                <i class="bi bi-megaphone"></i>
+                Recent Announcements
+            </h2>
+            
+            {% for announcement in announcements %}
+            <div class="announcement-card">
+                <div class="announcement-header">
+                    <div class="announcement-type">
+                        {% if announcement.announcement_type == 'urgent' %}
+                            <span class="badge-urgent">
+                                <i class="bi bi-exclamation-triangle"></i> Urgent
+                            </span>
+                        {% elif announcement.announcement_type == 'deadline' %}
+                            <span class="badge-deadline">
+                                <i class="bi bi-clock"></i> Deadline
+                            </span>
+                        {% elif announcement.announcement_type == 'general' %}
+                            <span class="badge-general">
+                                <i class="bi bi-info-circle"></i> General
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="announcement-date">
+                        {{ announcement.published_date|date:"M d, Y" }}
+                    </div>
+                </div>
+                <h3 class="announcement-title">{{ announcement.title }}</h3>
+                <div class="announcement-content">
+                    {{ announcement.content|linebreaks }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- FAQs Section -->
+        <div class="faqs-section">
+            <h2 class="section-title">
+                <i class="bi bi-patch-question"></i>
+                Frequently Asked Questions
+            </h2>
+
+            {% if faqs %}
+                {% regroup faqs by category as faq_categories %}
+                
+                {% for category in faq_categories %}
+                <div class="faq-category">
+                    <h3 class="category-title">
+                        {% if category.grouper == 'general' %}
+                            <i class="bi bi-info-circle"></i> General Questions
+                        {% elif category.grouper == 'application' %}
+                            <i class="bi bi-file-text"></i> Application Process
+                        {% elif category.grouper == 'eligibility' %}
+                            <i class="bi bi-check-circle"></i> Eligibility
+                        {% elif category.grouper == 'documents' %}
+                            <i class="bi bi-files"></i> Required Documents
+                        {% elif category.grouper == 'disbursement' %}
+                            <i class="bi bi-cash-coin"></i> Disbursement
+                        {% elif category.grouper == 'technical' %}
+                            <i class="bi bi-gear"></i> Technical Support
+                        {% else %}
+                            {{ category.grouper|title }}
+                        {% endif %}
+                    </h3>
+
+                    {% for faq in category.list %}
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFaq(this)">
+                            <span class="question-icon">
+                                <i class="bi bi-chevron-right"></i>
+                            </span>
+                            <span class="question-text">{{ faq.question }}</span>
+                        </div>
+                        <div class="faq-answer">
+                            {{ faq.answer|linebreaks }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <h3 class="empty-title">No FAQs Available</h3>
+                    <p class="empty-text">
+                        Frequently asked questions will appear here.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Links -->
+        <div class="quick-links-section">
+            <h2 class="section-title">
+                <i class="bi bi-link-45deg"></i>
+                Quick Links
+            </h2>
+            
+            <div class="quick-links-grid">
+                <a href="{% url 'reviewer:review_guidelines' %}" class="quick-link-card">
+                    <div class="link-icon">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <div class="link-title">Review Guidelines</div>
+                    <div class="link-description">
+                        Best practices for reviewing applications
+                    </div>
+                </a>
+
+                <a href="{% url 'reviewer:pending_applications' %}" class="quick-link-card">
+                    <div class="link-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="link-title">Pending Reviews</div>
+                    <div class="link-description">
+                        View applications awaiting review
+                    </div>
+                </a>
+
+                <a href="{% url 'reviewer:deadlines' %}" class="quick-link-card">
+                    <div class="link-icon">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+                    <div class="link-title">Deadlines</div>
+                    <div class="link-description">
+                        View upcoming deadlines
+                    </div>
+                </a>
+
+                <a href="{% url 'reviewer:settings' %}" class="quick-link-card">
+                    <div class="link-icon">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <div class="link-title">Settings</div>
+                    <div class="link-description">
+                        Manage your account settings
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Contact Support -->
+        <div class="support-section">
+            <h2 class="section-title">
+                <i class="bi bi-headset"></i>
+                Need More Help?
+            </h2>
+            
+            <div class="support-card">
+                <div class="support-icon">
+                    <i class="bi bi-envelope"></i>
+                </div>
+                <div class="support-content">
+                    <h3 class="support-title">Contact Support</h3>
+                    <p class="support-text">
+                        Can't find what you're looking for? Our support team is here to help.
+                    </p>
+                    <div class="support-contacts">
+                        <div class="contact-item">
+                            <i class="bi bi-envelope"></i>
+                            <span>support@bursary.gov.ke</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="bi bi-telephone"></i>
+                            <span>+254 700 000 000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleFaq(element) {
+        const faqItem = element.parentElement;
+        const answer = element.nextElementSibling;
+        const icon = element.querySelector('.question-icon i');
+        
+        // Toggle active class
+        faqItem.classList.toggle('active');
+        
+        // Toggle answer visibility
+        if (answer.style.display === 'block') {
+            answer.style.display = 'none';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-right');
+        } else {
+            answer.style.display = 'block';
+            icon.classList.remove('bi-chevron-right');
+            icon.classList.add('bi-chevron-down');
+        }
+    }
+</script>
+{% endblock %}

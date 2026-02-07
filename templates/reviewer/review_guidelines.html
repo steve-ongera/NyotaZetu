@@ -1,0 +1,474 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Review Guidelines - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:help_center' %}">
+                    <i class="bi bi-question-circle"></i> Help Center
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Review Guidelines</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-book"></i>
+                    Review Guidelines
+                </h1>
+                <p class="page-subtitle">
+                    Best practices and standards for reviewing bursary applications
+                </p>
+            </div>
+            <a href="{% url 'reviewer:pending_applications' %}" class="export-btn">
+                <i class="bi bi-clipboard-check"></i>
+                Start Reviewing
+            </a>
+        </div>
+
+        <!-- Introduction -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-info-circle"></i>
+                Introduction
+            </h2>
+            <div class="guideline-content">
+                <p>
+                    As a ward-level reviewer, you play a crucial role in ensuring that bursary funds reach 
+                    the most deserving students in your community. This guide provides standardized criteria 
+                    and procedures for reviewing applications fairly and consistently.
+                </p>
+            </div>
+        </div>
+
+        <!-- Review Criteria -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-clipboard-check"></i>
+                Review Criteria
+            </h2>
+            
+            <div class="criteria-grid">
+                <div class="criteria-card">
+                    <div class="criteria-header">
+                        <div class="criteria-icon">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <h3 class="criteria-title">Need Assessment (0-10 points)</h3>
+                    </div>
+                    <div class="criteria-content">
+                        <p><strong>Consider the following factors:</strong></p>
+                        <ul>
+                            <li>Household monthly income</li>
+                            <li>Number of siblings in school</li>
+                            <li>Family size and dependents</li>
+                            <li>Parent/guardian employment status</li>
+                            <li>Outstanding fee balance</li>
+                        </ul>
+                        <div class="scoring-guide">
+                            <p><strong>Scoring Guide:</strong></p>
+                            <ul>
+                                <li><strong>9-10:</strong> Extreme financial need</li>
+                                <li><strong>7-8:</strong> High financial need</li>
+                                <li><strong>5-6:</strong> Moderate need</li>
+                                <li><strong>3-4:</strong> Low need</li>
+                                <li><strong>0-2:</strong> Minimal need</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="criteria-card">
+                    <div class="criteria-header">
+                        <div class="criteria-icon">
+                            <i class="bi bi-star"></i>
+                        </div>
+                        <h3 class="criteria-title">Merit/Academic Performance (0-10 points)</h3>
+                    </div>
+                    <div class="criteria-content">
+                        <p><strong>Evaluate academic achievement:</strong></p>
+                        <ul>
+                            <li>Previous year's academic performance</li>
+                            <li>Attendance record</li>
+                            <li>Teacher recommendations</li>
+                            <li>Demonstrated effort and improvement</li>
+                        </ul>
+                        <div class="scoring-guide">
+                            <p><strong>Scoring Guide:</strong></p>
+                            <ul>
+                                <li><strong>9-10:</strong> Excellent (80%+ average)</li>
+                                <li><strong>7-8:</strong> Very Good (70-79%)</li>
+                                <li><strong>5-6:</strong> Good (60-69%)</li>
+                                <li><strong>3-4:</strong> Fair (50-59%)</li>
+                                <li><strong>0-2:</strong> Below average (<50%)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="criteria-card">
+                    <div class="criteria-header">
+                        <div class="criteria-icon">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h3 class="criteria-title">Vulnerability Assessment (0-10 points)</h3>
+                    </div>
+                    <div class="criteria-content">
+                        <p><strong>Special circumstances:</strong></p>
+                        <ul>
+                            <li>Orphan status (partial or total)</li>
+                            <li>Disability or special needs</li>
+                            <li>Chronic illness (student or guardian)</li>
+                            <li>Single parent household</li>
+                            <li>Child-headed household</li>
+                        </ul>
+                        <div class="scoring-guide">
+                            <p><strong>Scoring Guide:</strong></p>
+                            <ul>
+                                <li><strong>10:</strong> Total orphan with disability</li>
+                                <li><strong>8-9:</strong> Total orphan or severe disability</li>
+                                <li><strong>6-7:</strong> Partial orphan or chronic illness</li>
+                                <li><strong>4-5:</strong> Single parent or one special need</li>
+                                <li><strong>0-3:</strong> No special vulnerabilities</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Process -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-arrow-repeat"></i>
+                Review Process
+            </h2>
+            
+            <div class="process-steps">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Document Verification</h3>
+                        <p class="step-description">
+                            Verify that all required documents are present and authentic:
+                        </p>
+                        <ul>
+                            <li>National ID card or birth certificate</li>
+                            <li>Admission letter</li>
+                            <li>Fee structure and balance statement</li>
+                            <li>Academic results/transcripts</li>
+                            <li>Parent/guardian ID copies</li>
+                            <li>Chief's recommendation letter</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Application Review</h3>
+                        <p class="step-description">
+                            Carefully review all information provided:
+                        </p>
+                        <ul>
+                            <li>Check for completeness and accuracy</li>
+                            <li>Verify family and financial details</li>
+                            <li>Review guardian employment status</li>
+                            <li>Assess household income claims</li>
+                            <li>Note any inconsistencies</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Scoring Assessment</h3>
+                        <p class="step-description">
+                            Apply the scoring criteria objectively:
+                        </p>
+                        <ul>
+                            <li>Rate financial need (0-10)</li>
+                            <li>Rate academic merit (0-10)</li>
+                            <li>Rate vulnerability factors (0-10)</li>
+                            <li>Calculate total score (0-30)</li>
+                            <li>Consider priority ranking</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Amount Recommendation</h3>
+                        <p class="step-description">
+                            Determine appropriate bursary amount based on:
+                        </p>
+                        <ul>
+                            <li>Total score from assessment</li>
+                            <li>Outstanding fee balance</li>
+                            <li>Available ward allocation</li>
+                            <li>Category guidelines (min/max amounts)</li>
+                            <li>Previous allocations received</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Write Review Comments</h3>
+                        <p class="step-description">
+                            Document your assessment clearly:
+                        </p>
+                        <ul>
+                            <li>Explain your recommendation</li>
+                            <li>Note key factors influencing decision</li>
+                            <li>Highlight any concerns or red flags</li>
+                            <li>Suggest amount and justification</li>
+                            <li>Be professional and objective</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Submit Recommendation</h3>
+                        <p class="step-description">
+                            Choose appropriate action:
+                        </p>
+                        <ul>
+                            <li><strong>Approve:</strong> Recommend for funding</li>
+                            <li><strong>Reject:</strong> Does not meet criteria</li>
+                            <li><strong>More Info:</strong> Requires additional documents</li>
+                            <li><strong>Forward:</strong> Send to next review level</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-star-fill"></i>
+                Best Practices
+            </h2>
+            
+            <div class="best-practices-grid">
+                <div class="practice-card practice-do">
+                    <div class="practice-header">
+                        <i class="bi bi-check-circle"></i>
+                        <h3>DO</h3>
+                    </div>
+                    <ul>
+                        <li>Review applications within 7 days of submission</li>
+                        <li>Be consistent in applying criteria</li>
+                        <li>Document your reasoning clearly</li>
+                        <li>Verify critical information when in doubt</li>
+                        <li>Consider the whole application holistically</li>
+                        <li>Recommend amounts within category limits</li>
+                        <li>Maintain confidentiality of applicant information</li>
+                        <li>Treat all applicants fairly and equally</li>
+                    </ul>
+                </div>
+
+                <div class="practice-card practice-dont">
+                    <div class="practice-header">
+                        <i class="bi bi-x-circle"></i>
+                        <h3>DON'T</h3>
+                    </div>
+                    <ul>
+                        <li>Let personal relationships influence decisions</li>
+                        <li>Discriminate based on gender, religion, or ethnicity</li>
+                        <li>Share applicant details with unauthorized persons</li>
+                        <li>Rush through reviews without proper assessment</li>
+                        <li>Recommend amounts beyond available allocation</li>
+                        <li>Ignore supporting documents or verification</li>
+                        <li>Use offensive or unprofessional language</li>
+                        <li>Delay reviews unnecessarily</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Issues -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-exclamation-triangle"></i>
+                Common Issues & Solutions
+            </h2>
+            
+            <div class="issues-list">
+                <div class="issue-item">
+                    <div class="issue-question">
+                        <i class="bi bi-question-circle"></i>
+                        <strong>What if documents are missing?</strong>
+                    </div>
+                    <div class="issue-answer">
+                        Select "Request More Information" and clearly specify which documents are needed. 
+                        Do not reject immediately - give applicants 7 days to provide missing documents.
+                    </div>
+                </div>
+
+                <div class="issue-item">
+                    <div class="issue-question">
+                        <i class="bi bi-question-circle"></i>
+                        <strong>How to handle conflicting information?</strong>
+                    </div>
+                    <div class="issue-answer">
+                        Document the inconsistencies in your comments and recommend additional verification. 
+                        You may request clarification from the applicant or forward to constituency level for investigation.
+                    </div>
+                </div>
+
+                <div class="issue-item">
+                    <div class="issue-question">
+                        <i class="bi bi-question-circle"></i>
+                        <strong>What if ward allocation is insufficient?</strong>
+                    </div>
+                    <div class="issue-answer">
+                        Prioritize applicants with highest need scores. Forward exceptional cases to constituency 
+                        level with strong justification for additional allocation consideration.
+                    </div>
+                </div>
+
+                <div class="issue-item">
+                    <div class="issue-question">
+                        <i class="bi bi-question-circle"></i>
+                        <strong>How to handle duplicate applications?</strong>
+                    </div>
+                    <div class="issue-answer">
+                        Check if applicant received bursary in previous rounds. Note this in comments and 
+                        recommend accordingly - repeat applicants may receive lower priority unless circumstances changed.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ethical Standards -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-shield-check"></i>
+                Ethical Standards
+            </h2>
+            
+            <div class="ethics-content">
+                <p class="ethics-intro">
+                    As a reviewer, you must uphold the highest standards of integrity:
+                </p>
+                
+                <div class="ethics-grid">
+                    <div class="ethics-card">
+                        <div class="ethics-icon">
+                            <i class="bi bi-lock"></i>
+                        </div>
+                        <h4>Confidentiality</h4>
+                        <p>
+                            All applicant information is confidential. Never share details with 
+                            unauthorized persons or use for purposes outside the bursary program.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <div class="ethics-icon">
+                            <i class="bi bi-balance-scale"></i>
+                        </div>
+                        <h4>Impartiality</h4>
+                        <p>
+                            Review all applications objectively without bias. Recuse yourself from 
+                            reviewing applications where you have a conflict of interest.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <div class="ethics-icon">
+                            <i class="bi bi-hand-thumbs-down"></i>
+                        </div>
+                        <h4>Zero Tolerance for Corruption</h4>
+                        <p>
+                            Never solicit or accept bribes, gifts, or favors in exchange for 
+                            recommendations. Report any corruption attempts immediately.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <div class="ethics-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h4>Accountability</h4>
+                        <p>
+                            Your decisions affect students' educational futures. Be prepared to 
+                            justify your recommendations with documented evidence.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="guideline-section">
+            <h2 class="section-title">
+                <i class="bi bi-bookmark"></i>
+                Quick Reference
+            </h2>
+            
+            <div class="reference-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Application Status</th>
+                            <th>Your Action</th>
+                            <th>Timeframe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-badge status-submitted">Submitted</span></td>
+                            <td>Review and score application</td>
+                            <td>Within 7 days</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-pending">Pending Documents</span></td>
+                            <td>Wait for applicant to submit documents</td>
+                            <td>7 days grace period</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-under-review">Under Review</span></td>
+                            <td>Application at higher review level</td>
+                            <td>Monitor status</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="guideline-actions">
+            <a href="{% url 'reviewer:pending_applications' %}" class="btn btn-primary">
+                <i class="bi bi-clipboard-check"></i>
+                Review Applications
+            </a>
+            <a href="{% url 'reviewer:help_center' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Help Center
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

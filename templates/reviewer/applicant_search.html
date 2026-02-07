@@ -1,0 +1,135 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Search Applications - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Search</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-search"></i>
+                    Search Applications
+                </h1>
+                <p class="page-subtitle">Find applications from {{ assigned_ward.name }} Ward</p>
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <div class="search-section">
+            <form method="get" class="search-form">
+                <div class="search-input-group">
+                    <input 
+                        type="text" 
+                        name="q" 
+                        class="search-input" 
+                        placeholder="Search by application number, name, ID, or institution..." 
+                        value="{{ search_query }}"
+                        autofocus
+                    >
+                    <button type="submit" class="search-btn">
+                        <i class="bi bi-search"></i>
+                        Search
+                    </button>
+                </div>
+
+                <div class="search-filters">
+                    <select name="type" class="filter-select">
+                        <option value="all" {% if search_type == 'all' %}selected{% endif %}>All Types</option>
+                        <option value="application" {% if search_type == 'application' %}selected{% endif %}>Applications Only</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search Results -->
+        {% if search_query %}
+        <div class="results-section">
+            <h2 class="section-title">
+                <i class="bi bi-list-check"></i>
+                Search Results
+                {% if results %}({{ results|length }} found){% endif %}
+            </h2>
+
+            {% if results %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Application #</th>
+                            <th>Applicant</th>
+                            <th>Institution</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in results %}
+                        <tr>
+                            <td><strong>{{ application.application_number }}</strong></td>
+                            <td>
+                                <div>{{ application.applicant.user.get_full_name }}</div>
+                                <small class="text-muted">{{ application.applicant.user.email }}</small>
+                            </td>
+                            <td>
+                                <div>{{ application.institution.name }}</div>
+                                <small class="text-muted">{{ application.institution.get_institution_type_display }}</small>
+                            </td>
+                            <td>KSh {{ application.amount_requested|floatformat:0|intcomma }}</td>
+                            <td>
+                                <span class="status-badge status-{{ application.status }}">
+                                    {{ application.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ application.date_submitted|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'application_detail' application.id %}" class="btn-sm btn-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-search"></i></div>
+                <h3 class="empty-title">No Results Found</h3>
+                <p class="empty-text">
+                    No applications match your search for "<strong>{{ search_query }}</strong>".
+                    Try different keywords.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="search-tips">
+            <h3 class="tips-title">
+                <i class="bi bi-lightbulb"></i>
+                Search Tips
+            </h3>
+            <ul class="tips-list">
+                <li>Enter application number (e.g., KB-047-2024-ABC123)</li>
+                <li>Search by applicant name (first or last name)</li>
+                <li>Use ID number to find specific applicants</li>
+                <li>Search by institution name</li>
+                <li>Results include only applications from your ward</li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

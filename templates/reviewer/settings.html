@@ -1,0 +1,121 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Settings - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Settings</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-gear"></i>
+                    Account Settings
+                </h1>
+                <p class="page-subtitle">Manage your profile and preferences</p>
+            </div>
+        </div>
+
+        <div class="settings-grid">
+            <!-- Profile Information -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3><i class="bi bi-person-circle"></i> Profile Information</h3>
+                </div>
+                <div class="settings-card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone_number">Phone Number</label>
+                            <input type="tel" id="phone_number" name="phone_number" class="form-control" value="{{ user.phone_number }}" placeholder="+254XXXXXXXXX">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Information -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3><i class="bi bi-shield-check"></i> Account Information</h3>
+                </div>
+                <div class="settings-card-body">
+                    <div class="info-row">
+                        <span class="info-label">Username:</span>
+                        <span class="info-value">{{ user.username }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">User Type:</span>
+                        <span class="info-value">{{ user.get_user_type_display }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Assigned Ward:</span>
+                        <span class="info-value">{{ user.assigned_ward.name|default:"Not Assigned" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">ID Number:</span>
+                        <span class="info-value">{{ user.id_number }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3><i class="bi bi-bell"></i> Notification Preferences</h3>
+                </div>
+                <div class="settings-card-body">
+                    <a href="{% url 'reviewer:notification_settings' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-sliders"></i> Manage Notifications
+                    </a>
+                    <p class="help-text">
+                        Configure how you receive notifications about applications and reviews.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3><i class="bi bi-lock"></i> Security</h3>
+                </div>
+                <div class="settings-card-body">
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-warning">
+                        <i class="bi bi-key"></i> Change Password
+                    </a>
+                    <p class="help-text">
+                        Update your password to keep your account secure.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

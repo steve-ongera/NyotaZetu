@@ -1,0 +1,337 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Ward Statistics - {{ assigned_ward.name }} - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:ward_profile' %}">
+                    <i class="bi bi-map-marked-alt"></i> Ward Profile
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up"></i>
+                    Ward Statistics - {{ assigned_ward.name }}
+                </h1>
+                <p class="page-subtitle">
+                    Comprehensive analytics and trends for your ward
+                </p>
+            </div>
+            <button class="export-btn" onclick="window.print()">
+                <i class="bi bi-printer"></i>
+                Print Report
+            </button>
+        </div>
+
+        <!-- Multi-Year Comparison -->
+        {% if yearly_stats %}
+        <div class="comparison-section">
+            <h2 class="section-title">
+                <i class="bi bi-calendar-range"></i>
+                Multi-Year Comparison
+            </h2>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fiscal Year</th>
+                            <th>Total Applications</th>
+                            <th>Approved</th>
+                            <th>Approval Rate</th>
+                            <th>Total Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in yearly_stats %}
+                        <tr>
+                            <td>
+                                <strong>{{ stat.fiscal_year }}</strong>
+                            </td>
+                            <td>{{ stat.total_applications|intcomma }}</td>
+                            <td>{{ stat.approved|intcomma }}</td>
+                            <td>
+                                {% if stat.total_applications > 0 %}
+                                    <span class="percentage-badge">
+                                        {% widthratio stat.approved stat.total_applications 100 %}%
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>KSh {{ stat.total_requested|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Gender Distribution -->
+        {% if gender_distribution %}
+        <div class="distribution-section">
+            <h2 class="section-title">
+                <i class="bi bi-gender-ambiguous"></i>
+                Gender Distribution ({{ current_fiscal_year.name }})
+            </h2>
+            
+            <div class="distribution-grid">
+                {% for item in gender_distribution %}
+                <div class="distribution-card">
+                    <div class="distribution-icon">
+                        {% if item.applicant__gender == 'M' %}
+                            <i class="bi bi-person"></i>
+                        {% else %}
+                            <i class="bi bi-person-dress"></i>
+                        {% endif %}
+                    </div>
+                    <div class="distribution-details">
+                        <div class="distribution-value">{{ item.count|intcomma }}</div>
+                        <div class="distribution-label">
+                            {% if item.applicant__gender == 'M' %}Male{% else %}Female{% endif %} Applicants
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Institution Types Distribution -->
+        {% if institution_types %}
+        <div class="institution-section">
+            <h2 class="section-title">
+                <i class="bi bi-building"></i>
+                Applications by Institution Type
+            </h2>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Institution Type</th>
+                            <th>Applications</th>
+                            <th>Total Amount Requested</th>
+                            <th>Average per Application</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in institution_types %}
+                        <tr>
+                            <td>
+                                <span class="institution-badge">
+                                    {% if item.institution__institution_type == 'university' %}
+                                        <i class="bi bi-mortarboard"></i> University
+                                    {% elif item.institution__institution_type == 'college' %}
+                                        <i class="bi bi-book"></i> College
+                                    {% elif item.institution__institution_type == 'highschool' %}
+                                        <i class="bi bi-backpack"></i> High School
+                                    {% elif item.institution__institution_type == 'technical_institute' %}
+                                        <i class="bi bi-tools"></i> Technical Institute
+                                    {% else %}
+                                        {{ item.institution__institution_type|title }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>{{ item.count|intcomma }}</td>
+                            <td>KSh {{ item.total_amount|floatformat:0|intcomma }}</td>
+                            <td>
+                                {% if item.count > 0 %}
+                                    KSh {% widthratio item.total_amount item.count 1 %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Location-wise Distribution -->
+        {% if location_distribution %}
+        <div class="location-distribution-section">
+            <h2 class="section-title">
+                <i class="bi bi-geo-alt"></i>
+                Applications by Location
+            </h2>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Number of Applications</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in location_distribution %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-pin-map"></i>
+                                {{ item.applicant__location__name|default:"Not Specified" }}
+                            </td>
+                            <td>{{ item.count|intcomma }}</td>
+                            <td>
+                                <div class="progress-bar-mini">
+                                    <div class="progress-fill" style="width: {{ item.percentage }}%"></div>
+                                    <span class="progress-text">{{ item.percentage }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Vulnerability Statistics -->
+        <div class="vulnerability-section">
+            <h2 class="section-title">
+                <i class="bi bi-shield-check"></i>
+                Vulnerability Categories
+            </h2>
+            
+            <div class="vulnerability-grid">
+                <div class="vulnerability-card">
+                    <div class="vulnerability-icon vulnerability-orphan">
+                        <i class="bi bi-heart-half"></i>
+                    </div>
+                    <div class="vulnerability-details">
+                        <div class="vulnerability-value">{{ vulnerability_stats.orphans|intcomma }}</div>
+                        <div class="vulnerability-label">Partial Orphans</div>
+                    </div>
+                </div>
+
+                <div class="vulnerability-card">
+                    <div class="vulnerability-icon vulnerability-total-orphan">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                    <div class="vulnerability-details">
+                        <div class="vulnerability-value">{{ vulnerability_stats.total_orphans|intcomma }}</div>
+                        <div class="vulnerability-label">Total Orphans</div>
+                    </div>
+                </div>
+
+                <div class="vulnerability-card">
+                    <div class="vulnerability-icon vulnerability-disabled">
+                        <i class="bi bi-person-wheelchair"></i>
+                    </div>
+                    <div class="vulnerability-details">
+                        <div class="vulnerability-value">{{ vulnerability_stats.disabled|intcomma }}</div>
+                        <div class="vulnerability-label">With Disabilities</div>
+                    </div>
+                </div>
+
+                <div class="vulnerability-card">
+                    <div class="vulnerability-icon vulnerability-illness">
+                        <i class="bi bi-heartbeat"></i>
+                    </div>
+                    <div class="vulnerability-details">
+                        <div class="vulnerability-value">{{ vulnerability_stats.chronic_illness|intcomma }}</div>
+                        <div class="vulnerability-label">Chronic Illness</div>
+                    </div>
+                </div>
+
+                <div class="vulnerability-card">
+                    <div class="vulnerability-icon vulnerability-special">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div class="vulnerability-details">
+                        <div class="vulnerability-value">{{ vulnerability_stats.special_needs|intcomma }}</div>
+                        <div class="vulnerability-label">Special Needs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <h2 class="section-title">
+                <i class="bi bi-card-checklist"></i>
+                Summary
+            </h2>
+            
+            <div class="summary-content">
+                <p>
+                    <strong>{{ assigned_ward.name }} Ward</strong> has received a total of 
+                    <strong>{{ total_applications|intcomma }}</strong> bursary applications across all fiscal years.
+                </p>
+                
+                {% if current_fiscal_year %}
+                <p>
+                    In the current fiscal year <strong>({{ current_fiscal_year.name }})</strong>, the ward has:
+                </p>
+                <ul>
+                    <li>{{ current_fy_applications|intcomma }} applications submitted</li>
+                    {% if gender_distribution %}
+                    <li>
+                        Gender distribution: 
+                        {% for item in gender_distribution %}
+                            {{ item.count }} {% if item.applicant__gender == 'M' %}Male{% else %}Female{% endif %}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </li>
+                    {% endif %}
+                    <li>{{ vulnerability_stats.total_orphans|intcomma }} total orphans requiring urgent support</li>
+                    <li>{{ vulnerability_stats.disabled|intcomma }} applicants with disabilities</li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-row">
+            <a href="{% url 'reviewer:ward_profile' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Ward Profile
+            </a>
+            <a href="{% url 'reviewer:ward_allocations' %}" class="btn btn-primary">
+                <i class="bi bi-cash-coin"></i>
+                View Budget Allocations
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Calculate percentages for location distribution
+    document.addEventListener('DOMContentLoaded', function() {
+        const locationRows = document.querySelectorAll('.location-distribution-section tbody tr');
+        const totalCount = Array.from(locationRows).reduce((sum, row) => {
+            const count = parseInt(row.cells[1].textContent.replace(/,/g, ''));
+            return sum + count;
+        }, 0);
+        
+        locationRows.forEach(row => {
+            const count = parseInt(row.cells[1].textContent.replace(/,/g, ''));
+            const percentage = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+            row.querySelector('.progress-fill').style.width = percentage + '%';
+            row.querySelector('.progress-text').textContent = percentage + '%';
+        });
+    });
+</script>
+{% endblock %}

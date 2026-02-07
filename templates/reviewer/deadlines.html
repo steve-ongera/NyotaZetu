@@ -1,0 +1,127 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Deadlines - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Deadlines</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Upcoming Deadlines
+                </h1>
+                <p class="page-subtitle">Stay on track with important review deadlines</p>
+            </div>
+            <a href="{% url 'reviewer:pending_applications' %}" class="export-btn">
+                <i class="bi bi-clipboard-check"></i>
+                Review Applications
+            </a>
+        </div>
+
+        <!-- Pending Reviews Alert -->
+        {% if pending_reviews_count > 0 %}
+        <div class="alert alert-warning">
+            <div class="alert-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="alert-content">
+                <h4 class="alert-title">Pending Reviews</h4>
+                <p class="alert-text">
+                    You have <strong>{{ pending_reviews_count }}</strong> application(s) awaiting your review.
+                </p>
+                <a href="{% url 'reviewer:pending_applications' %}" class="alert-link">
+                    Review Now <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Deadlines List -->
+        {% if deadlines_list %}
+        <div class="deadlines-grid">
+            {% for deadline in deadlines_list %}
+            <div class="deadline-card {% if deadline.urgent %}deadline-urgent{% endif %}">
+                <div class="deadline-header">
+                    <div class="deadline-icon">
+                        {% if deadline.urgent %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% else %}
+                            <i class="bi bi-calendar-event"></i>
+                        {% endif %}
+                    </div>
+                    <div class="deadline-badge">
+                        {% if deadline.days_remaining < 0 %}
+                            <span class="badge badge-danger">Overdue</span>
+                        {% elif deadline.days_remaining == 0 %}
+                            <span class="badge badge-warning">Today</span>
+                        {% elif deadline.days_remaining <= 7 %}
+                            <span class="badge badge-warning">Urgent</span>
+                        {% else %}
+                            <span class="badge badge-info">Upcoming</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h3 class="deadline-title">{{ deadline.title }}</h3>
+
+                <div class="deadline-date">
+                    <i class="bi bi-calendar3"></i>
+                    <span>{{ deadline.date|date:"F d, Y" }}</span>
+                </div>
+
+                <div class="deadline-countdown">
+                    {% if deadline.days_remaining < 0 %}
+                        <span class="countdown-value countdown-overdue">
+                            {{ deadline.days_remaining|abs }} day(s) overdue
+                        </span>
+                    {% elif deadline.days_remaining == 0 %}
+                        <span class="countdown-value countdown-today">Due Today</span>
+                    {% elif deadline.days_remaining == 1 %}
+                        <span class="countdown-value countdown-urgent">Tomorrow</span>
+                    {% else %}
+                        <span class="countdown-value">{{ deadline.days_remaining }} day(s) remaining</span>
+                    {% endif %}
+                </div>
+
+                <div class="deadline-type">
+                    <i class="bi bi-tag"></i>
+                    {% if deadline.type == 'application' %}Application Deadline
+                    {% elif deadline.type == 'review' %}Review Deadline
+                    {% else %}{{ deadline.type|title }}{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-check-circle"></i></div>
+            <h3 class="empty-title">No Upcoming Deadlines</h3>
+            <p class="empty-text">You're all caught up! No pressing deadlines at the moment.</p>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <a href="{% url 'reviewer:calendar' %}" class="btn btn-secondary">
+                <i class="bi bi-calendar-event"></i>
+                View Full Calendar
+            </a>
+            <a href="{% url 'reviewer:pending_applications' %}" class="btn btn-primary">
+                <i class="bi bi-clipboard-check"></i>
+                Start Reviewing
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

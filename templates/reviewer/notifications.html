@@ -1,0 +1,152 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Notifications - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Notifications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-bell"></i>
+                    Notifications
+                </h1>
+                <p class="page-subtitle">
+                    {% if unread_count > 0 %}
+                        You have {{ unread_count }} unread notification(s)
+                    {% else %}
+                        All caught up!
+                    {% endif %}
+                </p>
+            </div>
+            {% if unread_count > 0 %}
+            <form method="post" action="{% url 'reviewer:mark_all_notifications_read' %}">
+                {% csrf_token %}
+                <button type="submit" class="export-btn">
+                    <i class="bi bi-check-all"></i>
+                    Mark All as Read
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <a href="?filter=all" class="filter-tab {% if filter_type == 'all' %}active{% endif %}">
+                <i class="bi bi-inbox"></i> All
+            </a>
+            <a href="?filter=unread" class="filter-tab {% if filter_type == 'unread' %}active{% endif %}">
+                <i class="bi bi-envelope"></i> Unread
+                {% if unread_count > 0 %}
+                    <span class="tab-badge">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+            <a href="?filter=application_status" class="filter-tab {% if filter_type == 'application_status' %}active{% endif %}">
+                <i class="bi bi-file-earmark"></i> Applications
+            </a>
+            <a href="?filter=review_comment" class="filter-tab {% if filter_type == 'review_comment' %}active{% endif %}">
+                <i class="bi bi-chat-left-text"></i> Reviews
+            </a>
+        </div>
+
+        <!-- Notifications List -->
+        {% if page_obj %}
+        <div class="notifications-list">
+            {% for notification in page_obj %}
+            <div class="notification-item {% if not notification.is_read %}notification-unread{% endif %}">
+                <div class="notification-icon">
+                    {% if notification.notification_type == 'application_status' %}
+                        <i class="bi bi-file-earmark-check"></i>
+                    {% elif notification.notification_type == 'review_comment' %}
+                        <i class="bi bi-chat-left-text"></i>
+                    {% elif notification.notification_type == 'deadline' %}
+                        <i class="bi bi-exclamation-triangle"></i>
+                    {% else %}
+                        <i class="bi bi-bell"></i>
+                    {% endif %}
+                </div>
+
+                <div class="notification-content">
+                    <h4 class="notification-title">{{ notification.title }}</h4>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <div class="notification-meta">
+                        <span class="notification-time">
+                            <i class="bi bi-clock"></i>
+                            {{ notification.created_at|timesince }} ago
+                        </span>
+                        {% if notification.related_application %}
+                        <a href="{% url 'application_detail' notification.related_application.id %}" class="notification-link">
+                            <i class="bi bi-arrow-right"></i> View Application
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if not notification.is_read %}
+                <div class="notification-actions">
+                    <a href="?mark_read={{ notification.id }}" class="mark-read-btn" title="Mark as read">
+                        <i class="bi bi-check2"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&filter={{ filter_type }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-bell-slash"></i></div>
+            <h3 class="empty-title">No Notifications</h3>
+            <p class="empty-text">You don't have any notifications yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Calendar - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Calendar</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-calendar-event"></i>
+                    Review Calendar
+                </h1>
+                <p class="page-subtitle">Important dates and deadlines for {{ current_fiscal_year.name|default:"current fiscal year" }}</p>
+            </div>
+        </div>
+
+        <!-- Upcoming Dates -->
+        <div class="dates-section">
+            <h2 class="section-title">
+                <i class="bi bi-calendar-plus"></i>
+                Upcoming Events
+            </h2>
+
+            {% if upcoming_dates %}
+            <div class="dates-list">
+                {% for date in upcoming_dates %}
+                <div class="date-card {% if date.type == 'deadline' or date.type == 'review_deadline' %}date-urgent{% endif %}">
+                    <div class="date-icon">
+                        {% if date.type == 'deadline' or date.type == 'review_deadline' %}
+                            <i class="bi bi-exclamation-triangle"></i>
+                        {% elif date.type == 'disbursement' %}
+                            <i class="bi bi-cash-coin"></i>
+                        {% else %}
+                            <i class="bi bi-calendar-event"></i>
+                        {% endif %}
+                    </div>
+                    <div class="date-content">
+                        <h4 class="date-title">{{ date.title }}</h4>
+                        <div class="date-info">
+                            <span class="date-value">{{ date.date|date:"F d, Y" }}</span>
+                            <span class="date-badge">
+                                {% if date.type == 'deadline' %}Deadline
+                                {% elif date.type == 'review_deadline' %}Review Deadline
+                                {% elif date.type == 'disbursement' %}Disbursement
+                                {% elif date.type == 'application_start' %}Application Opens
+                                {% else %}Event{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-calendar-x"></i></div>
+                <p class="empty-text">No upcoming events scheduled</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Past Events -->
+        {% if past_dates %}
+        <div class="dates-section">
+            <h2 class="section-title">
+                <i class="bi bi-clock-history"></i>
+                Recent Past Events
+            </h2>
+
+            <div class="dates-list dates-past">
+                {% for date in past_dates %}
+                <div class="date-card date-past">
+                    <div class="date-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="date-content">
+                        <h4 class="date-title">{{ date.title }}</h4>
+                        <div class="date-info">
+                            <span class="date-value">{{ date.date|date:"F d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

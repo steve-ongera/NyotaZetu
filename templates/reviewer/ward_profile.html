@@ -1,0 +1,321 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Ward Profile - {{ assigned_ward.name }} - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Ward Profile</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-map-marked-alt"></i>
+                    {{ assigned_ward.name }} Ward
+                </h1>
+                <p class="page-subtitle">
+                    Constituency: {{ assigned_ward.constituency.name }}
+                </p>
+            </div>
+            <a href="{% url 'reviewer:ward_statistics' %}" class="export-btn">
+                <i class="bi bi-bar-chart"></i>
+                View Statistics
+            </a>
+        </div>
+
+        <!-- Ward Information Grid -->
+        <div class="info-grid">
+            <!-- Basic Information Card -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="bi bi-info-circle"></i>
+                    <h3>Basic Information</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-label">Ward Name:</span>
+                        <span class="info-value">{{ assigned_ward.name }} Ward</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ward Code:</span>
+                        <span class="info-value">{{ assigned_ward.code|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Constituency:</span>
+                        <span class="info-value">{{ assigned_ward.constituency.name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">County:</span>
+                        <span class="info-value">{{ assigned_ward.constituency.county.name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Population:</span>
+                        <span class="info-value">{{ assigned_ward.population|intcomma|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value">
+                            {% if assigned_ward.is_active %}
+                                <span class="badge badge-success">Active</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Inactive</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ward Representative Card -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="bi bi-person-badge"></i>
+                    <h3>Ward Representative (MCA)</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value">{{ ward_rep.name|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Political Party:</span>
+                        <span class="info-value">{{ ward_rep.party|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">
+                            {% if ward_rep.phone %}
+                                <a href="tel:{{ ward_rep.phone }}">{{ ward_rep.phone }}</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">
+                            {% if ward_rep.email %}
+                                <a href="mailto:{{ ward_rep.email }}">{{ ward_rep.email }}</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if assigned_ward.ward_office_location %}
+                    <div class="info-row">
+                        <span class="info-label">Office Location:</span>
+                        <span class="info-value">{{ assigned_ward.ward_office_location }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Fiscal Year Allocation -->
+        {% if current_fiscal_year and ward_allocation %}
+        <div class="allocation-section">
+            <h2 class="section-title">
+                <i class="bi bi-cash-coin"></i>
+                Current Fiscal Year Allocation ({{ current_fiscal_year.name }})
+            </h2>
+            
+            <div class="allocation-grid">
+                <div class="allocation-card">
+                    <div class="allocation-icon allocation-primary">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div class="allocation-details">
+                        <div class="allocation-value">
+                            KSh {{ ward_allocation.allocated_amount|floatformat:0|intcomma }}
+                        </div>
+                        <div class="allocation-label">Total Allocated</div>
+                    </div>
+                </div>
+
+                <div class="allocation-card">
+                    <div class="allocation-icon allocation-success">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                    <div class="allocation-details">
+                        <div class="allocation-value">
+                            KSh {{ ward_allocation.spent_amount|floatformat:0|intcomma }}
+                        </div>
+                        <div class="allocation-label">Amount Disbursed</div>
+                    </div>
+                </div>
+
+                <div class="allocation-card">
+                    <div class="allocation-icon allocation-info">
+                        <i class="bi bi-piggy-bank"></i>
+                    </div>
+                    <div class="allocation-details">
+                        <div class="allocation-value">
+                            KSh {{ ward_allocation.balance|floatformat:0|intcomma }}
+                        </div>
+                        <div class="allocation-label">Balance Remaining</div>
+                    </div>
+                </div>
+
+                <div class="allocation-card">
+                    <div class="allocation-icon allocation-warning">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="allocation-details">
+                        <div class="allocation-value">
+                            {{ ward_allocation.beneficiaries_count|intcomma }}
+                        </div>
+                        <div class="allocation-label">Beneficiaries</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span class="progress-label">Utilization Rate</span>
+                    <span class="progress-percentage">
+                        {% widthratio ward_allocation.spent_amount ward_allocation.allocated_amount 100 %}%
+                    </span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {% widthratio ward_allocation.spent_amount ward_allocation.allocated_amount 100 %}%">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Application Statistics -->
+        <div class="statistics-section">
+            <h2 class="section-title">
+                <i class="bi bi-graph-up"></i>
+                Application Statistics
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-value">{{ total_residents|intcomma }}</div>
+                    <div class="stat-label">Registered Applicants</div>
+                </div>
+
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div class="stat-value">{{ total_applications|intcomma }}</div>
+                    <div class="stat-label">Total Applications (All Time)</div>
+                </div>
+
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-value">{{ current_fy_applications|intcomma }}</div>
+                    <div class="stat-label">Current FY Applications</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Locations in Ward -->
+        {% if locations %}
+        <div class="locations-section">
+            <h2 class="section-title">
+                <i class="bi bi-geo-alt"></i>
+                Locations in {{ assigned_ward.name }} Ward
+            </h2>
+            
+            <div class="locations-grid">
+                {% for location in locations %}
+                <div class="location-card">
+                    <div class="location-header">
+                        <i class="bi bi-pin-map"></i>
+                        <h4>{{ location.name }}</h4>
+                    </div>
+                    <div class="location-body">
+                        {% if location.population %}
+                        <div class="location-info">
+                            <i class="bi bi-people"></i>
+                            <span>Population: {{ location.population|intcomma }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="location-info">
+                            <i class="bi bi-building"></i>
+                            <span>{{ location.sublocations.count }} Sub-location(s)</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Additional Ward Information -->
+        {% if assigned_ward.description %}
+        <div class="description-section">
+            <h2 class="section-title">
+                <i class="bi bi-file-text"></i>
+                Ward Description
+            </h2>
+            <div class="description-content">
+                {{ assigned_ward.description|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <h2 class="section-title">
+                <i class="bi bi-lightning"></i>
+                Quick Actions
+            </h2>
+            
+            <div class="actions-grid">
+                <a href="{% url 'reviewer:pending_applications' %}" class="action-link-card">
+                    <div class="action-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <h4>Review Applications</h4>
+                    <p>Review pending applications from your ward</p>
+                </a>
+
+                <a href="{% url 'reviewer:ward_statistics' %}" class="action-link-card">
+                    <div class="action-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h4>View Statistics</h4>
+                    <p>Detailed analytics and trends</p>
+                </a>
+
+                <a href="{% url 'reviewer:ward_allocations' %}" class="action-link-card">
+                    <div class="action-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h4>Budget Allocations</h4>
+                    <p>View all fiscal year allocations</p>
+                </a>
+
+                <a href="{% url 'reviewer:applicant_search' %}" class="action-link-card">
+                    <div class="action-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <h4>Search Applications</h4>
+                    <p>Find specific applications or applicants</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

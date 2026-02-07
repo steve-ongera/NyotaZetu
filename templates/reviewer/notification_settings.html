@@ -1,0 +1,122 @@
+{% extends 'reviewer_base.html' %}
+{% load humanize %}
+
+{% block title %}Notification Settings - Reviewer Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer:settings' %}"><i class="bi bi-gear"></i> Settings</a>
+            </li>
+            <li class="breadcrumb-item active">Notifications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-bell"></i>
+                    Notification Settings
+                </h1>
+                <p class="page-subtitle">Manage how you receive notifications</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="notification-section">
+                <h3 class="section-subtitle">
+                    <i class="bi bi-envelope"></i>
+                    Email Notifications
+                </h3>
+
+                <div class="notification-option">
+                    <div class="option-info">
+                        <h4>New Applications</h4>
+                        <p>Receive email when new applications are submitted in your ward</p>
+                    </div>
+                    <div class="option-control">
+                        <input type="checkbox" id="email_new_apps" name="email_new_apps" checked>
+                        <label for="email_new_apps" class="toggle-label"></label>
+                    </div>
+                </div>
+
+                <div class="notification-option">
+                    <div class="option-info">
+                        <h4>Review Reminders</h4>
+                        <p>Get reminded about pending reviews and upcoming deadlines</p>
+                    </div>
+                    <div class="option-control">
+                        <input type="checkbox" id="email_reminders" name="email_reminders" checked>
+                        <label for="email_reminders" class="toggle-label"></label>
+                    </div>
+                </div>
+
+                <div class="notification-option">
+                    <div class="option-info">
+                        <h4>Weekly Summary</h4>
+                        <p>Receive a weekly summary of your review activity</p>
+                    </div>
+                    <div class="option-control">
+                        <input type="checkbox" id="email_weekly" name="email_weekly">
+                        <label for="email_weekly" class="toggle-label"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-section">
+                <h3 class="section-subtitle">
+                    <i class="bi bi-phone"></i>
+                    SMS Notifications
+                </h3>
+
+                <div class="notification-option">
+                    <div class="option-info">
+                        <h4>Urgent Deadlines</h4>
+                        <p>SMS alerts for urgent review deadlines (within 3 days)</p>
+                    </div>
+                    <div class="option-control">
+                        <input type="checkbox" id="sms_urgent" name="sms_urgent">
+                        <label for="sms_urgent" class="toggle-label"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-section">
+                <h3 class="section-subtitle">
+                    <i class="bi bi-app-indicator"></i>
+                    In-App Notifications
+                </h3>
+
+                <div class="notification-option">
+                    <div class="option-info">
+                        <h4>All Activities</h4>
+                        <p>Show notifications for all review-related activities</p>
+                    </div>
+                    <div class="option-control">
+                        <input type="checkbox" id="inapp_all" name="inapp_all" checked disabled>
+                        <label for="inapp_all" class="toggle-label"></label>
+                    </div>
+                </div>
+                <p class="help-text">In-app notifications are always enabled and cannot be turned off.</p>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Preferences
+                </button>
+                <a href="{% url 'reviewer:settings' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+{% load static %}
 <!-- Sidebar for Reviewer -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -16,7 +17,7 @@
     <!-- ============= MAIN MENU ============= -->
     <div class="menu-section">
         <div class="menu-title">Main Menu</div>
-        <a href="{% url 'dashboard' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <a href="{% url 'reviewer_dashboard' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
@@ -163,12 +164,12 @@
             <span>Settings</span>
         </a>
         
-        <a href="{% url 'profile' %}" class="menu-item">
+        <a href="{% url 'ward_profile' %}" class="menu-item">
             <i class="fas fa-user"></i>
             <span>My Profile</span>
         </a>
         
-        <a href="{% url 'logout' %}" class="menu-item">
+        <a href="{% url 'logout_view' %}" class="menu-item">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </a>
