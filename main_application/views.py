@@ -7954,11 +7954,70 @@ from .models import Applicant, Application, FiscalYear, BursaryCategory, Institu
 from .forms import ApplicationForm  # Make sure to import your form
 
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils import timezone
+from django.db import IntegrityError
+from .models import (
+    Applicant, FiscalYear, DisbursementRound, 
+    WardAllocation, BursaryCategory, Institution, Application
+)
+from .forms import ApplicationForm
+
+
+def calculate_priority_score(application):
+    """
+    Calculate priority score based on various factors
+    """
+    score = 0
+    
+    # Financial need (0-30 points)
+    if application.household_monthly_income:
+        if application.household_monthly_income < 10000:
+            score += 30
+        elif application.household_monthly_income < 20000:
+            score += 20
+        elif application.household_monthly_income < 30000:
+            score += 10
+    
+    # Vulnerability factors (0-40 points)
+    if application.is_total_orphan:
+        score += 20
+    elif application.is_orphan:
+        score += 15
+    
+    if application.is_disabled:
+        score += 10
+    
+    if application.has_chronic_illness:
+        score += 5
+    
+    if application.special_needs:
+        score += 5
+    
+    # Academic performance (0-20 points)
+    if application.previous_academic_year_average:
+        if application.previous_academic_year_average >= 70:
+            score += 20
+        elif application.previous_academic_year_average >= 60:
+            score += 15
+        elif application.previous_academic_year_average >= 50:
+            score += 10
+    
+    # Family size (0-10 points)
+    if application.number_of_siblings_in_school >= 3:
+        score += 10
+    elif application.number_of_siblings_in_school >= 2:
+        score += 5
+    
+    return score
+
 
 @login_required
 def student_application_create(request):
     """
-    Create new bursary application with enhanced validation
+    Create new bursary application with enhanced validation and error handling
     """
     try:
         applicant = request.user.applicant_profile
@@ -8037,9 +8096,10 @@ def student_application_create(request):
                 # Initial status
                 application.status = 'draft'
                 
-                # Calculate priority score (you can customize this logic)
+                # Calculate priority score
                 application.priority_score = calculate_priority_score(application)
                 
+                # Save the application
                 application.save()
                 
                 messages.success(
@@ -8048,13 +8108,52 @@ def student_application_create(request):
                 )
                 return redirect('student_application_documents', pk=application.pk)
                 
+            except IntegrityError as e:
+                error_message = str(e)
+                
+                # Parse common IntegrityError messages
+                if 'value too long' in error_message.lower():
+                    if 'application_number' in error_message.lower():
+                        messages.error(
+                            request, 
+                            'Error: Application number generation failed. Please contact system administrator.'
+                        )
+                    else:
+                        messages.error(
+                            request,
+                            'One of the fields contains a value that is too long. Please check your inputs.'
+                        )
+                elif 'unique constraint' in error_message.lower():
+                    messages.error(
+                        request,
+                        'A duplicate entry was detected. Please refresh the page and try again.'
+                    )
+                else:
+                    messages.error(
+                        request,
+                        f'Database error occurred: {error_message}'
+                    )
+                
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'IntegrityError in application creation: {error_message}')
+                
             except Exception as e:
                 messages.error(request, f'Error saving application: {str(e)}')
+                
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error creating application: {str(e)}', exc_info=True)
         else:
             # Display form validation errors
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(request, f'{field}: {error}')
+                    if field == '__all__':
+                        messages.error(request, f'{error}')
+                    else:
+                        messages.error(request, f'{field}: {error}')
     else:
         form = ApplicationForm(fiscal_year=current_fiscal_year)
     
@@ -8080,7 +8179,6 @@ def student_application_create(request):
     }
     
     return render(request, 'students/application_form.html', context)
-
 
 
 # Helper view to get category max amounts via AJAX
