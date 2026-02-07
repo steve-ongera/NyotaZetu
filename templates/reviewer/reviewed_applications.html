@@ -1,0 +1,260 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Reviewed Applications - Nyota Zetu Bursary System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Reviewed Applications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-clipboard-check"></i>
+                    Reviewed Applications
+                </h1>
+                <p class="page-subtitle">
+                    {{ assigned_ward.name }} Ward - {{ current_fiscal_year.name }}
+                </p>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-header" onclick="toggleFilters()">
+                <h6 class="filter-title">
+                    <i class="bi bi-funnel"></i>
+                    Filters
+                </h6>
+                <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+            </div>
+            
+            <div class="filter-content" id="filtersContent">
+                <form method="get" id="filterForm">
+                    <div class="filter-content">
+                        <div class="filter-group">
+                            <label class="filter-label" for="recommendation">
+                                <i class="bi bi-check-circle"></i> Recommendation
+                            </label>
+                            <select class="filter-select" id="recommendation" name="recommendation">
+                                <option value="">All Recommendations</option>
+                                <option value="approve" {% if selected_recommendation == 'approve' %}selected{% endif %}>Approve</option>
+                                <option value="reject" {% if selected_recommendation == 'reject' %}selected{% endif %}>Reject</option>
+                                <option value="forward" {% if selected_recommendation == 'forward' %}selected{% endif %}>Forward</option>
+                                <option value="more_info" {% if selected_recommendation == 'more_info' %}selected{% endif %}>Request More Info</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="category">
+                                <i class="bi bi-tag"></i> Category
+                            </label>
+                            <select class="filter-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="date_from">
+                                <i class="bi bi-calendar"></i> Date From
+                            </label>
+                            <input type="date" class="filter-input" id="date_from" name="date_from" value="{{ date_from }}">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="date_to">
+                                <i class="bi bi-calendar"></i> Date To
+                            </label>
+                            <input type="date" class="filter-input" id="date_to" name="date_to" value="{{ date_to }}">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="sort">
+                                <i class="bi bi-sort-down"></i> Sort By
+                            </label>
+                            <select class="filter-select" id="sort" name="sort">
+                                <option value="-reviews__review_date" {% if sort_by == '-reviews__review_date' %}selected{% endif %}>Newest First</option>
+                                <option value="reviews__review_date" {% if sort_by == 'reviews__review_date' %}selected{% endif %}>Oldest First</option>
+                                <option value="applicant__user__last_name" {% if sort_by == 'applicant__user__last_name' %}selected{% endif %}>Name A-Z</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="filter-btn">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'reviewed_applications' %}" class="clear-btn">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <h6 class="table-title">
+                <i class="bi bi-table"></i>
+                Applications ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+
+        <div class="table-responsive">
+            <table class="applications-table">
+                <thead>
+                    <tr>
+                        <th>Application #</th>
+                        <th>Applicant</th>
+                        <th>Institution</th>
+                        <th>Category</th>
+                        <th>Amount Requested</th>
+                        <th>My Recommendation</th>
+                        <th>Recommended Amount</th>
+                        <th>Review Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for application in page_obj %}
+                    {% with my_review=application.reviews.all|first %}
+                    <tr>
+                        <td>
+                            <span class="app-number">{{ application.application_number }}</span>
+                        </td>
+                        <td>
+                            <span class="applicant-name">{{ application.applicant.user.get_full_name }}</span>
+                            <span class="applicant-email">{{ application.applicant.user.email }}</span>
+                        </td>
+                        <td>
+                            <span class="institution-name">{{ application.institution.name }}</span>
+                            <span class="institution-county">{{ application.institution.get_institution_type_display }}</span>
+                        </td>
+                        <td>
+                            <span class="applicant-email">{{ application.bursary_category.name }}</span>
+                        </td>
+                        <td>
+                            <span class="amount-requested">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+                        </td>
+                        <td>
+                            {% if my_review.recommendation == 'approve' %}
+                                <span class="status-badge status-approved">Approved</span>
+                            {% elif my_review.recommendation == 'reject' %}
+                                <span class="status-badge status-rejected">Rejected</span>
+                            {% elif my_review.recommendation == 'forward' %}
+                                <span class="status-badge status-under-review">Forwarded</span>
+                            {% elif my_review.recommendation == 'more_info' %}
+                                <span class="status-badge status-submitted">More Info</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if my_review.recommended_amount %}
+                            <span class="amount-requested">KSh {{ my_review.recommended_amount|floatformat:0|intcomma }}</span>
+                            {% else %}
+                            <span class="applicant-email">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="date-main">{{ my_review.review_date|date:"M d, Y" }}</span>
+                            <span class="date-time">{{ my_review.review_date|date:"g:i A" }}</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'application_detail' application.id %}" class="action-btn" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Reviewed Applications</h3>
+                                <p class="empty-text">
+                                    You haven't reviewed any applications yet.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleFilters() {
+        const content = document.getElementById('filtersContent');
+        const toggle = document.getElementById('filterToggle');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+</script>
+{% endblock %}

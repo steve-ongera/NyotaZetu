@@ -1,0 +1,578 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Application Details - {{ application.application_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'pending_applications' %}">Pending Applications</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ application.application_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-text"></i>
+                    Application Details
+                </h1>
+                <p class="page-subtitle">
+                    {{ application.application_number }}
+                </p>
+            </div>
+            <div>
+                {% if application.status == 'submitted' %}
+                    <span class="status-badge status-submitted">Submitted</span>
+                {% elif application.status == 'under_review' %}
+                    <span class="status-badge status-under-review">Under Review</span>
+                {% elif application.status == 'approved' %}
+                    <span class="status-badge status-approved">Approved</span>
+                {% elif application.status == 'rejected' %}
+                    <span class="status-badge status-rejected">Rejected</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Applicant Information -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-person"></i>
+                Applicant Information
+            </h6>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Full Name:</label>
+                    <span>{{ application.applicant.user.get_full_name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>ID Number:</label>
+                    <span>{{ application.applicant.id_number }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Gender:</label>
+                    <span>{{ application.applicant.get_gender_display }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Date of Birth:</label>
+                    <span>{{ application.applicant.date_of_birth|date:"M d, Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Email:</label>
+                    <span>{{ application.applicant.user.email }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Phone:</label>
+                    <span>{{ application.applicant.user.phone_number }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Ward:</label>
+                    <span>{{ application.applicant.ward.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Constituency:</label>
+                    <span>{{ application.applicant.constituency.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Location:</label>
+                    <span>{{ application.applicant.location.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Sub-Location:</label>
+                    <span>{{ application.applicant.sublocation.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Village:</label>
+                    <span>{{ application.applicant.village.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Physical Address:</label>
+                    <span>{{ application.applicant.physical_address }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Information -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-building"></i>
+                Academic Information
+            </h6>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Institution:</label>
+                    <span>{{ application.institution.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Institution Type:</label>
+                    <span>{{ application.institution.get_institution_type_display }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Admission Number:</label>
+                    <span>{{ application.admission_number }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Year of Study:</label>
+                    <span>{{ application.year_of_study }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Course:</label>
+                    <span>{{ application.course_name|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Expected Completion:</label>
+                    <span>{{ application.expected_completion_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Bursary Category:</label>
+                    <span>{{ application.bursary_category.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Previous Average:</label>
+                    <span>{{ application.previous_academic_year_average|default:"-" }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Information -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-cash-coin"></i>
+                Financial Information
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Fees Payable</div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ application.fees_paid|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Fees Paid</div>
+                </div>
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="bi bi-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ application.fees_balance|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Fees Balance</div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ application.amount_requested|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Amount Requested</div>
+                </div>
+            </div>
+            
+            {% if application.other_bursaries %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Other Bursaries Received:</strong> KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }}
+                from {{ application.other_bursaries_source }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Family Information -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-people"></i>
+                Family Information
+            </h6>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Number of Siblings:</label>
+                    <span>{{ application.number_of_siblings }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Siblings in School:</label>
+                    <span>{{ application.number_of_siblings_in_school }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Household Monthly Income:</label>
+                    <span>KSh {{ application.household_monthly_income|floatformat:0|intcomma|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Total Family Income:</label>
+                    <span>KSh {{ total_family_income|floatformat:0|intcomma }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Per Capita Income:</label>
+                    <span>KSh {{ per_capita_income|floatformat:0|intcomma }}</span>
+                </div>
+            </div>
+
+            <!-- Guardians -->
+            <h6 class="table-title mt-4">
+                <i class="bi bi-person-badge"></i>
+                Guardian(s)
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Phone</th>
+                            <th>Employment</th>
+                            <th>Occupation</th>
+                            <th>Monthly Income</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guardian in guardians %}
+                        <tr>
+                            <td>{{ guardian.name }}</td>
+                            <td>{{ guardian.get_relationship_display }}</td>
+                            <td>{{ guardian.phone_number }}</td>
+                            <td>{{ guardian.get_employment_status_display }}</td>
+                            <td>{{ guardian.occupation|default:"-" }}</td>
+                            <td>KSh {{ guardian.monthly_income|floatformat:0|intcomma|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No guardian information available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Siblings -->
+            {% if siblings %}
+            <h6 class="table-title mt-4">
+                <i class="bi bi-person-lines-fill"></i>
+                Siblings
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Education Level</th>
+                            <th>School</th>
+                            <th>In School</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sibling in siblings %}
+                        <tr>
+                            <td>{{ sibling.name }}</td>
+                            <td>{{ sibling.age }}</td>
+                            <td>{{ sibling.education_level }}</td>
+                            <td>{{ sibling.school_name|default:"-" }}</td>
+                            <td>
+                                {% if sibling.is_in_school %}
+                                <span class="status-badge status-approved">Yes</span>
+                                {% else %}
+                                <span class="status-badge status-rejected">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Vulnerability Assessment -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-shield-exclamation"></i>
+                Vulnerability Assessment
+            </h6>
+            
+            <div class="stats-grid">
+                <div class="stat-card {% if vulnerability_score >= 70 %}stat-danger{% elif vulnerability_score >= 40 %}stat-warning{% else %}stat-info{% endif %}">
+                    <div class="stat-icon">
+                        <i class="bi bi-speedometer"></i>
+                    </div>
+                    <div class="stat-value">{{ vulnerability_score }}%</div>
+                    <div class="stat-label">Vulnerability Score</div>
+                </div>
+            </div>
+
+            <div class="info-grid mt-3">
+                <div class="info-item">
+                    <label>Is Orphan:</label>
+                    <span>
+                        {% if vulnerability_indicators.is_orphan %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Total Orphan:</label>
+                    <span>
+                        {% if vulnerability_indicators.is_total_orphan %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Has Disability:</label>
+                    <span>
+                        {% if vulnerability_indicators.is_disabled %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Chronic Illness:</label>
+                    <span>
+                        {% if vulnerability_indicators.has_chronic_illness %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Special Needs:</label>
+                    <span>
+                        {% if vulnerability_indicators.special_needs %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Low Income:</label>
+                    <span>
+                        {% if vulnerability_indicators.low_income %}
+                        <span class="status-badge status-danger">Yes</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <label>Large Family:</label>
+                    <span>
+                        {% if vulnerability_indicators.large_family %}
+                        <span class="status-badge status-warning">Yes ({{ application.number_of_siblings }}+ siblings)</span>
+                        {% else %}
+                        <span class="status-badge status-success">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            {% if application.chronic_illness_description %}
+            <div class="alert alert-warning mt-3">
+                <strong>Chronic Illness Details:</strong> {{ application.chronic_illness_description }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Supporting Documents -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-paperclip"></i>
+                Supporting Documents ({{ documents.count }})
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Description</th>
+                            <th>Upload Date</th>
+                            <th>Verified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in documents %}
+                        <tr>
+                            <td>{{ document.get_document_type_display }}</td>
+                            <td>{{ document.description|default:"-" }}</td>
+                            <td>{{ document.uploaded_at|date:"M d, Y" }}</td>
+                            <td>
+                                {% if document.is_verified %}
+                                <span class="status-badge status-approved">Verified</span>
+                                {% else %}
+                                <span class="status-badge status-submitted">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ document.file.url }}" target="_blank" class="action-btn" title="View Document">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">No documents uploaded</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Previous Reviews -->
+        {% if existing_reviews %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-chat-left-text"></i>
+                Previous Reviews ({{ existing_reviews.count }})
+            </h6>
+            {% for review in existing_reviews %}
+            <div class="review-card">
+                <div class="review-header">
+                    <div>
+                        <strong>{{ review.reviewer.get_full_name }}</strong>
+                        <span class="applicant-email">({{ review.get_review_level_display }})</span>
+                    </div>
+                    <div>
+                        {% if review.recommendation == 'approve' %}
+                            <span class="status-badge status-approved">Approved</span>
+                        {% elif review.recommendation == 'reject' %}
+                            <span class="status-badge status-rejected">Rejected</span>
+                        {% elif review.recommendation == 'forward' %}
+                            <span class="status-badge status-under-review">Forwarded</span>
+                        {% elif review.recommendation == 'more_info' %}
+                            <span class="status-badge status-submitted">More Info Requested</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="review-body">
+                    <p><strong>Comments:</strong> {{ review.comments }}</p>
+                    {% if review.recommended_amount %}
+                    <p><strong>Recommended Amount:</strong> KSh {{ review.recommended_amount|floatformat:0|intcomma }}</p>
+                    {% endif %}
+                    <div class="review-scores">
+                        {% if review.need_score %}
+                        <span>Need Score: {{ review.need_score }}/10</span>
+                        {% endif %}
+                        {% if review.merit_score %}
+                        <span>Merit Score: {{ review.merit_score }}/10</span>
+                        {% endif %}
+                        {% if review.vulnerability_score %}
+                        <span>Vulnerability Score: {{ review.vulnerability_score }}/10</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="review-footer">
+                    <small class="applicant-email">{{ review.review_date|date:"M d, Y g:i A" }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Review Form -->
+        {% if not my_review or my_review %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-pencil-square"></i>
+                {% if my_review %}Update My Review{% else %}Submit Review{% endif %}
+            </h6>
+            <form method="post" action="{% url 'submit_review' application.id %}" id="reviewForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="comments">Review Comments *</label>
+                    <textarea class="filter-input" id="comments" name="comments" rows="5" required>{% if my_review %}{{ my_review.comments }}{% endif %}</textarea>
+                </div>
+
+                <div class="filter-content">
+                    <div class="filter-group">
+                        <label for="recommendation">Recommendation *</label>
+                        <select class="filter-select" id="recommendation" name="recommendation" required>
+                            <option value="">Select Recommendation</option>
+                            <option value="approve" {% if my_review and my_review.recommendation == 'approve' %}selected{% endif %}>Approve</option>
+                            <option value="reject" {% if my_review and my_review.recommendation == 'reject' %}selected{% endif %}>Reject</option>
+                            <option value="forward" {% if my_review and my_review.recommendation == 'forward' %}selected{% endif %}>Forward to Next Level</option>
+                            <option value="more_info" {% if my_review and my_review.recommendation == 'more_info' %}selected{% endif %}>Request More Information</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="amountField" style="display: none;">
+                        <label for="recommended_amount">Recommended Amount (KSh)</label>
+                        <input type="number" class="filter-input" id="recommended_amount" name="recommended_amount" 
+                               min="0" max="{{ application.bursary_category.max_amount_per_applicant }}"
+                               value="{% if my_review %}{{ my_review.recommended_amount }}{% endif %}">
+                        <small class="applicant-email">Maximum: KSh {{ application.bursary_category.max_amount_per_applicant|floatformat:0|intcomma }}</small>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="need_score">Financial Need Score (0-10)</label>
+                        <input type="number" class="filter-input" id="need_score" name="need_score" 
+                               min="0" max="10" value="{% if my_review %}{{ my_review.need_score }}{% endif %}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="merit_score">Academic Merit Score (0-10)</label>
+                        <input type="number" class="filter-input" id="merit_score" name="merit_score" 
+                               min="0" max="10" value="{% if my_review %}{{ my_review.merit_score }}{% endif %}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="vulnerability_score">Vulnerability Score (0-10)</label>
+                        <input type="number" class="filter-input" id="vulnerability_score" name="vulnerability_score" 
+                               min="0" max="10" value="{% if my_review %}{{ my_review.vulnerability_score }}{% endif %}">
+                    </div>
+                </div>
+
+                <div class="filter-actions mt-4">
+                    <button type="submit" class="filter-btn">
+                        <i class="bi bi-check-circle"></i> {% if my_review %}Update Review{% else %}Submit Review{% endif %}
+                    </button>
+                    <a href="{% url 'pending_applications' %}" class="clear-btn">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('recommendation').addEventListener('change', function() {
+        const amountField = document.getElementById('amountField');
+        if (this.value === 'approve') {
+            amountField.style.display = 'block';
+            document.getElementById('recommended_amount').required = true;
+        } else {
+            amountField.style.display = 'none';
+            document.getElementById('recommended_amount').required = false;
+        }
+    });
+
+    // Trigger on page load if approve is already selected
+    if (document.getElementById('recommendation').value === 'approve') {
+        document.getElementById('amountField').style.display = 'block';
+    }
+</script>
+{% endblock %}

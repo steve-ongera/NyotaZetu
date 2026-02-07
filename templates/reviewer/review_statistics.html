@@ -1,0 +1,315 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Review Statistics - Nyota Zetu Bursary System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Review Statistics</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-bar-chart"></i>
+                    Review Statistics
+                </h1>
+                <p class="page-subtitle">
+                    {{ assigned_ward.name }} Ward - Performance Analysis
+                </p>
+            </div>
+        </div>
+
+        <!-- Overall Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">{{ total_reviews_all_time|default:0 }}</div>
+                <div class="stat-label">Total Reviews (All Time)</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-value">{{ total_reviews_current_fy|default:0 }}</div>
+                <div class="stat-label">Current FY Reviews</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="stat-value">{{ approval_rate|floatformat:1 }}%</div>
+                <div class="stat-label">Approval Rate</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <div class="stat-value">{{ avg_review_days|default:0 }}</div>
+                <div class="stat-label">Avg Review Time (Days)</div>
+            </div>
+            
+            <div class="stat-card stat-secondary">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-week"></i>
+                </div>
+                <div class="stat-value">{{ recent_activity|default:0 }}</div>
+                <div class="stat-label">Last 30 Days</div>
+            </div>
+        </div>
+
+        <!-- Recommendation Breakdown -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-pie-chart"></i>
+                Recommendation Breakdown (Current FY)
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Recommendation</th>
+                            <th>Count</th>
+                            <th>Total Amount</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in recommendation_stats %}
+                        <tr>
+                            <td>
+                                {% if stat.recommendation == 'approve' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif stat.recommendation == 'reject' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% elif stat.recommendation == 'forward' %}
+                                    <span class="status-badge status-under-review">Forwarded</span>
+                                {% elif stat.recommendation == 'more_info' %}
+                                    <span class="status-badge status-submitted">More Info</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ stat.count }}</span>
+                            </td>
+                            <td>
+                                {% if stat.total_amount %}
+                                <span class="amount-requested">KSh {{ stat.total_amount|floatformat:0|intcomma }}</span>
+                                {% else %}
+                                <span class="applicant-email">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="applicant-email">
+                                    {% widthratio stat.count total_reviews_current_fy 100 %}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Average Scores -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-star"></i>
+                Average Scores
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-value">{{ avg_scores.avg_need|floatformat:1|default:"N/A" }}</div>
+                    <div class="stat-label">Avg Need Score</div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <div class="stat-value">{{ avg_scores.avg_merit|floatformat:1|default:"N/A" }}</div>
+                    <div class="stat-label">Avg Merit Score</div>
+                </div>
+                
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="bi bi-shield-exclamation"></i>
+                    </div>
+                    <div class="stat-value">{{ avg_scores.avg_vulnerability|floatformat:1|default:"N/A" }}</div>
+                    <div class="stat-label">Avg Vulnerability Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category-wise Reviews -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-tags"></i>
+                Reviews by Category
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Reviews</th>
+                            <th>Avg Recommended Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in category_reviews %}
+                        <tr>
+                            <td>
+                                <span class="applicant-name">{{ category.application__bursary_category__name }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ category.count }}</span>
+                            </td>
+                            <td>
+                                {% if category.avg_recommended %}
+                                <span class="amount-requested">KSh {{ category.avg_recommended|floatformat:0|intcomma }}</span>
+                                {% else %}
+                                <span class="applicant-email">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Institutions -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-building"></i>
+                Top 10 Institutions Reviewed
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Institution</th>
+                            <th>Type</th>
+                            <th>Reviews</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for institution in institution_reviews %}
+                        <tr>
+                            <td>
+                                <span class="institution-name">{{ institution.application__institution__name }}</span>
+                            </td>
+                            <td>
+                                <span class="applicant-email">{{ institution.application__institution__institution_type }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ institution.count }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-graph-up"></i>
+                Monthly Review Trend (Last 12 Months)
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Reviews</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in monthly_reviews %}
+                        <tr>
+                            <td>
+                                <span class="applicant-name">{{ month.month|date:"F Y" }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ month.count }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Reviewers Comparison -->
+        {% if all_reviewers %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-people"></i>
+                Reviewer Comparison (Current FY)
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Reviewer</th>
+                            <th>Reviews</th>
+                            <th>Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reviewer in all_reviewers %}
+                        <tr>
+                            <td>
+                                <span class="applicant-name">{{ reviewer.reviewer__username }}</span>
+                            </td>
+                            <td>
+                                <span class="stat-value">{{ reviewer.count }}</span>
+                            </td>
+                            <td>
+                                <span class="applicant-email">#{{ forloop.counter }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

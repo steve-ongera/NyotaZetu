@@ -1,0 +1,310 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Review Reports - Nyota Zetu Bursary System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Reports</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Review Reports
+                </h1>
+                <p class="page-subtitle">
+                    {{ assigned_ward.name }} Ward - {{ current_fiscal_year.name }}
+                </p>
+            </div>
+            <button class="export-btn" onclick="window.print()">
+                <i class="bi bi-printer"></i>
+                Print Report
+            </button>
+        </div>
+
+        <!-- Report Type Selection -->
+        <div class="filter-section">
+            <div class="filter-header">
+                <h6 class="filter-title">
+                    <i class="bi bi-file-text"></i>
+                    Select Report Type
+                </h6>
+            </div>
+            
+            <div class="filter-content" style="display: block;">
+                <form method="get" id="reportForm">
+                    <div class="filter-content">
+                        <div class="filter-group">
+                            <label class="filter-label" for="report_type">
+                                <i class="bi bi-files"></i> Report Type
+                            </label>
+                            <select class="filter-select" id="report_type" name="report_type" onchange="this.form.submit()">
+                                <option value="summary" {% if report_type == 'summary' %}selected{% endif %}>Summary Report</option>
+                                <option value="detailed" {% if report_type == 'detailed' %}selected{% endif %}>Detailed Application List</option>
+                                <option value="financial" {% if report_type == 'financial' %}selected{% endif %}>Financial Analysis</option>
+                                <option value="category" {% if report_type == 'category' %}selected{% endif %}>Category Breakdown</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Summary Report -->
+        {% if report_type == 'summary' %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-bar-chart"></i>
+                Summary Statistics
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-folder2-open"></i>
+                    </div>
+                    <div class="stat-value">{{ total_applications|default:0 }}</div>
+                    <div class="stat-label">Total Applications</div>
+                </div>
+                
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="stat-value">{{ pending_review|default:0 }}</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <div class="stat-value">{{ reviewed|default:0 }}</div>
+                    <div class="stat-label">Reviewed</div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ approved|default:0 }}</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+                
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ rejected|default:0 }}</div>
+                    <div class="stat-label">Rejected</div>
+                </div>
+            </div>
+
+            <div class="stats-grid mt-4">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_requested|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Requested</div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_recommended|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Recommended</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Detailed Report -->
+        {% if report_type == 'detailed' %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-list-ul"></i>
+                Detailed Application List
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Application #</th>
+                            <th>Applicant</th>
+                            <th>Institution</th>
+                            <th>Category</th>
+                            <th>Amount Requested</th>
+                            <th>Status</th>
+                            <th>My Review</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications %}
+                        <tr>
+                            <td>{{ application.application_number }}</td>
+                            <td>{{ application.applicant.user.get_full_name }}</td>
+                            <td>{{ application.institution.name }}</td>
+                            <td>{{ application.bursary_category.name }}</td>
+                            <td>KSh {{ application.amount_requested|floatformat:0|intcomma }}</td>
+                            <td>
+                                {% if application.status == 'submitted' %}
+                                    <span class="status-badge status-submitted">Submitted</span>
+                                {% elif application.status == 'under_review' %}
+                                    <span class="status-badge status-under-review">Under Review</span>
+                                {% elif application.status == 'approved' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif application.status == 'rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% with my_review=application.reviews.all|first %}
+                                {% if my_review %}
+                                    {% if my_review.recommendation == 'approve' %}
+                                        <span class="status-badge status-approved">Approved</span>
+                                    {% elif my_review.recommendation == 'reject' %}
+                                        <span class="status-badge status-rejected">Rejected</span>
+                                    {% elif my_review.recommendation == 'forward' %}
+                                        <span class="status-badge status-under-review">Forwarded</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="applicant-email">Not Reviewed</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7">No applications found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Financial Report -->
+        {% if report_type == 'financial' %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-cash-coin"></i>
+                Financial Analysis
+            </h6>
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_requested|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Requested</div>
+                </div>
+                
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ avg_requested|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Average Requested</div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ total_recommended|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Total Recommended</div>
+                </div>
+                
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div class="stat-value">KSh {{ avg_recommended|floatformat:0|intcomma }}</div>
+                    <div class="stat-label">Average Recommended</div>
+                </div>
+            </div>
+
+            <h6 class="table-title mt-4">
+                <i class="bi bi-building"></i>
+                Institution Breakdown
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Institution</th>
+                            <th>Applications</th>
+                            <th>Total Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in institution_breakdown %}
+                        <tr>
+                            <td>{{ item.institution__name }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>KSh {{ item.total|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Category Report -->
+        {% if report_type == 'category' %}
+        <div class="section-container">
+            <h6 class="table-title">
+                <i class="bi bi-tags"></i>
+                Category Breakdown
+            </h6>
+            <div class="table-responsive">
+                <table class="applications-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Type</th>
+                            <th>Applications</th>
+                            <th>Total Requested</th>
+                            <th>Average Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in category_data %}
+                        <tr>
+                            <td>{{ category.bursary_category__name }}</td>
+                            <td>{{ category.bursary_category__category_type }}</td>
+                            <td>{{ category.count }}</td>
+                            <td>KSh {{ category.total_requested|floatformat:0|intcomma }}</td>
+                            <td>KSh {{ category.avg_requested|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
