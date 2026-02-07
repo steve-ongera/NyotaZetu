@@ -19570,7 +19570,7 @@ def reviewed_applications(request):
 
 @login_required
 @reviewer_required
-def application_detail(request, application_id):
+def reviewer_application_detail(request, application_id):
     """
     Detailed view of a single application for review
     """

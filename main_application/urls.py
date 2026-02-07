@@ -10,10 +10,6 @@ urlpatterns = [
     # Dashboards
     path('dashboard/', views.dashboard, name='dashboard'),
     path('county/dashboard/', views.county_admin_dashboard , name='county_admin_dashboard'),
-    path('reviewer-dashboard/', views.reviewer_dashboard, name='reviewer_dashboard'),
-    
-    
-    # ============= FINANCE DASHBOARD =============
     path('finance/dashboard/', views.finance_dashboard, name='finance_dashboard'),
     
     # ============= ALLOCATIONS =============
@@ -352,11 +348,11 @@ urlpatterns = [
     # ============= APPLICATION MANAGEMENT =============
     path('reviewer/applications/pending/', views.pending_applications, name='pending_applications'),
     path('reviewer/applications/reviewed/', views.reviewed_applications, name='reviewed_applications'),
-    path('reviewer/applications/<int:application_id>/', views.application_detail, name='application_detail'),
+    path('reviewer/applications/<int:application_id>/', views.reviewer_application_detail, name='reviewer_application_detail'),
     path('reviewer/applications/<int:application_id>/review/', views.submit_review, name='submit_review'),
     
     # ============= BULK OPERATIONS =============
-    path('reviewer/applications/bulk-review/', views.bulk_review_view, name='bulk_review'),
+    path('reviewer/applications/bulk-review/', views.bulk_review_view, name='bulk_review'), 
     
     # ============= MY REVIEWS =============
     path('reviewer/reviews/', views.my_reviews_list, name='my_reviews_list'),
