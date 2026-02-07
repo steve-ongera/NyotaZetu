@@ -185,7 +185,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{% url 'fiscal_year_list' %}">Fiscal Years</a></li>
             <li class="breadcrumb-item"><a href="{% url 'fiscal_year_detail' category.fiscal_year.pk %}">{{ category.fiscal_year.name }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">{{ category.name }} Applications</li>

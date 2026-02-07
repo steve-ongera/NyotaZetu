@@ -8,6 +8,7 @@ urlpatterns = [
     path('resend-tfa-code/', views.resend_tfa_code, name='resend_tfa_code'),
     
     # Dashboards
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('county/dashboard/', views.county_admin_dashboard , name='county_admin_dashboard'),
     path('reviewer-dashboard/', views.reviewer_dashboard, name='reviewer_dashboard'),
     

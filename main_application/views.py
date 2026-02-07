@@ -469,6 +469,42 @@ def logout_view(request):
     messages.success(request, 'You have been logged out successfully.')
     return redirect('login_view')
 
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def dashboard(request):
+    """
+    Smart dashboard router based on user_type
+    """
+
+    user = request.user
+    role = user.user_type  # ✅ FIXED
+
+    if role == 'admin':
+        return redirect('county_admin_dashboard')  # or admin dashboard
+
+    elif role == 'county_admin':
+        return redirect('county_admin_dashboard')
+
+    elif role == 'constituency_admin':
+        return redirect('constituency_dashboard')
+
+    elif role == 'ward_admin':
+        return redirect('ward_profile')
+
+    elif role == 'reviewer':
+        return redirect('reviewer_dashboard')
+
+    elif role == 'finance':
+        return redirect('finance_dashboard')
+
+    elif role == 'applicant':
+        return redirect('student_dashboard')
+
+    # Safety fallback
+    return redirect('login_view')
+
 
 # Helper function to check user type
 def is_admin(user):
