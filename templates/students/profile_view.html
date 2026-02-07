@@ -40,166 +40,338 @@
         color: #2980b9;
     }
 
-    .section-container {
-        background: white;
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
-        border: 1px solid #E2E8F0;
-    }
-
-    .page-header {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    .page-title {
-        font-size: 22px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .page-subtitle {
-        color: #64748B;
-        font-size: 14px;
-        margin: 0;
-    }
-
-    /* Profile Sidebar */
-    .profile-sidebar {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 24px;
-        margin-bottom: 24px;
-        height: 100%;
-    }
-
-    .profile-avatar-section {
-        text-align: center;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #F1F5F9;
+    .back-button-container {
         margin-bottom: 20px;
     }
 
-    .avatar-wrapper {
-        position: relative;
-        display: inline-block;
-        margin-bottom: 16px;
-    }
-
-    .avatar-image {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 4px solid #F1F5F9;
-        object-fit: cover;
-    }
-
-    .avatar-edit-btn {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: #3498db;
-        border: 3px solid white;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .btn-secondary-custom {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
         text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .avatar-edit-btn:hover {
-        background: #2980b9;
+    .btn-secondary-custom:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        color: #64748B;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+    }
+
+    .profile-sidebar {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-img-container {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .profile-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .edit-profile-btn {
+        position: absolute;
+        top: 0;
+        right: calc(50% - 72px);
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3498db;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .edit-profile-btn:hover {
+        background: white;
+        color: #2980b9;
         transform: scale(1.1);
     }
 
     .profile-name {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 4px;
+        margin: 12px 0 6px;
     }
 
-    .profile-email {
+    .profile-id {
+        opacity: 0.9;
+        margin-bottom: 20px;
         font-size: 14px;
-        color: #64748B;
-        margin-bottom: 16px;
     }
 
-    .profile-actions {
+    .profile-details {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
     }
 
-    .btn {
+    .profile-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .profile-detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .profile-detail-item i {
+        width: 20px;
+        flex-shrink: 0;
+    }
+
+    .btn-edit-profile {
+        margin-top: 16px;
         padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 6px;
         font-size: 14px;
         font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .btn-edit-profile:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: white;
+    }
+
+    .tabs-navigation {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    .tab-list {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .tab-item {
+        flex: 1;
+    }
+
+    .tab-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px;
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
         transition: all 0.3s ease;
         cursor: pointer;
-        display: inline-flex;
+        background: none;
+        border: none;
+        width: 100%;
+    }
+
+    .tab-link:hover {
+        color: #3498db;
+        background: #F8FAFC;
+    }
+
+    .tab-link.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+        background: white;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .card-custom {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        padding: 16px 20px;
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title-custom {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
         align-items: center;
         gap: 8px;
-        border: none;
     }
 
-    .btn-primary {
+    .btn-edit-small {
+        padding: 6px 14px;
+        background: white;
+        color: #3498db;
+        border: 1px solid #3498db;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-edit-small:hover {
         background: #3498db;
         color: white;
-        border: 1px solid #3498db;
     }
 
-    .btn-primary:hover {
-        background: #2980b9;
-        border-color: #2980b9;
-        transform: translateY(-1px);
-        color: white;
+    .card-body-custom {
+        padding: 20px;
     }
 
-    .btn-outline-secondary {
-        background: white;
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .detail-item {
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .detail-label {
+        font-size: 12px;
+        font-weight: 600;
         color: #64748B;
-        border: 1px solid #E2E8F0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        display: block;
     }
 
-    .btn-outline-secondary:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
-        transform: translateY(-1px);
+    .detail-value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .badge-custom {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-secondary {
+        background: #E2E8F0;
         color: #64748B;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
     }
 
     .progress-section {
-        padding: 20px 0;
-        border-bottom: 1px solid #F1F5F9;
-        margin-bottom: 20px;
+        margin: 20px 0;
     }
 
     .progress-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
         font-size: 14px;
-        font-weight: 600;
         color: #1E293B;
-        margin-bottom: 12px;
+        font-weight: 500;
     }
 
     .progress-bar-custom {
@@ -207,7 +379,7 @@
         background: #F1F5F9;
         border-radius: 4px;
         overflow: hidden;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     .progress-fill {
@@ -218,277 +390,57 @@
     }
 
     .progress-text {
-        font-size: 13px;
-        color: #64748B;
-    }
-
-    .stats-section h6 {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 16px;
-    }
-
-    .stat-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .stat-item:last-child {
-        border-bottom: none;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        color: #64748B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .stat-value {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1E293B;
-    }
-
-    /* Tab Navigation */
-    .tab-navigation {
-        display: flex;
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px 8px 0 0;
-        overflow: hidden;
-    }
-
-    .tab-button {
-        flex: 1;
-        padding: 16px;
-        border: none;
-        background: transparent;
-        color: #64748B;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border-bottom: 3px solid transparent;
-    }
-
-    .tab-button:hover {
-        background: white;
-        color: #3498db;
-    }
-
-    .tab-button.active {
-        background: white;
-        color: #3498db;
-        border-bottom-color: #3498db;
-    }
-
-    .tab-content-wrapper {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-radius: 0 0 8px 8px;
-        padding: 24px;
-    }
-
-    .tab-pane {
-        display: none;
-    }
-
-    .tab-pane.active {
-        display: block;
-    }
-
-    /* Section Title */
-    .section-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .section-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        background: rgba(52, 152, 219, 0.1);
-        color: #3498db;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-    }
-
-    /* Info Grid */
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 16px;
-    }
-
-    .info-card {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        transition: all 0.3s ease;
-    }
-
-    .info-card:hover {
-        background: #F1F5F9;
-        transform: translateY(-2px);
-        border-color: #3498db;
-    }
-
-    .info-content {
-        flex: 1;
-    }
-
-    .info-label {
         font-size: 12px;
-        font-weight: 600;
         color: #64748B;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .info-value {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1E293B;
-    }
-
-    .info-icon {
-        font-size: 24px;
-        color: #3498db;
-        flex-shrink: 0;
-    }
-
-    .special-needs-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        background: rgba(52, 152, 219, 0.1);
-        color: #3498db;
-    }
-
-    /* Guardian Grid */
-    .guardian-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
+        text-align: right;
     }
 
     .guardian-card {
-        background: white;
-        border: 1px solid #E2E8F0;
+        background: #F8FAFC;
+        border-left: 3px solid #3498db;
         border-radius: 8px;
-        padding: 20px;
-        transition: all 0.3s ease;
-    }
-
-    .guardian-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #3498db;
-    }
-
-    .guardian-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
+        padding: 16px;
         margin-bottom: 16px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
     }
 
-    .guardian-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #3498db, #2980b9);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
+    .guardian-card:last-child {
+        margin-bottom: 0;
     }
 
     .guardian-name {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         color: #1E293B;
-        margin-bottom: 4px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .guardian-relationship {
+        font-size: 12px;
+        color: #64748B;
+        margin-left: 8px;
     }
 
     .primary-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 10px;
+        padding: 2px 8px;
         border-radius: 4px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 600;
         background: rgba(16, 185, 129, 0.1);
         color: #10B981;
     }
 
-    .guardian-details {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .guardian-detail-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 14px;
-    }
-
-    .detail-label {
-        color: #64748B;
-        font-weight: 500;
-    }
-
-    .detail-value {
-        font-weight: 600;
-        color: #1E293B;
-    }
-
-    /* Sibling Table */
     .sibling-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
     }
 
-    .sibling-table thead {
+    .sibling-table thead th {
         background: #F8FAFC;
-    }
-
-    .sibling-table th {
-        padding: 16px;
+        padding: 12px 16px;
         text-align: left;
         font-size: 12px;
         font-weight: 600;
@@ -499,7 +451,7 @@
         white-space: nowrap;
     }
 
-    .sibling-table td {
+    .sibling-table tbody td {
         padding: 16px;
         border-bottom: 1px solid #F1F5F9;
         font-size: 14px;
@@ -514,216 +466,166 @@
         background-color: #F8FAFC;
     }
 
-    .status-active {
-        color: #27ae60;
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 11px;
         font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
 
-    .status-inactive {
+    .status-draft {
+        background: #E2E8F0;
         color: #64748B;
-        font-weight: 500;
-        display: flex;
+    }
+
+    .status-submitted {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-under-review {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .btn-view-small {
+        padding: 6px 14px;
+        background: white;
+        color: #3498db;
+        border: 1px solid #3498db;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
     }
 
-    /* Empty State */
+    .btn-view-small:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-add-small {
+        padding: 6px 14px;
+        background: #27ae60;
+        color: white;
+        border: 1px solid #27ae60;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-add-small:hover {
+        background: #219653;
+        color: white;
+    }
+
     .empty-state {
         text-align: center;
-        padding: 60px 20px;
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-    }
-
-    .empty-icon {
-        font-size: 48px;
-        color: #CBD5E1;
-        margin-bottom: 16px;
-    }
-
-    .empty-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #64748B;
-        margin-bottom: 8px;
-    }
-
-    .empty-text {
-        font-size: 14px;
+        padding: 40px 20px;
         color: #94A3B8;
-        margin-bottom: 20px;
-    }
-
-    /* Section Header with Action */
-    .section-header-with-action {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal.show {
-        display: flex;
-    }
-
-    .modal-dialog {
-        background: white;
-        border-radius: 8px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    .modal-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: #64748B;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-    }
-
-    .modal-body {
-        padding: 24px;
-    }
-
-    .modal-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-    }
-
-    .clear-btn {
-        padding: 10px 20px;
-        background: white;
-        color: #64748B;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
         font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-block;
     }
 
-    .clear-btn:hover {
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .stat-item {
         background: #F8FAFC;
-        border-color: #CBD5E1;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
     }
 
-    @media (max-width: 992px) {
-        .info-grid {
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #3498db;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 1200px) {
+        .content-grid {
             grid-template-columns: 1fr;
         }
-        
-        .guardian-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .tab-navigation {
-            flex-wrap: wrap;
-        }
-        
-        .tab-button {
-            flex: 1 0 auto;
-            min-width: 140px;
+
+        .profile-sidebar {
+            position: relative;
+            top: 0;
         }
     }
 
     @media (max-width: 768px) {
-        .section-container {
-            padding: 16px;
-        }
-        
-        .page-header {
+        .tab-list {
             flex-direction: column;
-            align-items: flex-start;
         }
-        
-        .tab-content-wrapper {
-            padding: 16px;
+
+        .info-grid {
+            grid-template-columns: 1fr;
         }
-        
-        .section-header-with-action {
-            flex-direction: column;
-            align-items: flex-start;
+
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
-        
+
         .sibling-table {
-            font-size: 13px;
+            font-size: 12px;
         }
-        
-        .sibling-table th,
-        .sibling-table td {
-            padding: 12px;
+
+        .sibling-table thead th,
+        .sibling-table tbody td {
+            padding: 10px;
         }
     }
 
     @media (max-width: 576px) {
-        .page-title {
-            font-size: 18px;
+        .card-header-custom {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
-        
-        .profile-sidebar {
-            padding: 16px;
-        }
-        
-        .avatar-image {
-            width: 100px;
-            height: 100px;
-        }
-        
-        .section-title {
-            font-size: 16px;
-        }
-        
-        .info-card {
-            padding: 16px;
-        }
-        
-        .guardian-card {
-            padding: 16px;
+
+        .btn-edit-small {
+            align-self: flex-start;
         }
     }
 </style>
@@ -743,677 +645,585 @@
         </ol>
     </nav>
 
-    <div class="row">
+    <!-- Content Grid -->
+    <div class="content-grid">
         <!-- Profile Sidebar -->
-        <div class="col-lg-4">
-            <div class="profile-sidebar">
-                <!-- Avatar Section -->
-                <div class="profile-avatar-section">
-                    <div class="avatar-wrapper">
-                        {% if applicant.profile_picture %}
-                            <img src="{{ applicant.profile_picture.url }}" alt="Profile Avatar" class="avatar-image">
-                        {% else %}
-                            <img src="{% static 'images/default-avatar.png' %}" alt="Profile Avatar" class="avatar-image" onerror="this.src='https://ui-avatars.com/api/?name={{ applicant.user.first_name }}+{{ applicant.user.last_name }}&background=3498db&color=fff&size=120'">
-                        {% endif %}
-                        <a href="{% url 'student_profile_create' %}" class="avatar-edit-btn" title="Edit Profile">
-                            <i class="bi bi-camera"></i>
-                        </a>
-                    </div>
-                    <div class="profile-name">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</div>
-                    <div class="profile-email">{{ applicant.user.email }}</div>
-                    <div class="profile-actions">
-                        <a href="{% url 'student_profile_create' %}" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> Edit Profile
-                        </a>
-                        <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-grid"></i> Dashboard
-                        </a>
-                    </div>
+        <div class="profile-sidebar">
+            <div class="profile-img-container">
+                {% if applicant.profile_picture %}
+                    <img src="{{ applicant.profile_picture.url }}" alt="Profile Image" class="profile-img">
+                {% else %}
+                    <img src="{% static 'images/default-avatar.png' %}" alt="Profile Image" class="profile-img" onerror="this.src='https://ui-avatars.com/api/?name={{ applicant.user.first_name }}+{{ applicant.user.last_name }}&background=3498db&color=fff&size=120'">
+                {% endif %}
+                
+                <a href="{% url 'student_profile_create' %}" class="edit-profile-btn" title="Edit Profile">
+                    <i class="bi bi-camera"></i>
+                </a>
+                
+                <h3 class="profile-name">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</h3>
+                <p class="profile-id">ID: {{ applicant.id_number }}</p>
+            </div>
+            
+            <div class="profile-details">
+                <div class="profile-detail-item">
+                    <i class="bi bi-envelope"></i>
+                    <span>{{ applicant.user.email }}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <i class="bi bi-telephone"></i>
+                    <span>{{ applicant.user.phone_number|default:"Not provided" }}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <i class="bi bi-person"></i>
+                    <span>Student</span>
+                </div>
+                <div class="profile-detail-item">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>{{ applicant.ward.name|default:"Not specified" }}</span>
                 </div>
 
-                <!-- Progress Section -->
+                <!-- Profile Completion Progress -->
                 <div class="progress-section">
-                    <div class="progress-label">Profile Completion</div>
+                    <div class="progress-label">
+                        <span>Profile Completion</span>
+                        <span>{{ completion_percentage }}%</span>
+                    </div>
                     <div class="progress-bar-custom">
                         <div class="progress-fill" style="width: {{ completion_percentage }}%;"></div>
                     </div>
-                    <div class="progress-text">{{ completion_percentage }}% complete</div>
-                </div>
-
-                <!-- Stats Section -->
-                <div class="stats-section">
-                    <h6>Quick Stats</h6>
-                    <div class="stat-item">
-                        <span class="stat-label">
-                            <i class="bi bi-people"></i> Guardians
-                        </span>
-                        <span class="stat-value">{{ guardians.count }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">
-                            <i class="bi bi-person-plus"></i> Siblings
-                        </span>
-                        <span class="stat-value">{{ siblings.count }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">
-                            <i class="bi bi-file-text"></i> Applications
-                        </span>
-                        <span class="stat-value">{{ applications_count|default:0 }}</span>
+                    <div class="progress-text">
+                        Complete your profile to improve application chances
                     </div>
                 </div>
+                
+                <a href="{% url 'student_profile_create' %}" class="btn-edit-profile">
+                    <i class="bi bi-pencil"></i>
+                    Edit Profile
+                </a>
             </div>
         </div>
 
         <!-- Main Content -->
-        <div class="col-lg-8">
-            <div class="section-container">
-                <!-- Tab Navigation -->
-                <div class="tab-navigation">
-                    <button class="tab-button active" data-tab="personal">
-                        <i class="bi bi-person"></i> Personal
-                    </button>
-                    <button class="tab-button" data-tab="location">
-                        <i class="bi bi-geo-alt"></i> Location
-                    </button>
-                    <button class="tab-button" data-tab="guardian">
-                        <i class="bi bi-people"></i> Guardians
-                    </button>
-                    <button class="tab-button" data-tab="sibling">
-                        <i class="bi bi-person-plus"></i> Siblings
-                    </button>
+        <div>
+            <!-- Tabs Navigation -->
+            <div class="tabs-navigation">
+                <ul class="tab-list">
+                    <li class="tab-item">
+                        <button class="tab-link active" data-tab="personal">
+                            <i class="bi bi-person"></i>
+                            Personal
+                        </button>
+                    </li>
+                    <li class="tab-item">
+                        <button class="tab-link" data-tab="location">
+                            <i class="bi bi-geo"></i>
+                            Location
+                        </button>
+                    </li>
+                    <li class="tab-item">
+                        <button class="tab-link" data-tab="family">
+                            <i class="bi bi-people"></i>
+                            Family
+                        </button>
+                    </li>
+                    <li class="tab-item">
+                        <button class="tab-link" data-tab="applications">
+                            <i class="bi bi-files"></i>
+                            Applications
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tabContent">
+                <!-- Personal Information Tab -->
+                <div class="tab-content active" id="personal">
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-person-badge"></i>
+                                Personal Information
+                            </div>
+                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
+                                <i class="bi bi-pencil"></i>
+                                Edit
+                            </a>
+                        </div>
+                        <div class="card-body-custom">
+                            <div class="info-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Full Name</span>
+                                    <span class="detail-value">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">ID Number</span>
+                                    <span class="detail-value">{{ applicant.id_number }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Gender</span>
+                                    <span class="detail-value">{{ applicant.get_gender_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Date of Birth</span>
+                                    <span class="detail-value">{{ applicant.date_of_birth|date:"M d, Y" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Email</span>
+                                    <span class="detail-value">{{ applicant.user.email }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Phone</span>
+                                    <span class="detail-value">{{ applicant.user.phone_number|default:"Not provided" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Profile Status</span>
+                                    <span class="detail-value">
+                                        {% if completion_percentage == 100 %}
+                                            <span class="badge-custom badge-success">Complete</span>
+                                        {% elif completion_percentage >= 70 %}
+                                            <span class="badge-custom badge-info">Good</span>
+                                        {% elif completion_percentage >= 40 %}
+                                            <span class="badge-custom badge-warning">Fair</span>
+                                        {% else %}
+                                            <span class="badge-custom badge-danger">Incomplete</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Needs -->
+                    {% if applicant.special_needs %}
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-wheelchair"></i>
+                                Special Needs
+                            </div>
+                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
+                                <i class="bi bi-pencil"></i>
+                                Edit
+                            </a>
+                        </div>
+                        <div class="card-body-custom">
+                            <span class="badge-custom badge-warning" style="margin-bottom: 16px; display: inline-block;">Has Special Needs</span>
+                            <div class="detail-item">
+                                <span class="detail-label">Description</span>
+                                <span class="detail-value">{{ applicant.special_needs_description|default:"Not provided" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Stats -->
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-bar-chart"></i>
+                                Profile Stats
+                            </div>
+                        </div>
+                        <div class="card-body-custom">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ guardians.count }}</div>
+                                    <div class="stat-label">Guardians</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ siblings.count }}</div>
+                                    <div class="stat-label">Siblings</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ applications_count|default:0 }}</div>
+                                    <div class="stat-label">Applications</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Tab Content -->
-                <div class="tab-content-wrapper">
-                    <!-- Personal Information Tab -->
-                    <div class="tab-pane active" id="personal-pane">
-                        <h5 class="section-title">
-                            <span class="section-icon">
-                                <i class="bi bi-person"></i>
-                            </span>
-                            Personal Information
-                        </h5>
-
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Full Name</div>
-                                    <div class="info-value">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</div>
-                                </div>
-                                <i class="bi bi-person-circle info-icon"></i>
+                <!-- Location Information Tab -->
+                <div class="tab-content" id="location">
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-geo-alt"></i>
+                                Location Information
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Email Address</div>
-                                    <div class="info-value">{{ applicant.user.email }}</div>
-                                </div>
-                                <i class="bi bi-envelope info-icon"></i>
+                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
+                                <i class="bi bi-pencil"></i>
+                                Edit
+                            </a>
+                        </div>
+                        <div class="card-body-custom">
+                            <div class="detail-item">
+                                <span class="detail-label">County</span>
+                                <span class="detail-value">{{ applicant.county.name|default:"Not specified" }}</span>
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Gender</div>
-                                    <div class="info-value">{{ applicant.get_gender_display }}</div>
-                                </div>
-                                <i class="bi bi-gender-ambiguous info-icon"></i>
+                            <div class="detail-item">
+                                <span class="detail-label">Constituency</span>
+                                <span class="detail-value">{{ applicant.constituency.name|default:"Not specified" }}</span>
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Date of Birth</div>
-                                    <div class="info-value">{{ applicant.date_of_birth|date:"M j, Y" }}</div>
-                                </div>
-                                <i class="bi bi-calendar-event info-icon"></i>
+                            <div class="detail-item">
+                                <span class="detail-label">Ward</span>
+                                <span class="detail-value">{{ applicant.ward.name|default:"Not specified" }}</span>
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">ID Number</div>
-                                    <div class="info-value">{{ applicant.id_number }}</div>
-                                </div>
-                                <i class="bi bi-card-text info-icon"></i>
+                            <div class="detail-item">
+                                <span class="detail-label">Location</span>
+                                <span class="detail-value">{{ applicant.location.name|default:"Not specified" }}</span>
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Phone Number</div>
-                                    <div class="info-value">{{ applicant.user.phone_number|default:"Not provided" }}</div>
-                                </div>
-                                <i class="bi bi-telephone info-icon"></i>
+                            <div class="detail-item">
+                                <span class="detail-label">Sub-location</span>
+                                <span class="detail-value">{{ applicant.sublocation.name|default:"Not specified" }}</span>
                             </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Village</span>
+                                <span class="detail-value">{{ applicant.village.name|default:"Not specified" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Physical Address</span>
+                                <span class="detail-value">{{ applicant.physical_address }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Postal Address</span>
+                                <span class="detail-value">{{ applicant.postal_address|default:"Not provided" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                            {% if applicant.special_needs %}
-                            <div class="info-card" style="grid-column: 1 / -1;">
-                                <div class="info-content">
-                                    <div class="info-label">Special Needs</div>
-                                    <div class="info-value">
-                                        <span class="special-needs-badge">Yes</span>
-                                        {% if applicant.special_needs_description %}
-                                            <div style="margin-top: 8px; font-size: 14px; color: #64748B;">{{ applicant.special_needs_description }}</div>
-                                        {% endif %}
+                <!-- Family Information Tab -->
+                <div class="tab-content" id="family">
+                    <!-- Guardians -->
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-people"></i>
+                                Guardians/Parents
+                            </div>
+                            <a href="{% url 'guardian_create' %}" class="btn-add-small">
+                                <i class="bi bi-plus"></i>
+                                Add Guardian
+                            </a>
+                        </div>
+                        <div class="card-body-custom">
+                            {% for guardian in guardians %}
+                            <div class="guardian-card">
+                                <div class="guardian-name">
+                                    {{ guardian.name }}
+                                    <span class="guardian-relationship">({{ guardian.get_relationship_display }})</span>
+                                    {% if guardian.is_primary_contact %}
+                                        <span class="primary-badge">Primary</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Phone</span>
+                                    <span class="detail-value">{{ guardian.phone_number }}</span>
+                                </div>
+                                {% if guardian.email %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Email</span>
+                                    <span class="detail-value">{{ guardian.email }}</span>
+                                </div>
+                                {% endif %}
+                                {% if guardian.occupation %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Occupation</span>
+                                    <span class="detail-value">{{ guardian.occupation }}</span>
+                                </div>
+                                {% endif %}
+                                {% if guardian.monthly_income %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Monthly Income</span>
+                                    <span class="detail-value">KES {{ guardian.monthly_income|floatformat:0|intcomma }}</span>
+                                </div>
+                                {% endif %}
+                                {% if guardian.id_number %}
+                                <div class="detail-item">
+                                    <span class="detail-label">ID Number</span>
+                                    <span class="detail-value">{{ guardian.id_number }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="empty-state">
+                                No guardian information provided.
+                                <div style="margin-top: 16px;">
+                                    <a href="{% url 'guardian_create' %}" class="btn-add-small">
+                                        <i class="bi bi-plus"></i>
+                                        Add Your First Guardian
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Siblings -->
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-people"></i>
+                                Siblings
+                            </div>
+                            <a href="{% url 'sibling_create' %}" class="btn-add-small">
+                                <i class="bi bi-plus"></i>
+                                Add Sibling
+                            </a>
+                        </div>
+                        <div class="card-body-custom">
+                            {% if siblings %}
+                                <div class="table-responsive">
+                                    <table class="sibling-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Age</th>
+                                                <th>Education Level</th>
+                                                <th>School</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sibling in siblings %}
+                                            <tr>
+                                                <td><strong>{{ sibling.name }}</strong></td>
+                                                <td>{{ sibling.age }} years</td>
+                                                <td>{{ sibling.education_level }}</td>
+                                                <td>{{ sibling.school_name|default:"-" }}</td>
+                                                <td>
+                                                    {% if sibling.is_in_school %}
+                                                        <span class="badge-custom badge-success">In School</span>
+                                                    {% else %}
+                                                        <span class="badge-custom badge-secondary">Not in School</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    No sibling information provided.
+                                    <div style="margin-top: 16px;">
+                                        <a href="{% url 'sibling_create' %}" class="btn-add-small">
+                                            <i class="bi bi-plus"></i>
+                                            Add Your First Sibling
+                                        </a>
                                     </div>
                                 </div>
-                                <i class="bi bi-heart info-icon"></i>
-                            </div>
                             {% endif %}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Location Information Tab -->
-                    <div class="tab-pane" id="location-pane">
-                        <h5 class="section-title">
-                            <span class="section-icon">
-                                <i class="bi bi-geo-alt"></i>
-                            </span>
-                            Administrative Location
-                        </h5>
-
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">County</div>
-                                    <div class="info-value">{{ applicant.county.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-flag info-icon"></i>
+                <!-- Applications Tab -->
+                <div class="tab-content" id="applications">
+                    <div class="card-custom">
+                        <div class="card-header-custom">
+                            <div class="card-title-custom">
+                                <i class="bi bi-file-text"></i>
+                                Applications History
                             </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Constituency</div>
-                                    <div class="info-value">{{ applicant.constituency.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-map info-icon"></i>
-                            </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Ward</div>
-                                    <div class="info-value">{{ applicant.ward.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-geo info-icon"></i>
-                            </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Location</div>
-                                    <div class="info-value">{{ applicant.location.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-pin-map info-icon"></i>
-                            </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Sub-Location</div>
-                                    <div class="info-value">{{ applicant.sublocation.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-geo-fill info-icon"></i>
-                            </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Village</div>
-                                    <div class="info-value">{{ applicant.village.name|default:"Not specified" }}</div>
-                                </div>
-                                <i class="bi bi-house info-icon"></i>
-                            </div>
-                        </div>
-
-                        <h5 class="section-title" style="margin-top: 32px;">
-                            <span class="section-icon">
-                                <i class="bi bi-house-door"></i>
-                            </span>
-                            Address Information
-                        </h5>
-
-                        <div class="info-grid">
-                            <div class="info-card" style="grid-column: 1 / -1;">
-                                <div class="info-content">
-                                    <div class="info-label">Physical Address</div>
-                                    <div class="info-value">{{ applicant.physical_address }}</div>
-                                </div>
-                                <i class="bi bi-house info-icon"></i>
-                            </div>
-
-                            <div class="info-card">
-                                <div class="info-content">
-                                    <div class="info-label">Postal Address</div>
-                                    <div class="info-value">{{ applicant.postal_address|default:"Not provided" }}</div>
-                                </div>
-                                <i class="bi bi-mailbox info-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Guardian Information Tab -->
-                    <div class="tab-pane" id="guardian-pane">
-                        <div class="section-header-with-action">
-                            <h5 class="section-title" style="margin-bottom: 0;">
-                                <span class="section-icon">
-                                    <i class="bi bi-people"></i>
-                                </span>
-                                Guardian Information
-                            </h5>
-                            <a href="{% url 'guardian_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus"></i> Add Guardian
+                            <a href="{% url 'student_dashboard' %}" class="btn-add-small">
+                                <i class="bi bi-plus"></i>
+                                New Application
                             </a>
                         </div>
-
-                        {% if guardians %}
-                            <div class="guardian-grid">
-                                {% for guardian in guardians %}
-                                <div class="guardian-card" onclick="viewGuardianDetails({{ guardian.id }})" style="cursor: pointer;">
-                                    <div class="guardian-header">
-                                        <div class="guardian-avatar">
-                                            <i class="bi bi-person"></i>
-                                        </div>
-                                        <div style="flex: 1;">
-                                            <div class="guardian-name">{{ guardian.name }}</div>
-                                            {% if guardian.is_primary_contact %}
-                                                <span class="primary-badge">
-                                                    <i class="bi bi-star-fill"></i> Primary Contact
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="guardian-details">
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Relationship:</span>
-                                            <span class="detail-value">{{ guardian.get_relationship_display }}</span>
-                                        </div>
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Phone:</span>
-                                            <span class="detail-value">{{ guardian.phone_number }}</span>
-                                        </div>
-                                        {% if guardian.email %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Email:</span>
-                                            <span class="detail-value">{{ guardian.email }}</span>
-                                        </div>
-                                        {% endif %}
-                                        {% if guardian.id_number %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">ID Number:</span>
-                                            <span class="detail-value">{{ guardian.id_number }}</span>
-                                        </div>
-                                        {% endif %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Employment:</span>
-                                            <span class="detail-value">{{ guardian.get_employment_status_display }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-people"></i>
-                                </div>
-                                <h3 class="empty-title">No Guardian Information</h3>
-                                <p class="empty-text">Add guardian/parent information to complete your profile</p>
-                                <a href="{% url 'guardian_create' %}" class="btn btn-primary">
-                                    <i class="bi bi-plus"></i> Add Guardian
-                                </a>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Sibling Information Tab -->
-                    <div class="tab-pane" id="sibling-pane">
-                        <div class="section-header-with-action">
-                            <h5 class="section-title" style="margin-bottom: 0;">
-                                <span class="section-icon">
-                                    <i class="bi bi-person-plus"></i>
-                                </span>
-                                Sibling Information
-                            </h5>
-                            <a href="{% url 'sibling_create' %}" class="btn btn-primary">
-                                <i class="bi bi-plus"></i> Add Sibling
-                            </a>
-                        </div>
-
-                        {% if siblings %}
-                            <div style="overflow-x: auto;">
+                        <div class="card-body-custom">
+                            {% if applications %}
+                            <div class="table-responsive">
                                 <table class="sibling-table">
                                     <thead>
                                         <tr>
-                                            <th><i class="bi bi-person"></i> Name</th>
-                                            <th><i class="bi bi-calendar"></i> Age</th>
-                                            <th><i class="bi bi-mortarboard"></i> Education Level</th>
-                                            <th><i class="bi bi-building"></i> School</th>
-                                            <th><i class="bi bi-check-circle"></i> Status</th>
+                                            <th>Application #</th>
+                                            <th>Fiscal Year</th>
+                                            <th>Category</th>
+                                            <th>Institution</th>
+                                            <th>Amount Requested</th>
+                                            <th>Status</th>
+                                            <th>Date Submitted</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for sibling in siblings %}
-                                        <tr onclick="viewSiblingDetails({{ sibling.id }})" style="cursor: pointer;">
-                                            <td style="font-weight: 600;">{{ sibling.name }}</td>
-                                            <td>{{ sibling.age }} years</td>
-                                            <td>{{ sibling.education_level }}</td>
-                                            <td>{{ sibling.school_name|default:"Not specified" }}</td>
+                                        {% for application in applications %}
+                                        <tr>
+                                            <td><strong>{{ application.application_number }}</strong></td>
+                                            <td>{{ application.fiscal_year.name }}</td>
+                                            <td>{{ application.bursary_category.name }}</td>
+                                            <td>{{ application.institution.name }}</td>
+                                            <td>KES {{ application.amount_requested|floatformat:0|intcomma }}</td>
                                             <td>
-                                                {% if sibling.is_in_school %}
-                                                    <span class="status-active">
-                                                        <i class="bi bi-check-circle-fill"></i> In School
-                                                    </span>
-                                                {% else %}
-                                                    <span class="status-inactive">
-                                                        <i class="bi bi-dash-circle-fill"></i> Not in School
-                                                    </span>
+                                                {% if application.status == 'draft' %}
+                                                    <span class="status-badge status-draft">Draft</span>
+                                                {% elif application.status == 'submitted' %}
+                                                    <span class="status-badge status-submitted">Submitted</span>
+                                                {% elif application.status == 'under_review' %}
+                                                    <span class="status-badge status-under-review">Under Review</span>
+                                                {% elif application.status == 'approved' %}
+                                                    <span class="status-badge status-approved">Approved</span>
+                                                {% elif application.status == 'rejected' %}
+                                                    <span class="status-badge status-rejected">Rejected</span>
+                                                {% elif application.status == 'disbursed' %}
+                                                    <span class="status-badge status-disbursed">Disbursed</span>
                                                 {% endif %}
+                                            </td>
+                                            <td>{{ application.date_submitted|date:"M d, Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'application_detail' application.id %}" class="btn-view-small">
+                                                    <i class="bi bi-eye"></i>
+                                                    View
+                                                </a>
                                             </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
-                        {% else %}
+                            {% else %}
                             <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-person-plus"></i>
+                                No applications found.
+                                <div style="margin-top: 16px;">
+                                    <a href="{% url 'student_dashboard' %}" class="btn-add-small">
+                                        <i class="bi bi-plus"></i>
+                                        Start Your First Application
+                                    </a>
                                 </div>
-                                <h3 class="empty-title">No Sibling Information</h3>
-                                <p class="empty-text">Add sibling information to complete your profile</p>
-                                <a href="{% url 'sibling_create' %}" class="btn btn-primary">
-                                    <i class="bi bi-plus"></i> Add Sibling
-                                </a>
                             </div>
-                        {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Guardian Details Modal -->
-<div class="modal" id="guardianDetailsModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-person"></i>
-                    Guardian Details
-                </h5>
-                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="guardianModalContent">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
-                <a href="#" class="btn btn-primary" id="editGuardianBtn">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Sibling Details Modal -->
-<div class="modal" id="siblingDetailsModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-person-plus"></i>
-                    Sibling Details
-                </h5>
-                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="siblingModalContent">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
-                <a href="#" class="btn btn-primary" id="editSiblingBtn">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Success Modal -->
-<div class="modal" id="successModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-check-circle text-success"></i>
-                    Success
-                </h5>
-                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="successMessage">Operation completed successfully!</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Error Modal -->
-<div class="modal" id="errorModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-exclamation-circle text-danger"></i>
-                    Error
-                </h5>
-                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="errorMessage">An error occurred. Please try again.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Tab Navigation Logic
     document.addEventListener('DOMContentLoaded', function() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabPanes = document.querySelectorAll('.tab-pane');
+        // Tab switching functionality
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-        // Show first tab by default
-        tabPanes.forEach((pane, index) => {
-            if (index === 0) {
-                pane.classList.add('active');
-            } else {
-                pane.classList.remove('active');
-            }
-        });
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function() {
                 const targetTab = this.getAttribute('data-tab');
 
-                // Remove active class from all buttons and panes
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanes.forEach(pane => pane.classList.remove('active'));
+                // Remove active class from all tabs
+                tabLinks.forEach(l => l.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
 
-                // Add active class to clicked button and show corresponding pane
+                // Add active class to clicked tab
                 this.classList.add('active');
-                document.getElementById(`${targetTab}-pane`).classList.add('active');
-                
-                // Update URL hash for bookmarking
-                window.history.pushState(null, null, `#${targetTab}`);
+                document.getElementById(targetTab).classList.add('active');
+
+                // Save active tab to localStorage
+                localStorage.setItem('activeTab', targetTab);
             });
         });
 
-        // Check for hash in URL to load specific tab
-        const hash = window.location.hash.substring(1);
-        if (hash) {
-            const tabButton = document.querySelector(`.tab-button[data-tab="${hash}"]`);
-            if (tabButton) {
-                tabButton.click();
+        // Check localStorage for saved tab
+        const savedTab = localStorage.getItem('activeTab');
+        if (savedTab) {
+            const targetLink = document.querySelector(`[data-tab="${savedTab}"]`);
+            if (targetLink) {
+                targetLink.click();
             }
         }
 
-        // Add keyboard navigation for tabs
+        // Check if there's a hash in the URL and activate that tab
+        const hash = window.location.hash;
+        if (hash && !savedTab) {
+            const tabName = hash.substring(1); // Remove the # symbol
+            const targetLink = document.querySelector(`[data-tab="${tabName}"]`);
+            if (targetLink) {
+                targetLink.click();
+            }
+        }
+
+        // Update URL hash when tab changes
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                history.pushState(null, null, `#${tabName}`);
+            });
+        });
+
+        // Animate progress bar
+        const progressFill = document.querySelector('.progress-fill');
+        const completionPercentage = {{ completion_percentage }};
+        let currentWidth = 0;
+        
+        const animateProgress = () => {
+            if (currentWidth < completionPercentage) {
+                currentWidth += 1;
+                progressFill.style.width = `${currentWidth}%`;
+                setTimeout(animateProgress, 10);
+            }
+        };
+        
+        // Start animation after a short delay
+        setTimeout(animateProgress, 500);
+
+        // Add keyboard shortcuts for tabs
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
-                e.preventDefault();
-                const tabIndex = parseInt(e.key) - 1;
-                const tabButtons = document.querySelectorAll('.tab-button');
-                if (tabButtons[tabIndex]) {
-                    tabButtons[tabIndex].click();
+            if (e.ctrlKey || e.metaKey) {
+                const keyMap = {
+                    '1': 'personal',
+                    '2': 'location',
+                    '3': 'family',
+                    '4': 'applications'
+                };
+
+                if (keyMap[e.key]) {
+                    e.preventDefault();
+                    const targetLink = document.querySelector(`[data-tab="${keyMap[e.key]}"]`);
+                    if (targetLink) {
+                        targetLink.click();
+                    }
                 }
             }
         });
-    });
 
-    function viewGuardianDetails(guardianId) {
-        // In a real application, this would fetch data from an API
-        // For now, we'll show a simulated modal
-        const modalContent = document.getElementById('guardianModalContent');
-        modalContent.innerHTML = `
-            <div class="info-row">
-                <span class="info-label">Full Name:</span>
-                <span class="info-value">John Doe</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Relationship:</span>
-                <span class="info-value">Father</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Phone:</span>
-                <span class="info-value">+254 712 345 678</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Email:</span>
-                <span class="info-value">john@example.com</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Employment:</span>
-                <span class="info-value">Employed</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Monthly Income:</span>
-                <span class="info-value">KES 45,000</span>
-            </div>
-        `;
-        
-        document.getElementById('editGuardianBtn').href = `/guardian/${guardianId}/edit/`;
-        document.getElementById('guardianDetailsModal').classList.add('show');
-    }
+        // Add smooth scrolling for card content
+        const tabContent = document.querySelector('#tabContent');
+        if (tabContent) {
+            tabContent.style.maxHeight = 'calc(100vh - 200px)';
+            tabContent.style.overflowY = 'auto';
+            tabContent.style.paddingRight = '4px';
+        }
 
-    function viewSiblingDetails(siblingId) {
-        // In a real application, this would fetch data from an API
-        // For now, we'll show a simulated modal
-        const modalContent = document.getElementById('siblingModalContent');
-        modalContent.innerHTML = `
-            <div class="info-row">
-                <span class="info-label">Full Name:</span>
-                <span class="info-value">Jane Doe</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Age:</span>
-                <span class="info-value">16 years</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Education Level:</span>
-                <span class="info-value">Secondary School</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">School:</span>
-                <span class="info-value">Nairobi High School</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Status:</span>
-                <span class="info-value" style="color: #27ae60; font-weight: 600;">In School</span>
-            </div>
-        `;
-        
-        document.getElementById('editSiblingBtn').href = `/sibling/${siblingId}/edit/`;
-        document.getElementById('siblingDetailsModal').classList.add('show');
-    }
+        // Add scroll indicator for long content
+        const activeTabContent = document.querySelector('.tab-content.active');
+        if (activeTabContent && activeTabContent.scrollHeight > activeTabContent.clientHeight) {
+            activeTabContent.style.borderRight = '2px solid #F1F5F9';
+        }
 
-    function closeModal() {
-        document.querySelectorAll('.modal.show').forEach(modal => {
-            modal.classList.remove('show');
+        // Listen for window resize and adjust tab content height
+        window.addEventListener('resize', function() {
+            const tabContent = document.querySelector('#tabContent');
+            if (tabContent) {
+                tabContent.style.maxHeight = 'calc(100vh - 200px)';
+            }
         });
-    }
+    });
 
-    function showSuccess(message) {
-        document.getElementById('successMessage').textContent = message;
-        document.getElementById('successModal').classList.add('show');
-        setTimeout(() => closeModal(), 2000);
-    }
-
-    function showError(message) {
-        document.getElementById('errorMessage').textContent = message;
-        document.getElementById('errorModal').classList.add('show');
-    }
-
-    // Close modal on background click
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            closeModal();
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+        const hash = window.location.hash;
+        if (hash) {
+            const tabName = hash.substring(1);
+            const targetLink = document.querySelector(`[data-tab="${tabName}"]`);
+            if (targetLink) {
+                targetLink.click();
+            }
         }
     });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
-    });
-
-    // Update progress animation
-    document.addEventListener('DOMContentLoaded', function() {
-        const progressFill = document.querySelector('.progress-fill');
-        const completionPercentage = {{ completion_percentage }};
-        
-        // Animate progress bar
-        setTimeout(() => {
-            progressFill.style.width = `${completionPercentage}%`;
-        }, 100);
-    });
-
-    // Print profile functionality
-    function printProfile() {
-        const printContent = document.querySelector('.tab-content-wrapper').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Student Profile - {{ applicant.user.get_full_name }}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        .section-title { color: #1E293B; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-                        .info-card { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
-                        @media print {
-                            body { font-size: 12pt; }
-                            .no-print { display: none !important; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>Student Profile</h1>
-                    <h2>{{ applicant.user.get_full_name }}</h2>
-                    ${printContent}
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    }
 </script>
 {% endblock %}
