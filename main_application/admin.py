@@ -266,7 +266,7 @@ class WardAllocationInline(admin.TabularInline):
     readonly_fields = ['balance']
     fields = ['ward', 'allocated_amount', 'spent_amount', 'balance', 'beneficiaries_count']
 
-
+ 
 class DisbursementRoundInline(admin.TabularInline):
     model = DisbursementRound
     extra = 0

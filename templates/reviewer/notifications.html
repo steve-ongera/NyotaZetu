@@ -3,18 +3,553 @@
 
 {% block title %}Notifications - Reviewer Panel{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: 1px;
+        background: #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .filter-tab {
+        flex: 1;
+        padding: 12px 16px;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .filter-tab:hover {
+        background: #F8FAFC;
+        color: #3498db;
+    }
+
+    .filter-tab.active {
+        background: #3498db;
+        color: white;
+    }
+
+    .tab-badge {
+        background: #DC2626;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    /* Notifications List */
+    .notifications-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        background: #F1F5F9;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .notification-item {
+        background: white;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+
+    .notification-item:hover {
+        background: #F8FAFC;
+        border-color: #E2E8F0;
+        transform: translateY(-1px);
+    }
+
+    .notification-unread {
+        background: #E0F2FE;
+        border-left: 4px solid #3498db;
+    }
+
+    .notification-unread:hover {
+        background: #D1E9FF;
+    }
+
+    .notification-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .notification-icon i {
+        color: white;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .notification-message {
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .notification-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .notification-time {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #64748B;
+        font-size: 13px;
+    }
+
+    .notification-time i {
+        font-size: 14px;
+    }
+
+    .notification-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #3498db;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .notification-link:hover {
+        color: #2980b9;
+    }
+
+    .notification-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mark-read-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: #27ae60;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .mark-read-btn:hover {
+        background: #219653;
+        transform: scale(1.1);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 32px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    /* Info row for modal */
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748B;
+        flex: 1;
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        flex: 1;
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 16px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .filter-tabs {
+            flex-direction: column;
+        }
+        
+        .notification-item {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .notification-icon {
+            align-self: flex-start;
+        }
+        
+        .notification-actions {
+            align-self: flex-end;
+            margin-top: 12px;
+        }
+        
+        .notification-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 18px;
+        }
+        
+        .notification-item {
+            padding: 16px;
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+        
+        .notification-title {
+            font-size: 15px;
+        }
+        
+        .pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li class="breadcrumb-item active">Notifications</li>
+            <li class="breadcrumb-item active" aria-current="page">Notifications</li>
         </ol>
     </nav>
 
     <div class="section-container">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
@@ -30,7 +565,7 @@
                 </p>
             </div>
             {% if unread_count > 0 %}
-            <form method="post" action="{% url 'mark_all_notifications_read' %}">
+            <form method="post" action="{% url 'mark_all_notifications_read' %}" style="margin: 0;">
                 {% csrf_token %}
                 <button type="submit" class="export-btn">
                     <i class="bi bi-check-all"></i>
@@ -63,7 +598,7 @@
         {% if page_obj %}
         <div class="notifications-list">
             {% for notification in page_obj %}
-            <div class="notification-item {% if not notification.is_read %}notification-unread{% endif %}">
+            <div class="notification-item {% if not notification.is_read %}notification-unread{% endif %}" onclick="viewNotification({{ notification.id }}, '{{ notification.notification_type }}')" style="cursor: pointer;">
                 <div class="notification-icon">
                     {% if notification.notification_type == 'application_status' %}
                         <i class="bi bi-file-earmark-check"></i>
@@ -78,14 +613,14 @@
 
                 <div class="notification-content">
                     <h4 class="notification-title">{{ notification.title }}</h4>
-                    <p class="notification-message">{{ notification.message }}</p>
+                    <p class="notification-message">{{ notification.message|truncatechars:150 }}</p>
                     <div class="notification-meta">
                         <span class="notification-time">
                             <i class="bi bi-clock"></i>
                             {{ notification.created_at|timesince }} ago
                         </span>
                         {% if notification.related_application %}
-                        <a href="{% url 'application_detail' notification.related_application.id %}" class="notification-link">
+                        <a href="{% url 'application_detail' notification.related_application.id %}" class="notification-link" onclick="event.stopPropagation();">
                             <i class="bi bi-arrow-right"></i> View Application
                         </a>
                         {% endif %}
@@ -94,7 +629,7 @@
 
                 {% if not notification.is_read %}
                 <div class="notification-actions">
-                    <a href="?mark_read={{ notification.id }}" class="mark-read-btn" title="Mark as read">
+                    <a href="?mark_read={{ notification.id }}" class="mark-read-btn" title="Mark as read" onclick="event.stopPropagation();">
                         <i class="bi bi-check2"></i>
                     </a>
                 </div>
@@ -142,11 +677,264 @@
 
         {% else %}
         <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-bell-slash"></i></div>
+            <div class="empty-icon">
+                <i class="bi bi-bell-slash"></i>
+            </div>
             <h3 class="empty-title">No Notifications</h3>
             <p class="empty-text">You don't have any notifications yet.</p>
         </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Notification Details Modal -->
+<div class="modal" id="notificationDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-bell"></i>
+                    Notification Details
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-row">
+                    <span class="info-label">Title:</span>
+                    <span class="info-value" id="modalNotificationTitle"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value" id="modalNotificationType"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value" id="modalNotificationDate"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" id="modalNotificationStatus"></span>
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #F1F5F9;">
+                    <h6 style="font-size: 14px; font-weight: 600; color: #64748B; margin-bottom: 8px;">Message:</h6>
+                    <p id="modalNotificationMessage" style="color: #334155; font-size: 14px; line-height: 1.6;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+                <button type="button" class="export-btn" onclick="markAsRead()">
+                    <i class="bi bi-check2"></i> Mark as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="successModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle text-success"></i>
+                    Success
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Notification marked as read!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="errorModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle text-danger"></i>
+                    Error
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred. Please try again.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentNotificationId = null;
+
+    function viewNotification(notificationId, notificationType) {
+        currentNotificationId = notificationId;
+        
+        // In a real application, you would fetch this data from an API
+        // For now, we'll extract it from the DOM
+        const notificationItem = document.querySelector(`[onclick*="${notificationId}"]`);
+        if (notificationItem) {
+            const title = notificationItem.querySelector('.notification-title').textContent;
+            const message = notificationItem.querySelector('.notification-message').textContent;
+            const time = notificationItem.querySelector('.notification-time').textContent;
+            const isUnread = notificationItem.classList.contains('notification-unread');
+            
+            document.getElementById('modalNotificationTitle').textContent = title;
+            document.getElementById('modalNotificationMessage').textContent = message;
+            document.getElementById('modalNotificationDate').textContent = time;
+            document.getElementById('modalNotificationType').textContent = formatNotificationType(notificationType);
+            document.getElementById('modalNotificationStatus').textContent = isUnread ? 'Unread' : 'Read';
+            
+            document.getElementById('notificationDetailsModal').classList.add('show');
+        }
+    }
+
+    function formatNotificationType(type) {
+        const types = {
+            'application_status': 'Application Status',
+            'review_comment': 'Review Comment',
+            'deadline': 'Deadline Alert',
+            'system': 'System Notification'
+        };
+        return types[type] || type.replace('_', ' ').toUpperCase();
+    }
+
+    function markAsRead() {
+        if (!currentNotificationId) return;
+        
+        // Simulate marking as read
+        const notificationItem = document.querySelector(`[onclick*="${currentNotificationId}"]`);
+        if (notificationItem) {
+            notificationItem.classList.remove('notification-unread');
+            const markReadBtn = notificationItem.querySelector('.mark-read-btn');
+            if (markReadBtn) {
+                markReadBtn.style.display = 'none';
+            }
+            
+            closeModal();
+            showSuccess('Notification marked as read!');
+            
+            // Update unread count
+            updateUnreadCount();
+        }
+    }
+
+    function updateUnreadCount() {
+        const unreadItems = document.querySelectorAll('.notification-unread').length;
+        const unreadBadge = document.querySelector('.tab-badge');
+        const unreadTab = document.querySelector('[href*="filter=unread"]');
+        
+        if (unreadBadge) {
+            unreadBadge.textContent = unreadItems;
+            if (unreadItems === 0) {
+                unreadBadge.style.display = 'none';
+            }
+        }
+        
+        // Update page subtitle
+        const subtitle = document.querySelector('.page-subtitle');
+        if (unreadItems > 0) {
+            subtitle.textContent = `You have ${unreadItems} unread notification(s)`;
+        } else {
+            subtitle.textContent = 'All caught up!';
+        }
+    }
+
+    function closeModal() {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+        currentNotificationId = null;
+    }
+
+    function showSuccess(message) {
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('successModal').classList.add('show');
+        
+        setTimeout(() => {
+            closeModal();
+        }, 2000);
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorModal').classList.add('show');
+    }
+
+    // Initialize notification interactions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add tooltip to mark read buttons
+        const markReadBtns = document.querySelectorAll('.mark-read-btn');
+        markReadBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                this.closest('.notification-item').classList.remove('notification-unread');
+                this.style.display = 'none';
+                updateUnreadCount();
+                
+                // Simulate AJAX request
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        showSuccess('Notification marked as read!');
+                    }
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            
+            // 'A' to mark all as read
+            if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+                const markAllBtn = document.querySelector('.export-btn');
+                if (markAllBtn) {
+                    markAllBtn.click();
+                }
+            }
+        });
+    });
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModal();
+        }
+    });
+
+    // Notification sound (optional)
+    function playNotificationSound() {
+        const audio = new Audio('/static/notification.mp3');
+        audio.play().catch(e => console.log('Audio playback failed:', e));
+    }
+
+    // Check for new notifications periodically
+    function checkForNewNotifications() {
+        // In a real application, you would poll an API endpoint
+        console.log('Checking for new notifications...');
+    }
+
+    // Check every 60 seconds
+    setInterval(checkForNewNotifications, 60000);
+</script>
 {% endblock %}

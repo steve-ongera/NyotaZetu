@@ -3,39 +3,898 @@
 
 {% block title %}Search Applications - Reviewer Panel{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+    }
+
+    .per-page-select {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 13px;
+        background: white;
+        color: #64748B;
+    }
+
+    .applications-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .applications-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .applications-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applications-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applications-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .app-number {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .applicant-name {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .applicant-email {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .institution-name {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .institution-county {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .amount-requested {
+        font-weight: 600;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .amount-allocated {
+        font-size: 13px;
+        color: #27ae60;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-submitted {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-under-review {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .date-main {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .date-time {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    /* Search Specific Styles */
+    .search-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .search-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .search-input-group {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 12px 16px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .search-btn {
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .search-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .search-filters {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .search-filters .filter-select {
+        min-width: 150px;
+    }
+
+    .results-section {
+        margin-top: 24px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #3498db;
+    }
+
+    .search-tips {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-top: 24px;
+    }
+
+    .tips-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tips-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tips-list li {
+        padding: 8px 0;
+        color: #334155;
+        font-size: 14px;
+        position: relative;
+        padding-left: 24px;
+    }
+
+    .tips-list li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #27ae60;
+        font-weight: bold;
+    }
+
+    .results-count {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+        margin-left: auto;
+        background: #E2E8F0;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .view-btn {
+        padding: 6px 12px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .view-btn:hover {
+        background: #2980b9;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .text-muted {
+        color: #64748B !important;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .search-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-filters .filter-select {
+            width: 100%;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .table thead th,
+        .table tbody td {
+            padding: 10px;
+            font-size: 13px;
+        }
+        
+        .section-title {
+            flex-wrap: wrap;
+        }
+        
+        .results-count {
+            margin-left: 0;
+            margin-top: 8px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .search-section {
+            padding: 16px;
+        }
+        
+        .search-tips {
+            padding: 20px;
+        }
+        
+        .tips-list li {
+            font-size: 13px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li class="breadcrumb-item active">Search</li>
+            <li class="breadcrumb-item active" aria-current="page">Search Applications</li>
         </ol>
     </nav>
 
     <div class="section-container">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
                     <i class="bi bi-search"></i>
                     Search Applications
                 </h1>
-                <p class="page-subtitle">Find applications from {{ assigned_ward.name }} Ward</p>
+                <p class="page-subtitle">
+                    Find applications from {{ assigned_ward.name }} Ward
+                </p>
             </div>
         </div>
 
-        <!-- Search Form -->
+        <!-- Search Section -->
         <div class="search-section">
-            <form method="get" class="search-form">
+            <form method="get" class="search-form" id="searchForm">
                 <div class="search-input-group">
                     <input 
                         type="text" 
                         name="q" 
                         class="search-input" 
                         placeholder="Search by application number, name, ID, or institution..." 
-                        value="{{ search_query }}"
+                        value="{{ search_query|default:'' }}"
                         autofocus
+                        id="searchInput"
                     >
                     <button type="submit" class="search-btn">
                         <i class="bi bi-search"></i>
@@ -44,10 +903,22 @@
                 </div>
 
                 <div class="search-filters">
-                    <select name="type" class="filter-select">
-                        <option value="all" {% if search_type == 'all' %}selected{% endif %}>All Types</option>
-                        <option value="application" {% if search_type == 'application' %}selected{% endif %}>Applications Only</option>
-                    </select>
+                    <div class="filter-group">
+                        <select name="type" class="filter-select" id="searchType">
+                            <option value="all" {% if search_type == 'all' or not search_type %}selected{% endif %}>All Types</option>
+                            <option value="application" {% if search_type == 'application' %}selected{% endif %}>Applications Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <select name="status" class="filter-select" id="statusFilter">
+                            <option value="">All Statuses</option>
+                            <option value="submitted" {% if request.GET.status == 'submitted' %}selected{% endif %}>Submitted</option>
+                            <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>Under Review</option>
+                            <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         </div>
@@ -55,15 +926,23 @@
         <!-- Search Results -->
         {% if search_query %}
         <div class="results-section">
-            <h2 class="section-title">
-                <i class="bi bi-list-check"></i>
-                Search Results
-                {% if results %}({{ results|length }} found){% endif %}
-            </h2>
+            <div class="table-header">
+                <h6 class="table-title">
+                    <i class="bi bi-list-check"></i>
+                    Search Results
+                </h6>
+                <div class="results-count">
+                    {% if results %}
+                        {{ results|length }} result{{ results|length|pluralize }} found
+                    {% else %}
+                        No results found
+                    {% endif %}
+                </div>
+            </div>
 
             {% if results %}
             <div class="table-responsive">
-                <table class="table">
+                <table class="applications-table">
                     <thead>
                         <tr>
                             <th>Application #</th>
@@ -78,44 +957,77 @@
                     <tbody>
                         {% for application in results %}
                         <tr>
-                            <td><strong>{{ application.application_number }}</strong></td>
                             <td>
-                                <div>{{ application.applicant.user.get_full_name }}</div>
-                                <small class="text-muted">{{ application.applicant.user.email }}</small>
+                                <span class="app-number">{{ application.application_number }}</span>
                             </td>
                             <td>
-                                <div>{{ application.institution.name }}</div>
-                                <small class="text-muted">{{ application.institution.get_institution_type_display }}</small>
+                                <span class="applicant-name">{{ application.applicant.user.get_full_name }}</span>
+                                <span class="applicant-email">{{ application.applicant.user.email }}</span>
                             </td>
-                            <td>KSh {{ application.amount_requested|floatformat:0|intcomma }}</td>
                             <td>
-                                <span class="status-badge status-{{ application.status }}">
-                                    {{ application.get_status_display }}
-                                </span>
+                                <span class="institution-name">{{ application.institution.name }}</span>
+                                <span class="institution-county">{{ application.institution.get_institution_type_display }}</span>
                             </td>
-                            <td>{{ application.date_submitted|date:"M d, Y" }}</td>
                             <td>
-                                <a href="{% url 'application_detail' application.id %}" class="btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
+                                <span class="amount-requested">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+                            </td>
+                            <td>
+                                {% if application.status == 'submitted' %}
+                                    <span class="status-badge status-submitted">Submitted</span>
+                                {% elif application.status == 'under_review' %}
+                                    <span class="status-badge status-under-review">Under Review</span>
+                                {% elif application.status == 'approved' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif application.status == 'rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% elif application.status == 'disbursed' %}
+                                    <span class="status-badge status-disbursed">Disbursed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="date-main">{{ application.date_submitted|date:"M d, Y" }}</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'application_detail' application.id %}" class="action-btn" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if application.status == 'submitted' or application.status == 'under_review' %}
+                                    <a href="{% url 'submit_review' application.id %}" class="action-btn" title="Review Application">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            <!-- No Pagination for search results since it's a filtered list -->
             {% else %}
             <div class="empty-state">
-                <div class="empty-icon"><i class="bi bi-search"></i></div>
+                <div class="empty-icon">
+                    <i class="bi bi-search"></i>
+                </div>
                 <h3 class="empty-title">No Results Found</h3>
                 <p class="empty-text">
                     No applications match your search for "<strong>{{ search_query }}</strong>".
-                    Try different keywords.
                 </p>
+                <div class="filter-actions">
+                    <a href="{% url 'applicant_search' %}" class="clear-btn">
+                        <i class="bi bi-x-circle"></i> Clear Search
+                    </a>
+                    <button type="button" class="filter-btn" onclick="document.getElementById('searchInput').focus()">
+                        <i class="bi bi-pencil"></i> Try Different Search
+                    </button>
+                </div>
             </div>
             {% endif %}
         </div>
         {% else %}
+        <!-- Search Tips -->
         <div class="search-tips">
             <h3 class="tips-title">
                 <i class="bi bi-lightbulb"></i>
@@ -125,11 +1037,196 @@
                 <li>Enter application number (e.g., KB-047-2024-ABC123)</li>
                 <li>Search by applicant name (first or last name)</li>
                 <li>Use ID number to find specific applicants</li>
-                <li>Search by institution name</li>
-                <li>Results include only applications from your ward</li>
+                <li>Search by institution name or type</li>
+                <li>Filter by status to narrow down results</li>
+                <li>Results include only applications from {{ assigned_ward.name }} Ward</li>
             </ul>
+            
+            <!-- Quick Stats -->
+            <div class="stats-grid" style="margin-top: 24px;">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div class="stat-value">{{ total_applications|intcomma|default:"0" }}</div>
+                    <div class="stat-label">Total Applications</div>
+                </div>
+
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="stat-value">{{ pending_reviews|intcomma|default:"0" }}</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-value">{{ approved_applications|intcomma|default:"0" }}</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    <div class="stat-value">{{ total_applicants|intcomma|default:"0" }}</div>
+                    <div class="stat-label">Unique Applicants</div>
+                </div>
+            </div>
         </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Export Modal -->
+<div class="modal" id="exportModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-download"></i>
+                    Export Search Results
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id="exportForm">
+                    {% csrf_token %}
+                    <div class="filter-group">
+                        <label class="filter-label" for="export_format">
+                            <i class="bi bi-file-earmark"></i> Export Format
+                        </label>
+                        <select class="filter-select" name="format" id="export_format">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group mt-3">
+                        <label class="filter-label" for="export_scope">
+                            <i class="bi bi-database"></i> Export Scope
+                        </label>
+                        <select class="filter-select" name="scope" id="export_scope">
+                            <option value="current">Current Search Results</option>
+                            <option value="all_ward">All Ward Applications</option>
+                            <option value="current_fy">Current Fiscal Year</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Cancel</button>
+                <button type="submit" form="exportForm" class="filter-btn">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        // Auto-search on status filter change (if there's a search query)
+        if (statusFilter && searchInput.value) {
+            statusFilter.addEventListener('change', function() {
+                searchForm.submit();
+            });
+        }
+        
+        // Add export button to page header if there are search results
+        if ({{ results|length|default:0 }} > 0) {
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'export-btn';
+            exportBtn.innerHTML = '<i class="bi bi-download"></i> Export Results';
+            exportBtn.setAttribute('data-bs-toggle', 'modal');
+            exportBtn.setAttribute('data-bs-target', '#exportModal');
+            
+            const pageHeader = document.querySelector('.page-header');
+            if (pageHeader) {
+                pageHeader.appendChild(exportBtn);
+            }
+        }
+        
+        // Auto-focus search input
+        if (searchInput && !searchInput.value) {
+            searchInput.focus();
+        }
+        
+        // Add recent searches functionality
+        const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        
+        // Save search when form is submitted
+        searchForm.addEventListener('submit', function() {
+            const query = searchInput.value.trim();
+            if (query) {
+                // Add to recent searches
+                if (!recentSearches.includes(query)) {
+                    recentSearches.unshift(query);
+                    if (recentSearches.length > 5) {
+                        recentSearches.pop();
+                    }
+                    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                }
+            }
+        });
+        
+        // Show recent searches in a dropdown (optional enhancement)
+        if (recentSearches.length > 0 && !searchInput.value) {
+            const recentSearchesDiv = document.createElement('div');
+            recentSearchesDiv.className = 'recent-searches';
+            recentSearchesDiv.innerHTML = `
+                <div style="font-size: 13px; color: #64748B; margin-top: 8px;">
+                    Recent searches: ${recentSearches.slice(0, 3).map(search => 
+                        `<a href="?q=${encodeURIComponent(search)}" style="color: #3498db; margin-right: 8px;">${search}</a>`
+                    ).join('')}
+                </div>
+            `;
+            
+            const searchSection = document.querySelector('.search-section');
+            if (searchSection) {
+                searchSection.appendChild(recentSearchesDiv);
+            }
+        }
+    });
+
+    // Modal functions
+    function closeModal() {
+        document.getElementById('exportModal').classList.remove('show');
+    }
+
+    // Open modal on button click
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-bs-toggle="modal"]')) {
+            e.preventDefault();
+            const targetModal = e.target.closest('[data-bs-toggle="modal"]').getAttribute('data-bs-target');
+            document.querySelector(targetModal).classList.add('show');
+        }
+    });
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('show');
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+    });
+</script>
 {% endblock %}

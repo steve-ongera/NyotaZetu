@@ -3,18 +3,838 @@
 
 {% block title %}Settings - Reviewer Panel{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+    }
+
+    .per-page-select {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 13px;
+        background: white;
+        color: #64748B;
+    }
+
+    .applications-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .applications-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .applications-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applications-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applications-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .app-number {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .applicant-name {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .applicant-email {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .institution-name {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .institution-county {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .amount-requested {
+        font-weight: 600;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .amount-allocated {
+        font-size: 13px;
+        color: #27ae60;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-submitted {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-under-review {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .date-main {
+        font-weight: 500;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .date-time {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    /* Settings Specific Styles */
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 24px;
+    }
+
+    .settings-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .settings-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .settings-card-header {
+        background: #F8FAFC;
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .settings-card-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .settings-card-header i {
+        color: #3498db;
+        font-size: 18px;
+    }
+
+    .settings-card-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748B;
+        flex: 1;
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        flex: 1;
+        text-align: right;
+    }
+
+    .help-text {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 12px;
+        line-height: 1.5;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border: 1px solid #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-outline-primary {
+        background: white;
+        color: #3498db;
+        border: 1px solid #3498db;
+    }
+
+    .btn-outline-primary:hover {
+        background: #3498db;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline-warning {
+        background: white;
+        color: #f39c12;
+        border: 1px solid #f39c12;
+    }
+
+    .btn-outline-warning:hover {
+        background: #f39c12;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .password-form {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-top: 24px;
+    }
+
+    .password-form h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .password-form h4 i {
+        color: #3498db;
+    }
+
+    @media (max-width: 768px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .settings-card-body {
+            padding: 20px;
+        }
+        
+        .info-row {
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .info-value {
+            text-align: left;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .settings-card-header {
+            padding: 16px 20px;
+        }
+        
+        .settings-card-body {
+            padding: 16px;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li class="breadcrumb-item active">Settings</li>
+            <li class="breadcrumb-item active" aria-current="page">Settings</li>
         </ol>
     </nav>
 
     <div class="section-container">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
@@ -25,6 +845,7 @@
             </div>
         </div>
 
+        <!-- Settings Grid -->
         <div class="settings-grid">
             <!-- Profile Information -->
             <div class="settings-card">
@@ -32,21 +853,23 @@
                     <h3><i class="bi bi-person-circle"></i> Profile Information</h3>
                 </div>
                 <div class="settings-card-body">
-                    <form method="post">
+                    <form method="post" id="profileForm">
                         {% csrf_token %}
+                        <input type="hidden" name="form_type" value="profile">
+                        
                         <div class="form-group">
                             <label for="first_name">First Name</label>
-                            <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}">
+                            <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}" required>
                         </div>
 
                         <div class="form-group">
                             <label for="last_name">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}">
+                            <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}" required>
                         </div>
 
                         <div class="form-group">
                             <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}">
+                            <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}" required>
                         </div>
 
                         <div class="form-group">
@@ -54,9 +877,14 @@
                             <input type="tel" id="phone_number" name="phone_number" class="form-control" value="{{ user.phone_number }}" placeholder="+254XXXXXXXXX">
                         </div>
 
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Save Changes
-                        </button>
+                        <div class="filter-actions">
+                            <button type="submit" class="filter-btn">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                            <button type="reset" class="clear-btn">
+                                <i class="bi bi-x-circle"></i> Reset
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -73,15 +901,29 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">User Type:</span>
-                        <span class="info-value">{{ user.get_user_type_display }}</span>
+                        <span class="info-value badge badge-success">{{ user.get_user_type_display|default:"Reviewer" }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Assigned Ward:</span>
-                        <span class="info-value">{{ user.assigned_ward.name|default:"Not Assigned" }}</span>
+                        <span class="info-value">
+                            {% if user.assigned_ward %}
+                                {{ user.assigned_ward.name }}
+                            {% else %}
+                                <span class="applicant-email">Not Assigned</span>
+                            {% endif %}
+                        </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">ID Number:</span>
-                        <span class="info-value">{{ user.id_number }}</span>
+                        <span class="info-value">{{ user.id_number|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Login:</span>
+                        <span class="info-value">{{ user.last_login|date:"M d, Y g:i A"|default:"Never" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Account Created:</span>
+                        <span class="info-value">{{ user.date_joined|date:"M d, Y" }}</span>
                     </div>
                 </div>
             </div>
@@ -92,12 +934,47 @@
                     <h3><i class="bi bi-bell"></i> Notification Preferences</h3>
                 </div>
                 <div class="settings-card-body">
-                    <a href="{% url 'notification_settings' %}" class="btn btn-outline-primary">
-                        <i class="bi bi-sliders"></i> Manage Notifications
-                    </a>
-                    <p class="help-text">
-                        Configure how you receive notifications about applications and reviews.
-                    </p>
+                    <div class="form-group">
+                        <label class="filter-label">Email Notifications</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="email_applications" checked>
+                                <span>New Applications</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="email_reviews" checked>
+                                <span>Review Reminders</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="email_updates" checked>
+                                <span>System Updates</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="filter-label">In-App Notifications</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="inapp_pending" checked>
+                                <span>Pending Applications</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="inapp_deadlines" checked>
+                                <span>Deadline Reminders</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="inapp_updates" checked>
+                                <span>Status Updates</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="button" class="filter-btn" onclick="saveNotificationSettings()">
+                            <i class="bi bi-save"></i> Save Preferences
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -107,15 +984,245 @@
                     <h3><i class="bi bi-lock"></i> Security</h3>
                 </div>
                 <div class="settings-card-body">
-                    <a href="#" class="btn btn-outline-warning">
-                        <i class="bi bi-key"></i> Change Password
-                    </a>
-                    <p class="help-text">
-                        Update your password to keep your account secure.
-                    </p>
+                    <!-- Change Password Form -->
+                    <div class="password-form">
+                        <h4><i class="bi bi-key"></i> Change Password</h4>
+                        <form method="post" id="passwordForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="password">
+                            
+                            <div class="form-group">
+                                <label for="current_password">Current Password</label>
+                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new_password">New Password</label>
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password">Confirm New Password</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                            </div>
+
+                            <div class="filter-actions">
+                                <button type="submit" class="filter-btn">
+                                    <i class="bi bi-check-circle"></i> Update Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="info-row" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #F1F5F9;">
+                        <span class="info-label">Two-Factor Authentication:</span>
+                        <span class="info-value">
+                            <span class="badge badge-success">Enabled</span>
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Session Management:</span>
+                        <span class="info-value">
+                            <a href="#" class="clear-btn" style="padding: 4px 8px; font-size: 12px;">
+                                <i class="bi bi-laptop"></i> Manage Sessions
+                            </a>
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Login History:</span>
+                        <span class="info-value">
+                            <a href="#" class="clear-btn" style="padding: 4px 8px; font-size: 12px;">
+                                <i class="bi bi-clock-history"></i> View History
+                            </a>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Success Modal -->
+<div class="modal" id="successModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle text-success"></i>
+                    Success
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Your settings have been saved successfully!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="errorModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle text-danger"></i>
+                    Error
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred while saving your settings.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile form validation
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+            profileForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Basic validation
+                const firstName = document.getElementById('first_name').value.trim();
+                const lastName = document.getElementById('last_name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                
+                if (!firstName || !lastName || !email) {
+                    showError('Please fill in all required fields.');
+                    return;
+                }
+                
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showError('Please enter a valid email address.');
+                    return;
+                }
+                
+                // Phone validation (optional)
+                const phone = document.getElementById('phone_number').value.trim();
+                if (phone && !/^\+?[\d\s\-\(\)]+$/.test(phone)) {
+                    showError('Please enter a valid phone number.');
+                    return;
+                }
+                
+                // Submit form
+                this.submit();
+            });
+        }
+        
+        // Password form validation
+        const passwordForm = document.getElementById('passwordForm');
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('current_password').value;
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    showError('Please fill in all password fields.');
+                    return;
+                }
+                
+                if (newPassword.length < 8) {
+                    showError('New password must be at least 8 characters long.');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    showError('New passwords do not match.');
+                    return;
+                }
+                
+                // Submit form
+                this.submit();
+            });
+        }
+        
+        // Load saved notification settings
+        loadNotificationSettings();
+    });
+
+    function saveNotificationSettings() {
+        // Get all checkbox values
+        const settings = {
+            email_applications: document.querySelector('input[name="email_applications"]').checked,
+            email_reviews: document.querySelector('input[name="email_reviews"]').checked,
+            email_updates: document.querySelector('input[name="email_updates"]').checked,
+            inapp_pending: document.querySelector('input[name="inapp_pending"]').checked,
+            inapp_deadlines: document.querySelector('input[name="inapp_deadlines"]').checked,
+            inapp_updates: document.querySelector('input[name="inapp_updates"]').checked
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('notification_settings', JSON.stringify(settings));
+        
+        // Show success message
+        showSuccess('Notification preferences saved successfully!');
+    }
+
+    function loadNotificationSettings() {
+        const savedSettings = localStorage.getItem('notification_settings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            
+            // Apply settings to checkboxes
+            Object.keys(settings).forEach(key => {
+                const checkbox = document.querySelector(`input[name="${key}"]`);
+                if (checkbox) {
+                    checkbox.checked = settings[key];
+                }
+            });
+        }
+    }
+
+    function showSuccess(message) {
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('successModal').classList.add('show');
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorModal').classList.add('show');
+    }
+
+    // Modal functions
+    function closeModal() {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    }
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
 {% endblock %}

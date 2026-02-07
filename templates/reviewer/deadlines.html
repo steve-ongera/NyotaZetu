@@ -1,24 +1,552 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}Deadlines - Reviewer Panel{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    /* Alert Styles */
+    .alert {
+        background: #FEF3C7;
+        border: 1px solid #FBBF24;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border-color: #FBBF24;
+    }
+
+    .alert-icon {
+        color: #D97706;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #92400E;
+        margin-bottom: 8px;
+    }
+
+    .alert-text {
+        color: #92400E;
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .alert-text strong {
+        font-weight: 700;
+    }
+
+    .alert-link {
+        color: #92400E;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        transition: color 0.3s ease;
+    }
+
+    .alert-link:hover {
+        color: #78350F;
+    }
+
+    /* Deadlines Grid */
+    .deadlines-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .deadline-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .deadline-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .deadline-urgent {
+        border-left: 4px solid #DC2626;
+        background: linear-gradient(to right, #FEE2E2 0%, white 10%);
+    }
+
+    .deadline-urgent:hover {
+        border-color: #B91C1C;
+    }
+
+    .deadline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .deadline-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .deadline-urgent .deadline-icon {
+        background: linear-gradient(135deg, #DC2626, #B91C1C);
+    }
+
+    .deadline-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .deadline-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        line-height: 1.4;
+    }
+
+    .deadline-date {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #64748B;
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .deadline-date i {
+        color: #3498db;
+        font-size: 16px;
+    }
+
+    .deadline-countdown {
+        margin-bottom: 16px;
+    }
+
+    .countdown-value {
+        font-size: 15px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .countdown-overdue {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .countdown-today {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .countdown-urgent {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .deadline-type {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #64748B;
+        font-size: 13px;
+        padding-top: 12px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .deadline-type i {
+        color: #3498db;
+        font-size: 14px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 32px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #27ae60;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    /* Actions Section */
+    .actions-section {
+        display: flex;
+        gap: 12px;
+        padding-top: 24px;
+        margin-top: 24px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border: 1px solid #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+        color: #64748B;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 16px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .deadlines-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .alert {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .alert-icon {
+            align-self: center;
+        }
+        
+        .actions-section {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 18px;
+        }
+        
+        .deadline-card {
+            padding: 20px;
+        }
+        
+        .deadline-title {
+            font-size: 16px;
+        }
+        
+        .deadline-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'reviewer_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li class="breadcrumb-item active">Deadlines</li>
+            <li class="breadcrumb-item active" aria-current="page">Deadlines</li>
         </ol>
     </nav>
 
     <div class="section-container">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
-                    <i class="bi bi-exclamation-triangle"></i>
+                    <i class="bi bi-calendar-event"></i>
                     Upcoming Deadlines
                 </h1>
                 <p class="page-subtitle">Stay on track with important review deadlines</p>
@@ -105,7 +633,9 @@
         </div>
         {% else %}
         <div class="empty-state">
-            <div class="empty-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="empty-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
             <h3 class="empty-title">No Upcoming Deadlines</h3>
             <p class="empty-text">You're all caught up! No pressing deadlines at the moment.</p>
         </div>
@@ -124,4 +654,252 @@
         </div>
     </div>
 </div>
+
+<!-- Success Modal -->
+<div class="modal" id="successModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle text-success"></i>
+                    Success
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Operation completed successfully!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="errorModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle text-danger"></i>
+                    Error
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred. Please try again.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deadline Details Modal -->
+<div class="modal" id="deadlineDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-event"></i>
+                    Deadline Details
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 id="modalDeadlineTitle" style="margin-bottom: 16px;"></h4>
+                <div class="info-row">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value" id="modalDeadlineDate"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value" id="modalDeadlineType"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" id="modalDeadlineStatus"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Days Remaining:</span>
+                    <span class="info-value" id="modalDeadlineDays"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+                <button type="button" class="filter-btn" onclick="addToCalendar()">
+                    <i class="bi bi-calendar-plus"></i> Add to Calendar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click events to deadline cards
+        const deadlineCards = document.querySelectorAll('.deadline-card');
+        deadlineCards.forEach(card => {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function() {
+                const title = this.querySelector('.deadline-title').textContent;
+                const date = this.querySelector('.deadline-date span').textContent;
+                const type = this.querySelector('.deadline-type').textContent.replace(' ', '');
+                const status = this.querySelector('.deadline-badge .badge').textContent;
+                const days = this.querySelector('.countdown-value').textContent;
+                
+                document.getElementById('modalDeadlineTitle').textContent = title;
+                document.getElementById('modalDeadlineDate').textContent = date;
+                document.getElementById('modalDeadlineType').textContent = type;
+                document.getElementById('modalDeadlineStatus').textContent = status;
+                document.getElementById('modalDeadlineDays').textContent = days;
+                
+                document.getElementById('deadlineDetailsModal').classList.add('show');
+            });
+        });
+
+        // Set up notifications for urgent deadlines
+        checkUrgentDeadlines();
+    });
+
+    function checkUrgentDeadlines() {
+        const urgentDeadlines = document.querySelectorAll('.deadline-urgent');
+        if (urgentDeadlines.length > 0 && !localStorage.getItem('urgent_deadline_notified')) {
+            showNotification('You have urgent deadlines that require immediate attention!');
+            localStorage.setItem('urgent_deadline_notified', 'true');
+        }
+    }
+
+    function showNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #DC2626, #B91C1C);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 20px;"></i>
+                <div style="flex: 1;">
+                    <strong style="display: block; margin-bottom: 4px;">Urgent Deadline Alert</strong>
+                    <span style="font-size: 13px;">${message}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 20px;">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 10000);
+    }
+
+    function addToCalendar() {
+        const title = document.getElementById('modalDeadlineTitle').textContent;
+        const date = document.getElementById('modalDeadlineDate').textContent;
+        
+        // Create ICS file for download
+        const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:${title}
+DTSTART;VALUE=DATE:${formatDateForICS(date)}
+DTEND;VALUE=DATE:${formatDateForICS(date)}
+DESCRIPTION:Bursary Review Deadline
+END:VEVENT
+END:VCALENDAR`;
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'deadline.ics';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        closeModal();
+        showSuccess('Added to your calendar!');
+    }
+
+    function formatDateForICS(dateString) {
+        // Convert date string to YYYYMMDD format
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}${month}${day}`;
+    }
+
+    function closeModal() {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    }
+
+    function showSuccess(message) {
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('successModal').classList.add('show');
+        
+        setTimeout(() => {
+            closeModal();
+        }, 2000);
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorModal').classList.add('show');
+    }
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    // Add CSS for notification animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
 {% endblock %}
