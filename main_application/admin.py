@@ -270,7 +270,8 @@ class WardAllocationInline(admin.TabularInline):
 class DisbursementRoundInline(admin.TabularInline):
     model = DisbursementRound
     extra = 0
-    fields = ['round_number', 'name', 'application_start_date', 'application_end_date', 'is_open']
+    fields = ['round_number', 'name', 'application_start_date', 'application_end_date', 
+              'review_deadline', 'disbursement_date', 'allocated_amount', 'is_open']
 
 
 @admin.register(FiscalYear)
