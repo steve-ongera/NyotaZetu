@@ -6,35 +6,60 @@ from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import redirect
 from django.contrib import messages
 
+from functools import wraps
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import redirect
+from django.contrib import messages
 
-def reviewer_required(function):
+
+REVIEWER_ROLES = ['reviewer', 'admin', 'county_admin']
+
+
+def reviewer_required(view_func):
     """
-    Decorator to ensure user is a reviewer
+    Allows access to reviewers, admins, and county admins
     """
-    def check_reviewer(user):
-        return user.is_authenticated and user.user_type == 'reviewer'
-    
-    actual_decorator = user_passes_test(
-        check_reviewer,
-        login_url='login',
-        redirect_field_name='next'
-    )
-    
+
+    def check_user(user):
+        return user.is_authenticated and user.user_type in REVIEWER_ROLES
+
+    @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+
+        # Not logged in
         if not request.user.is_authenticated:
             return redirect('login')
-        
-        if request.user.user_type != 'reviewer':
-            messages.error(request, "Access denied. Reviewer privileges required.")
+
+        # Wrong role
+        if request.user.user_type not in REVIEWER_ROLES:
+            messages.error(
+                request,
+                "Access denied. Reviewer, Admin, or County Admin privileges required."
+            )
             return redirect('home')
-        
-        if not request.user.assigned_ward:
-            messages.error(request, "You are not assigned to any ward. Please contact the administrator.")
-            return redirect('reviewer_profile')
-        
-        return function(request, *args, **kwargs)
-    
+
+        # Reviewer-specific checks
+        if request.user.user_type == 'reviewer':
+            if not request.user.assigned_ward:
+                messages.error(
+                    request,
+                    "You are not assigned to any ward. Please contact the administrator."
+                )
+                return redirect('reviewer_profile')
+
+        # County admin checks (optional but recommended)
+        if request.user.user_type == 'county_admin':
+            if not request.user.assigned_county:
+                messages.error(
+                    request,
+                    "You are not assigned to any county. Please contact the administrator."
+                )
+                return redirect('dashboard')
+
+        return view_func(request, *args, **kwargs)
+
     return wrapper
+
 
 
 def admin_required(function):
