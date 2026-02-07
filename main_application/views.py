@@ -18809,7 +18809,6 @@ def reviewer_dashboard(request):
 
 
 # ============= APPLICATION MANAGEMENT =============
-
 @login_required
 @reviewer_required
 def pending_applications(request):
@@ -18872,9 +18871,10 @@ def pending_applications(request):
         is_active=True
     )
     
+    # FIXED: Use 'application' not 'applications'
     institutions = Institution.objects.filter(
         is_active=True,
-        applications__applicant__ward=assigned_ward
+        application__applicant__ward=assigned_ward
     ).distinct()
     
     context = {
