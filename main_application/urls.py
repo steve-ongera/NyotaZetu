@@ -334,4 +334,52 @@ urlpatterns = [
     path('constituency/settings/', views.constituency_settings, name='constituency_settings'),
     path('constituency/notifications/send/', views.constituency_send_notifications, name='constituency_send_notifications'),
     
+    
+     # ============= DASHBOARD =============
+    path('reviewer/dashboard/', views.reviewer_dashboard, name='reviewer_dashboard'),
+    
+    # ============= APPLICATION MANAGEMENT =============
+    path('reviewer/applications/pending/', views.pending_applications, name='pending_applications'),
+    path('reviewer/applications/reviewed/', views.reviewed_applications, name='reviewed_applications'),
+    path('reviewer/applications/<int:application_id>/', views.application_detail, name='application_detail'),
+    path('reviewer/applications/<int:application_id>/review/', views.submit_review, name='submit_review'),
+    
+    # ============= BULK OPERATIONS =============
+    path('reviewer/applications/bulk-review/', views.bulk_review_view, name='bulk_review'),
+    
+    # ============= MY REVIEWS =============
+    path('reviewer/reviews/', views.my_reviews_list, name='my_reviews_list'),
+    path('reviewer/reviews/statistics/', views.review_statistics, name='review_statistics'),
+    
+    # ============= REPORTS =============
+    path('reviewer/reports/', views.review_reports, name='review_reports'),
+    path('reviewer/reports/export/', views.export_reviews, name='export_reviews'),
+    
+    # ============= HELP & SUPPORT =============
+    path('reviewer/help/', views.help_center, name='help_center'),
+    path('reviewer/help/guidelines/', views.review_guidelines, name='review_guidelines'),
+    
+    # ============= WARD MANAGEMENT =============
+    path('reviewer/ward/profile/', views.ward_profile, name='ward_profile'),
+    path('reviewer/ward/statistics/', views.ward_statistics, name='ward_statistics'),
+    path('reviewer/ward/allocations/', views.ward_allocations, name='ward_allocations'),
+    
+    # ============= CALENDAR & DEADLINES =============
+    path('reviewer/calendar/', views.review_calendar, name='calendar'),
+    path('reviewer/deadlines/', views.deadlines, name='deadlines'),
+    
+    # ============= SEARCH =============
+    path('reviewer/search/', views.applicant_search, name='applicant_search'),
+    
+    # ============= SETTINGS =============
+    path('reviewer/settings/', views.reviewer_settings, name='settings'),
+    path('reviewer/settings/notifications/', views.notification_settings, name='notification_settings'),
+    
+    # ============= NOTIFICATIONS =============
+    path('reviewer/notifications/', views.notifications_list, name='notifications'),
+    path('reviewer/notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    
+    # ============= UTILITY =============
+    path('reviewer/documents/<int:document_id>/download/', views.download_document, name='download_document'),
+    
 ]

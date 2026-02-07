@@ -5,46 +5,172 @@
             <img src="{% static 'images/logo.png' %}" alt="Logo">
         </div>
         <span class="logo-text">Reviewer Panel</span>
+        {% if user.assigned_ward %}
+        <div class="ward-badge">
+            <i class="fas fa-map-marker-alt"></i>
+            {{ user.assigned_ward.name }} Ward
+        </div>
+        {% endif %}
     </div>
 
+    <!-- ============= MAIN MENU ============= -->
     <div class="menu-section">
         <div class="menu-title">Main Menu</div>
-        <a href="#" class="menu-item">
+        <a href="{% url 'dashboard' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
     </div>
 
+    <!-- ============= REVIEW MANAGEMENT ============= -->
     <div class="menu-section">
         <div class="menu-title">Review Management</div>
         
-        <div class="menu-item has-submenu" data-submenu="applications">
+        <!-- Applications Submenu -->
+        <div class="menu-item has-submenu {% if 'applications' in request.resolver_match.url_name or 'application_detail' in request.resolver_match.url_name %}active{% endif %}" data-submenu="applications">
             <i class="fas fa-file-alt"></i>
             <span>Applications</span>
             <i class="fas fa-chevron-right arrow"></i>
         </div>
-        <div class="submenu" id="submenu-applications">
-            <a href="#" class="submenu-item">Pending Review</a>
-            <a href="#" class="submenu-item">Reviewed Applications</a>
+        <div class="submenu {% if 'applications' in request.resolver_match.url_name or 'application_detail' in request.resolver_match.url_name %}show{% endif %}" id="submenu-applications">
+            <a href="{% url 'pending_applications' %}" class="submenu-item {% if request.resolver_match.url_name == 'pending_applications' %}active{% endif %}">
+                <i class="fas fa-clock"></i>
+                <span>Pending Review</span>
+                {% if pending_count %}
+                <span class="badge bg-warning">{{ pending_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'reviewed_applications' %}" class="submenu-item {% if request.resolver_match.url_name == 'reviewed_applications' %}active{% endif %}">
+                <i class="fas fa-check-circle"></i>
+                <span>Reviewed Applications</span>
+            </a>
+            <a href="{% url 'bulk_review' %}" class="submenu-item">
+                <i class="fas fa-tasks"></i>
+                <span>Bulk Review</span>
+            </a>
         </div>
 
-        <div class="menu-item has-submenu" data-submenu="reviews">
+        <!-- My Reviews Submenu -->
+        <div class="menu-item has-submenu {% if 'reviews' in request.resolver_match.url_name %}active{% endif %}" data-submenu="reviews">
             <i class="fas fa-clipboard-check"></i>
             <span>My Reviews</span>
             <i class="fas fa-chevron-right arrow"></i>
         </div>
-        <div class="submenu" id="submenu-reviews">
-            <a href="#" class="submenu-item">All Reviews</a>
-            <a href="#" class="submenu-item">Statistics</a>
+        <div class="submenu {% if 'reviews' in request.resolver_match.url_name %}show{% endif %}" id="submenu-reviews">
+            <a href="{% url 'my_reviews_list' %}" class="submenu-item {% if request.resolver_match.url_name == 'my_reviews_list' %}active{% endif %}">
+                <i class="fas fa-list"></i>
+                <span>All Reviews</span>
+            </a>
+            <a href="{% url 'review_statistics' %}" class="submenu-item {% if request.resolver_match.url_name == 'review_statistics' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                <span>Statistics</span>
+            </a>
         </div>
     </div>
 
+    <!-- ============= WARD MANAGEMENT ============= -->
     <div class="menu-section">
-        <div class="menu-title">Reports</div>
+        <div class="menu-title">My Ward</div>
         
-        <a href="#" class="menu-item">
+        <div class="menu-item has-submenu {% if 'ward' in request.resolver_match.url_name %}active{% endif %}" data-submenu="ward">
+            <i class="fas fa-map-marked-alt"></i>
+            <span>Ward Information</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu {% if 'ward' in request.resolver_match.url_name %}show{% endif %}" id="submenu-ward">
+            <a href="{% url 'ward_profile' %}" class="submenu-item {% if request.resolver_match.url_name == 'ward_profile' %}active{% endif %}">
+                <i class="fas fa-info-circle"></i>
+                <span>Ward Profile</span>
+            </a>
+            <a href="{% url 'ward_statistics' %}" class="submenu-item {% if request.resolver_match.url_name == 'ward_statistics' %}active{% endif %}">
+                <i class="fas fa-chart-pie"></i>
+                <span>Ward Statistics</span>
+            </a>
+            <a href="{% url 'ward_allocations' %}" class="submenu-item {% if request.resolver_match.url_name == 'ward_allocations' %}active{% endif %}">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Budget Allocations</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ============= REPORTS & ANALYTICS ============= -->
+    <div class="menu-section">
+        <div class="menu-title">Reports & Analytics</div>
+        
+        <a href="{% url 'review_reports' %}" class="menu-item {% if request.resolver_match.url_name == 'review_reports' %}active{% endif %}">
             <i class="fas fa-chart-line"></i>
             <span>Review Reports</span>
+        </a>
+        
+        <a href="{% url 'export_reviews' %}" class="menu-item">
+            <i class="fas fa-download"></i>
+            <span>Export Data</span>
+        </a>
+    </div>
+
+    <!-- ============= TOOLS & UTILITIES ============= -->
+    <div class="menu-section">
+        <div class="menu-title">Tools</div>
+        
+        <a href="{% url 'applicant_search' %}" class="menu-item {% if request.resolver_match.url_name == 'applicant_search' %}active{% endif %}">
+            <i class="fas fa-search"></i>
+            <span>Search Applications</span>
+        </a>
+        
+        <a href="{% url 'calendar' %}" class="menu-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Calendar</span>
+        </a>
+        
+        <a href="{% url 'deadlines' %}" class="menu-item {% if request.resolver_match.url_name == 'deadlines' %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Deadlines</span>
+            {% if urgent_deadlines_count %}
+            <span class="badge bg-danger">{{ urgent_deadlines_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+
+    <!-- ============= HELP & SUPPORT ============= -->
+    <div class="menu-section">
+        <div class="menu-title">Help & Support</div>
+        
+        <a href="{% url 'help_center' %}" class="menu-item {% if request.resolver_match.url_name == 'help_center' %}active{% endif %}">
+            <i class="fas fa-question-circle"></i>
+            <span>Help Center</span>
+        </a>
+        
+        <a href="{% url 'review_guidelines' %}" class="menu-item {% if request.resolver_match.url_name == 'review_guidelines' %}active{% endif %}">
+            <i class="fas fa-book"></i>
+            <span>Review Guidelines</span>
+        </a>
+    </div>
+
+    <!-- ============= ACCOUNT ============= -->
+    <div class="menu-section">
+        <div class="menu-title">Account</div>
+        
+        <a href="{% url 'notifications' %}" class="menu-item {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+            {% if unread_notifications_count %}
+            <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+            {% endif %}
+        </a>
+        
+        <a href="{% url 'settings' %}" class="menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+        
+        <a href="{% url 'profile' %}" class="menu-item">
+            <i class="fas fa-user"></i>
+            <span>My Profile</span>
+        </a>
+        
+        <a href="{% url 'logout' %}" class="menu-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
         </a>
     </div>
 </div>

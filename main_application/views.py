@@ -19673,3 +19673,572 @@ def export_reviews(request):
     )
     
     return response 
+
+"""
+ADDITIONAL REVIEWER VIEWS
+Add these to your main views.py file
+
+Required imports at the top of your views.py:
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Count, Sum, Avg
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .models import Application, Review, Ward, FiscalYear, FAQ, Announcement, WardAllocation, Notification, DisbursementRound
+from .decorators import reviewer_required
+from .utils import create_audit_log
+"""
+
+
+# ============= HELP & SUPPORT =============
+
+@login_required
+@reviewer_required
+def help_center(request):
+    """
+    Help center with FAQs and guidelines
+    """
+    user = request.user
+    
+    # Get reviewer-specific FAQs
+    faqs = FAQ.objects.filter(
+        is_active=True,
+        category__in=['general', 'application']
+    ).order_by('category', 'order')
+    
+    # Get recent announcements
+    announcements = Announcement.objects.filter(
+        is_active=True,
+        target_audience__in=['all', 'staff'],
+        published_date__lte=timezone.now(),
+        expiry_date__gte=timezone.now()
+    ).order_by('-published_date')[:5]
+    
+    context = {
+        'faqs': faqs,
+        'announcements': announcements,
+    }
+    
+    return render(request, 'reviewer/help_center.html', context)
+
+
+@login_required
+@reviewer_required
+def review_guidelines(request):
+    """
+    Review guidelines and best practices
+    """
+    context = {
+        'page_title': 'Review Guidelines',
+    }
+    
+    return render(request, 'reviewer/review_guidelines.html', context)
+
+
+# ============= WARD MANAGEMENT =============
+
+@login_required
+@reviewer_required
+def ward_profile(request):
+    """
+    Detailed information about the reviewer's assigned ward
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Ward allocation for current fiscal year
+    ward_allocation = None
+    if current_fiscal_year:
+        ward_allocation = WardAllocation.objects.filter(
+            ward=assigned_ward,
+            fiscal_year=current_fiscal_year
+        ).first()
+    
+    # Ward statistics
+    total_residents = assigned_ward.residents.count()
+    total_applications = Application.objects.filter(
+        applicant__ward=assigned_ward
+    ).count()
+    
+    # Current fiscal year applications
+    current_fy_applications = 0
+    if current_fiscal_year:
+        current_fy_applications = Application.objects.filter(
+            applicant__ward=assigned_ward,
+            fiscal_year=current_fiscal_year
+        ).count()
+    
+    # Locations in the ward
+    locations = assigned_ward.locations.all()
+    
+    # Ward representative (MCA) info
+    ward_rep = {
+        'name': assigned_ward.current_mca,
+        'party': assigned_ward.mca_party,
+        'phone': assigned_ward.mca_phone,
+        'email': assigned_ward.mca_email,
+    }
+    
+    context = {
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'ward_allocation': ward_allocation,
+        'total_residents': total_residents,
+        'total_applications': total_applications,
+        'current_fy_applications': current_fy_applications,
+        'locations': locations,
+        'ward_rep': ward_rep,
+    }
+    
+    return render(request, 'reviewer/ward_profile.html', context)
+
+
+@login_required
+@reviewer_required
+def ward_statistics(request):
+    """
+    Detailed statistics for the reviewer's ward
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get all fiscal years for trend analysis
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')[:5]
+    
+    # Multi-year comparison
+    yearly_stats = []
+    for fy in fiscal_years:
+        applications = Application.objects.filter(
+            applicant__ward=assigned_ward,
+            fiscal_year=fy
+        )
+        
+        yearly_stats.append({
+            'fiscal_year': fy.name,
+            'total_applications': applications.count(),
+            'approved': applications.filter(status='approved').count(),
+            'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        })
+    
+    # Current year detailed stats
+    current_applications = Application.objects.filter(
+        applicant__ward=assigned_ward,
+        fiscal_year=current_fiscal_year
+    ) if current_fiscal_year else Application.objects.none()
+    
+    # Demographics
+    gender_distribution = current_applications.values(
+        'applicant__gender'
+    ).annotate(count=Count('id'))
+    
+    # Institution types
+    institution_types = current_applications.values(
+        'institution__institution_type'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    )
+    
+    # Location-wise distribution
+    location_distribution = current_applications.values(
+        'applicant__location__name'
+    ).annotate(count=Count('id')).order_by('-count')
+    
+    # Vulnerability categories
+    vulnerability_stats = {
+        'orphans': current_applications.filter(is_orphan=True).count(),
+        'total_orphans': current_applications.filter(is_total_orphan=True).count(),
+        'disabled': current_applications.filter(is_disabled=True).count(),
+        'chronic_illness': current_applications.filter(has_chronic_illness=True).count(),
+        'special_needs': current_applications.filter(applicant__special_needs=True).count(),
+    }
+    
+    context = {
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'yearly_stats': yearly_stats,
+        'gender_distribution': gender_distribution,
+        'institution_types': institution_types,
+        'location_distribution': location_distribution,
+        'vulnerability_stats': vulnerability_stats,
+    }
+    
+    return render(request, 'reviewer/ward_statistics.html', context)
+
+
+@login_required
+@reviewer_required
+def ward_allocations(request):
+    """
+    Ward budget allocations and utilization
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    # Get all ward allocations
+    allocations = WardAllocation.objects.filter(
+        ward=assigned_ward
+    ).select_related('fiscal_year').order_by('-fiscal_year__start_date')
+    
+    # Calculate utilization for each
+    allocation_data = []
+    for allocation in allocations:
+        utilization_rate = 0
+        if allocation.allocated_amount > 0:
+            utilization_rate = (allocation.spent_amount / allocation.allocated_amount) * 100
+        
+        allocation_data.append({
+            'allocation': allocation,
+            'balance': allocation.balance(),
+            'utilization_rate': utilization_rate,
+        })
+    
+    context = {
+        'assigned_ward': assigned_ward,
+        'allocation_data': allocation_data,
+    }
+    
+    return render(request, 'reviewer/ward_allocations.html', context)
+
+
+# ============= CALENDAR & DEADLINES =============
+
+@login_required
+@reviewer_required
+def review_calendar(request):
+    """
+    Calendar view of important dates and deadlines
+    """
+    user = request.user
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get all fiscal years
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Important dates
+    important_dates = []
+    
+    if current_fiscal_year:
+        if current_fiscal_year.application_deadline:
+            important_dates.append({
+                'title': 'Application Deadline',
+                'date': current_fiscal_year.application_deadline,
+                'type': 'deadline',
+                'fiscal_year': current_fiscal_year.name
+            })
+        
+        # Disbursement rounds
+        disbursement_rounds = DisbursementRound.objects.filter(
+            fiscal_year=current_fiscal_year
+        ).order_by('disbursement_date')
+        
+        for round in disbursement_rounds:
+            important_dates.append({
+                'title': f'{round.name} - Application Period',
+                'date': round.application_start_date,
+                'type': 'application_start',
+                'fiscal_year': current_fiscal_year.name
+            })
+            
+            important_dates.append({
+                'title': f'{round.name} - Application Deadline',
+                'date': round.application_end_date,
+                'type': 'application_deadline',
+                'fiscal_year': current_fiscal_year.name
+            })
+            
+            important_dates.append({
+                'title': f'{round.name} - Review Deadline',
+                'date': round.review_deadline,
+                'type': 'review_deadline',
+                'fiscal_year': current_fiscal_year.name
+            })
+            
+            important_dates.append({
+                'title': f'{round.name} - Disbursement',
+                'date': round.disbursement_date,
+                'type': 'disbursement',
+                'fiscal_year': current_fiscal_year.name
+            })
+    
+    # Sort by date
+    important_dates.sort(key=lambda x: x['date'])
+    
+    # Separate upcoming and past
+    today = timezone.now().date()
+    upcoming_dates = [d for d in important_dates if d['date'] >= today]
+    past_dates = [d for d in important_dates if d['date'] < today]
+    
+    context = {
+        'current_fiscal_year': current_fiscal_year,
+        'fiscal_years': fiscal_years,
+        'upcoming_dates': upcoming_dates[:10],
+        'past_dates': past_dates[-5:],
+        'all_dates': important_dates,
+    }
+    
+    return render(request, 'reviewer/review_calendar.html', context)
+
+
+@login_required
+@reviewer_required
+def deadlines(request):
+    """
+    Upcoming deadlines and pending tasks
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    deadlines_list = []
+    
+    if current_fiscal_year:
+        # Application deadline
+        if current_fiscal_year.application_deadline:
+            days_remaining = (current_fiscal_year.application_deadline - timezone.now().date()).days
+            
+            deadlines_list.append({
+                'title': 'Application Deadline',
+                'date': current_fiscal_year.application_deadline,
+                'days_remaining': days_remaining,
+                'urgent': days_remaining <= 7,
+                'type': 'application'
+            })
+        
+        # Review deadlines from disbursement rounds
+        rounds = DisbursementRound.objects.filter(
+            fiscal_year=current_fiscal_year,
+            is_completed=False
+        ).order_by('review_deadline')
+        
+        for round in rounds:
+            days_remaining = (round.review_deadline - timezone.now().date()).days
+            
+            deadlines_list.append({
+                'title': f'{round.name} - Review Deadline',
+                'date': round.review_deadline,
+                'days_remaining': days_remaining,
+                'urgent': days_remaining <= 7,
+                'type': 'review'
+            })
+    
+    # Pending reviews count
+    pending_reviews_count = 0
+    if assigned_ward and current_fiscal_year:
+        pending_reviews_count = Application.objects.filter(
+            applicant__ward=assigned_ward,
+            fiscal_year=current_fiscal_year,
+            status__in=['submitted', 'under_review']
+        ).exclude(
+            reviews__reviewer=user,
+            reviews__review_level='ward'
+        ).count()
+    
+    context = {
+        'deadlines_list': deadlines_list,
+        'pending_reviews_count': pending_reviews_count,
+        'current_fiscal_year': current_fiscal_year,
+    }
+    
+    return render(request, 'reviewer/deadlines.html', context)
+
+
+# ============= SEARCH =============
+
+@login_required
+@reviewer_required
+def applicant_search(request):
+    """
+    Search for applicants and applications in reviewer's ward
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    search_query = request.GET.get('q', '').strip()
+    search_type = request.GET.get('type', 'all')
+    
+    results = []
+    
+    if search_query:
+        # Search applications
+        applications = Application.objects.filter(
+            applicant__ward=assigned_ward
+        )
+        
+        if search_type == 'all' or search_type == 'application':
+            # Search by application number, name, ID, or institution
+            applications = applications.filter(
+                Q(application_number__icontains=search_query) |
+                Q(applicant__user__first_name__icontains=search_query) |
+                Q(applicant__user__last_name__icontains=search_query) |
+                Q(applicant__id_number__icontains=search_query) |
+                Q(institution__name__icontains=search_query)
+            ).select_related(
+                'applicant__user',
+                'institution',
+                'bursary_category'
+            ).distinct()[:20]
+            
+            results = applications
+    
+    context = {
+        'search_query': search_query,
+        'search_type': search_type,
+        'results': results,
+        'assigned_ward': assigned_ward,
+    }
+    
+    return render(request, 'reviewer/applicant_search.html', context)
+
+
+# ============= SETTINGS =============
+
+@login_required
+@reviewer_required
+def reviewer_settings(request):
+    """
+    Reviewer account settings
+    """
+    user = request.user
+    
+    if request.method == 'POST':
+        # Update settings
+        # Add your settings update logic here
+        # Example:
+        # user.first_name = request.POST.get('first_name')
+        # user.last_name = request.POST.get('last_name')
+        # user.email = request.POST.get('email')
+        # user.phone_number = request.POST.get('phone_number')
+        # user.save()
+        
+        messages.success(request, "Settings updated successfully.")
+        return redirect('settings')
+    
+    context = {
+        'user': user,
+    }
+    
+    return render(request, 'reviewer/settings.html', context)
+
+
+@login_required
+@reviewer_required
+def notification_settings(request):
+    """
+    Notification preferences
+    """
+    user = request.user
+    
+    if request.method == 'POST':
+        # Update notification preferences
+        # Add your logic here
+        # Example:
+        # user.email_notifications = request.POST.get('email_notifications') == 'on'
+        # user.sms_notifications = request.POST.get('sms_notifications') == 'on'
+        # user.save()
+        
+        messages.success(request, "Notification settings updated.")
+        return redirect('notification_settings')
+    
+    context = {
+        'user': user,
+    }
+    
+    return render(request, 'reviewer/notification_settings.html', context)
+
+
+# ============= NOTIFICATIONS =============
+
+@login_required
+@reviewer_required
+def notifications_list(request):
+    """
+    List all notifications for the reviewer
+    """
+    user = request.user
+    
+    # Get all notifications
+    notifications = Notification.objects.filter(
+        user=user
+    ).order_by('-created_at')
+    
+    # Mark as read option
+    mark_read = request.GET.get('mark_read')
+    if mark_read:
+        notification = Notification.objects.filter(
+            id=mark_read,
+            user=user
+        ).first()
+        
+        if notification:
+            notification.is_read = True
+            notification.read_at = timezone.now()
+            notification.save()
+    
+    # Filter options
+    filter_type = request.GET.get('filter', 'all')
+    
+    if filter_type == 'unread':
+        notifications = notifications.filter(is_read=False)
+    elif filter_type != 'all':
+        notifications = notifications.filter(notification_type=filter_type)
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(notifications, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Statistics
+    unread_count = Notification.objects.filter(user=user, is_read=False).count()
+    
+    context = {
+        'page_obj': page_obj,
+        'filter_type': filter_type,
+        'unread_count': unread_count,
+    }
+    
+    return render(request, 'reviewer/notifications.html', context)
+
+
+@login_required
+@reviewer_required
+def mark_all_notifications_read(request):
+    """
+    Mark all notifications as read
+    """
+    if request.method == 'POST':
+        Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+        
+        messages.success(request, "All notifications marked as read.")
+    
+    return redirect('notifications_list')
