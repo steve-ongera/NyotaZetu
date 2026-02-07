@@ -8,7 +8,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
             </li>
             <li class="breadcrumb-item active">Deadlines</li>
         </ol>
@@ -23,7 +23,7 @@
                 </h1>
                 <p class="page-subtitle">Stay on track with important review deadlines</p>
             </div>
-            <a href="{% url 'reviewer:pending_applications' %}" class="export-btn">
+            <a href="{% url 'pending_applications' %}" class="export-btn">
                 <i class="bi bi-clipboard-check"></i>
                 Review Applications
             </a>
@@ -40,7 +40,7 @@
                 <p class="alert-text">
                     You have <strong>{{ pending_reviews_count }}</strong> application(s) awaiting your review.
                 </p>
-                <a href="{% url 'reviewer:pending_applications' %}" class="alert-link">
+                <a href="{% url 'pending_applications' %}" class="alert-link">
                     Review Now <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -113,11 +113,11 @@
 
         <!-- Quick Actions -->
         <div class="actions-section">
-            <a href="{% url 'reviewer:calendar' %}" class="btn btn-secondary">
+            <a href="{% url 'calendar' %}" class="btn btn-secondary">
                 <i class="bi bi-calendar-event"></i>
                 View Full Calendar
             </a>
-            <a href="{% url 'reviewer:pending_applications' %}" class="btn btn-primary">
+            <a href="{% url 'pending_applications' %}" class="btn btn-primary">
                 <i class="bi bi-clipboard-check"></i>
                 Start Reviewing
             </a>

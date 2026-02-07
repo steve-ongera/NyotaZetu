@@ -8,7 +8,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer:dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
             </li>
             <li class="breadcrumb-item active">Notifications</li>
         </ol>
@@ -30,7 +30,7 @@
                 </p>
             </div>
             {% if unread_count > 0 %}
-            <form method="post" action="{% url 'reviewer:mark_all_notifications_read' %}">
+            <form method="post" action="{% url 'mark_all_notifications_read' %}">
                 {% csrf_token %}
                 <button type="submit" class="export-btn">
                     <i class="bi bi-check-all"></i>

@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer:dashboard' %}">
+                <a href="{% url 'reviewer_dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
             </li>
@@ -29,7 +29,7 @@
                     Constituency: {{ assigned_ward.constituency.name }}
                 </p>
             </div>
-            <a href="{% url 'reviewer:ward_statistics' %}" class="export-btn">
+            <a href="{% url 'ward_statistics' %}" class="export-btn">
                 <i class="bi bi-bar-chart"></i>
                 View Statistics
             </a>
@@ -283,7 +283,7 @@
             </h2>
             
             <div class="actions-grid">
-                <a href="{% url 'reviewer:pending_applications' %}" class="action-link-card">
+                <a href="{% url 'pending_applications' %}" class="action-link-card">
                     <div class="action-icon">
                         <i class="bi bi-clipboard-check"></i>
                     </div>
@@ -291,7 +291,7 @@
                     <p>Review pending applications from your ward</p>
                 </a>
 
-                <a href="{% url 'reviewer:ward_statistics' %}" class="action-link-card">
+                <a href="{% url 'ward_statistics' %}" class="action-link-card">
                     <div class="action-icon">
                         <i class="bi bi-graph-up"></i>
                     </div>
@@ -299,7 +299,7 @@
                     <p>Detailed analytics and trends</p>
                 </a>
 
-                <a href="{% url 'reviewer:ward_allocations' %}" class="action-link-card">
+                <a href="{% url 'ward_allocations' %}" class="action-link-card">
                     <div class="action-icon">
                         <i class="bi bi-cash-stack"></i>
                     </div>
@@ -307,7 +307,7 @@
                     <p>View all fiscal year allocations</p>
                 </a>
 
-                <a href="{% url 'reviewer:applicant_search' %}" class="action-link-card">
+                <a href="{% url 'applicant_search' %}" class="action-link-card">
                     <div class="action-icon">
                         <i class="bi bi-search"></i>
                     </div>

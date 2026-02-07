@@ -9,12 +9,12 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer:dashboard' %}">
+                <a href="{% url 'dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'reviewer:help_center' %}">
+                <a href="{% url 'help_center' %}">
                     <i class="bi bi-question-circle"></i> Help Center
                 </a>
             </li>
@@ -34,7 +34,7 @@
                     Best practices and standards for reviewing bursary applications
                 </p>
             </div>
-            <a href="{% url 'reviewer:pending_applications' %}" class="export-btn">
+            <a href="{% url 'pending_applications' %}" class="export-btn">
                 <i class="bi bi-clipboard-check"></i>
                 Start Reviewing
             </a>
@@ -460,11 +460,11 @@
 
         <!-- Action Buttons -->
         <div class="guideline-actions">
-            <a href="{% url 'reviewer:pending_applications' %}" class="btn btn-primary">
+            <a href="{% url 'pending_applications' %}" class="btn btn-primary">
                 <i class="bi bi-clipboard-check"></i>
                 Review Applications
             </a>
-            <a href="{% url 'reviewer:help_center' %}" class="btn btn-secondary">
+            <a href="{% url 'help_center' %}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i>
                 Back to Help Center
             </a>

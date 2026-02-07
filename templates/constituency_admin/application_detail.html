@@ -338,7 +338,7 @@
                         <span class="review-date">{{ review.review_date|date:"M d, Y H:i" }}</span>
                     </div>
                     <div class="review-info">
-                        <p><strong>Reviewer:</strong> {{ review.reviewer.get_full_name }}</p>
+                        <p><strong></strong> {{ review.reviewer.get_full_name }}</p>
                         <p><strong>Recommendation:</strong> {{ review.get_recommendation_display }}</p>
                         {% if review.recommended_amount %}
                         <p><strong>Recommended Amount:</strong> KES {{ review.recommended_amount|floatformat:2|intcomma }}</p>
