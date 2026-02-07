@@ -475,7 +475,7 @@ def is_admin(user):
     return user.user_type == 'admin'
 
 def is_reviewer(user):
-    return user.user_type in ['admin', 'reviewer']
+    return user.user_type in ['admin', 'reviewer' , 'county_admin']
 
 def is_finance(user):
     return user.user_type in ['admin', 'finance']
@@ -505,7 +505,7 @@ def is_admin(user):
 
 @login_required
 @user_passes_test(is_admin)
-def admin_dashboard(request):
+def county_admin_dashboard(request):
     """
     Comprehensive Admin Dashboard for Murang'a County Bursary System
     Includes statistics, charts data, and recent activity
