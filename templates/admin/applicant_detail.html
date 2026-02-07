@@ -510,6 +510,7 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
@@ -527,12 +528,17 @@
     </nav>
 
     <!-- Back Button -->
-    <div class="back-button-container">
-        <a href="{% url 'applicant_list' %}" class="btn-secondary-custom">
-            <i class="bi bi-arrow-left"></i>
-            Back to List
-        </a>
-    </div>
+
+
+     <!-- Display Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
     <!-- Content Grid -->
     <div class="content-grid">

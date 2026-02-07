@@ -3328,6 +3328,466 @@ def applicant_list(request):
     
     return render(request, 'admin/applicant_list.html', context)
 
+# views.py - Updated username generation logic
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db import transaction
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils.crypto import get_random_string
+from .models import (
+    User, Applicant, County, Constituency, Ward, 
+    Location, SubLocation, Village
+)
+from django.db.models import Q
+import random
+
+User = get_user_model()
+
+
+def generate_unique_username(first_name, last_name):
+    """
+    Generate a unique username based on first and last name
+    Format: firstnamelastname or firstnamelastname + random numbers if exists
+    Example: steveongera, steveongera62, steveon87
+    """
+    # Clean and normalize names
+    first_name = first_name.strip().lower().replace(' ', '')
+    last_name = last_name.strip().lower().replace(' ', '')
+    
+    # Try full name combination first
+    base_username = f"{first_name}{last_name}"
+    
+    # Check if this username exists
+    if not User.objects.filter(username=base_username).exists():
+        return base_username
+    
+    # If exists, try variations with random numbers (2 digits)
+    for _ in range(10):  # Try 10 times with random numbers
+        random_num = random.randint(10, 99)
+        username = f"{base_username}{random_num}"
+        if not User.objects.filter(username=username).exists():
+            return username
+    
+    # If still not unique, try abbreviated version with numbers
+    # Example: steveon + random numbers
+    if len(first_name) >= 5 and len(last_name) >= 2:
+        abbreviated = f"{first_name[:5]}{last_name[:2]}"
+    else:
+        abbreviated = f"{first_name}{last_name[:2]}"
+    
+    for _ in range(10):  # Try 10 times with abbreviated version
+        random_num = random.randint(10, 99)
+        username = f"{abbreviated}{random_num}"
+        if not User.objects.filter(username=username).exists():
+            return username
+    
+    # Last resort: use UUID-based approach
+    unique_suffix = get_random_string(4, allowed_chars='0123456789')
+    return f"{first_name}{last_name}{unique_suffix}"
+
+
+def is_admin_or_area_admin(user):
+    """
+    Check if user is admin, county admin, or constituency admin
+    """
+    return user.user_type in ['admin', 'county_admin', 'constituency_admin']
+
+
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def create_applicant(request):
+    """
+    Dynamic applicant creation view that creates both User and Applicant profile
+    Accessible only to admin, county_admin, and constituency_admin
+    """
+    # Get user's assigned area to pre-filter/restrict options
+    user_county = None
+    user_constituency = None
+    available_wards = Ward.objects.none()
+    
+    if request.user.user_type == 'county_admin':
+        user_county = request.user.assigned_county
+        if user_county:
+            available_wards = Ward.objects.filter(
+                constituency__county=user_county
+            ).select_related('constituency')
+    
+    elif request.user.user_type == 'constituency_admin':
+        user_constituency = request.user.assigned_constituency
+        if user_constituency:
+            user_county = user_constituency.county
+            available_wards = Ward.objects.filter(
+                constituency=user_constituency
+            ).select_related('constituency')
+    
+    else:  # Admin has access to all
+        available_wards = Ward.objects.all().select_related('constituency', 'constituency__county')
+    
+    # Get all necessary data for dropdowns
+    counties = County.objects.filter(is_active=True).order_by('name')
+    constituencies = Constituency.objects.filter(is_active=True).select_related('county').order_by('name')
+    wards = available_wards.order_by('name')
+    
+    # Filter based on user permissions
+    if user_county:
+        counties = counties.filter(id=user_county.id)
+        constituencies = constituencies.filter(county=user_county)
+    
+    if user_constituency:
+        constituencies = constituencies.filter(id=user_constituency.id)
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Extract form data
+                # User Information
+                first_name = request.POST.get('first_name', '').strip()
+                last_name = request.POST.get('last_name', '').strip()
+                email = request.POST.get('email', '').strip().lower()
+                phone_number = request.POST.get('phone_number', '').strip()
+                id_number = request.POST.get('id_number', '').strip()
+                
+                # Applicant Personal Information
+                gender = request.POST.get('gender')
+                date_of_birth = request.POST.get('date_of_birth')
+                
+                # Location Information
+                county_id = request.POST.get('county')
+                constituency_id = request.POST.get('constituency')
+                ward_id = request.POST.get('ward')
+                location_id = request.POST.get('location')
+                sublocation_id = request.POST.get('sublocation')
+                village_id = request.POST.get('village')
+                
+                # Address Information
+                physical_address = request.POST.get('physical_address', '').strip()
+                postal_address = request.POST.get('postal_address', '').strip()
+                
+                # Special Circumstances
+                special_needs = request.POST.get('special_needs') == 'on'
+                special_needs_description = request.POST.get('special_needs_description', '').strip()
+                
+                # Profile Picture (optional)
+                profile_picture = request.FILES.get('profile_picture')
+                
+                # Validation
+                errors = []
+                
+                if not first_name:
+                    errors.append('First name is required')
+                if not last_name:
+                    errors.append('Last name is required')
+                if not email:
+                    errors.append('Email is required')
+                if not phone_number:
+                    errors.append('Phone number is required')
+                if not id_number:
+                    errors.append('ID number is required')
+                if not gender:
+                    errors.append('Gender is required')
+                if not date_of_birth:
+                    errors.append('Date of birth is required')
+                if not ward_id:
+                    errors.append('Ward is required')
+                if not physical_address:
+                    errors.append('Physical address is required')
+                
+                # Check if user already exists
+                if User.objects.filter(email=email).exists():
+                    errors.append(f'A user with email {email} already exists')
+                
+                if User.objects.filter(id_number=id_number).exists():
+                    errors.append(f'A user with ID number {id_number} already exists')
+                
+                if Applicant.objects.filter(id_number=id_number).exists():
+                    errors.append(f'An applicant with ID number {id_number} already exists')
+                
+                # Validate phone number format
+                if phone_number and not phone_number.startswith('+254'):
+                    errors.append('Phone number must start with +254')
+                
+                if len(phone_number) != 13:  # +254XXXXXXXXX
+                    errors.append('Phone number must be in format +254XXXXXXXXX')
+                
+                if errors:
+                    for error in errors:
+                        messages.error(request, error)
+                    return render(request, 'admin/create_applicant.html', {
+                        'counties': counties,
+                        'constituencies': constituencies,
+                        'wards': wards,
+                        'form_data': request.POST,
+                        'user_county': user_county,
+                        'user_constituency': user_constituency,
+                    })
+                
+                # Generate username from first and last name
+                username = generate_unique_username(first_name, last_name)
+                
+                # Generate random password (8 characters)
+                password = get_random_string(
+                    length=8,
+                    allowed_chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                )
+                
+                # Create User
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    password=password,
+                    user_type='applicant',
+                    id_number=id_number,
+                    phone_number=phone_number,
+                    is_active=True
+                )
+                
+                # Create Applicant Profile
+                applicant = Applicant.objects.create(
+                    user=user,
+                    gender=gender,
+                    date_of_birth=date_of_birth,
+                    id_number=id_number,
+                    county_id=county_id if county_id else None,
+                    constituency_id=constituency_id if constituency_id else None,
+                    ward_id=ward_id if ward_id else None,
+                    location_id=location_id if location_id else None,
+                    sublocation_id=sublocation_id if sublocation_id else None,
+                    village_id=village_id if village_id else None,
+                    physical_address=physical_address,
+                    postal_address=postal_address,
+                    special_needs=special_needs,
+                    special_needs_description=special_needs_description if special_needs else None,
+                    is_verified=True,  # Auto-verify since created by admin
+                    verified_by=request.user
+                )
+                
+                # Handle profile picture if uploaded
+                if profile_picture:
+                    applicant.profile_picture = profile_picture
+                    applicant.save()
+                
+                # Send email with login credentials
+                try:
+                    subject = 'Bursary System Account Created'
+                    message = f"""
+Dear {first_name} {last_name},
+
+Your bursary application account has been created successfully!
+
+Login Details:
+--------------
+Username: {username}
+Password: {password}
+Email: {email}
+
+Portal URL: {request.build_absolute_uri('/')}
+
+You can login using either your username or email address along with the password provided.
+
+IMPORTANT: Please login and change your password immediately for security purposes.
+
+If you have any questions, please contact the bursary office.
+
+Best regards,
+Bursary Management Team
+                    """
+                    
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        fail_silently=False,
+                    )
+                    
+                    messages.success(
+                        request,
+                        f'Applicant "{first_name} {last_name}" created successfully! '
+                        f'Username: {username}. Login credentials have been sent to {email}.'
+                    )
+                    
+                except Exception as e:
+                    messages.warning(
+                        request,
+                        f'Applicant created successfully, but email could not be sent: {str(e)}. '
+                        f'Please provide the following credentials manually: Username: {username}, Password: {password}'
+                    )
+                
+                # Redirect to applicant detail page
+                return redirect('applicant_detail', applicant.id)
+                
+        except Exception as e:
+            messages.error(request, f'Error creating applicant: {str(e)}')
+            return render(request, 'admin/create_applicant.html', {
+                'counties': counties,
+                'constituencies': constituencies,
+                'wards': wards,
+                'form_data': request.POST,
+                'user_county': user_county,
+                'user_constituency': user_constituency,
+            })
+    
+    # GET request - show form
+    context = {
+        'counties': counties,
+        'constituencies': constituencies,
+        'wards': wards,
+        'user_county': user_county,
+        'user_constituency': user_constituency,
+    }
+    
+    return render(request, 'admin/create_applicant.html', context)
+
+
+# Keep all the AJAX endpoints as they were
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def get_constituencies_by_county(request):
+    """
+    AJAX endpoint to get constituencies by county
+    """
+    from django.http import JsonResponse
+    
+    county_id = request.GET.get('county_id')
+    
+    if not county_id:
+        return JsonResponse({'constituencies': []})
+    
+    # Filter based on user permissions
+    constituencies = Constituency.objects.filter(
+        county_id=county_id,
+        is_active=True
+    )
+    
+    # Additional filtering for constituency admin
+    if request.user.user_type == 'constituency_admin':
+        if request.user.assigned_constituency:
+            constituencies = constituencies.filter(id=request.user.assigned_constituency.id)
+    
+    data = {
+        'constituencies': [
+            {'id': c.id, 'name': c.name}
+            for c in constituencies.order_by('name')
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def get_wards_by_constituency(request):
+    """
+    AJAX endpoint to get wards by constituency
+    """
+    from django.http import JsonResponse
+    
+    constituency_id = request.GET.get('constituency_id')
+    
+    if not constituency_id:
+        return JsonResponse({'wards': []})
+    
+    wards = Ward.objects.filter(
+        constituency_id=constituency_id,
+        is_active=True
+    ).order_by('name')
+    
+    data = {
+        'wards': [
+            {'id': w.id, 'name': w.name}
+            for w in wards
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def get_locations_by_ward(request):
+    """
+    AJAX endpoint to get locations by ward
+    """
+    from django.http import JsonResponse
+    
+    ward_id = request.GET.get('ward_id')
+    
+    if not ward_id:
+        return JsonResponse({'locations': []})
+    
+    locations = Location.objects.filter(
+        ward_id=ward_id
+    ).order_by('name')
+    
+    data = {
+        'locations': [
+            {'id': l.id, 'name': l.name}
+            for l in locations
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def get_sublocations_by_location(request):
+    """
+    AJAX endpoint to get sublocations by location
+    """
+    from django.http import JsonResponse
+    
+    location_id = request.GET.get('location_id')
+    
+    if not location_id:
+        return JsonResponse({'sublocations': []})
+    
+    sublocations = SubLocation.objects.filter(
+        location_id=location_id
+    ).order_by('name')
+    
+    data = {
+        'sublocations': [
+            {'id': sl.id, 'name': sl.name}
+            for sl in sublocations
+        ]
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+@user_passes_test(is_admin_or_area_admin)
+def get_villages_by_sublocation(request):
+    """
+    AJAX endpoint to get villages by sublocation
+    """
+    from django.http import JsonResponse
+    
+    sublocation_id = request.GET.get('sublocation_id')
+    
+    if not sublocation_id:
+        return JsonResponse({'villages': []})
+    
+    villages = Village.objects.filter(
+        sublocation_id=sublocation_id
+    ).order_by('name')
+    
+    data = {
+        'villages': [
+            {'id': v.id, 'name': v.name}
+            for v in villages
+        ]
+    }
+    
+    return JsonResponse(data) 
+
 @login_required
 @user_passes_test(is_admin)
 def applicant_detail(request, applicant_id):

@@ -2,29 +2,10 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}My Profile - Nyota Zetu Bursary{% endblock %}
+{% block title %}My Profile - Student Panel{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Custom Column Widths - 4:8 ratio */
-    .profile-sidebar-col {
-        flex: 0 0 33.333333%;
-        max-width: 33.333333%;
-    }
-
-    .profile-content-col {
-        flex: 0 0 66.666667%;
-        max-width: 66.666667%;
-    }
-
-    @media (max-width: 991px) {
-        .profile-sidebar-col,
-        .profile-content-col {
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-    }
-
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -68,13 +49,41 @@
         border: 1px solid #E2E8F0;
     }
 
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Profile Sidebar */
     .profile-sidebar {
         background: white;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
         padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        border: 1px solid #E2E8F0;
         margin-bottom: 24px;
+        height: 100%;
     }
 
     .profile-avatar-section {
@@ -118,12 +127,11 @@
 
     .avatar-edit-btn:hover {
         background: #2980b9;
-        color: white;
         transform: scale(1.1);
     }
 
     .profile-name {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 600;
         color: #1E293B;
         margin-bottom: 4px;
@@ -138,7 +146,47 @@
     .profile-actions {
         display: flex;
         flex-direction: column;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
         gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border: 1px solid #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-outline-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+        color: #64748B;
     }
 
     .progress-section {
@@ -164,7 +212,7 @@
 
     .progress-fill {
         height: 100%;
-        background: linear-gradient(135deg, #10B981, #059669);
+        background: linear-gradient(135deg, #27ae60, #219653);
         border-radius: 4px;
         transition: width 0.3s ease;
     }
@@ -175,7 +223,7 @@
     }
 
     .stats-section h6 {
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 600;
         color: #1E293B;
         margin-bottom: 16px;
@@ -185,7 +233,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 0;
+        padding: 12px 0;
         border-bottom: 1px solid #F1F5F9;
     }
 
@@ -196,26 +244,29 @@
     .stat-label {
         font-size: 14px;
         color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .stat-value {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
         color: #1E293B;
     }
 
+    /* Tab Navigation */
     .tab-navigation {
-        background: white;
-        border-bottom: 1px solid #E2E8F0;
-        padding: 0;
-        margin-bottom: 0;
         display: flex;
-        gap: 0;
-        overflow-x: auto;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px 8px 0 0;
+        overflow: hidden;
     }
 
     .tab-button {
-        padding: 16px 24px;
+        flex: 1;
+        padding: 16px;
         border: none;
         background: transparent;
         color: #64748B;
@@ -223,28 +274,41 @@
         font-weight: 500;
         cursor: pointer;
         transition: all 0.3s ease;
-        border-bottom: 3px solid transparent;
-        white-space: nowrap;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
+        border-bottom: 3px solid transparent;
     }
 
     .tab-button:hover {
+        background: white;
         color: #3498db;
-        background: #F8FAFC;
     }
 
     .tab-button.active {
+        background: white;
         color: #3498db;
         border-bottom-color: #3498db;
-        background: transparent;
     }
 
     .tab-content-wrapper {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
         padding: 24px;
     }
 
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    /* Section Title */
     .section-title {
         font-size: 18px;
         font-weight: 600;
@@ -256,27 +320,29 @@
     }
 
     .section-icon {
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
         background: rgba(52, 152, 219, 0.1);
         color: #3498db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
     }
 
+    /* Info Grid */
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 16px;
     }
 
     .info-card {
         background: #F8FAFC;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
-        padding: 16px;
+        padding: 20px;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -286,6 +352,7 @@
     .info-card:hover {
         background: #F1F5F9;
         transform: translateY(-2px);
+        border-color: #3498db;
     }
 
     .info-content {
@@ -294,12 +361,15 @@
 
     .info-label {
         font-size: 12px;
+        font-weight: 600;
         color: #64748B;
         margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .info-value {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
         color: #1E293B;
     }
@@ -311,19 +381,22 @@
     }
 
     .special-needs-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
         font-size: 12px;
         font-weight: 600;
         background: rgba(52, 152, 219, 0.1);
         color: #3498db;
     }
 
+    /* Guardian Grid */
     .guardian-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 16px;
+        gap: 20px;
     }
 
     .guardian-card {
@@ -336,14 +409,14 @@
 
     .guardian-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         border-color: #3498db;
     }
 
     .guardian-header {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         margin-bottom: 16px;
         padding-bottom: 16px;
         border-bottom: 1px solid #F1F5F9;
@@ -353,8 +426,8 @@
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: rgba(52, 152, 219, 0.1);
-        color: #3498db;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -365,12 +438,25 @@
         font-size: 16px;
         font-weight: 600;
         color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .primary-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
     }
 
     .guardian-details {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
     }
 
     .guardian-detail-item {
@@ -382,16 +468,19 @@
 
     .detail-label {
         color: #64748B;
+        font-weight: 500;
     }
 
     .detail-value {
-        font-weight: 500;
+        font-weight: 600;
         color: #1E293B;
     }
 
+    /* Sibling Table */
     .sibling-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
     .sibling-table thead {
@@ -399,30 +488,55 @@
     }
 
     .sibling-table th {
-        padding: 12px;
+        padding: 16px;
         text-align: left;
         font-size: 12px;
         font-weight: 600;
         color: #64748B;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid #E2E8F0;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
     }
 
     .sibling-table td {
-        padding: 16px 12px;
-        font-size: 14px;
-        color: #1E293B;
+        padding: 16px;
         border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .sibling-table tbody tr {
+        transition: background-color 0.2s ease;
     }
 
     .sibling-table tbody tr:hover {
-        background: #F8FAFC;
+        background-color: #F8FAFC;
     }
 
+    .status-active {
+        color: #27ae60;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-inactive {
+        color: #64748B;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Empty State */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
     }
 
     .empty-icon {
@@ -444,38 +558,172 @@
         margin-bottom: 20px;
     }
 
+    /* Section Header with Action */
     .section-header-with-action {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
     }
 
-    @media (max-width: 768px) {
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    @media (max-width: 992px) {
         .info-grid {
             grid-template-columns: 1fr;
         }
-
+        
         .guardian-grid {
             grid-template-columns: 1fr;
         }
-
+        
         .tab-navigation {
-            overflow-x: auto;
+            flex-wrap: wrap;
         }
-
+        
         .tab-button {
-            padding: 12px 16px;
-            font-size: 13px;
+            flex: 1 0 auto;
+            min-width: 140px;
         }
+    }
 
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 16px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .tab-content-wrapper {
+            padding: 16px;
+        }
+        
+        .section-header-with-action {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
         .sibling-table {
             font-size: 13px;
         }
-
+        
         .sibling-table th,
         .sibling-table td {
-            padding: 10px 8px;
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 18px;
+        }
+        
+        .profile-sidebar {
+            padding: 16px;
+        }
+        
+        .avatar-image {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+        }
+        
+        .info-card {
+            padding: 16px;
+        }
+        
+        .guardian-card {
+            padding: 16px;
         }
     }
 </style>
@@ -496,8 +744,8 @@
     </nav>
 
     <div class="row">
-        <!-- Profile Sidebar - 4 columns -->
-        <div class="col-md-12 col-lg-4 profile-sidebar-col">
+        <!-- Profile Sidebar -->
+        <div class="col-lg-4">
             <div class="profile-sidebar">
                 <!-- Avatar Section -->
                 <div class="profile-avatar-section">
@@ -514,11 +762,11 @@
                     <div class="profile-name">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</div>
                     <div class="profile-email">{{ applicant.user.email }}</div>
                     <div class="profile-actions">
-                        <a href="{% url 'student_profile_create' %}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil me-1"></i> Edit Profile
+                        <a href="{% url 'student_profile_create' %}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Edit Profile
                         </a>
-                        <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-grid me-1"></i> Dashboard
+                        <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-grid"></i> Dashboard
                         </a>
                     </div>
                 </div>
@@ -537,19 +785,19 @@
                     <h6>Quick Stats</h6>
                     <div class="stat-item">
                         <span class="stat-label">
-                            <i class="bi bi-people me-1"></i> Guardians
+                            <i class="bi bi-people"></i> Guardians
                         </span>
                         <span class="stat-value">{{ guardians.count }}</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">
-                            <i class="bi bi-person-plus me-1"></i> Siblings
+                            <i class="bi bi-person-plus"></i> Siblings
                         </span>
                         <span class="stat-value">{{ siblings.count }}</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">
-                            <i class="bi bi-file-text me-1"></i> Applications
+                            <i class="bi bi-file-text"></i> Applications
                         </span>
                         <span class="stat-value">{{ applications_count|default:0 }}</span>
                     </div>
@@ -557,9 +805,9 @@
             </div>
         </div>
 
-        <!-- Main Content - 8 columns -->
-        <div class="col-md-12 col-lg-8 profile-content-col">
-            <div class="section-container" style="padding: 0; overflow: hidden;">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="section-container">
                 <!-- Tab Navigation -->
                 <div class="tab-navigation">
                     <button class="tab-button active" data-tab="personal">
@@ -654,7 +902,7 @@
                     </div>
 
                     <!-- Location Information Tab -->
-                    <div class="tab-pane" id="location-pane" style="display: none;">
+                    <div class="tab-pane" id="location-pane">
                         <h5 class="section-title">
                             <span class="section-icon">
                                 <i class="bi bi-geo-alt"></i>
@@ -739,7 +987,7 @@
                     </div>
 
                     <!-- Guardian Information Tab -->
-                    <div class="tab-pane" id="guardian-pane" style="display: none;">
+                    <div class="tab-pane" id="guardian-pane">
                         <div class="section-header-with-action">
                             <h5 class="section-title" style="margin-bottom: 0;">
                                 <span class="section-icon">
@@ -747,15 +995,15 @@
                                 </span>
                                 Guardian Information
                             </h5>
-                            <a href="{% url 'guardian_create' %}" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus me-1"></i> Add Guardian
+                            <a href="{% url 'guardian_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Add Guardian
                             </a>
                         </div>
 
                         {% if guardians %}
                             <div class="guardian-grid">
                                 {% for guardian in guardians %}
-                                <div class="guardian-card">
+                                <div class="guardian-card" onclick="viewGuardianDetails({{ guardian.id }})" style="cursor: pointer;">
                                     <div class="guardian-header">
                                         <div class="guardian-avatar">
                                             <i class="bi bi-person"></i>
@@ -763,7 +1011,7 @@
                                         <div style="flex: 1;">
                                             <div class="guardian-name">{{ guardian.name }}</div>
                                             {% if guardian.is_primary_contact %}
-                                                <span class="special-needs-badge" style="background: rgba(16, 185, 129, 0.1); color: #10B981; font-size: 11px;">
+                                                <span class="primary-badge">
                                                     <i class="bi bi-star-fill"></i> Primary Contact
                                                 </span>
                                             {% endif %}
@@ -794,24 +1042,6 @@
                                             <span class="detail-label">Employment:</span>
                                             <span class="detail-value">{{ guardian.get_employment_status_display }}</span>
                                         </div>
-                                        {% if guardian.occupation %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Occupation:</span>
-                                            <span class="detail-value">{{ guardian.occupation }}</span>
-                                        </div>
-                                        {% endif %}
-                                        {% if guardian.employer %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Employer:</span>
-                                            <span class="detail-value">{{ guardian.employer }}</span>
-                                        </div>
-                                        {% endif %}
-                                        {% if guardian.monthly_income %}
-                                        <div class="guardian-detail-item">
-                                            <span class="detail-label">Monthly Income:</span>
-                                            <span class="detail-value">KES {{ guardian.monthly_income|floatformat:2|intcomma }}</span>
-                                        </div>
-                                        {% endif %}
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -824,14 +1054,14 @@
                                 <h3 class="empty-title">No Guardian Information</h3>
                                 <p class="empty-text">Add guardian/parent information to complete your profile</p>
                                 <a href="{% url 'guardian_create' %}" class="btn btn-primary">
-                                    <i class="bi bi-plus me-1"></i> Add Guardian
+                                    <i class="bi bi-plus"></i> Add Guardian
                                 </a>
                             </div>
                         {% endif %}
                     </div>
 
                     <!-- Sibling Information Tab -->
-                    <div class="tab-pane" id="sibling-pane" style="display: none;">
+                    <div class="tab-pane" id="sibling-pane">
                         <div class="section-header-with-action">
                             <h5 class="section-title" style="margin-bottom: 0;">
                                 <span class="section-icon">
@@ -839,8 +1069,8 @@
                                 </span>
                                 Sibling Information
                             </h5>
-                            <a href="{% url 'sibling_create' %}" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus me-1"></i> Add Sibling
+                            <a href="{% url 'sibling_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Add Sibling
                             </a>
                         </div>
 
@@ -849,41 +1079,37 @@
                                 <table class="sibling-table">
                                     <thead>
                                         <tr>
-                                            <th><i class="bi bi-person me-1"></i> Name</th>
-                                            <th><i class="bi bi-calendar me-1"></i> Age</th>
-                                            <th><i class="bi bi-mortarboard me-1"></i> Education Level</th>
-                                            <th><i class="bi bi-building me-1"></i> School</th>
-                                            <th><i class="bi bi-check-circle me-1"></i> Status</th>
+                                            <th><i class="bi bi-person"></i> Name</th>
+                                            <th><i class="bi bi-calendar"></i> Age</th>
+                                            <th><i class="bi bi-mortarboard"></i> Education Level</th>
+                                            <th><i class="bi bi-building"></i> School</th>
+                                            <th><i class="bi bi-check-circle"></i> Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for sibling in siblings %}
-                                        <tr>
+                                        <tr onclick="viewSiblingDetails({{ sibling.id }})" style="cursor: pointer;">
                                             <td style="font-weight: 600;">{{ sibling.name }}</td>
                                             <td>{{ sibling.age }} years</td>
                                             <td>{{ sibling.education_level }}</td>
                                             <td>{{ sibling.school_name|default:"Not specified" }}</td>
                                             <td>
                                                 {% if sibling.is_in_school %}
-                                                    <span style="color: #10B981; font-weight: 600;">
+                                                    <span class="status-active">
                                                         <i class="bi bi-check-circle-fill"></i> In School
                                                     </span>
                                                 {% else %}
-                                                    <span style="color: #64748B;">
+                                                    <span class="status-inactive">
                                                         <i class="bi bi-dash-circle-fill"></i> Not in School
                                                     </span>
                                                 {% endif %}
                                             </td>
                                         </tr>
-
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
                         {% else %}
-                            
-                            
-                            
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <i class="bi bi-person-plus"></i>
@@ -891,7 +1117,7 @@
                                 <h3 class="empty-title">No Sibling Information</h3>
                                 <p class="empty-text">Add sibling information to complete your profile</p>
                                 <a href="{% url 'sibling_create' %}" class="btn btn-primary">
-                                    <i class="bi bi-plus me-1"></i> Add Sibling
+                                    <i class="bi bi-plus"></i> Add Sibling
                                 </a>
                             </div>
                         {% endif %}
@@ -901,6 +1127,101 @@
         </div>
     </div>
 </div>
+
+<!-- Guardian Details Modal -->
+<div class="modal" id="guardianDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person"></i>
+                    Guardian Details
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="guardianModalContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+                <a href="#" class="btn btn-primary" id="editGuardianBtn">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sibling Details Modal -->
+<div class="modal" id="siblingDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus"></i>
+                    Sibling Details
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="siblingModalContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+                <a href="#" class="btn btn-primary" id="editSiblingBtn">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="successModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle text-success"></i>
+                    Success
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Operation completed successfully!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="errorModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle text-danger"></i>
+                    Error
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred. Please try again.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clear-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -910,19 +1231,189 @@
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabPanes = document.querySelectorAll('.tab-pane');
 
+        // Show first tab by default
+        tabPanes.forEach((pane, index) => {
+            if (index === 0) {
+                pane.classList.add('active');
+            } else {
+                pane.classList.remove('active');
+            }
+        });
+
         tabButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const targetTab = this.getAttribute('data-tab');
 
                 // Remove active class from all buttons and panes
                 tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanes.forEach(pane => pane.style.display = 'none');
+                tabPanes.forEach(pane => pane.classList.remove('active'));
 
                 // Add active class to clicked button and show corresponding pane
                 this.classList.add('active');
-                document.getElementById(`${targetTab}-pane`).style.display = 'block';
+                document.getElementById(`${targetTab}-pane`).classList.add('active');
+                
+                // Update URL hash for bookmarking
+                window.history.pushState(null, null, `#${targetTab}`);
             });
         });
-    }); 
+
+        // Check for hash in URL to load specific tab
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            const tabButton = document.querySelector(`.tab-button[data-tab="${hash}"]`);
+            if (tabButton) {
+                tabButton.click();
+            }
+        }
+
+        // Add keyboard navigation for tabs
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
+                e.preventDefault();
+                const tabIndex = parseInt(e.key) - 1;
+                const tabButtons = document.querySelectorAll('.tab-button');
+                if (tabButtons[tabIndex]) {
+                    tabButtons[tabIndex].click();
+                }
+            }
+        });
+    });
+
+    function viewGuardianDetails(guardianId) {
+        // In a real application, this would fetch data from an API
+        // For now, we'll show a simulated modal
+        const modalContent = document.getElementById('guardianModalContent');
+        modalContent.innerHTML = `
+            <div class="info-row">
+                <span class="info-label">Full Name:</span>
+                <span class="info-value">John Doe</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Relationship:</span>
+                <span class="info-value">Father</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">+254 712 345 678</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">john@example.com</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Employment:</span>
+                <span class="info-value">Employed</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Monthly Income:</span>
+                <span class="info-value">KES 45,000</span>
+            </div>
+        `;
+        
+        document.getElementById('editGuardianBtn').href = `/guardian/${guardianId}/edit/`;
+        document.getElementById('guardianDetailsModal').classList.add('show');
+    }
+
+    function viewSiblingDetails(siblingId) {
+        // In a real application, this would fetch data from an API
+        // For now, we'll show a simulated modal
+        const modalContent = document.getElementById('siblingModalContent');
+        modalContent.innerHTML = `
+            <div class="info-row">
+                <span class="info-label">Full Name:</span>
+                <span class="info-value">Jane Doe</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Age:</span>
+                <span class="info-value">16 years</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Education Level:</span>
+                <span class="info-value">Secondary School</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">School:</span>
+                <span class="info-value">Nairobi High School</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value" style="color: #27ae60; font-weight: 600;">In School</span>
+            </div>
+        `;
+        
+        document.getElementById('editSiblingBtn').href = `/sibling/${siblingId}/edit/`;
+        document.getElementById('siblingDetailsModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    }
+
+    function showSuccess(message) {
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('successModal').classList.add('show');
+        setTimeout(() => closeModal(), 2000);
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorModal').classList.add('show');
+    }
+
+    // Close modal on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    // Update progress animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressFill = document.querySelector('.progress-fill');
+        const completionPercentage = {{ completion_percentage }};
+        
+        // Animate progress bar
+        setTimeout(() => {
+            progressFill.style.width = `${completionPercentage}%`;
+        }, 100);
+    });
+
+    // Print profile functionality
+    function printProfile() {
+        const printContent = document.querySelector('.tab-content-wrapper').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Student Profile - {{ applicant.user.get_full_name }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .section-title { color: #1E293B; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                        .info-card { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+                        @media print {
+                            body { font-size: 12pt; }
+                            .no-print { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Student Profile</h1>
+                    <h2>{{ applicant.user.get_full_name }}</h2>
+                    ${printContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
 </script>
 {% endblock %}

@@ -1,0 +1,1018 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Create Applicant - Bursary Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title i {
+        color: #3498db;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .form-grid-full {
+        grid-column: 1 / -1;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .form-control {
+        padding: 12px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-control:disabled {
+        background: #F8FAFC;
+        cursor: not-allowed;
+    }
+
+    .form-select {
+        padding: 12px 14px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+        cursor: pointer;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 4px;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        margin-top: 2px;
+    }
+
+    .checkbox-label {
+        font-size: 14px;
+        color: #475569;
+        flex: 1;
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-label {
+        padding: 12px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .file-label:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .file-name {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .image-preview {
+        margin-top: 10px;
+        display: none;
+    }
+
+    .image-preview img {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 8px;
+        border: 2px solid #E2E8F0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+    }
+
+    .alert-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FECACA;
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+        border: 1px solid #BFDBFE;
+    }
+
+    .info-card {
+        background: #F0F9FF;
+        border: 1px solid #BAE6FD;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .info-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0C4A6E;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-card-text {
+        font-size: 13px;
+        color: #075985;
+        margin: 0;
+    }
+
+    .loading {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        color: #64748B;
+        font-size: 13px;
+    }
+
+    .loading.active {
+        display: flex;
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #E2E8F0;
+        border-top-color: #3498db;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'applicant_list' %}">Applicants</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Create Applicant</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-person-plus"></i>
+                Create New Applicant
+            </h1>
+            <p class="page-subtitle">
+                Create a new applicant profile with user credentials
+            </p>
+        </div>
+
+        <!-- Information Card -->
+        <div class="info-card">
+            <div class="info-card-title">
+                <i class="bi bi-info-circle"></i>
+                Important Information
+            </div>
+            <p class="info-card-text">
+                A user account will be automatically created with a random password. 
+                The login credentials will be sent to the applicant's email address.
+                The applicant profile will be automatically verified.
+            </p>
+        </div>
+
+        <!-- Display Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Form -->
+        <form method="post" enctype="multipart/form-data" id="applicantForm">
+            {% csrf_token %}
+
+            <!-- Personal Information Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-person"></i>
+                    Personal Information
+                </h5>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">
+                            First Name <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="first_name" 
+                            name="first_name" 
+                            value="{{ form_data.first_name|default:'' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">
+                            Last Name <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="last_name" 
+                            name="last_name" 
+                            value="{{ form_data.last_name|default:'' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_number">
+                            ID Number <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="id_number" 
+                            name="id_number" 
+                            value="{{ form_data.id_number|default:'' }}"
+                            maxlength="20"
+                            required
+                        >
+                        <small class="form-text">National ID or Birth Certificate number</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="date_of_birth">
+                            Date of Birth <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            class="form-control" 
+                            id="date_of_birth" 
+                            name="date_of_birth" 
+                            value="{{ form_data.date_of_birth|default:'' }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="gender">
+                            Gender <span class="required">*</span>
+                        </label>
+                        <select class="form-select" id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="M" {% if form_data.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if form_data.gender == 'F' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="profile_picture">
+                            Profile Picture
+                        </label>
+                        <div class="file-input-wrapper">
+                            <input 
+                                type="file" 
+                                class="file-input" 
+                                id="profile_picture" 
+                                name="profile_picture"
+                                accept="image/*"
+                                onchange="previewImage(this)"
+                            >
+                            <label for="profile_picture" class="file-label">
+                                <i class="bi bi-upload"></i>
+                                Choose File
+                            </label>
+                            <span class="file-name" id="fileName">No file chosen</span>
+                        </div>
+                        <div class="image-preview" id="imagePreview">
+                            <img src="" alt="Preview" id="previewImg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-envelope"></i>
+                    Contact Information
+                </h5>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="email">
+                            Email Address <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="email" 
+                            class="form-control" 
+                            id="email" 
+                            name="email" 
+                            value="{{ form_data.email|default:'' }}"
+                            required
+                        >
+                        <small class="form-text">Login credentials will be sent to this email</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="phone_number">
+                            Phone Number <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="tel" 
+                            class="form-control" 
+                            id="phone_number" 
+                            name="phone_number" 
+                            value="{{ form_data.phone_number|default:'' }}"
+                            placeholder="+254712345678"
+                            pattern="\+254[0-9]{9}"
+                            required
+                        >
+                        <small class="form-text">Format: +254XXXXXXXXX</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Information Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-geo-alt"></i>
+                    Location Information
+                </h5>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="county">
+                            County <span class="required">*</span>
+                        </label>
+                        <select 
+                            class="form-select" 
+                            id="county" 
+                            name="county" 
+                            onchange="loadConstituencies()"
+                            {% if user_county %}disabled{% endif %}
+                            required
+                        >
+                            <option value="">Select County</option>
+                            {% for county in counties %}
+                            <option value="{{ county.id }}" 
+                                {% if form_data.county == county.id|stringformat:"s" or user_county.id == county.id %}selected{% endif %}>
+                                {{ county.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if user_county %}
+                        <input type="hidden" name="county" value="{{ user_county.id }}">
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="constituency">
+                            Constituency <span class="required">*</span>
+                        </label>
+                        <select 
+                            class="form-select" 
+                            id="constituency" 
+                            name="constituency" 
+                            onchange="loadWards()"
+                            {% if user_constituency %}disabled{% endif %}
+                            required
+                        >
+                            <option value="">Select Constituency</option>
+                            {% for constituency in constituencies %}
+                            <option value="{{ constituency.id }}"
+                                {% if form_data.constituency == constituency.id|stringformat:"s" or user_constituency.id == constituency.id %}selected{% endif %}>
+                                {{ constituency.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if user_constituency %}
+                        <input type="hidden" name="constituency" value="{{ user_constituency.id }}">
+                        {% endif %}
+                        <div class="loading" id="constituencyLoading">
+                            <div class="spinner"></div>
+                            Loading constituencies...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ward">
+                            Ward <span class="required">*</span>
+                        </label>
+                        <select 
+                            class="form-select" 
+                            id="ward" 
+                            name="ward" 
+                            onchange="loadLocations()"
+                            required
+                        >
+                            <option value="">Select Ward</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}"
+                                {% if form_data.ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ward.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="loading" id="wardLoading">
+                            <div class="spinner"></div>
+                            Loading wards...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="location">
+                            Location
+                        </label>
+                        <select 
+                            class="form-select" 
+                            id="location" 
+                            name="location"
+                            onchange="loadSublocations()"
+                        >
+                            <option value="">Select Location</option>
+                        </select>
+                        <div class="loading" id="locationLoading">
+                            <div class="spinner"></div>
+                            Loading locations...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="sublocation">
+                            Sub-Location
+                        </label>
+                        <select 
+                            class="form-select" 
+                            id="sublocation" 
+                            name="sublocation"
+                            onchange="loadVillages()"
+                        >
+                            <option value="">Select Sub-Location</option>
+                        </select>
+                        <div class="loading" id="sublocationLoading">
+                            <div class="spinner"></div>
+                            Loading sub-locations...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="village">
+                            Village
+                        </label>
+                        <select class="form-select" id="village" name="village">
+                            <option value="">Select Village</option>
+                        </select>
+                        <div class="loading" id="villageLoading">
+                            <div class="spinner"></div>
+                            Loading villages...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-house"></i>
+                    Address Information
+                </h5>
+                
+                <div class="form-grid">
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="physical_address">
+                            Physical Address <span class="required">*</span>
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="physical_address" 
+                            name="physical_address" 
+                            rows="3" 
+                            required
+                        >{{ form_data.physical_address|default:'' }}</textarea>
+                        <small class="form-text">Provide detailed physical address</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="postal_address">
+                            Postal Address
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="postal_address" 
+                            name="postal_address" 
+                            value="{{ form_data.postal_address|default:'' }}"
+                            placeholder="P.O. Box 123-00100"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Circumstances Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-heart"></i>
+                    Special Circumstances
+                </h5>
+                
+                <div class="checkbox-wrapper">
+                    <input 
+                        type="checkbox" 
+                        id="special_needs" 
+                        name="special_needs"
+                        onchange="toggleSpecialNeedsDescription()"
+                        {% if form_data.special_needs %}checked{% endif %}
+                    >
+                    <label class="checkbox-label" for="special_needs">
+                        This applicant has special needs or disabilities
+                    </label>
+                </div>
+
+                <div class="form-group" id="specialNeedsDescriptionGroup" style="display: none; margin-top: 16px;">
+                    <label class="form-label" for="special_needs_description">
+                        Special Needs Description
+                    </label>
+                    <textarea 
+                        class="form-control" 
+                        id="special_needs_description" 
+                        name="special_needs_description" 
+                        rows="3"
+                    >{{ form_data.special_needs_description|default:'' }}</textarea>
+                    <small class="form-text">Please describe the special needs or disability</small>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{% url 'applicant_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="bi bi-check-circle"></i>
+                    Create Applicant
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File preview
+    function previewImage(input) {
+        const fileName = document.getElementById('fileName');
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (input.files && input.files[0]) {
+            fileName.textContent = input.files[0].name;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            fileName.textContent = 'No file chosen';
+            preview.style.display = 'none';
+        }
+    }
+
+    // Toggle special needs description
+    function toggleSpecialNeedsDescription() {
+        const checkbox = document.getElementById('special_needs');
+        const descriptionGroup = document.getElementById('specialNeedsDescriptionGroup');
+        
+        descriptionGroup.style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleSpecialNeedsDescription();
+    });
+
+    // Load constituencies based on county
+    function loadConstituencies() {
+        const countyId = document.getElementById('county').value;
+        const constituencySelect = document.getElementById('constituency');
+        const loading = document.getElementById('constituencyLoading');
+        
+        if (!countyId) {
+            constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
+            return;
+        }
+        
+        loading.classList.add('active');
+        
+        fetch(`/admin-get-constituencies-by-county/?county_id=${countyId}`)
+            .then(response => response.json())
+            .then(data => {
+                constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
+                data.constituencies.forEach(constituency => {
+                    const option = document.createElement('option');
+                    option.value = constituency.id;
+                    option.textContent = constituency.name;
+                    constituencySelect.appendChild(option);
+                });
+                loading.classList.remove('active');
+                
+                // Reset dependent selects
+                document.getElementById('ward').innerHTML = '<option value="">Select Ward</option>';
+                document.getElementById('location').innerHTML = '<option value="">Select Location</option>';
+                document.getElementById('sublocation').innerHTML = '<option value="">Select Sub-Location</option>';
+                document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            })
+            .catch(error => {
+                console.error('Error loading constituencies:', error);
+                loading.classList.remove('active');
+            });
+    }
+
+    // Load wards based on constituency
+    function loadWards() {
+        const constituencyId = document.getElementById('constituency').value;
+        const wardSelect = document.getElementById('ward');
+        const loading = document.getElementById('wardLoading');
+        
+        if (!constituencyId) {
+            wardSelect.innerHTML = '<option value="">Select Ward</option>';
+            return;
+        }
+        
+        loading.classList.add('active');
+        
+        fetch(`/admin-get-wards-by-constituency/?constituency_id=${constituencyId}`)
+            .then(response => response.json())
+            .then(data => {
+                wardSelect.innerHTML = '<option value="">Select Ward</option>';
+                data.wards.forEach(ward => {
+                    const option = document.createElement('option');
+                    option.value = ward.id;
+                    option.textContent = ward.name;
+                    wardSelect.appendChild(option);
+                });
+                loading.classList.remove('active');
+                
+                // Reset dependent selects
+                document.getElementById('location').innerHTML = '<option value="">Select Location</option>';
+                document.getElementById('sublocation').innerHTML = '<option value="">Select Sub-Location</option>';
+                document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            })
+            .catch(error => {
+                console.error('Error loading wards:', error);
+                loading.classList.remove('active');
+            });
+    }
+
+    // Load locations based on ward
+    function loadLocations() {
+        const wardId = document.getElementById('ward').value;
+        const locationSelect = document.getElementById('location');
+        const loading = document.getElementById('locationLoading');
+        
+        if (!wardId) {
+            locationSelect.innerHTML = '<option value="">Select Location</option>';
+            return;
+        }
+        
+        loading.classList.add('active');
+        
+        fetch(`/admin-get-locations-by-ward/?ward_id=${wardId}`)
+            .then(response => response.json())
+            .then(data => {
+                locationSelect.innerHTML = '<option value="">Select Location</option>';
+                data.locations.forEach(location => {
+                    const option = document.createElement('option');
+                    option.value = location.id;
+                    option.textContent = location.name;
+                    locationSelect.appendChild(option);
+                });
+                loading.classList.remove('active');
+                
+                // Reset dependent selects
+                document.getElementById('sublocation').innerHTML = '<option value="">Select Sub-Location</option>';
+                document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            })
+            .catch(error => {
+                console.error('Error loading locations:', error);
+                loading.classList.remove('active');
+            });
+    }
+
+    // Load sublocations based on location
+    function loadSublocations() {
+        const locationId = document.getElementById('location').value;
+        const sublocationSelect = document.getElementById('sublocation');
+        const loading = document.getElementById('sublocationLoading');
+        
+        if (!locationId) {
+            sublocationSelect.innerHTML = '<option value="">Select Sub-Location</option>';
+            return;
+        }
+        
+        loading.classList.add('active');
+        
+        fetch(`/admin-get-sublocations-by-location/?location_id=${locationId}`)
+            .then(response => response.json())
+            .then(data => {
+                sublocationSelect.innerHTML = '<option value="">Select Sub-Location</option>';
+                data.sublocations.forEach(sublocation => {
+                    const option = document.createElement('option');
+                    option.value = sublocation.id;
+                    option.textContent = sublocation.name;
+                    sublocationSelect.appendChild(option);
+                });
+                loading.classList.remove('active');
+                
+                // Reset dependent select
+                document.getElementById('village').innerHTML = '<option value="">Select Village</option>';
+            })
+            .catch(error => {
+                console.error('Error loading sublocations:', error);
+                loading.classList.remove('active');
+            });
+    }
+
+    // Load villages based on sublocation
+    function loadVillages() {
+        const sublocationId = document.getElementById('sublocation').value;
+        const villageSelect = document.getElementById('village');
+        const loading = document.getElementById('villageLoading');
+        
+        if (!sublocationId) {
+            villageSelect.innerHTML = '<option value="">Select Village</option>';
+            return;
+        }
+        
+        loading.classList.add('active');
+        
+        fetch(`/admin-get-villages-by-sublocation/?sublocation_id=${sublocationId}`)
+            .then(response => response.json())
+            .then(data => {
+                villageSelect.innerHTML = '<option value="">Select Village</option>';
+                data.villages.forEach(village => {
+                    const option = document.createElement('option');
+                    option.value = village.id;
+                    option.textContent = village.name;
+                    villageSelect.appendChild(option);
+                });
+                loading.classList.remove('active');
+            })
+            .catch(error => {
+                console.error('Error loading villages:', error);
+                loading.classList.remove('active');
+            });
+    }
+
+    // Form submission handling
+    document.getElementById('applicantForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner"></div> Creating Applicant...';
+    });
+</script>
+{% endblock %}

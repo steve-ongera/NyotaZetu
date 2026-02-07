@@ -66,6 +66,16 @@ urlpatterns = [
     path('applicants/', views.applicant_list, name='applicant_list'),
     path('applicants/<int:applicant_id>/', views.applicant_detail, name='applicant_detail'),
     path('admin-applicants/<int:applicant_id>/edit/', views.edit_applicant, name='edit_applicant'),
+    # Applicant Management URLs
+    path('admin-applicants/create/', views.create_applicant, name='create_applicant'), 
+    
+    # AJAX endpoints for cascading dropdowns
+    path('admin-get-constituencies-by-county/', views.get_constituencies_by_county, name='get_constituencies_by_county'),
+    path('admin-get-wards-by-constituency/', views.get_wards_by_constituency, name='get_wards_by_constituency'),
+    path('admin-get-locations-by-ward/', views.get_locations_by_ward, name='get_locations_by_ward'),
+    path('admin-get-sublocations-by-location/', views.get_sublocations_by_location, name='get_sublocations_by_location'),
+    path('admin-get-villages-by-sublocation/', views.get_villages_by_sublocation, name='get_villages_by_sublocation'),
+
     
     # Security management URLs
     path('admin-applicants/<int:applicant_id>/unlock/', views.unlock_account, name='unlock_account'),
