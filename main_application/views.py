@@ -965,7 +965,7 @@ def reviewer_dashboard(request):
         'under_review': under_review,
         'my_reviews': my_reviews,
     }
-    return render(request, 'admin/reviewer_dashboard.html', context)
+    return render(request, 'reviewer/reviewer_dashboard.html', context)
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
