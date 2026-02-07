@@ -904,3 +904,388 @@ def get_user_ward(user):
         
     except Exception as e:
         return None
+    
+    
+"""
+Utility functions for the bursary management system
+"""
+
+from django.utils import timezone
+from .models import Notification, AuditLog, EmailLog, SMSLog
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+def create_audit_log(user, action, table_affected, description, ip_address, record_id=None, old_values=None, new_values=None):
+    """
+    Create an audit log entry
+    
+    Args:
+        user: User performing the action
+        action: Type of action (create, update, delete, view, etc.)
+        table_affected: Name of the database table/model
+        description: Human-readable description
+        ip_address: IP address of the user
+        record_id: ID of the affected record (optional)
+        old_values: Dict of old values for updates (optional)
+        new_values: Dict of new values for updates (optional)
+    """
+    try:
+        AuditLog.objects.create(
+            user=user,
+            action=action,
+            table_affected=table_affected,
+            record_id=str(record_id) if record_id else None,
+            description=description,
+            ip_address=ip_address,
+            old_values=old_values,
+            new_values=new_values
+        )
+    except Exception as e:
+        print(f"Error creating audit log: {e}")
+
+
+def send_notification(user, notification_type, title, message, related_application=None):
+    """
+    Send in-app notification to user
+    
+    Args:
+        user: User to notify
+        notification_type: Type of notification
+        title: Notification title
+        message: Notification message
+        related_application: Related application object (optional)
+    """
+    try:
+        Notification.objects.create(
+            user=user,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            related_application=related_application
+        )
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+
+
+def send_email_notification(user, subject, message, related_application=None):
+    """
+    Send email notification to user
+    
+    Args:
+        user: User to email
+        subject: Email subject
+        message: Email message
+        related_application: Related application object (optional)
+    """
+    try:
+        # Send actual email
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            related_application=related_application,
+            status='sent'
+        )
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        
+        # Log failed email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            related_application=related_application,
+            status='failed'
+        )
+
+
+def send_sms_notification(user, message, related_application=None):
+    """
+    Send SMS notification to user
+    
+    Args:
+        user: User to SMS
+        message: SMS message
+        related_application: Related application object (optional)
+    """
+    try:
+        phone_number = user.phone_number
+        
+        if not phone_number:
+            print(f"User {user.username} has no phone number")
+            return
+        
+        # TODO: Integrate with actual SMS gateway (Africa's Talking, etc.)
+        # For now, just log it
+        
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=phone_number,
+            message=message,
+            related_application=related_application,
+            status='sent'  # Change to 'pending' when actual integration is done
+        )
+    except Exception as e:
+        print(f"Error sending SMS: {e}")
+        
+        # Log failed SMS
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=user.phone_number if hasattr(user, 'phone_number') else '',
+            message=message,
+            related_application=related_application,
+            status='failed'
+        )
+
+
+def calculate_priority_score(application):
+    """
+    Calculate priority score for an application based on various factors
+    
+    Args:
+        application: Application object
+        
+    Returns:
+        Decimal: Priority score (0-100)
+    """
+    from decimal import Decimal
+    
+    score = Decimal('0.0')
+    
+    # Vulnerability factors (40 points max)
+    if application.is_total_orphan:
+        score += Decimal('15.0')
+    elif application.is_orphan:
+        score += Decimal('10.0')
+    
+    if application.is_disabled:
+        score += Decimal('10.0')
+    
+    if application.has_chronic_illness:
+        score += Decimal('5.0')
+    
+    if application.applicant.special_needs:
+        score += Decimal('10.0')
+    
+    # Financial need (30 points max)
+    if application.household_monthly_income:
+        if application.household_monthly_income < 5000:
+            score += Decimal('15.0')
+        elif application.household_monthly_income < 10000:
+            score += Decimal('10.0')
+        elif application.household_monthly_income < 20000:
+            score += Decimal('5.0')
+    
+    # Family size consideration
+    if application.number_of_siblings > 5:
+        score += Decimal('10.0')
+    elif application.number_of_siblings > 3:
+        score += Decimal('5.0')
+    
+    # Fees balance (15 points max)
+    if application.fees_balance:
+        total_fees = application.total_fees_payable or Decimal('1.0')
+        balance_ratio = application.fees_balance / total_fees
+        
+        if balance_ratio > 0.8:  # More than 80% unpaid
+            score += Decimal('15.0')
+        elif balance_ratio > 0.5:  # More than 50% unpaid
+            score += Decimal('10.0')
+        elif balance_ratio > 0.3:  # More than 30% unpaid
+            score += Decimal('5.0')
+    
+    # Academic performance (15 points max) - bonus for merit
+    if application.previous_academic_year_average:
+        if application.previous_academic_year_average >= 80:
+            score += Decimal('15.0')
+        elif application.previous_academic_year_average >= 70:
+            score += Decimal('10.0')
+        elif application.previous_academic_year_average >= 60:
+            score += Decimal('5.0')
+    
+    # Cap at 100
+    if score > 100:
+        score = Decimal('100.0')
+    
+    return score
+
+
+def get_user_ip(request):
+    """
+    Get user's IP address from request
+    
+    Args:
+        request: Django request object
+        
+    Returns:
+        str: IP address
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+def format_currency(amount):
+    """
+    Format decimal amount as Kenyan Shillings
+    
+    Args:
+        amount: Decimal or float amount
+        
+    Returns:
+        str: Formatted currency string
+    """
+    if amount is None:
+        return "KES 0.00"
+    
+    return f"KES {amount:,.2f}"
+
+
+def get_fiscal_year_display(fiscal_year):
+    """
+    Get display string for fiscal year
+    
+    Args:
+        fiscal_year: FiscalYear object
+        
+    Returns:
+        str: Display string
+    """
+    if fiscal_year:
+        return f"{fiscal_year.name} ({fiscal_year.start_date.strftime('%b %Y')} - {fiscal_year.end_date.strftime('%b %Y')})"
+    return "No Fiscal Year"
+
+
+def check_application_eligibility(applicant, fiscal_year):
+    """
+    Check if applicant is eligible to apply for the given fiscal year
+    
+    Args:
+        applicant: Applicant object
+        fiscal_year: FiscalYear object
+        
+    Returns:
+        tuple: (is_eligible: bool, reason: str)
+    """
+    # Check if fiscal year is active
+    if not fiscal_year.is_active:
+        return False, "The fiscal year is not active"
+    
+    # Check if applications are open
+    if not fiscal_year.application_open:
+        return False, "Applications are currently closed"
+    
+    # Check deadline
+    if fiscal_year.application_deadline and timezone.now().date() > fiscal_year.application_deadline:
+        return False, "Application deadline has passed"
+    
+    # Check if applicant is verified
+    if not applicant.is_verified:
+        return False, "Your profile is not yet verified"
+    
+    # Check if applicant already has an application for this fiscal year
+    from .models import Application
+    existing_application = Application.objects.filter(
+        applicant=applicant,
+        fiscal_year=fiscal_year
+    ).exists()
+    
+    if existing_application:
+        return False, "You already have an application for this fiscal year"
+    
+    return True, "Eligible"
+
+
+def generate_application_number(county_code, fiscal_year_name):
+    """
+    Generate unique application number
+    
+    Args:
+        county_code: County code (e.g., "047")
+        fiscal_year_name: Fiscal year name (e.g., "2024-2025")
+        
+    Returns:
+        str: Unique application number
+    """
+    import uuid
+    
+    year = fiscal_year_name.split('-')[0]
+    random_string = uuid.uuid4().hex[:6].upper()
+    
+    return f"KB-{county_code}-{year}-{random_string}"
+
+
+def get_review_status_badge(status):
+    """
+    Get Bootstrap badge class for review status
+    
+    Args:
+        status: Status string
+        
+    Returns:
+        str: Bootstrap badge class
+    """
+    status_badges = {
+        'draft': 'secondary',
+        'submitted': 'info',
+        'under_review': 'warning',
+        'approved': 'success',
+        'rejected': 'danger',
+        'disbursed': 'primary',
+        'pending_documents': 'warning',
+    }
+    
+    return status_badges.get(status, 'secondary')
+
+
+def get_recommendation_badge(recommendation):
+    """
+    Get Bootstrap badge class for review recommendation
+    
+    Args:
+        recommendation: Recommendation string
+        
+    Returns:
+        str: Bootstrap badge class
+    """
+    recommendation_badges = {
+        'approve': 'success',
+        'reject': 'danger',
+        'more_info': 'warning',
+        'forward': 'info',
+    }
+    
+    return recommendation_badges.get(recommendation, 'secondary')
+
+
+def paginate_queryset(queryset, page_number, per_page=20):
+    """
+    Paginate a queryset
+    
+    Args:
+        queryset: Django queryset
+        page_number: Current page number
+        per_page: Items per page
+        
+    Returns:
+        Page object
+    """
+    from django.core.paginator import Paginator
+    
+    paginator = Paginator(queryset, per_page)
+    return paginator.get_page(page_number)

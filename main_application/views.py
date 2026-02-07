@@ -952,20 +952,7 @@ def admin_dashboard(request):
     
     return render(request, 'admin/dashboard.html', context)
 
-@login_required
-@user_passes_test(is_reviewer)
-def reviewer_dashboard(request):
-    # Applications for review
-    pending_review = Application.objects.filter(status='submitted')
-    under_review = Application.objects.filter(status='under_review')
-    my_reviews = Review.objects.filter(reviewer=request.user).count()
-    
-    context = {
-        'pending_review': pending_review,
-        'under_review': under_review,
-        'my_reviews': my_reviews,
-    }
-    return render(request, 'reviewer/reviewer_dashboard.html', context)
+
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -18643,3 +18630,1046 @@ def constituency_quality_checks(request):
     }
     
     return render(request, 'constituency_admin/quality_checks.html', context)
+
+
+"""
+Reviewer Views for Bursary Management System
+Handles ward-level application reviews
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Count, Sum, Avg, F
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.core.paginator import Paginator
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+from .models import (
+    Application, Review, Applicant, Ward, FiscalYear,
+    Allocation, Document, Notification, AuditLog,
+    BursaryCategory, Institution, Guardian, DisbursementRound
+)
+from .decorators import reviewer_required
+from .utils import create_audit_log, send_notification
+
+
+# ============= DASHBOARD =============
+
+@login_required
+@reviewer_required
+def reviewer_dashboard(request):
+    """
+    Main dashboard for reviewers showing overview of their ward's applications
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward. Please contact the administrator.")
+        return redirect('reviewer_profile')
+    
+    # Get current fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not current_fiscal_year:
+        messages.warning(request, "No active fiscal year found.")
+        return render(request, 'reviewer/dashboard.html', {'assigned_ward': assigned_ward})
+    
+    # Get applications from reviewer's ward for current fiscal year
+    ward_applications = Application.objects.filter(
+        applicant__ward=assigned_ward,
+        fiscal_year=current_fiscal_year
+    )
+    
+    # Statistics
+    total_applications = ward_applications.count()
+    pending_review = ward_applications.filter(status='submitted').count()
+    under_review = ward_applications.filter(status='under_review').count()
+    reviewed = ward_applications.filter(
+        reviews__reviewer=user,
+        reviews__review_level='ward'
+    ).count()
+    
+    approved = ward_applications.filter(status='approved').count()
+    rejected = ward_applications.filter(status='rejected').count()
+    
+    # My reviews statistics
+    my_reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward'
+    )
+    
+    total_reviewed_by_me = my_reviews.count()
+    approved_by_me = my_reviews.filter(recommendation='approve').count()
+    rejected_by_me = my_reviews.filter(recommendation='reject').count()
+    forwarded_by_me = my_reviews.filter(recommendation='forward').count()
+    
+    # Recent applications needing review
+    recent_pending = ward_applications.filter(
+        status='submitted'
+    ).exclude(
+        reviews__reviewer=user,
+        reviews__review_level='ward'
+    ).order_by('-date_submitted')[:5]
+    
+    # Recent reviews by this reviewer
+    recent_reviews = my_reviews.select_related(
+        'application__applicant__user',
+        'application__institution'
+    ).order_by('-review_date')[:5]
+    
+    # Financial statistics
+    total_amount_requested = ward_applications.aggregate(
+        total=Sum('amount_requested')
+    )['total'] or 0
+    
+    total_amount_recommended = my_reviews.filter(
+        recommendation='approve'
+    ).aggregate(
+        total=Sum('recommended_amount')
+    )['total'] or 0
+    
+    # Category breakdown
+    category_breakdown = ward_applications.values(
+        'bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        total_requested=Sum('amount_requested')
+    ).order_by('-count')
+    
+    # Institution breakdown
+    institution_breakdown = ward_applications.values(
+        'institution__name',
+        'institution__institution_type'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Weekly review activity
+    week_ago = timezone.now() - timedelta(days=7)
+    weekly_reviews = my_reviews.filter(
+        review_date__gte=week_ago
+    ).count()
+    
+    # Average review time (if tracked)
+    avg_review_time = my_reviews.aggregate(
+        avg_time=Avg(F('review_date') - F('application__date_submitted'))
+    )
+    
+    # Pending urgent reviews (applications near deadline)
+    if current_fiscal_year.application_deadline:
+        days_to_deadline = (current_fiscal_year.application_deadline - timezone.now().date()).days
+        urgent_reviews = ward_applications.filter(
+            status='submitted'
+        ).exclude(
+            reviews__reviewer=user,
+            reviews__review_level='ward'
+        ).count() if days_to_deadline <= 7 else 0
+    else:
+        urgent_reviews = 0
+        days_to_deadline = None
+    
+    context = {
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'total_applications': total_applications,
+        'pending_review': pending_review,
+        'under_review': under_review,
+        'reviewed': reviewed,
+        'approved': approved,
+        'rejected': rejected,
+        'total_reviewed_by_me': total_reviewed_by_me,
+        'approved_by_me': approved_by_me,
+        'rejected_by_me': rejected_by_me,
+        'forwarded_by_me': forwarded_by_me,
+        'recent_pending': recent_pending,
+        'recent_reviews': recent_reviews,
+        'total_amount_requested': total_amount_requested,
+        'total_amount_recommended': total_amount_recommended,
+        'category_breakdown': category_breakdown,
+        'institution_breakdown': institution_breakdown,
+        'weekly_reviews': weekly_reviews,
+        'urgent_reviews': urgent_reviews,
+        'days_to_deadline': days_to_deadline,
+    }
+    
+    # Create audit log
+    create_audit_log(
+        user=user,
+        action='view',
+        table_affected='Dashboard',
+        description=f'Reviewer accessed dashboard for {assigned_ward.name}',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    return render(request, 'reviewer/dashboard.html', context)
+
+
+# ============= APPLICATION MANAGEMENT =============
+
+@login_required
+@reviewer_required
+def pending_applications(request):
+    """
+    List of applications pending review in reviewer's ward
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    # Get current fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Base query
+    applications = Application.objects.filter(
+        applicant__ward=assigned_ward,
+        fiscal_year=current_fiscal_year,
+        status__in=['submitted', 'under_review']
+    ).exclude(
+        # Exclude applications already reviewed by this reviewer
+        reviews__reviewer=user,
+        reviews__review_level='ward'
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'bursary_category',
+        'fiscal_year'
+    ).prefetch_related('documents')
+    
+    # Filters
+    category_filter = request.GET.get('category')
+    institution_filter = request.GET.get('institution')
+    status_filter = request.GET.get('status')
+    sort_by = request.GET.get('sort', '-date_submitted')
+    
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+    
+    if institution_filter:
+        applications = applications.filter(institution_id=institution_filter)
+    
+    if status_filter:
+        applications = applications.filter(status=status_filter)
+    
+    # Sorting
+    applications = applications.order_by(sort_by)
+    
+    # Pagination
+    paginator = Paginator(applications, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    )
+    
+    institutions = Institution.objects.filter(
+        is_active=True,
+        applications__applicant__ward=assigned_ward
+    ).distinct()
+    
+    context = {
+        'page_obj': page_obj,
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'categories': categories,
+        'institutions': institutions,
+        'selected_category': category_filter,
+        'selected_institution': institution_filter,
+        'selected_status': status_filter,
+        'sort_by': sort_by,
+    }
+    
+    return render(request, 'reviewer/pending_applications.html', context)
+
+
+@login_required
+@reviewer_required
+def reviewed_applications(request):
+    """
+    List of applications already reviewed by this reviewer
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get applications reviewed by this user
+    reviewed_app_ids = Review.objects.filter(
+        reviewer=user,
+        review_level='ward'
+    ).values_list('application_id', flat=True)
+    
+    applications = Application.objects.filter(
+        id__in=reviewed_app_ids,
+        applicant__ward=assigned_ward,
+        fiscal_year=current_fiscal_year
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'bursary_category'
+    ).prefetch_related('reviews')
+    
+    # Filters
+    recommendation_filter = request.GET.get('recommendation')
+    category_filter = request.GET.get('category')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    sort_by = request.GET.get('sort', '-reviews__review_date')
+    
+    if recommendation_filter:
+        applications = applications.filter(
+            reviews__reviewer=user,
+            reviews__recommendation=recommendation_filter
+        )
+    
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+    
+    if date_from:
+        applications = applications.filter(reviews__review_date__gte=date_from)
+    
+    if date_to:
+        applications = applications.filter(reviews__review_date__lte=date_to)
+    
+    applications = applications.order_by(sort_by).distinct()
+    
+    # Pagination
+    paginator = Paginator(applications, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    )
+    
+    context = {
+        'page_obj': page_obj,
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'categories': categories,
+        'selected_recommendation': recommendation_filter,
+        'selected_category': category_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'sort_by': sort_by,
+    }
+    
+    return render(request, 'reviewer/reviewed_applications.html', context)
+
+
+@login_required
+@reviewer_required
+def application_detail(request, application_id):
+    """
+    Detailed view of a single application for review
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'applicant__ward',
+            'applicant__constituency',
+            'applicant__location',
+            'applicant__sublocation',
+            'applicant__village',
+            'institution',
+            'bursary_category',
+            'fiscal_year'
+        ).prefetch_related(
+            'documents',
+            'reviews',
+            'applicant__guardians',
+            'applicant__siblings'
+        ),
+        id=application_id
+    )
+    
+    # Verify application is from reviewer's ward
+    if application.applicant.ward != assigned_ward:
+        messages.error(request, "You can only review applications from your assigned ward.")
+        return redirect('pending_applications')
+    
+    # Get existing reviews
+    existing_reviews = application.reviews.select_related('reviewer').order_by('-review_date')
+    
+    # Check if this reviewer has already reviewed
+    my_review = existing_reviews.filter(
+        reviewer=user,
+        review_level='ward'
+    ).first()
+    
+    # Get documents grouped by type
+    documents = application.documents.all()
+    
+    # Get guardians information
+    guardians = application.applicant.guardians.all()
+    
+    # Get siblings information
+    siblings = application.applicant.siblings.all()
+    
+    # Calculate financial need indicators
+    total_family_income = sum([g.monthly_income or 0 for g in guardians])
+    per_capita_income = total_family_income / (application.number_of_siblings + 1) if application.number_of_siblings else total_family_income
+    
+    # Vulnerability score calculation
+    vulnerability_indicators = {
+        'is_orphan': application.is_orphan,
+        'is_total_orphan': application.is_total_orphan,
+        'is_disabled': application.is_disabled,
+        'has_chronic_illness': application.has_chronic_illness,
+        'special_needs': application.applicant.special_needs,
+        'low_income': per_capita_income < 5000,
+        'large_family': application.number_of_siblings > 4,
+    }
+    
+    vulnerability_score = sum(vulnerability_indicators.values()) * 10
+    
+    context = {
+        'application': application,
+        'assigned_ward': assigned_ward,
+        'existing_reviews': existing_reviews,
+        'my_review': my_review,
+        'documents': documents,
+        'guardians': guardians,
+        'siblings': siblings,
+        'total_family_income': total_family_income,
+        'per_capita_income': per_capita_income,
+        'vulnerability_indicators': vulnerability_indicators,
+        'vulnerability_score': vulnerability_score,
+    }
+    
+    # Create audit log
+    create_audit_log(
+        user=user,
+        action='view',
+        table_affected='Application',
+        record_id=str(application.id),
+        description=f'Reviewer viewed application {application.application_number}',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    return render(request, 'reviewer/application_detail.html', context)
+
+
+@login_required
+@reviewer_required
+def submit_review(request, application_id):
+    """
+    Submit or update review for an application
+    """
+    if request.method != 'POST':
+        return redirect('application_detail', application_id=application_id)
+    
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    application = get_object_or_404(Application, id=application_id)
+    
+    # Verify application is from reviewer's ward
+    if application.applicant.ward != assigned_ward:
+        messages.error(request, "You can only review applications from your assigned ward.")
+        return redirect('pending_applications')
+    
+    # Get form data
+    comments = request.POST.get('comments', '').strip()
+    recommendation = request.POST.get('recommendation')
+    recommended_amount = request.POST.get('recommended_amount')
+    need_score = request.POST.get('need_score')
+    merit_score = request.POST.get('merit_score')
+    vulnerability_score = request.POST.get('vulnerability_score')
+    
+    # Validation
+    if not comments:
+        messages.error(request, "Please provide review comments.")
+        return redirect('application_detail', application_id=application_id)
+    
+    if not recommendation:
+        messages.error(request, "Please select a recommendation.")
+        return redirect('application_detail', application_id=application_id)
+    
+    if recommendation == 'approve' and not recommended_amount:
+        messages.error(request, "Please specify recommended amount for approval.")
+        return redirect('application_detail', application_id=application_id)
+    
+    # Check if review already exists
+    existing_review = Review.objects.filter(
+        application=application,
+        reviewer=user,
+        review_level='ward'
+    ).first()
+    
+    if existing_review:
+        # Update existing review
+        existing_review.comments = comments
+        existing_review.recommendation = recommendation
+        existing_review.recommended_amount = Decimal(recommended_amount) if recommended_amount else None
+        existing_review.need_score = int(need_score) if need_score else None
+        existing_review.merit_score = int(merit_score) if merit_score else None
+        existing_review.vulnerability_score = int(vulnerability_score) if vulnerability_score else None
+        existing_review.save()
+        
+        messages.success(request, "Review updated successfully.")
+        action = 'update'
+    else:
+        # Create new review
+        review = Review.objects.create(
+            application=application,
+            reviewer=user,
+            review_level='ward',
+            comments=comments,
+            recommendation=recommendation,
+            recommended_amount=Decimal(recommended_amount) if recommended_amount else None,
+            need_score=int(need_score) if need_score else None,
+            merit_score=int(merit_score) if merit_score else None,
+            vulnerability_score=int(vulnerability_score) if vulnerability_score else None
+        )
+        
+        messages.success(request, "Review submitted successfully.")
+        action = 'create'
+        existing_review = review
+    
+    # Update application status
+    if recommendation == 'approve' or recommendation == 'forward':
+        application.status = 'under_review'
+    elif recommendation == 'reject':
+        application.status = 'rejected'
+    
+    application.save()
+    
+    # Send notification to applicant
+    send_notification(
+        user=application.applicant.user,
+        notification_type='review_comment',
+        title=f'Review Update for {application.application_number}',
+        message=f'Your application has been reviewed by the ward committee. Recommendation: {recommendation}',
+        related_application=application
+    )
+    
+    # Create audit log
+    create_audit_log(
+        user=user,
+        action=action,
+        table_affected='Review',
+        record_id=str(existing_review.id),
+        description=f'Reviewer {action}d review for application {application.application_number} with recommendation: {recommendation}',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    return redirect('application_detail', application_id=application_id)
+
+
+# ============= MY REVIEWS =============
+
+@login_required
+@reviewer_required
+def my_reviews_list(request):
+    """
+    List all reviews submitted by this reviewer
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward'
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'application__bursary_category'
+    ).order_by('-review_date')
+    
+    # Filters
+    recommendation_filter = request.GET.get('recommendation')
+    fiscal_year_filter = request.GET.get('fiscal_year')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    if recommendation_filter:
+        reviews = reviews.filter(recommendation=recommendation_filter)
+    
+    if fiscal_year_filter:
+        reviews = reviews.filter(application__fiscal_year_id=fiscal_year_filter)
+    
+    if date_from:
+        reviews = reviews.filter(review_date__gte=date_from)
+    
+    if date_to:
+        reviews = reviews.filter(review_date__lte=date_to)
+    
+    # Pagination
+    paginator = Paginator(reviews, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get fiscal years for filter
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Statistics
+    total_reviews = reviews.count()
+    approved_count = reviews.filter(recommendation='approve').count()
+    rejected_count = reviews.filter(recommendation='reject').count()
+    forwarded_count = reviews.filter(recommendation='forward').count()
+    more_info_count = reviews.filter(recommendation='more_info').count()
+    
+    total_recommended_amount = reviews.filter(
+        recommendation='approve'
+    ).aggregate(total=Sum('recommended_amount'))['total'] or 0
+    
+    context = {
+        'page_obj': page_obj,
+        'assigned_ward': assigned_ward,
+        'fiscal_years': fiscal_years,
+        'selected_recommendation': recommendation_filter,
+        'selected_fiscal_year': fiscal_year_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_reviews': total_reviews,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'forwarded_count': forwarded_count,
+        'more_info_count': more_info_count,
+        'total_recommended_amount': total_recommended_amount,
+    }
+    
+    return render(request, 'reviewer/my_reviews_list.html', context)
+
+
+@login_required
+@reviewer_required
+def review_statistics(request):
+    """
+    Statistical analysis of reviewer's review performance
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    # Get current fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # All reviews by this reviewer
+    all_reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward'
+    )
+    
+    # Current fiscal year reviews
+    current_fy_reviews = all_reviews.filter(
+        application__fiscal_year=current_fiscal_year
+    )
+    
+    # Overall statistics
+    total_reviews_all_time = all_reviews.count()
+    total_reviews_current_fy = current_fy_reviews.count()
+    
+    # Recommendation breakdown
+    recommendation_stats = current_fy_reviews.values('recommendation').annotate(
+        count=Count('id'),
+        total_amount=Sum('recommended_amount')
+    )
+    
+    # Monthly review trend (last 12 months)
+    twelve_months_ago = timezone.now() - timedelta(days=365)
+    monthly_reviews = all_reviews.filter(
+        review_date__gte=twelve_months_ago
+    ).extra(
+        select={'month': "DATE_TRUNC('month', review_date)"}
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+    
+    # Category-wise reviews
+    category_reviews = current_fy_reviews.values(
+        'application__bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        avg_recommended=Avg('recommended_amount')
+    ).order_by('-count')
+    
+    # Institution-wise reviews
+    institution_reviews = current_fy_reviews.values(
+        'application__institution__name',
+        'application__institution__institution_type'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Average scores
+    avg_scores = current_fy_reviews.aggregate(
+        avg_need=Avg('need_score'),
+        avg_merit=Avg('merit_score'),
+        avg_vulnerability=Avg('vulnerability_score')
+    )
+    
+    # Approval rate
+    approved_reviews = current_fy_reviews.filter(recommendation='approve').count()
+    approval_rate = (approved_reviews / total_reviews_current_fy * 100) if total_reviews_current_fy > 0 else 0
+    
+    # Average review time (days from submission to review)
+    avg_review_time = current_fy_reviews.aggregate(
+        avg_days=Avg(
+            F('review_date') - F('application__date_submitted')
+        )
+    )['avg_days']
+    
+    if avg_review_time:
+        avg_review_days = avg_review_time.days
+    else:
+        avg_review_days = 0
+    
+    # Recent activity (last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_activity = all_reviews.filter(
+        review_date__gte=thirty_days_ago
+    ).count()
+    
+    # Comparison with other reviewers (if applicable)
+    all_reviewers = Review.objects.filter(
+        review_level='ward',
+        application__fiscal_year=current_fiscal_year
+    ).values('reviewer__username').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    context = {
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'total_reviews_all_time': total_reviews_all_time,
+        'total_reviews_current_fy': total_reviews_current_fy,
+        'recommendation_stats': recommendation_stats,
+        'monthly_reviews': monthly_reviews,
+        'category_reviews': category_reviews,
+        'institution_reviews': institution_reviews,
+        'avg_scores': avg_scores,
+        'approval_rate': approval_rate,
+        'avg_review_days': avg_review_days,
+        'recent_activity': recent_activity,
+        'all_reviewers': all_reviewers,
+    }
+    
+    return render(request, 'reviewer/review_statistics.html', context)
+
+
+# ============= REPORTS =============
+
+@login_required
+@reviewer_required
+def review_reports(request):
+    """
+    Generate various reports for reviewer's ward
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Report type selection
+    report_type = request.GET.get('report_type', 'summary')
+    
+    if report_type == 'summary':
+        # Summary report
+        context = generate_summary_report(user, assigned_ward, current_fiscal_year)
+    elif report_type == 'detailed':
+        # Detailed application list
+        context = generate_detailed_report(user, assigned_ward, current_fiscal_year)
+    elif report_type == 'financial':
+        # Financial analysis
+        context = generate_financial_report(user, assigned_ward, current_fiscal_year)
+    elif report_type == 'category':
+        # Category breakdown
+        context = generate_category_report(user, assigned_ward, current_fiscal_year)
+    else:
+        context = {}
+    
+    context.update({
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'report_type': report_type,
+    })
+    
+    return render(request, 'reviewer/review_reports.html', context)
+
+
+def generate_summary_report(user, ward, fiscal_year):
+    """Generate summary statistics report"""
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    )
+    
+    reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward',
+        application__fiscal_year=fiscal_year
+    )
+    
+    return {
+        'total_applications': applications.count(),
+        'pending_review': applications.filter(status='submitted').count(),
+        'reviewed': reviews.count(),
+        'approved': reviews.filter(recommendation='approve').count(),
+        'rejected': reviews.filter(recommendation='reject').count(),
+        'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        'total_recommended': reviews.filter(recommendation='approve').aggregate(Sum('recommended_amount'))['recommended_amount__sum'] or 0,
+    }
+
+
+def generate_detailed_report(user, ward, fiscal_year):
+    """Generate detailed application list"""
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    ).select_related(
+        'applicant__user',
+        'institution',
+        'bursary_category'
+    ).prefetch_related('reviews')
+    
+    return {
+        'applications': applications,
+    }
+
+
+def generate_financial_report(user, ward, fiscal_year):
+    """Generate financial analysis report"""
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    )
+    
+    reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward',
+        application__fiscal_year=fiscal_year
+    )
+    
+    return {
+        'total_requested': applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+        'avg_requested': applications.aggregate(Avg('amount_requested'))['amount_requested__avg'] or 0,
+        'total_recommended': reviews.filter(recommendation='approve').aggregate(Sum('recommended_amount'))['recommended_amount__sum'] or 0,
+        'avg_recommended': reviews.filter(recommendation='approve').aggregate(Avg('recommended_amount'))['recommended_amount__avg'] or 0,
+        'institution_breakdown': applications.values('institution__name').annotate(
+            count=Count('id'),
+            total=Sum('amount_requested')
+        ).order_by('-total'),
+    }
+
+
+def generate_category_report(user, ward, fiscal_year):
+    """Generate category breakdown report"""
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    )
+    
+    category_data = applications.values(
+        'bursary_category__name',
+        'bursary_category__category_type'
+    ).annotate(
+        count=Count('id'),
+        total_requested=Sum('amount_requested'),
+        avg_requested=Avg('amount_requested')
+    ).order_by('-count')
+    
+    return {
+        'category_data': category_data,
+    }
+
+
+# ============= UTILITY VIEWS =============
+
+@login_required
+@reviewer_required
+def download_document(request, document_id):
+    """
+    Download a specific document (with access control)
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    document = get_object_or_404(Document, id=document_id)
+    
+    # Verify document belongs to application from reviewer's ward
+    if document.application.applicant.ward != assigned_ward:
+        messages.error(request, "Access denied.")
+        return redirect('reviewer_dashboard')
+    
+    # Create audit log
+    create_audit_log(
+        user=user,
+        action='view',
+        table_affected='Document',
+        record_id=str(document.id),
+        description=f'Reviewer downloaded document {document.get_document_type_display()} for application {document.application.application_number}',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    # Serve file
+    response = HttpResponse(document.file, content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{document.file.name}"'
+    return response
+
+
+@login_required
+@reviewer_required
+def bulk_review_view(request):
+    """
+    View for bulk reviewing multiple applications at once
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    if request.method == 'POST':
+        application_ids = request.POST.getlist('application_ids[]')
+        recommendation = request.POST.get('bulk_recommendation')
+        comments = request.POST.get('bulk_comments', '').strip()
+        
+        if not application_ids:
+            messages.error(request, "Please select at least one application.")
+            return redirect('pending_applications')
+        
+        if not recommendation:
+            messages.error(request, "Please select a recommendation.")
+            return redirect('pending_applications')
+        
+        success_count = 0
+        for app_id in application_ids:
+            try:
+                application = Application.objects.get(
+                    id=app_id,
+                    applicant__ward=assigned_ward
+                )
+                
+                # Check if already reviewed
+                existing = Review.objects.filter(
+                    application=application,
+                    reviewer=user,
+                    review_level='ward'
+                ).first()
+                
+                if not existing:
+                    Review.objects.create(
+                        application=application,
+                        reviewer=user,
+                        review_level='ward',
+                        comments=comments or f"Bulk review: {recommendation}",
+                        recommendation=recommendation
+                    )
+                    
+                    # Update application status
+                    if recommendation == 'approve' or recommendation == 'forward':
+                        application.status = 'under_review'
+                    elif recommendation == 'reject':
+                        application.status = 'rejected'
+                    application.save()
+                    
+                    success_count += 1
+            except Application.DoesNotExist:
+                continue
+        
+        messages.success(request, f"Successfully reviewed {success_count} application(s).")
+        
+        # Create audit log
+        create_audit_log(
+            user=user,
+            action='create',
+            table_affected='Review',
+            description=f'Bulk review: {success_count} applications with recommendation {recommendation}',
+            ip_address=request.META.get('REMOTE_ADDR')
+        )
+        
+        return redirect('pending_applications')
+    
+    return redirect('pending_applications')
+
+
+@login_required
+@reviewer_required
+def export_reviews(request):
+    """
+    Export reviews to CSV/Excel
+    """
+    import csv
+    from io import StringIO
+    
+    user = request.user
+    assigned_ward = user.assigned_ward
+    
+    reviews = Review.objects.filter(
+        reviewer=user,
+        review_level='ward'
+    ).select_related(
+        'application__applicant__user',
+        'application__institution',
+        'application__bursary_category'
+    ).order_by('-review_date')
+    
+    # Create CSV
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        'Application Number',
+        'Applicant Name',
+        'Institution',
+        'Category',
+        'Amount Requested',
+        'Recommendation',
+        'Recommended Amount',
+        'Need Score',
+        'Merit Score',
+        'Vulnerability Score',
+        'Comments',
+        'Review Date'
+    ])
+    
+    # Data
+    for review in reviews:
+        writer.writerow([
+            review.application.application_number,
+            review.application.applicant.user.get_full_name(),
+            review.application.institution.name,
+            review.application.bursary_category.name,
+            review.application.amount_requested,
+            review.get_recommendation_display(),
+            review.recommended_amount or '',
+            review.need_score or '',
+            review.merit_score or '',
+            review.vulnerability_score or '',
+            review.comments,
+            review.review_date.strftime('%Y-%m-%d %H:%M')
+        ])
+    
+    # Create response
+    response = HttpResponse(output.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="reviews_{assigned_ward.name}_{timezone.now().strftime("%Y%m%d")}.csv"'
+    
+    # Create audit log
+    create_audit_log(
+        user=user,
+        action='export',
+        table_affected='Review',
+        description=f'Exported {reviews.count()} reviews to CSV',
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    return response 
