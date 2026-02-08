@@ -3037,7 +3037,7 @@ def send_sms(phone_number, message):
         return False
 
 def is_reviewer(user):
-    return user.user_type in ['reviewer', 'admin']
+    return user.user_type in ['reviewer', 'admin' , 'county_admin']
 
 @login_required
 @user_passes_test(is_reviewer)
@@ -3648,7 +3648,7 @@ Bursary Management Team
 # Keep all the AJAX endpoints as they were
 @login_required
 @user_passes_test(is_admin_or_area_admin)
-def get_constituencies_by_county(request):
+def admin_get_constituencies_by_county(request):
     """
     AJAX endpoint to get constituencies by county
     """

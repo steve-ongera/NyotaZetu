@@ -66,7 +66,7 @@ urlpatterns = [
     path('admin-applicants/create/', views.create_applicant, name='create_applicant'), 
     
     # AJAX endpoints for cascading dropdowns
-    path('admin-get-constituencies-by-county/', views.get_constituencies_by_county, name='get_constituencies_by_county'),
+    path('admin-get-constituencies-by-county/', views.admin_get_constituencies_by_county, name='admin_get_constituencies_by_county'),
     path('admin-get-wards-by-constituency/', views.get_wards_by_constituency, name='get_wards_by_constituency'),
     path('admin-get-locations-by-ward/', views.get_locations_by_ward, name='get_locations_by_ward'),
     path('admin-get-sublocations-by-location/', views.get_sublocations_by_location, name='get_sublocations_by_location'),
