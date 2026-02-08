@@ -21437,9 +21437,25 @@ from .decorators import ward_admin_required
 
 
 # ============= DASHBOARD =============
+"""
+FIXED Ward Admin Dashboard View
+================================
+This version eliminates redirect loops by:
+1. Removing redundant @login_required (ward_admin_required already checks authentication)
+2. Using consistent redirect targets
+3. Redirecting to login for missing ward assignment
+"""
 
-@login_required
-@ward_admin_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
+from .models import *
+from .decorators import ward_admin_required
+
+
+@ward_admin_required  # This already includes login_required functionality
 def ward_admin_dashboard_view(request):
     """
     Main dashboard for Ward Administrator
@@ -21448,9 +21464,12 @@ def ward_admin_dashboard_view(request):
     user = request.user
     ward = user.assigned_ward
     
+    # Note: ward_admin_required decorator already checks for assigned_ward
+    # This is just a safety check - should never happen if decorator works correctly
     if not ward:
         messages.error(request, "You are not assigned to any ward. Please contact system administrator.")
-        return redirect('home')
+        # Redirect to logout to clear session and prevent loops
+        return redirect('logout_view')
     
     # Get current fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()

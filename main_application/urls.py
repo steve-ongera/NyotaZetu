@@ -393,21 +393,21 @@ urlpatterns = [
     # ============= UTILITY =============
     path('reviewer/documents/<int:document_id>/download/', views.download_document, name='download_document'),
     
-    path('dashboard/', views.ward_admin_dashboard_view, name='ward_admin_dashboard'),
-    path('applications/', views.ward_admin_applications_list_view, name='ward_admin_applications'),
-    path('applications/<int:application_id>/',  views.ward_admin_application_detail_view, name='ward_admin_application_detail'),
-    path('applications/pending-review/', views.ward_admin_pending_review_view, name='ward_admin_pending_review'),
-    path('applications/<int:application_id>/review/',  views.ward_admin_review_application_view, name='ward_admin_review_application'),
-    path('applicants/', views.ward_admin_applicants_list_view, name='ward_admin_applicants'),
+    path('ward/dashboard/', views.ward_admin_dashboard_view, name='ward_admin_dashboard'),
+    path('ward/applications/', views.ward_admin_applications_list_view, name='ward_admin_applications'),
+    path('ward/applications/<int:application_id>/',  views.ward_admin_application_detail_view, name='ward_admin_application_detail'),
+    path('ward/applications/pending-review/', views.ward_admin_pending_review_view, name='ward_admin_pending_review'),
+    path('ward/applications/<int:application_id>/review/',  views.ward_admin_review_application_view, name='ward_admin_review_application'),
+    path('ward/applicants/', views.ward_admin_applicants_list_view, name='ward_admin_applicants'),
     
-    path('applicants/<int:applicant_id>/', views.ward_admin_applicant_detail_view, name='ward_admin_applicant_detail'),
-    path('budget/', views.ward_admin_budget_view, name='ward_admin_budget'),
-    path('reports/', views.ward_admin_reports_view, name='ward_admin_reports'),
+    path('ward/applicants/<int:applicant_id>/', views.ward_admin_applicant_detail_view, name='ward_admin_applicant_detail'),
+    path('ward/budget/', views.ward_admin_budget_view, name='ward_admin_budget'),
+    path('ward/reports/', views.ward_admin_reports_view, name='ward_admin_reports'),
     
-    path('reports/export/', views.ward_admin_export_report_view, name='ward_admin_export_report'),
-    path('statistics/', views.ward_admin_statistics_view, name='ward_admin_statistics'),
-    path('disbursements/', views.ward_admin_disbursements_view, name='ward_admin_disbursements'),
-    path('notifications/', views.ward_admin_notifications_view, name='ward_admin_notifications'),
-    path('profile/',  views.ward_admin_profile_view, name='ward_admin_profile'),
+    path('ward/reports/export/', views.ward_admin_export_report_view, name='ward_admin_export_report'),
+    path('ward/statistics/', views.ward_admin_statistics_view, name='ward_admin_statistics'),
+    path('ward/disbursements/', views.ward_admin_disbursements_view, name='ward_admin_disbursements'),
+    path('ward/notifications/', views.ward_admin_notifications_view, name='ward_admin_notifications'),
+    path('ward/profile/',  views.ward_admin_profile_view, name='ward_admin_profile'),
      
 ]

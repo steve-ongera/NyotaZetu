@@ -10,7 +10,7 @@
 
     <div class="menu-section">
         <div class="menu-title">Main Menu</div>
-        <a href="#" class="menu-item">
+        <a href="{% url 'ward_admin_dashboard' %}" class="menu-item">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
@@ -25,27 +25,99 @@
             <i class="fas fa-chevron-right arrow"></i>
         </div>
         <div class="submenu" id="submenu-applications">
-            <a href="#" class="submenu-item">Ward Applications</a>
-            <a href="#" class="submenu-item">Pending Review</a>
+            <a href="{% url 'ward_admin_applications' %}" class="submenu-item">
+                <i class="fas fa-list"></i>
+                Ward Applications
+            </a>
+            <a href="{% url 'ward_admin_pending_review' %}" class="submenu-item">
+                <i class="fas fa-clock"></i>
+                Pending Review
+            </a>
         </div>
 
-        <a href="#" class="menu-item">
+        <a href="{% url 'ward_admin_applicants' %}" class="menu-item">
             <i class="fas fa-users"></i>
             <span>Applicants</span>
         </a>
 
-        <a href="#" class="menu-item">
+        <a href="{% url 'ward_admin_budget' %}" class="menu-item">
             <i class="fas fa-money-bill-wave"></i>
             <span>Ward Budget</span>
+        </a>
+        
+        <!-- SUGGESTED ADDITION: Disbursements -->
+        <a href="{% url 'ward_admin_disbursements' %}" class="menu-item">
+            <i class="fas fa-hand-holding-usd"></i>
+            <span>Disbursements</span>
         </a>
     </div>
 
     <div class="menu-section">
-        <div class="menu-title">Reports</div>
+        <div class="menu-title">Reports & Analytics</div>
         
-        <a href="#" class="menu-item">
+        <div class="menu-item has-submenu" data-submenu="reports">
             <i class="fas fa-chart-pie"></i>
-            <span>Ward Reports</span>
+            <span>Reports</span>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="submenu" id="submenu-reports">
+            <a href="{% url 'ward_admin_reports' %}" class="submenu-item">
+                <i class="fas fa-file-chart-line"></i>
+                Ward Reports
+            </a>
+            <a href="{% url 'ward_admin_statistics' %}" class="submenu-item">
+                <i class="fas fa-chart-bar"></i>
+                Statistics
+            </a>
+        </div>
+    </div>
+
+    <!-- SUGGESTED ADDITION: Communication Section -->
+    <div class="menu-section">
+        <div class="menu-title">Communication</div>
+        
+        <a href="{% url 'ward_admin_notifications' %}" class="menu-item">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+            {% if unread_notifications_count > 0 %}
+            <span class="badge badge-danger">{{ unread_notifications_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+
+    <!-- SUGGESTED ADDITION: Account Section -->
+    <div class="menu-section">
+        <div class="menu-title">Account</div>
+        
+        <a href="{% url 'ward_admin_profile' %}" class="menu-item">
+            <i class="fas fa-user-circle"></i>
+            <span>My Profile</span>
+        </a>
+        
+        <a href="{% url 'logout_view' %}" class="menu-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
         </a>
     </div>
 </div>
+
+<!-- Add this CSS for badges -->
+<style>
+.badge {
+    padding: 2px 6px;
+    font-size: 10px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.submenu-item i {
+    margin-right: 8px;
+    font-size: 12px;
+    width: 16px;
+}
+</style>
