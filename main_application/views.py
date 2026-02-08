@@ -21409,3 +21409,977 @@ def mark_all_notifications_read(request):
         messages.success(request, "All notifications marked as read.")
     
     return redirect('notifications_list')
+
+
+"""
+Ward Administrator Views
+========================
+All views for Ward Administrator role following the naming convention: ward_admin_xxxx_view
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Sum, Count, Avg
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.core.paginator import Paginator
+from datetime import datetime, timedelta
+from decimal import Decimal
+import json
+
+from .models import (
+    User, Applicant, Application, Review, Allocation, Ward, 
+    FiscalYear, WardAllocation, BursaryCategory, Institution,
+    Document, Notification, AuditLog, Disbursement
+)
+from .decorators import ward_admin_required
+
+
+# ============= DASHBOARD =============
+
+@login_required
+@ward_admin_required
+def ward_admin_dashboard_view(request):
+    """
+    Main dashboard for Ward Administrator
+    Shows overview of ward applications, budget, and statistics
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward. Please contact system administrator.")
+        return redirect('home')
+    
+    # Get current fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get ward allocation for current year
+    ward_allocation = None
+    if current_fiscal_year:
+        ward_allocation = WardAllocation.objects.filter(
+            ward=ward,
+            fiscal_year=current_fiscal_year
+        ).first()
+    
+    # Applications statistics
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=current_fiscal_year
+    ) if current_fiscal_year else Application.objects.none()
+    
+    total_applications = applications.count()
+    pending_review = applications.filter(status='submitted').count()
+    under_review = applications.filter(status='under_review').count()
+    approved = applications.filter(status='approved').count()
+    rejected = applications.filter(status='rejected').count()
+    disbursed = applications.filter(status='disbursed').count()
+    
+    # Budget statistics
+    total_allocated = ward_allocation.allocated_amount if ward_allocation else 0
+    total_spent = ward_allocation.spent_amount if ward_allocation else 0
+    balance = ward_allocation.balance() if ward_allocation else 0
+    
+    # Calculate total requested
+    total_requested = applications.aggregate(
+        total=Sum('amount_requested')
+    )['total'] or 0
+    
+    # Recent applications (last 10)
+    recent_applications = applications.order_by('-date_submitted')[:10]
+    
+    # Applications by category
+    applications_by_category = applications.values(
+        'bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    ).order_by('-count')
+    
+    # Applications by institution
+    applications_by_institution = applications.values(
+        'institution__name'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:5]
+    
+    # Gender distribution
+    gender_stats = applications.values(
+        'applicant__gender'
+    ).annotate(count=Count('id'))
+    
+    # Monthly application trend (last 6 months)
+    six_months_ago = timezone.now() - timedelta(days=180)
+    monthly_trend = applications.filter(
+        date_submitted__gte=six_months_ago
+    ).extra(
+        select={'month': 'EXTRACT(month FROM date_submitted)'}
+    ).values('month').annotate(count=Count('id')).order_by('month')
+    
+    # Pending reviews assigned to this admin
+    my_pending_reviews = Review.objects.filter(
+        reviewer=user,
+        application__applicant__ward=ward,
+        review_level='ward'
+    ).count()
+    
+    context = {
+        'ward': ward,
+        'current_fiscal_year': current_fiscal_year,
+        'ward_allocation': ward_allocation,
+        'total_applications': total_applications,
+        'pending_review': pending_review,
+        'under_review': under_review,
+        'approved': approved,
+        'rejected': rejected,
+        'disbursed': disbursed,
+        'total_allocated': total_allocated,
+        'total_spent': total_spent,
+        'balance': balance,
+        'total_requested': total_requested,
+        'recent_applications': recent_applications,
+        'applications_by_category': applications_by_category,
+        'applications_by_institution': applications_by_institution,
+        'gender_stats': gender_stats,
+        'monthly_trend': monthly_trend,
+        'my_pending_reviews': my_pending_reviews,
+    }
+    
+    return render(request, 'ward_admin/dashboard.html', context)
+
+
+# ============= APPLICATIONS MANAGEMENT =============
+
+@login_required
+@ward_admin_required
+def ward_admin_applications_list_view(request):
+    """
+    List all applications from the ward
+    With filtering and search capabilities
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    category_filter = request.GET.get('category', '')
+    institution_filter = request.GET.get('institution', '')
+    search_query = request.GET.get('search', '')
+    fiscal_year_id = request.GET.get('fiscal_year', '')
+    
+    # Base queryset
+    applications = Application.objects.filter(
+        applicant__ward=ward
+    ).select_related(
+        'applicant__user',
+        'institution',
+        'bursary_category',
+        'fiscal_year'
+    )
+    
+    # Apply filters
+    if status_filter:
+        applications = applications.filter(status=status_filter)
+    
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+    
+    if institution_filter:
+        applications = applications.filter(institution_id=institution_filter)
+    
+    if fiscal_year_id:
+        applications = applications.filter(fiscal_year_id=fiscal_year_id)
+    else:
+        # Default to current fiscal year
+        current_fy = FiscalYear.objects.filter(is_active=True).first()
+        if current_fy:
+            applications = applications.filter(fiscal_year=current_fy)
+    
+    if search_query:
+        applications = applications.filter(
+            Q(application_number__icontains=search_query) |
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__id_number__icontains=search_query)
+        )
+    
+    # Order by submission date
+    applications = applications.order_by('-date_submitted')
+    
+    # Pagination
+    paginator = Paginator(applications, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options
+    categories = BursaryCategory.objects.filter(is_active=True)
+    institutions = Institution.objects.filter(is_active=True).order_by('name')
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    context = {
+        'ward': ward,
+        'page_obj': page_obj,
+        'categories': categories,
+        'institutions': institutions,
+        'fiscal_years': fiscal_years,
+        'status_filter': status_filter,
+        'category_filter': category_filter,
+        'institution_filter': institution_filter,
+        'search_query': search_query,
+        'fiscal_year_id': fiscal_year_id,
+    }
+    
+    return render(request, 'ward_admin/applications_list.html', context)
+
+
+@login_required
+@ward_admin_required
+def ward_admin_application_detail_view(request, application_id):
+    """
+    View detailed information about a specific application
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'institution',
+            'bursary_category',
+            'fiscal_year'
+        ),
+        id=application_id,
+        applicant__ward=ward
+    )
+    
+    # Get documents
+    documents = application.documents.all()
+    
+    # Get reviews
+    reviews = application.reviews.all().order_by('-review_date')
+    
+    # Get allocation if exists
+    allocation = None
+    try:
+        allocation = application.allocation
+    except Allocation.DoesNotExist:
+        pass
+    
+    # Get guardians
+    guardians = application.applicant.guardians.all()
+    
+    # Get siblings
+    siblings = application.applicant.siblings.all()
+    
+    context = {
+        'ward': ward,
+        'application': application,
+        'documents': documents,
+        'reviews': reviews,
+        'allocation': allocation,
+        'guardians': guardians,
+        'siblings': siblings,
+    }
+    
+    return render(request, 'ward_admin/application_detail.html', context)
+
+
+@login_required
+@ward_admin_required
+def ward_admin_pending_review_view(request):
+    """
+    List applications pending ward-level review
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get applications pending review
+    pending_applications = Application.objects.filter(
+        applicant__ward=ward,
+        status='submitted'
+    ).select_related(
+        'applicant__user',
+        'institution',
+        'bursary_category'
+    ).order_by('date_submitted')
+    
+    # Pagination
+    paginator = Paginator(pending_applications, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'ward': ward,
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'ward_admin/pending_review.html', context)
+
+
+@login_required
+@ward_admin_required
+def ward_admin_review_application_view(request, application_id):
+    """
+    Review and provide recommendation for an application
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    application = get_object_or_404(
+        Application,
+        id=application_id,
+        applicant__ward=ward
+    )
+    
+    if request.method == 'POST':
+        comments = request.POST.get('comments')
+        recommendation = request.POST.get('recommendation')
+        recommended_amount = request.POST.get('recommended_amount')
+        need_score = request.POST.get('need_score')
+        merit_score = request.POST.get('merit_score')
+        vulnerability_score = request.POST.get('vulnerability_score')
+        
+        # Create review
+        review = Review.objects.create(
+            application=application,
+            reviewer=user,
+            review_level='ward',
+            comments=comments,
+            recommendation=recommendation,
+            recommended_amount=Decimal(recommended_amount) if recommended_amount else None,
+            need_score=int(need_score) if need_score else None,
+            merit_score=int(merit_score) if merit_score else None,
+            vulnerability_score=int(vulnerability_score) if vulnerability_score else None
+        )
+        
+        # Update application status based on recommendation
+        if recommendation == 'approve':
+            application.status = 'under_review'
+        elif recommendation == 'reject':
+            application.status = 'rejected'
+        elif recommendation == 'forward':
+            application.status = 'under_review'
+        
+        application.save()
+        
+        # Create notification for applicant
+        Notification.objects.create(
+            user=application.applicant.user,
+            notification_type='review_comment',
+            title='Application Reviewed',
+            message=f'Your application {application.application_number} has been reviewed at ward level.',
+            related_application=application
+        )
+        
+        # Log action
+        AuditLog.objects.create(
+            user=user,
+            action='approve' if recommendation == 'approve' else 'update',
+            table_affected='Review',
+            record_id=str(review.id),
+            description=f'Ward review for application {application.application_number}',
+            ip_address=request.META.get('REMOTE_ADDR', ''),
+            new_values={'recommendation': recommendation, 'comments': comments}
+        )
+        
+        messages.success(request, 'Application review submitted successfully.')
+        return redirect('ward_admin_pending_review')
+    
+    # Get documents for review
+    documents = application.documents.all()
+    guardians = application.applicant.guardians.all()
+    
+    context = {
+        'ward': ward,
+        'application': application,
+        'documents': documents,
+        'guardians': guardians,
+    }
+    
+    return render(request, 'ward_admin/review_application.html', context)
+
+
+# ============= APPLICANTS MANAGEMENT =============
+
+@login_required
+@ward_admin_required
+def ward_admin_applicants_list_view(request):
+    """
+    List all applicants from the ward
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset
+    applicants = Applicant.objects.filter(
+        ward=ward
+    ).select_related('user')
+    
+    if search_query:
+        applicants = applicants.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(id_number__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+    
+    applicants = applicants.order_by('user__last_name', 'user__first_name')
+    
+    # Pagination
+    paginator = Paginator(applicants, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'ward': ward,
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'ward_admin/applicants_list.html', context)
+
+
+@login_required
+@ward_admin_required
+def ward_admin_applicant_detail_view(request, applicant_id):
+    """
+    View detailed information about an applicant
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    applicant = get_object_or_404(
+        Applicant,
+        id=applicant_id,
+        ward=ward
+    )
+    
+    # Get all applications by this applicant
+    applications = applicant.applications.all().order_by('-date_submitted')
+    
+    # Get guardians
+    guardians = applicant.guardians.all()
+    
+    # Get siblings
+    siblings = applicant.siblings.all()
+    
+    context = {
+        'ward': ward,
+        'applicant': applicant,
+        'applications': applications,
+        'guardians': guardians,
+        'siblings': siblings,
+    }
+    
+    return render(request, 'ward_admin/applicant_detail.html', context)
+
+
+# ============= BUDGET MANAGEMENT =============
+
+@login_required
+@ward_admin_required
+def ward_admin_budget_view(request):
+    """
+    View ward budget allocation and utilization
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get fiscal years
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Get selected fiscal year or current
+    selected_fy_id = request.GET.get('fiscal_year')
+    if selected_fy_id:
+        selected_fy = get_object_or_404(FiscalYear, id=selected_fy_id)
+    else:
+        selected_fy = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get ward allocation
+    ward_allocation = None
+    if selected_fy:
+        ward_allocation = WardAllocation.objects.filter(
+            ward=ward,
+            fiscal_year=selected_fy
+        ).first()
+    
+    # Get applications for this fiscal year
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=selected_fy
+    ) if selected_fy else Application.objects.none()
+    
+    # Budget breakdown by category
+    category_breakdown = applications.values(
+        'bursary_category__name'
+    ).annotate(
+        applications_count=Count('id'),
+        total_requested=Sum('amount_requested'),
+        approved_count=Count('id', filter=Q(status='approved')),
+    )
+    
+    # Budget breakdown by institution
+    institution_breakdown = applications.values(
+        'institution__name',
+        'institution__institution_type'
+    ).annotate(
+        applications_count=Count('id'),
+        total_requested=Sum('amount_requested')
+    ).order_by('-total_requested')[:10]
+    
+    # Approved allocations
+    approved_allocations = Allocation.objects.filter(
+        application__applicant__ward=ward,
+        application__fiscal_year=selected_fy
+    ).aggregate(
+        total_allocated=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    # Disbursed amounts
+    disbursed = Allocation.objects.filter(
+        application__applicant__ward=ward,
+        application__fiscal_year=selected_fy,
+        is_disbursed=True
+    ).aggregate(
+        total_disbursed=Sum('amount_allocated'),
+        count=Count('id')
+    )
+    
+    context = {
+        'ward': ward,
+        'fiscal_years': fiscal_years,
+        'selected_fy': selected_fy,
+        'ward_allocation': ward_allocation,
+        'applications': applications,
+        'category_breakdown': category_breakdown,
+        'institution_breakdown': institution_breakdown,
+        'approved_allocations': approved_allocations,
+        'disbursed': disbursed,
+    }
+    
+    return render(request, 'ward_admin/budget.html', context)
+
+
+# ============= REPORTS =============
+
+@login_required
+@ward_admin_required
+def ward_admin_reports_view(request):
+    """
+    Generate various reports for the ward
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get fiscal years
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Get selected fiscal year
+    selected_fy_id = request.GET.get('fiscal_year')
+    if selected_fy_id:
+        selected_fy = get_object_or_404(FiscalYear, id=selected_fy_id)
+    else:
+        selected_fy = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not selected_fy:
+        messages.warning(request, "No active fiscal year found.")
+        context = {
+            'ward': ward,
+            'fiscal_years': fiscal_years,
+        }
+        return render(request, 'ward_admin/reports.html', context)
+    
+    # Applications summary
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=selected_fy
+    )
+    
+    applications_summary = {
+        'total': applications.count(),
+        'submitted': applications.filter(status='submitted').count(),
+        'under_review': applications.filter(status='under_review').count(),
+        'approved': applications.filter(status='approved').count(),
+        'rejected': applications.filter(status='rejected').count(),
+        'disbursed': applications.filter(status='disbursed').count(),
+    }
+    
+    # Financial summary
+    financial_summary = applications.aggregate(
+        total_requested=Sum('amount_requested'),
+        avg_requested=Avg('amount_requested')
+    )
+    
+    # Gender distribution
+    gender_distribution = applications.values(
+        'applicant__gender'
+    ).annotate(count=Count('id'))
+    
+    # Institution type distribution
+    institution_distribution = applications.values(
+        'institution__institution_type'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    )
+    
+    # Category distribution
+    category_distribution = applications.values(
+        'bursary_category__name'
+    ).annotate(
+        count=Count('id'),
+        total_amount=Sum('amount_requested')
+    )
+    
+    # Special needs applicants
+    special_needs_count = applications.filter(
+        applicant__special_needs=True
+    ).count()
+    
+    # Orphans
+    orphans_count = applications.filter(is_orphan=True).count()
+    total_orphans_count = applications.filter(is_total_orphan=True).count()
+    
+    # Applicants by location
+    location_distribution = applications.values(
+        'applicant__location__name'
+    ).annotate(count=Count('id')).order_by('-count')
+    
+    # Allocations
+    allocations = Allocation.objects.filter(
+        application__applicant__ward=ward,
+        application__fiscal_year=selected_fy
+    )
+    
+    allocation_summary = allocations.aggregate(
+        total_allocated=Sum('amount_allocated'),
+        avg_allocated=Avg('amount_allocated'),
+        count=Count('id')
+    )
+    
+    context = {
+        'ward': ward,
+        'fiscal_years': fiscal_years,
+        'selected_fy': selected_fy,
+        'applications_summary': applications_summary,
+        'financial_summary': financial_summary,
+        'gender_distribution': gender_distribution,
+        'institution_distribution': institution_distribution,
+        'category_distribution': category_distribution,
+        'special_needs_count': special_needs_count,
+        'orphans_count': orphans_count,
+        'total_orphans_count': total_orphans_count,
+        'location_distribution': location_distribution,
+        'allocation_summary': allocation_summary,
+    }
+    
+    return render(request, 'ward_admin/reports.html', context)
+
+
+@login_required
+@ward_admin_required
+def ward_admin_export_report_view(request):
+    """
+    Export ward reports in various formats (CSV, Excel, PDF)
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    report_type = request.GET.get('type', 'applications')
+    format_type = request.GET.get('format', 'csv')
+    fiscal_year_id = request.GET.get('fiscal_year')
+    
+    # Get fiscal year
+    fiscal_year = None
+    if fiscal_year_id:
+        fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not fiscal_year:
+        messages.error(request, "No fiscal year selected.")
+        return redirect('ward_admin_reports')
+    
+    # Generate report based on type
+    if report_type == 'applications':
+        return export_applications_report(ward, fiscal_year, format_type)
+    elif report_type == 'allocations':
+        return export_allocations_report(ward, fiscal_year, format_type)
+    elif report_type == 'beneficiaries':
+        return export_beneficiaries_report(ward, fiscal_year, format_type)
+    else:
+        messages.error(request, "Invalid report type.")
+        return redirect('ward_admin_reports')
+
+def export_applications_report(request, ward, fiscal_year, format_type):
+    """Helper function to export applications report"""
+    import csv
+
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    ).select_related('applicant__user', 'institution', 'bursary_category')
+
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = (
+            f'attachment; filename="ward_applications_{ward.name}_{fiscal_year.name}.csv"'
+        )
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Application Number', 'Applicant Name', 'ID Number', 'Gender',
+            'Institution', 'Category', 'Amount Requested', 'Status', 'Date Submitted'
+        ])
+
+        for app in applications:
+            writer.writerow([
+                app.application_number,
+                app.applicant.user.get_full_name(),
+                app.applicant.id_number,
+                app.applicant.get_gender_display(),
+                app.institution.name,
+                app.bursary_category.name,
+                app.amount_requested,
+                app.get_status_display(),
+                app.date_submitted.strftime('%Y-%m-%d') if app.date_submitted else ''
+            ])
+
+        return response
+
+    # Excel / PDF not yet implemented
+    messages.error(request, f"{format_type} format not yet implemented.")
+    return redirect('ward_admin_reports')
+
+
+
+def export_allocations_report(ward, fiscal_year, format_type):
+    """Helper function to export allocations report"""
+    # Implementation similar to export_applications_report
+    pass
+
+
+def export_beneficiaries_report(ward, fiscal_year, format_type):
+    """Helper function to export beneficiaries report"""
+    # Implementation similar to export_applications_report
+    pass
+
+
+# ============= NOTIFICATIONS =============
+
+@login_required
+@ward_admin_required
+def ward_admin_notifications_view(request):
+    """
+    View all notifications for ward administrator
+    """
+    user = request.user
+    
+    notifications = Notification.objects.filter(
+        user=user
+    ).order_by('-created_at')
+    
+    # Mark as read if requested
+    if request.GET.get('mark_read'):
+        notification_id = request.GET.get('mark_read')
+        notification = get_object_or_404(Notification, id=notification_id, user=user)
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save()
+        return redirect('ward_admin_notifications')
+    
+    # Pagination
+    paginator = Paginator(notifications, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'ward_admin/notifications.html', context)
+
+
+# ============= PROFILE & SETTINGS =============
+
+@login_required
+@ward_admin_required
+def ward_admin_profile_view(request):
+    """
+    View and update ward administrator profile
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if request.method == 'POST':
+        # Update profile information
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.email = request.POST.get('email', user.email)
+        user.phone_number = request.POST.get('phone_number', user.phone_number)
+        user.save()
+        
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('ward_admin_profile')
+    
+    context = {
+        'ward': ward,
+    }
+    
+    return render(request, 'ward_admin/profile.html', context)
+
+
+# ============= STATISTICS & ANALYTICS =============
+
+@login_required
+@ward_admin_required
+def ward_admin_statistics_view(request):
+    """
+    Detailed statistics and analytics for the ward
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get fiscal year
+    fiscal_year_id = request.GET.get('fiscal_year')
+    if fiscal_year_id:
+        fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Get applications
+    applications = Application.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    ) if fiscal_year else Application.objects.none()
+    
+    # Performance metrics
+    total_applications = applications.count()
+    approval_rate = 0
+    if total_applications > 0:
+        approved_count = applications.filter(status='approved').count()
+        approval_rate = (approved_count / total_applications) * 100
+    
+    # Average processing time
+    processed_apps = applications.exclude(status__in=['draft', 'submitted'])
+    avg_processing_time = None
+    if processed_apps.exists():
+        # Calculate average days from submission to approval/rejection
+        processing_times = []
+        for app in processed_apps:
+            if app.date_submitted:
+                first_review = app.reviews.first()
+                if first_review:
+                    delta = (first_review.review_date.date() - app.date_submitted.date()).days
+                    processing_times.append(delta)
+        if processing_times:
+            avg_processing_time = sum(processing_times) / len(processing_times)
+    
+    # Year-over-year comparison
+    previous_years_data = []
+    for fy in fiscal_years[:5]:  # Last 5 years
+        apps_count = Application.objects.filter(
+            applicant__ward=ward,
+            fiscal_year=fy
+        ).count()
+        previous_years_data.append({
+            'year': fy.name,
+            'applications': apps_count
+        })
+    
+    context = {
+        'ward': ward,
+        'fiscal_years': fiscal_years,
+        'fiscal_year': fiscal_year,
+        'total_applications': total_applications,
+        'approval_rate': round(approval_rate, 2),
+        'avg_processing_time': round(avg_processing_time, 1) if avg_processing_time else None,
+        'previous_years_data': previous_years_data,
+    }
+    
+    return render(request, 'ward_admin/statistics.html', context)
+
+
+# ============= DISBURSEMENTS =============
+
+@login_required
+@ward_admin_required
+def ward_admin_disbursements_view(request):
+    """
+    View disbursement information for ward beneficiaries
+    """
+    user = request.user
+    ward = user.assigned_ward
+    
+    if not ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('ward_admin_dashboard')
+    
+    # Get fiscal year
+    fiscal_year_id = request.GET.get('fiscal_year')
+    if fiscal_year_id:
+        fiscal_year = get_object_or_404(FiscalYear, id=fiscal_year_id)
+    else:
+        fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    # Get disbursements
+    disbursements = Disbursement.objects.filter(
+        applicant__ward=ward,
+        fiscal_year=fiscal_year
+    ).select_related(
+        'applicant__user',
+        'allocation__application__institution'
+    ).order_by('-disbursement_date')
+    
+    # Statistics
+    total_disbursed = disbursements.aggregate(Sum('amount'))['amount__sum'] or 0
+    beneficiaries_count = disbursements.values('applicant').distinct().count()
+    
+    # Pagination
+    paginator = Paginator(disbursements, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'ward': ward,
+        'fiscal_year': fiscal_year,
+        'page_obj': page_obj,
+        'total_disbursed': total_disbursed,
+        'beneficiaries_count': beneficiaries_count,
+    }
+    
+    return render(request, 'ward_admin/disbursements.html', context)
