@@ -3,142 +3,521 @@
 
 {% block title %}Profile - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .profile-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .info-table tbody tr {
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .info-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .info-table td:first-child {
+        font-weight: 500;
+        color: #64748B;
+        width: 40%;
+    }
+
+    .info-table td:last-child {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .notice-box {
+        padding: 20px;
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        border-radius: 6px;
+        color: #92400E;
+    }
+
+    .notice-box p {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .stat-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin: 0;
+    }
+
+    .stat-card p {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .action-footer {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .action-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div>
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>Profile</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Profile</li>
         </ol>
     </nav>
 
-    <div>
-        <div>
-            <h1>Profile Settings</h1>
-            <p>Manage your account information</p>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-person-gear"></i>
+                Profile Settings
+            </h1>
+            <p class="page-subtitle">
+                Manage your account information
+            </p>
         </div>
 
-        <div>
-            <div>
-                <h2>Personal Information</h2>
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div>
-                        <label for="first_name">First Name</label>
-                        <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required>
-                    </div>
+        <div class="profile-sections">
+            <!-- Personal Information -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-person"></i> Personal Information
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="first_name">First Name</label>
+                                <input type="text" 
+                                       id="first_name" 
+                                       name="first_name" 
+                                       class="form-control"
+                                       value="{{ user.first_name }}" 
+                                       required>
+                            </div>
 
-                    <div>
-                        <label for="last_name">Last Name</label>
-                        <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required>
-                    </div>
+                            <div class="form-group">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" 
+                                       id="last_name" 
+                                       name="last_name" 
+                                       class="form-control"
+                                       value="{{ user.last_name }}" 
+                                       required>
+                            </div>
 
-                    <div>
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" value="{{ user.email }}" required>
-                    </div>
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" 
+                                       id="email" 
+                                       name="email" 
+                                       class="form-control"
+                                       value="{{ user.email }}" 
+                                       required>
+                            </div>
 
-                    <div>
-                        <label for="phone_number">Phone Number</label>
-                        <input type="text" id="phone_number" name="phone_number" value="{{ user.phone_number }}">
-                        <small>Format: +254XXXXXXXXX</small>
-                    </div>
+                            <div class="form-group">
+                                <label for="phone_number">Phone Number</label>
+                                <input type="text" 
+                                       id="phone_number" 
+                                       name="phone_number" 
+                                       class="form-control"
+                                       value="{{ user.phone_number }}">
+                                <small style="font-size: 12px; color: #94A3B8; margin-top: 4px;">
+                                    Format: +254XXXXXXXXX
+                                </small>
+                            </div>
+                        </div>
 
-                    <div>
-                        <button type="submit">Save Changes</button>
-                        <a href="{% url 'ward_admin_dashboard' %}">Cancel</a>
-                    </div>
-                </form>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                            <a href="{% url 'ward_admin_dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <div>
-            <div>
-                <h2>Account Information</h2>
-                <table>
-                    <tbody>
-                        <tr>
-                            <td>Username</td>
-                            <td>{{ user.username }}</td>
-                        </tr>
-                        <tr>
-                            <td>User Type</td>
-                            <td>{{ user.get_user_type_display }}</td>
-                        </tr>
-                        <tr>
-                            <td>Assigned Ward</td>
-                            <td>{{ ward.name }}</td>
-                        </tr>
-                        <tr>
-                            <td>Constituency</td>
-                            <td>{{ ward.constituency.name }}</td>
-                        </tr>
-                        <tr>
-                            <td>County</td>
-                            <td>{{ ward.constituency.county.name }}</td>
-                        </tr>
-                        <tr>
-                            <td>Account Status</td>
-                            <td>
-                                {% if user.is_active %}
-                                <span>Active</span>
-                                {% else %}
-                                <span>Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Date Joined</td>
-                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                        </tr>
-                        <tr>
-                            <td>Last Login</td>
-                            <td>
+            <!-- Account Information -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-info-circle"></i> Account Information
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <tbody>
+                            <tr>
+                                <td>Username</td>
+                                <td>{{ user.username }}</td>
+                            </tr>
+                            <tr>
+                                <td>User Type</td>
+                                <td>{{ user.get_user_type_display }}</td>
+                            </tr>
+                            <tr>
+                                <td>Assigned Ward</td>
+                                <td>{{ ward.name }}</td>
+                            </tr>
+                            <tr>
+                                <td>Constituency</td>
+                                <td>{{ ward.constituency.name }}</td>
+                            </tr>
+                            <tr>
+                                <td>County</td>
+                                <td>{{ ward.constituency.county.name }}</td>
+                            </tr>
+                            <tr>
+                                <td>Account Status</td>
+                                <td>
+                                    {% if user.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Date Joined</td>
+                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            </tr>
+                            <tr>
+                                <td>Last Login</td>
+                                <td>
+                                    {% if user.last_login %}
+                                    {{ user.last_login|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                    Never
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-shield-lock"></i> Change Password
+                </div>
+                <div class="card-body">
+                    <div class="notice-box">
+                        <p>
+                            <i class="bi bi-info-circle"></i>
+                            For security reasons, password changes must be requested through the system administrator.
+                        </p>
+                        <a href="{% url 'ward_admin_dashboard' %}" class="btn btn-secondary">
+                            <i class="bi bi-person-lines-fill"></i> Contact Administrator
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-activity"></i> Activity Summary
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Reviews Submitted</h3>
+                            <p>{{ user.reviews.count|default:"0" }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Applications Processed</h3>
+                            <p>{{ user.reviews.count|default:"0" }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Account Age</h3>
+                            <p>{{ user.date_joined|timesince }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last Activity</h3>
+                            <p>
                                 {% if user.last_login %}
-                                {{ user.last_login|date:"M d, Y g:i A" }}
+                                {{ user.last_login|timesince }} ago
                                 {% else %}
                                 Never
                                 {% endif %}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div>
-            <div>
-                <h2>Change Password</h2>
-                <p>For security reasons, password changes must be requested through the system administrator.</p>
-                <a href="{% url 'ward_admin_dashboard' %}">Contact Administrator</a>
-            </div>
-        </div>
-
-        <div>
-            <div>
-                <h2>Activity Summary</h2>
-                <div>
-                    <div>
-                        <h3>Reviews Submitted</h3>
-                        <p>{{ user.reviews.count }}</p>
-                    </div>
-                    <div>
-                        <h3>Applications Processed</h3>
-                        <p>{{ user.reviews.count }}</p>
-                    </div>
-                    <div>
-                        <h3>Account Age</h3>
-                        <p>{{ user.date_joined|timesince }}</p>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div>
-            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        <!-- Back Button -->
+        <div class="action-footer">
+            <a href="{% url 'ward_admin_dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 </div>

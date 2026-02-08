@@ -3,15 +3,831 @@
 
 {% block title %}Review Application - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .review-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 24px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .applicant-profile {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .profile-avatar {
+        width: 64px;
+        height: 64px;
+        background: #F1F5F9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar i {
+        font-size: 32px;
+        color: #64748B;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 4px 0;
+    }
+
+    .profile-info p {
+        font-size: 13px;
+        color: #64748B;
+        margin: 2px 0;
+    }
+
+    .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .info-row i {
+        color: #64748B;
+        width: 20px;
+        text-align: center;
+    }
+
+    .financial-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .financial-item:last-child {
+        border-bottom: none;
+    }
+
+    .financial-item.highlight {
+        background: #F8FAFC;
+        margin: 0 -20px;
+        padding: 12px 20px;
+        border-radius: 4px;
+    }
+
+    .financial-item label {
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .financial-item value {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .financial-item .text-primary {
+        color: #3498db;
+    }
+
+    .financial-item .text-success {
+        color: #27ae60;
+    }
+
+    .financial-item .text-danger {
+        color: #e74c3c;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #92400E;
+    }
+
+    .alert-warning i {
+        flex-shrink: 0;
+    }
+
+    .academic-item {
+        margin-bottom: 16px;
+    }
+
+    .academic-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .academic-item label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .academic-item value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+        display: block;
+    }
+
+    .academic-item small {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .flag-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .flag-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s ease;
+    }
+
+    .flag-item.active {
+        background: #DBEAFE;
+        border-color: #BFDBFE;
+    }
+
+    .flag-item i {
+        font-size: 16px;
+        color: #94A3B8;
+        flex-shrink: 0;
+    }
+
+    .flag-item.active i {
+        color: #3498db;
+    }
+
+    .flag-item span {
+        font-size: 13px;
+        color: #334155;
+        flex: 1;
+    }
+
+    .description-box {
+        margin-top: 16px;
+        padding: 12px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .description-box label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .description-box p {
+        font-size: 13px;
+        color: #334155;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .guardian-item {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .guardian-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .guardian-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .guardian-header strong {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-primary {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .guardian-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .guardian-details small {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .document-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .document-link:last-child {
+        border-bottom: none;
+    }
+
+    .document-link i {
+        color: #64748B;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .document-link a {
+        font-size: 13px;
+        color: #3498db;
+        text-decoration: none;
+        flex: 1;
+    }
+
+    .document-link a:hover {
+        text-decoration: underline;
+    }
+
+    .document-link .text-success {
+        color: #27ae60;
+    }
+
+    .form-section {
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .form-section h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-help {
+        font-size: 13px;
+        color: #64748B;
+        margin: 0 0 16px 0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .form-group .required {
+        color: #e74c3c;
+        margin-left: 2px;
+    }
+
+    .help-text {
+        font-size: 13px;
+        color: #64748B;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+    }
+
+    .score-input-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 8px;
+    }
+
+    .score-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: #E2E8F0;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .score-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3498db;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .score-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3498db;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .score-display {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        min-width: 50px;
+    }
+
+    .score-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #94A3B8;
+        margin-top: 4px;
+    }
+
+    .total-score-display {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 20px;
+    }
+
+    .total-score-display label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .total-score {
+        font-size: 24px;
+        font-weight: 700;
+        color: #3498db;
+        margin-bottom: 12px;
+    }
+
+    .score-bar {
+        height: 8px;
+        background: #E2E8F0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .score-fill {
+        height: 100%;
+        background: #3498db;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-control[type="number"] {
+        padding: 10px;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+        line-height: 1.5;
+    }
+
+    .char-counter {
+        font-size: 12px;
+        color: #94A3B8;
+        text-align: right;
+        display: block;
+        margin-top: 4px;
+    }
+
+    .guidelines-box {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 24px 0;
+    }
+
+    .guidelines-box h5 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .guidelines-box ul {
+        margin: 0;
+        padding: 0 0 0 20px;
+        list-style-type: none;
+    }
+
+    .guidelines-box li {
+        font-size: 13px;
+        color: #64748B;
+        margin-bottom: 8px;
+        position: relative;
+    }
+
+    .guidelines-box li:last-child {
+        margin-bottom: 0;
+    }
+
+    .guidelines-box li:before {
+        content: "•";
+        color: #3498db;
+        font-weight: bold;
+        position: absolute;
+        left: -15px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-outline {
+        background: white;
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-outline:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .text-muted {
+        color: #94A3B8;
+        font-style: italic;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-body p {
+        font-size: 14px;
+        color: #334155;
+        margin: 0 0 20px 0;
+        line-height: 1.5;
+    }
+
+    .review-summary {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+    }
+
+    .summary-item {
+        display: flex;
+        margin-bottom: 12px;
+    }
+
+    .summary-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .summary-item label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        width: 150px;
+        flex-shrink: 0;
+    }
+
+    .summary-item value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 20px 24px;
+        border-top: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    @media (max-width: 1200px) {
+        .review-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .modal-dialog {
+            margin: 20px;
+            width: calc(100% - 40px);
+        }
+
+        .modal-footer {
+            flex-direction: column;
+        }
+
+        .modal-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'ward_admin_dashboard' %}">
+                <a href="{% url 'dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
             </li>
             <li class="breadcrumb-item">
                 <a href="{% url 'ward_admin_pending_review' %}">Pending Review</a>
@@ -40,7 +856,7 @@
                 <!-- Applicant Quick Info -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-person"></i> Applicant</h3>
+                        <i class="bi bi-person"></i> Applicant
                     </div>
                     <div class="card-body">
                         <div class="applicant-profile">
@@ -78,7 +894,7 @@
                 <!-- Financial Summary -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-cash-stack"></i> Financial Details</h3>
+                        <i class="bi bi-cash-stack"></i> Financial Details
                     </div>
                     <div class="card-body">
                         <div class="financial-item">
@@ -99,7 +915,7 @@
                         </div>
 
                         {% if application.other_bursaries %}
-                        <div class="alert-warning small-alert">
+                        <div class="alert-warning">
                             <i class="bi bi-info-circle"></i>
                             <span>Received KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }} from {{ application.other_bursaries_source }}</span>
                         </div>
@@ -117,7 +933,7 @@
                 <!-- Academic Info -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-book"></i> Academic</h3>
+                        <i class="bi bi-book"></i> Academic
                     </div>
                     <div class="card-body">
                         <div class="academic-item">
@@ -145,7 +961,7 @@
                 <!-- Vulnerability Flags -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-shield-exclamation"></i> Vulnerability</h3>
+                        <i class="bi bi-shield-exclamation"></i> Vulnerability
                     </div>
                     <div class="card-body">
                         <div class="flag-list">
@@ -183,7 +999,7 @@
                 <!-- Guardians -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-people"></i> Guardians</h3>
+                        <i class="bi bi-people"></i> Guardians
                     </div>
                     <div class="card-body">
                         {% for guardian in guardians %}
@@ -211,7 +1027,7 @@
                 <!-- Documents -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-paperclip"></i> Documents ({{ documents.count }})</h3>
+                        <i class="bi bi-paperclip"></i> Documents ({{ documents.count }})
                     </div>
                     <div class="card-body">
                         {% for document in documents %}
@@ -235,7 +1051,7 @@
             <div class="review-form-column">
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-pencil-square"></i> Your Review</h3>
+                        <i class="bi bi-pencil-square"></i> Your Review
                     </div>
                     <div class="card-body">
                         <form method="post" id="reviewForm">
@@ -480,7 +1296,6 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -551,6 +1366,14 @@ document.addEventListener('DOMContentLoaded', function() {
             recommendedAmount.value ? 'KSh ' + parseInt(recommendedAmount.value).toLocaleString() : 'N/A';
         
         document.getElementById('confirmModal').classList.add('show');
+    });
+    
+    // Save & Exit button
+    const saveExitBtn = document.getElementById('saveAndExit');
+    saveExitBtn.addEventListener('click', function() {
+        // For now, just submit the form
+        // In a real implementation, this would save as draft
+        form.submit();
     });
 });
 

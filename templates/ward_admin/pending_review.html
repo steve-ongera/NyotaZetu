@@ -3,15 +3,558 @@
 
 {% block title %}Pending Review - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        flex-shrink: 0;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .alert {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        border-color: #BFDBFE;
+        color: #1E40AF;
+    }
+
+    .alert-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .alert-content strong {
+        font-weight: 600;
+    }
+
+    .applications-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .application-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .application-card:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .application-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .app-number-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .app-number {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .app-date {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .application-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .applicant-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .applicant-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .applicant-info i {
+        font-size: 32px;
+        color: #64748B;
+    }
+
+    .applicant-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 4px 0;
+    }
+
+    .applicant-info .text-muted {
+        font-size: 13px;
+        color: #64748B;
+        margin: 0;
+    }
+
+    .location-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-item label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .detail-item value {
+        font-size: 15px;
+        color: #1E293B;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .detail-item .amount-highlight {
+        color: #3498db;
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+    .detail-item small {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .vulnerability-indicators {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .indicator-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .household-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .household-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .household-item i {
+        color: #64748B;
+    }
+
+    .application-footer {
+        padding: 16px 20px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .documents-count {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline {
+        background: white;
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-outline:hover {
+        background: #3498db;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #27ae60;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .applicant-section {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .application-footer {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'ward_admin_dashboard' %}">
+                <a href="{% url 'dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
             </li>
             <li class="breadcrumb-item active">Pending Review</li>
         </ol>
@@ -62,7 +605,7 @@
         </div>
 
         <!-- Help Alert -->
-        <div class="alert-info">
+        <div class="alert alert-info">
             <div class="alert-icon">
                 <i class="bi bi-info-circle"></i>
             </div>

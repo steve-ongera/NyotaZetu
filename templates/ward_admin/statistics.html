@@ -3,27 +3,475 @@
 
 {% block title %}Statistics - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .fiscal-year-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fiscal-year-selector label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748B;
+    }
+
+    .form-select {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin: 0;
+    }
+
+    .stat-card p {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .comparison-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .comparison-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .comparison-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .comparison-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .comparison-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .metric-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .metric-card h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        margin: 0;
+    }
+
+    .metric-card p {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .metric-card small {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .trends-section {
+        padding: 20px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .trends-section h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 8px 0;
+    }
+
+    .trends-section p {
+        font-size: 13px;
+        color: #64748B;
+        margin: 0 0 16px 0;
+    }
+
+    .trends-list {
+        margin: 0;
+        padding: 0 0 0 20px;
+        list-style-type: none;
+    }
+
+    .trends-list li {
+        font-size: 14px;
+        color: #334155;
+        margin-bottom: 8px;
+        position: relative;
+    }
+
+    .trends-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .trends-list li:before {
+        content: "•";
+        color: #3498db;
+        font-weight: bold;
+        position: absolute;
+        left: -15px;
+    }
+
+    .insights-section {
+        padding: 20px;
+        background: #DBEAFE;
+        border-radius: 6px;
+        border: 1px solid #BFDBFE;
+    }
+
+    .insights-section h2 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E40AF;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .insights-list {
+        margin: 0;
+        padding: 0 0 0 20px;
+        list-style-type: none;
+    }
+
+    .insights-list li {
+        font-size: 14px;
+        color: #1E40AF;
+        margin-bottom: 12px;
+        position: relative;
+        line-height: 1.5;
+    }
+
+    .insights-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .insights-list li:before {
+        content: "✓";
+        color: #1E40AF;
+        font-weight: bold;
+        position: absolute;
+        left: -20px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94A3B8;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .action-footer {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .fiscal-year-selector {
+            width: 100%;
+        }
+
+        .form-select {
+            flex: 1;
+        }
+
+        .stats-grid,
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-footer {
+            flex-direction: column;
+        }
+
+        .action-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div>
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>Statistics</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Statistics</li>
         </ol>
     </nav>
 
-    <div>
-        <div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <div>
-                <h1>Ward Statistics</h1>
-                <p>{{ ward.name }} Ward - Detailed Analytics</p>
+                <h1 class="page-title">
+                    <i class="bi bi-bar-chart"></i>
+                    Ward Statistics
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - Detailed Analytics
+                </p>
             </div>
-            <div>
-                <form method="get">
+            <div class="header-actions">
+                <form method="get" class="fiscal-year-selector">
                     <label for="fiscal_year">Fiscal Year:</label>
-                    <select name="fiscal_year" id="fiscal_year" onchange="this.form.submit()">
+                    <select name="fiscal_year" id="fiscal_year" class="form-select" onchange="this.form.submit()">
                         {% for fy in fiscal_years %}
                         <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>
                             {{ fy.name }}
@@ -35,112 +483,187 @@
         </div>
 
         {% if fiscal_year %}
-        <div>
-            <h2>Overview Statistics</h2>
-            <div>
-                <div>
-                    <h3>Total Applications</h3>
-                    <p>{{ total_applications }}</p>
+        <!-- Overview Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Applications</h3>
+                <p>{{ total_applications|default:"0" }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Approval Rate</h3>
+                <p>{{ approval_rate|default:"0" }}%</p>
+            </div>
+            <div class="stat-card">
+                <h3>Avg Processing Time</h3>
+                <p>
+                    {% if avg_processing_time %}
+                    {{ avg_processing_time }} days
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Beneficiaries</h3>
+                <p>{{ total_beneficiaries|default:"0" }}</p>
+            </div>
+        </div>
+
+        <!-- Year-over-Year Comparison -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-range"></i> Year-over-Year Comparison
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Fiscal Year</th>
+                                <th>Applications</th>
+                                <th>Approval Rate</th>
+                                <th>Beneficiaries</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in previous_years_data %}
+                            <tr>
+                                <td>{{ data.year|default:"-" }}</td>
+                                <td>{{ data.applications|default:"0" }}</td>
+                                <td>{{ data.approval_rate|default:"0" }}%</td>
+                                <td>{{ data.beneficiaries|default:"0" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4">
+                                    <div class="empty-state" style="padding: 20px;">
+                                        <i class="bi bi-inbox"></i>
+                                        <p>No previous year data available</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div>
-                    <h3>Approval Rate</h3>
-                    <p>{{ approval_rate }}%</p>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-speedometer2"></i> Performance Metrics
+            </div>
+            <div class="card-body">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Applications Processed</h3>
+                        <p>{{ total_applications|default:"0" }}</p>
+                        <small>Total applications this year</small>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Success Rate</h3>
+                        <p>{{ approval_rate|default:"0" }}%</p>
+                        <small>Applications approved</small>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Average Time</h3>
+                        <p>
+                            {% if avg_processing_time %}
+                            {{ avg_processing_time }} days
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                        <small>From submission to decision</small>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Funds Utilization</h3>
+                        <p>{{ funds_utilization|default:"0" }}%</p>
+                        <small>Budget utilized</small>
+                    </div>
                 </div>
-                <div>
-                    <h3>Avg Processing Time</h3>
-                    <p>
+            </div>
+        </div>
+
+        <!-- Trends Analysis -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up-arrow"></i> Trends Analysis
+            </div>
+            <div class="card-body">
+                <div class="trends-section">
+                    <h3>Application Trends</h3>
+                    <p>Comparing {{ fiscal_year.name }} with previous years</p>
+                    <ul class="trends-list">
+                        {% for data in previous_years_data %}
+                        <li>
+                            <strong>{{ data.year|default:"-" }}:</strong> 
+                            {{ data.applications|default:"0" }} applications, 
+                            {{ data.approval_rate|default:"0" }}% approval rate
+                        </li>
+                        {% empty %}
+                        <li>No historical data available for comparison</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightbulb"></i> Key Insights
+            </div>
+            <div class="card-body">
+                <div class="insights-section">
+                    <h2><i class="bi bi-check-circle"></i> Performance Summary</h2>
+                    <ul class="insights-list">
+                        <li>Total applications received: {{ total_applications|default:"0" }}</li>
+                        <li>Approval rate: {{ approval_rate|default:"0" }}%</li>
                         {% if avg_processing_time %}
-                        {{ avg_processing_time }} days
-                        {% else %}
-                        N/A
+                        <li>Average processing time: {{ avg_processing_time }} days</li>
                         {% endif %}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div>
-            <h2>Year-over-Year Comparison</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fiscal Year</th>
-                        <th>Applications</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for data in previous_years_data %}
-                    <tr>
-                        <td>{{ data.year }}</td>
-                        <td>{{ data.applications }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div>
-            <h2>Performance Metrics</h2>
-            <div>
-                <div>
-                    <h3>Applications Processed</h3>
-                    <p>{{ total_applications }}</p>
-                    <small>Total applications this year</small>
-                </div>
-                <div>
-                    <h3>Success Rate</h3>
-                    <p>{{ approval_rate }}%</p>
-                    <small>Applications approved</small>
-                </div>
-                <div>
-                    <h3>Average Time</h3>
-                    <p>
-                        {% if avg_processing_time %}
-                        {{ avg_processing_time }} days
-                        {% else %}
-                        N/A
+                        <li>Total beneficiaries served: {{ total_beneficiaries|default:"0" }}</li>
+                        {% if previous_years_data %}
+                        <li>Historical data available for {{ previous_years_data|length }} previous years</li>
                         {% endif %}
-                    </p>
-                    <small>From submission to decision</small>
+                        {% if funds_utilization %}
+                        <li>Funds utilization rate: {{ funds_utilization }}%</li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-        </div>
-
-        <div>
-            <h2>Trends Analysis</h2>
-            <div>
-                <h3>Application Trends</h3>
-                <p>Comparing {{ fiscal_year.name }} with previous years</p>
-                <ul>
-                    {% for data in previous_years_data %}
-                    <li>{{ data.year }}: {{ data.applications }} applications</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-
-        <div>
-            <h2>Key Insights</h2>
-            <ul>
-                <li>Total applications received: {{ total_applications }}</li>
-                <li>Approval rate: {{ approval_rate }}%</li>
-                {% if avg_processing_time %}
-                <li>Average processing time: {{ avg_processing_time }} days</li>
-                {% endif %}
-                <li>Historical comparison available for last 5 years</li>
-            </ul>
         </div>
 
         {% else %}
-        <div>
-            <p>No fiscal year selected. Please select a fiscal year to view statistics.</p>
+        <!-- No Fiscal Year Selected -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h3 class="empty-title">No Fiscal Year Selected</h3>
+            <p class="empty-text">
+                Please select a fiscal year to view statistics.
+            </p>
         </div>
         {% endif %}
 
-        <div>
-            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
-            <a href="{% url 'ward_admin_reports' %}">View Reports</a>
+        <!-- Action Buttons -->
+        <div class="action-footer">
+            <a href="{% url 'ward_admin_dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'ward_admin_reports' %}" class="btn btn-primary">
+                <i class="bi bi-file-earmark-text"></i> View Reports
+            </a>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any JavaScript functionality here if needed
+</script>
 {% endblock %}

@@ -3,15 +3,604 @@
 
 {% block title %}Application Details - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .alert {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        border-color: #BFDBFE;
+        color: #1E40AF;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border-color: #FDE68A;
+        color: #92400E;
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        border-color: #A7F3D0;
+        color: #065F46;
+    }
+
+    .alert-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-primary {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .info-item label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .info-item value {
+        font-size: 15px;
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .info-item .amount {
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+    .info-item .amount-primary {
+        color: #3498db;
+    }
+
+    .info-item .amount-success {
+        color: #27ae60;
+    }
+
+    .info-item .amount-danger {
+        color: #e74c3c;
+    }
+
+    .info-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .info-section h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .guardian-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .guardian-item.primary-guardian {
+        background: #DBEAFE;
+        border-color: #BFDBFE;
+    }
+
+    .guardian-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .guardian-header h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .guardian-relation {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .vulnerability-flags {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .flag-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #64748B;
+        transition: all 0.2s ease;
+    }
+
+    .flag-item.flag-active {
+        background: #DBEAFE;
+        border-color: #BFDBFE;
+        color: #1E40AF;
+        font-weight: 500;
+    }
+
+    .documents-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .document-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .document-icon {
+        font-size: 24px;
+        color: #64748B;
+        flex-shrink: 0;
+    }
+
+    .document-info {
+        flex: 1;
+    }
+
+    .document-info h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 4px 0;
+    }
+
+    .document-meta {
+        font-size: 12px;
+        color: #64748B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .document-description {
+        font-size: 13px;
+        color: #64748B;
+        margin: 8px 0 0 0;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .review-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .reviewer-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .reviewer-info strong {
+        font-size: 15px;
+        color: #1E293B;
+    }
+
+    .review-level {
+        font-size: 12px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .review-date {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .review-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .review-recommendation {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .review-recommendation strong {
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .review-amount {
+        font-size: 14px;
+        color: #1E293B;
+    }
+
+    .review-amount strong {
+        color: #64748B;
+    }
+
+    .review-scores {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .score-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .score-item label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 600;
+        width: 140px;
+        flex-shrink: 0;
+    }
+
+    .score-bar {
+        flex: 1;
+        height: 8px;
+        background: #E2E8F0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .score-fill {
+        height: 100%;
+        background: #3498db;
+        border-radius: 4px;
+    }
+
+    .score-value {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 600;
+        width: 50px;
+        text-align: right;
+    }
+
+    .review-comments {
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .review-comments strong {
+        color: #64748B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .review-comments p {
+        margin: 8px 0 0 0;
+        line-height: 1.5;
+    }
+
+    .action-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .text-muted {
+        color: #94A3B8;
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .guardian-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .review-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .document-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .document-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .action-footer {
+            flex-direction: column;
+        }
+
+        .action-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'ward_admin_dashboard' %}">
+                <a href="{% url 'dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
             </li>
             <li class="breadcrumb-item">
                 <a href="{% url 'ward_admin_applications' %}">Applications</a>
@@ -45,7 +634,7 @@
         </div>
 
         <!-- Application Status -->
-        <div class="alert-info">
+        <div class="alert alert-info">
             <div class="alert-icon">
                 <i class="bi bi-info-circle"></i>
             </div>
@@ -68,7 +657,7 @@
         <!-- Applicant Information -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-person"></i> Applicant Information</h3>
+                <i class="bi bi-person"></i> Applicant Information
             </div>
             <div class="card-body">
                 <div class="info-grid">
@@ -99,7 +688,9 @@
                 </div>
 
                 <div class="info-section">
-                    <h4>Address Information</h4>
+                    <h4>
+                        <i class="bi bi-geo-alt"></i> Address Information
+                    </h4>
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Ward</label>
@@ -125,7 +716,7 @@
                 </div>
 
                 {% if application.applicant.special_needs %}
-                <div class="alert-warning">
+                <div class="alert alert-warning">
                     <div class="alert-icon">
                         <i class="bi bi-exclamation-triangle"></i>
                     </div>
@@ -140,7 +731,7 @@
         <!-- Guardian Information -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-people"></i> Guardian/Parent Information</h3>
+                <i class="bi bi-people"></i> Guardian/Parent Information
             </div>
             <div class="card-body">
                 {% for guardian in guardians %}
@@ -196,7 +787,7 @@
         <!-- Academic Information -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-book"></i> Academic Information</h3>
+                <i class="bi bi-book"></i> Academic Information
             </div>
             <div class="card-body">
                 <div class="info-grid">
@@ -237,7 +828,7 @@
         <!-- Financial Information -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-currency-dollar"></i> Financial Information</h3>
+                <i class="bi bi-cash"></i> Financial Information
             </div>
             <div class="card-body">
                 <div class="info-grid">
@@ -268,7 +859,7 @@
                 </div>
 
                 {% if application.other_bursaries %}
-                <div class="alert-info">
+                <div class="alert alert-info">
                     <div class="alert-icon">
                         <i class="bi bi-info-circle"></i>
                     </div>
@@ -281,7 +872,9 @@
                 {% endif %}
 
                 <div class="info-section">
-                    <h4>Household Information</h4>
+                    <h4>
+                        <i class="bi bi-house"></i> Household Information
+                    </h4>
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Monthly Household Income</label>
@@ -309,7 +902,7 @@
         <!-- Vulnerability Information -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-shield-exclamation"></i> Vulnerability Assessment</h3>
+                <i class="bi bi-shield-exclamation"></i> Vulnerability Assessment
             </div>
             <div class="card-body">
                 <div class="vulnerability-flags">
@@ -343,7 +936,7 @@
         <!-- Supporting Documents -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-paperclip"></i> Supporting Documents</h3>
+                <i class="bi bi-paperclip"></i> Supporting Documents
             </div>
             <div class="card-body">
                 {% if documents %}
@@ -392,7 +985,7 @@
         {% if reviews %}
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-chat-left-text"></i> Review History</h3>
+                <i class="bi bi-chat-left-text"></i> Review History
             </div>
             <div class="card-body">
                 {% for review in reviews %}
@@ -468,7 +1061,7 @@
         {% if allocation %}
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-cash-stack"></i> Allocation Information</h3>
+                <i class="bi bi-cash-stack"></i> Allocation Information
             </div>
             <div class="card-body">
                 <div class="info-grid">
@@ -508,7 +1101,9 @@
 
                 {% if allocation.is_disbursed %}
                 <div class="info-section">
-                    <h4>Disbursement Details</h4>
+                    <h4>
+                        <i class="bi bi-truck"></i> Disbursement Details
+                    </h4>
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Disbursement Date</label>
@@ -523,7 +1118,7 @@
                 {% endif %}
 
                 {% if allocation.is_received_by_institution %}
-                <div class="alert-success">
+                <div class="alert alert-success">
                     <div class="alert-icon">
                         <i class="bi bi-check-circle"></i>
                     </div>

@@ -3,129 +3,624 @@
 
 {% block title %}Notifications - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .notifications-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .notification-item {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .notification-item:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .notification-item.unread {
+        background: #F0F9FF;
+        border-color: #BAE6FD;
+    }
+
+    .notification-icon {
+        width: 40px;
+        height: 40px;
+        background: #F1F5F9;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .notification-icon i {
+        font-size: 20px;
+        color: #64748B;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .notification-header h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        flex: 1;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-primary {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-new {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .notification-message {
+        font-size: 14px;
+        color: #334155;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    .notification-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .notification-time {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .notification-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline {
+        background: white;
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .btn-outline:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .mark-all-btn {
+        padding: 8px 16px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .mark-all-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .action-footer {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn-back {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-back:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .notification-item {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .notification-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notification-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .notification-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+
+        .action-footer {
+            flex-direction: column;
+        }
+
+        .action-footer .btn-back {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div>
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>Notifications</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Notifications</li>
         </ol>
     </nav>
 
-    <div>
-        <div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <div>
-                <h1>Notifications</h1>
-                <p>Your notification center</p>
+                <h1 class="page-title">
+                    <i class="bi bi-bell"></i>
+                    Notifications
+                </h1>
+                <p class="page-subtitle">
+                    Your notification center
+                </p>
             </div>
-            <div>
-                <a href="?mark_all_read=true">Mark All as Read</a>
+            <div class="header-actions">
+                <a href="?mark_all_read=true" class="mark-all-btn">
+                    <i class="bi bi-check-all"></i> Mark All as Read
+                </a>
             </div>
         </div>
 
-        <div>
-            <h2>All Notifications</h2>
-            
-            {% if page_obj %}
-            <div>
-                {% for notification in page_obj %}
-                <div>
-                    <div>
-                        {% if notification.notification_type == 'application_status' %}
-                        <span>Application Status</span>
-                        {% elif notification.notification_type == 'document_request' %}
-                        <span>Document Request</span>
-                        {% elif notification.notification_type == 'allocation' %}
-                        <span>Allocation</span>
-                        {% elif notification.notification_type == 'disbursement' %}
-                        <span>Disbursement</span>
-                        {% elif notification.notification_type == 'review_comment' %}
-                        <span>Review Comment</span>
-                        {% elif notification.notification_type == 'deadline' %}
-                        <span>Deadline</span>
-                        {% else %}
-                        <span>System</span>
-                        {% endif %}
+        <!-- All Notifications -->
+        <h3 class="section-title">
+            <i class="bi bi-list"></i> All Notifications
+        </h3>
+        
+        {% if page_obj %}
+        <div class="notifications-list">
+            {% for notification in page_obj %}
+            <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <div class="notification-icon">
+                    {% if notification.notification_type == 'application_status' %}
+                    <i class="bi bi-file-text"></i>
+                    {% elif notification.notification_type == 'document_request' %}
+                    <i class="bi bi-paperclip"></i>
+                    {% elif notification.notification_type == 'allocation' %}
+                    <i class="bi bi-cash-stack"></i>
+                    {% elif notification.notification_type == 'disbursement' %}
+                    <i class="bi bi-cash-coin"></i>
+                    {% elif notification.notification_type == 'review_comment' %}
+                    <i class="bi bi-chat-left-text"></i>
+                    {% elif notification.notification_type == 'deadline' %}
+                    <i class="bi bi-clock"></i>
+                    {% else %}
+                    <i class="bi bi-gear"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <h3>{{ notification.title }}</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <span class="badge 
+                                {% if notification.notification_type == 'application_status' %}badge-info
+                                {% elif notification.notification_type == 'document_request' %}badge-warning
+                                {% elif notification.notification_type == 'allocation' %}badge-success
+                                {% elif notification.notification_type == 'disbursement' %}badge-success
+                                {% elif notification.notification_type == 'review_comment' %}badge-primary
+                                {% elif notification.notification_type == 'deadline' %}badge-danger
+                                {% else %}badge-info{% endif %}">
+                                {% if notification.notification_type == 'application_status' %}
+                                Application Status
+                                {% elif notification.notification_type == 'document_request' %}
+                                Document Request
+                                {% elif notification.notification_type == 'allocation' %}
+                                Allocation
+                                {% elif notification.notification_type == 'disbursement' %}
+                                Disbursement
+                                {% elif notification.notification_type == 'review_comment' %}
+                                Review Comment
+                                {% elif notification.notification_type == 'deadline' %}
+                                Deadline
+                                {% else %}
+                                System
+                                {% endif %}
+                            </span>
+                            {% if not notification.is_read %}
+                            <span class="badge badge-new">New</span>
+                            {% endif %}
+                        </div>
                     </div>
                     
-                    <div>
-                        <div>
-                            <h3>{{ notification.title }}</h3>
-                            {% if not notification.is_read %}
-                            <span>New</span>
-                            {% endif %}
-                        </div>
-                        
-                        <p>{{ notification.message }}</p>
-                        
-                        <div>
-                            <small>{{ notification.created_at|date:"M d, Y g:i A" }}</small>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    
+                    <div class="notification-footer">
+                        <span class="notification-time">
+                            {{ notification.created_at|date:"M d, Y g:i A" }}
+                        </span>
+                        <div class="notification-actions">
                             {% if notification.related_application %}
-                            <a href="{% url 'ward_admin_application_detail' notification.related_application.id %}">
-                                View Application
+                            <a href="{% url 'ward_admin_application_detail' notification.related_application.id %}" class="btn btn-outline">
+                                <i class="bi bi-eye"></i> View Application
                             </a>
                             {% endif %}
                             {% if not notification.is_read %}
-                            <a href="?mark_read={{ notification.id }}">
-                                Mark as Read
+                            <a href="?mark_read={{ notification.id }}" class="btn btn-secondary">
+                                <i class="bi bi-check-circle"></i> Mark as Read
                             </a>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-
-            {% if page_obj.has_other_pages %}
-            <div>
-                <div>
-                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} notifications
-                </div>
-                <nav>
-                    <ul>
-                        {% if page_obj.has_previous %}
-                        <li>
-                            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                        </li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li>
-                                <span>{{ num }}</span>
-                            </li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li>
-                                <a href="?page={{ num }}">{{ num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <li>
-                            <a href="?page={{ page_obj.next_page_number }}">Next</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
-
-            {% else %}
-            <div>
-                <div>
-                    <p>📭</p>
-                    <h3>No Notifications</h3>
-                    <p>You're all caught up! No new notifications at this time.</p>
-                </div>
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
 
-        <div>
-            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} notifications
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="empty-title">No Notifications</h3>
+            <p class="empty-text">
+                You're all caught up! No new notifications at this time.
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Back Button -->
+        <div class="action-footer">
+            <a href="{% url 'ward_admin_dashboard' %}" class="btn-back">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 </div>

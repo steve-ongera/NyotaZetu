@@ -1,7 +1,652 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
-
+{% load custom_filters %}
 {% block title %}Budget Management - Ward Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .fiscal-year-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fiscal-year-selector label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748B;
+    }
+
+    .form-select {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .budget-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .budget-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .budget-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .budget-icon {
+        font-size: 24px;
+        color: #64748B;
+        opacity: 0.2;
+        flex-shrink: 0;
+    }
+
+    .budget-content {
+        flex: 1;
+    }
+
+    .budget-content label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .budget-amount {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .budget-count {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .budget-percentage {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .utilization-summary {
+        padding: 20px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .utilization-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .utilization-label span {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+    }
+
+    .utilization-label strong {
+        font-size: 18px;
+        font-weight: 700;
+        color: #3498db;
+    }
+
+    .utilization-bar {
+        height: 12px;
+        background: #E2E8F0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 8px;
+        position: relative;
+    }
+
+    .utilization-fill {
+        height: 100%;
+        background: #3498db;
+        border-radius: 6px;
+        position: relative;
+        transition: width 0.3s ease;
+    }
+
+    .utilization-text {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .utilization-legend {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    .category-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .category-item {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .category-header h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .category-count {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .category-details {
+        margin-bottom: 16px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .detail-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .detail-row label {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .detail-row value {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .detail-row .text-success {
+        color: #27ae60;
+        font-weight: 600;
+    }
+
+    .category-progress {
+        margin-top: 16px;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: #E2E8F0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #3498db;
+        border-radius: 4px;
+    }
+
+    .empty-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94A3B8;
+    }
+
+    .empty-message i {
+        font-size: 32px;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .empty-message p {
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .institutions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .institution-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .institution-rank {
+        width: 36px;
+        height: 36px;
+        background: #E2E8F0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #64748B;
+        flex-shrink: 0;
+    }
+
+    .institution-info {
+        flex: 1;
+    }
+
+    .institution-info h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 4px 0;
+    }
+
+    .institution-type {
+        font-size: 13px;
+        color: #64748B;
+        margin: 0;
+        text-transform: capitalize;
+    }
+
+    .institution-stats {
+        display: flex;
+        gap: 20px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-item label {
+        font-size: 12px;
+        color: #64748B;
+        margin-bottom: 4px;
+    }
+
+    .stat-item value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .stat-item .amount-highlight {
+        color: #3498db;
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    .allocations-summary {
+        padding: 20px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .summary-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .summary-icon {
+        font-size: 24px;
+        color: #64748B;
+        opacity: 0.2;
+        flex-shrink: 0;
+    }
+
+    .summary-content {
+        flex: 1;
+    }
+
+    .summary-content label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .amount-large {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .summary-content small {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .applications-stats {
+        padding: 20px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .stat-box {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .stat-box i {
+        font-size: 20px;
+        color: #64748B;
+        opacity: 0.2;
+        flex-shrink: 0;
+    }
+
+    .stat-content label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .stat-content value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1E293B;
+        display: block;
+    }
+
+    .quick-actions {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .quick-actions h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+    }
+
+    .action-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .action-card:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: #334155;
+    }
+
+    .action-card i {
+        font-size: 20px;
+        color: #3498db;
+        flex-shrink: 0;
+    }
+
+    .action-card span {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .fiscal-year-selector {
+            width: 100%;
+        }
+
+        .form-select {
+            flex: 1;
+        }
+
+        .institution-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .institution-stats {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .summary-grid,
+        .stats-row,
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,9 +654,12 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'ward_admin_dashboard' %}">
+                <a href="{% url 'dashboard' %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
             </li>
             <li class="breadcrumb-item active">Budget Management</li>
         </ol>
@@ -46,7 +694,7 @@
         {% if selected_fy %}
         <!-- Budget Overview Cards -->
         <div class="budget-overview">
-            <div class="budget-card budget-total">
+            <div class="budget-card">
                 <div class="budget-icon">
                     <i class="bi bi-wallet2"></i>
                 </div>
@@ -62,7 +710,7 @@
                 </div>
             </div>
 
-            <div class="budget-card budget-spent">
+            <div class="budget-card">
                 <div class="budget-icon">
                     <i class="bi bi-cash-coin"></i>
                 </div>
@@ -83,7 +731,7 @@
                 </div>
             </div>
 
-            <div class="budget-card budget-balance">
+            <div class="budget-card">
                 <div class="budget-icon">
                     <i class="bi bi-piggy-bank"></i>
                 </div>
@@ -99,7 +747,7 @@
                 </div>
             </div>
 
-            <div class="budget-card budget-beneficiaries">
+            <div class="budget-card">
                 <div class="budget-icon">
                     <i class="bi bi-people"></i>
                 </div>
@@ -121,7 +769,7 @@
         {% if ward_allocation %}
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-graph-up"></i> Budget Utilization</h3>
+                <i class="bi bi-graph-up"></i> Budget Utilization
             </div>
             <div class="card-body">
                 <div class="utilization-summary">
@@ -148,7 +796,7 @@
         <!-- Budget Breakdown by Category -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-pie-chart"></i> Budget by Category</h3>
+                <i class="bi bi-pie-chart"></i> Budget by Category
             </div>
             <div class="card-body">
                 {% if category_breakdown %}
@@ -191,7 +839,7 @@
         <!-- Top Institutions by Funding -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-building"></i> Top Institutions by Requested Amount</h3>
+                <i class="bi bi-building"></i> Top Institutions by Requested Amount
             </div>
             <div class="card-body">
                 {% if institution_breakdown %}
@@ -228,7 +876,7 @@
         <!-- Allocations Summary -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-check-circle"></i> Allocations Summary</h3>
+                <i class="bi bi-check-circle"></i> Allocations Summary
             </div>
             <div class="card-body">
                 <div class="allocations-summary">
@@ -287,14 +935,14 @@
                                 <label>Pending Disbursement</label>
                                 <value class="amount-large">
                                     {% if approved_allocations.total_allocated and disbursed.total_disbursed %}
-                                    KSh {% widthratio approved_allocations.total_allocated 1 1 %}
+                                    KSh {{ approved_allocations.total_allocated|sub:disbursed.total_disbursed|floatformat:0|intcomma }}
                                     {% else %}
                                     KSh 0
                                     {% endif %}
                                 </value>
                                 <small>
                                     {% if approved_allocations.count and disbursed.count %}
-                                    {% widthratio approved_allocations.count 1 disbursed.count %} pending
+                                    {{ approved_allocations.count|sub:disbursed.count }} pending
                                     {% else %}
                                     0 pending
                                     {% endif %}
@@ -309,7 +957,7 @@
         <!-- Applications Overview -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="bi bi-folder2-open"></i> Applications Overview</h3>
+                <i class="bi bi-folder2-open"></i> Applications Overview
             </div>
             <div class="card-body">
                 <div class="applications-stats">
@@ -325,21 +973,21 @@
                             <i class="bi bi-clock-history"></i>
                             <div class="stat-content">
                                 <label>Pending</label>
-                                <value>{{ applications|length }}</value>
+                                <value>{{ applications|filter_by_status:'submitted'|length }}</value>
                             </div>
                         </div>
                         <div class="stat-box">
                             <i class="bi bi-search"></i>
                             <div class="stat-content">
                                 <label>Under Review</label>
-                                <value>0</value>
+                                <value>{{ applications|filter_by_status:'under_review'|length }}</value>
                             </div>
                         </div>
                         <div class="stat-box">
                             <i class="bi bi-check-circle"></i>
                             <div class="stat-content">
                                 <label>Approved</label>
-                                <value>0</value>
+                                <value>{{ applications|filter_by_status:'approved'|length }}</value>
                             </div>
                         </div>
                     </div>
@@ -380,4 +1028,10 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any JavaScript functionality here if needed
+</script>
 {% endblock %}

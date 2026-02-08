@@ -3,29 +3,470 @@
 
 {% block title %}Reports - Ward Admin{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .fiscal-year-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fiscal-year-selector label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748B;
+    }
+
+    .form-select {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .export-btn {
+        padding: 8px 16px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .export-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin: 0;
+    }
+
+    .stat-card p {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .info-table tbody tr {
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .info-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .info-table td:first-child {
+        font-weight: 500;
+        color: #64748B;
+        width: 60%;
+    }
+
+    .info-table td:last-child {
+        font-weight: 600;
+        color: #1E293B;
+        text-align: right;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .data-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .data-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94A3B8;
+    }
+
+    .empty-state i {
+        font-size: 32px;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .export-section h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 12px;
+    }
+
+    .export-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .export-option:hover {
+        background: white;
+        border-color: #CBD5E1;
+        text-decoration: none;
+        color: #334155;
+    }
+
+    .export-icon {
+        width: 40px;
+        height: 40px;
+        background: white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #E2E8F0;
+        flex-shrink: 0;
+    }
+
+    .export-icon i {
+        font-size: 20px;
+        color: #3498db;
+    }
+
+    .export-info {
+        flex: 1;
+    }
+
+    .export-info strong {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .export-info small {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .action-footer {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .fiscal-year-selector {
+            width: 100%;
+        }
+
+        .form-select {
+            flex: 1;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .export-options {
+            grid-template-columns: 1fr;
+        }
+
+        .data-table {
+            font-size: 13px;
+        }
+
+        .data-table thead th,
+        .data-table tbody td {
+            padding: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div>
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'ward_admin_dashboard' %}">
-                    Dashboard
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
                 </a>
             </li>
-            <li>Reports</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active">Reports</li>
         </ol>
     </nav>
 
-    <div>
-        <div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <div>
-                <h1>Ward Reports</h1>
-                <p>{{ ward.name }} Ward - {{ selected_fy.name }}</p>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up"></i>
+                    Ward Reports
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - {{ selected_fy.name }}
+                </p>
             </div>
-            <div>
-                <form method="get">
+            <div class="header-actions">
+                <form method="get" class="fiscal-year-selector">
                     <label for="fiscal_year">Fiscal Year:</label>
-                    <select name="fiscal_year" id="fiscal_year" onchange="this.form.submit()">
+                    <select name="fiscal_year" id="fiscal_year" class="form-select" onchange="this.form.submit()">
                         {% for fy in fiscal_years %}
                         <option value="{{ fy.id }}" {% if selected_fy.id == fy.id %}selected{% endif %}>
                             {{ fy.name }}
@@ -33,204 +474,334 @@
                         {% endfor %}
                     </select>
                 </form>
-                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=excel">
-                    Export to Excel
+                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=excel" class="export-btn">
+                    <i class="bi bi-download"></i> Export to Excel
                 </a>
             </div>
         </div>
 
         {% if selected_fy %}
-        <div>
-            <h2>Applications Summary</h2>
-            <div>
-                <div>
-                    <h3>Total Applications</h3>
-                    <p>{{ applications_summary.total }}</p>
-                </div>
-                <div>
-                    <h3>Submitted</h3>
-                    <p>{{ applications_summary.submitted }}</p>
-                </div>
-                <div>
-                    <h3>Under Review</h3>
-                    <p>{{ applications_summary.under_review }}</p>
-                </div>
-                <div>
-                    <h3>Approved</h3>
-                    <p>{{ applications_summary.approved }}</p>
-                </div>
-                <div>
-                    <h3>Rejected</h3>
-                    <p>{{ applications_summary.rejected }}</p>
-                </div>
-                <div>
-                    <h3>Disbursed</h3>
-                    <p>{{ applications_summary.disbursed }}</p>
+        <!-- Applications Summary -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-folder2-open"></i> Applications Summary
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Applications</h3>
+                        <p>{{ applications_summary.total }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Submitted</h3>
+                        <p>{{ applications_summary.submitted }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Under Review</h3>
+                        <p>{{ applications_summary.under_review }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Approved</h3>
+                        <p>{{ applications_summary.approved }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Rejected</h3>
+                        <p>{{ applications_summary.rejected }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Disbursed</h3>
+                        <p>{{ applications_summary.disbursed }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div>
-            <h2>Financial Summary</h2>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Total Amount Requested</td>
-                        <td>KSh {{ financial_summary.total_requested|floatformat:0|intcomma|default:"0" }}</td>
-                    </tr>
-                    <tr>
-                        <td>Average Amount Requested</td>
-                        <td>KSh {{ financial_summary.avg_requested|floatformat:0|intcomma|default:"0" }}</td>
-                    </tr>
-                    <tr>
-                        <td>Total Allocated</td>
-                        <td>KSh {{ allocation_summary.total_allocated|floatformat:0|intcomma|default:"0" }}</td>
-                    </tr>
-                    <tr>
-                        <td>Average Allocated</td>
-                        <td>KSh {{ allocation_summary.avg_allocated|floatformat:0|intcomma|default:"0" }}</td>
-                    </tr>
-                    <tr>
-                        <td>Number of Beneficiaries</td>
-                        <td>{{ allocation_summary.count|default:"0" }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Financial Summary -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-cash-stack"></i> Financial Summary
+            </div>
+            <div class="card-body">
+                <table class="info-table">
+                    <tbody>
+                        <tr>
+                            <td>Total Amount Requested</td>
+                            <td>KSh {{ financial_summary.total_requested|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Average Amount Requested</td>
+                            <td>KSh {{ financial_summary.avg_requested|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Allocated</td>
+                            <td>KSh {{ allocation_summary.total_allocated|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Average Allocated</td>
+                            <td>KSh {{ allocation_summary.avg_allocated|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Number of Beneficiaries</td>
+                            <td>{{ allocation_summary.count|default:"0" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h2>Gender Distribution</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Gender</th>
-                        <th>Count</th>
-                        <th>Percentage</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in gender_distribution %}
-                    <tr>
-                        <td>{{ item.applicant__gender }}</td>
-                        <td>{{ item.count }}</td>
-                        <td>{% widthratio item.count 100 applications_summary.total %}%</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Gender Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-gender-ambiguous"></i> Gender Distribution
+            </div>
+            <div class="card-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Gender</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in gender_distribution %}
+                        <tr>
+                            <td>{{ item.applicant__gender|default:"Not specified" }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>
+                                {% if applications_summary.total > 0 %}
+                                {% widthratio item.count applications_summary.total 100 %}%
+                                {% else %}
+                                0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>No gender data available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h2>Institution Type Distribution</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Institution Type</th>
-                        <th>Applications</th>
-                        <th>Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in institution_distribution %}
-                    <tr>
-                        <td>{{ item.institution__institution_type }}</td>
-                        <td>{{ item.count }}</td>
-                        <td>KSh {{ item.total_amount|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Institution Type Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-building"></i> Institution Type Distribution
+            </div>
+            <div class="card-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Institution Type</th>
+                            <th>Applications</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in institution_distribution %}
+                        <tr>
+                            <td>{{ item.institution__institution_type|default:"Not specified" }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>KSh {{ item.total_amount|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>No institution type data available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h2>Category Distribution</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Applications</th>
-                        <th>Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in category_distribution %}
-                    <tr>
-                        <td>{{ item.bursary_category__name }}</td>
-                        <td>{{ item.count }}</td>
-                        <td>KSh {{ item.total_amount|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Category Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-tags"></i> Category Distribution
+            </div>
+            <div class="card-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Applications</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in category_distribution %}
+                        <tr>
+                            <td>{{ item.bursary_category__name|default:"Not specified" }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>KSh {{ item.total_amount|floatformat:0|intcomma|default:"0" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>No category data available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h2>Vulnerability Statistics</h2>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Special Needs Applicants</td>
-                        <td>{{ special_needs_count }}</td>
-                    </tr>
-                    <tr>
-                        <td>Orphans</td>
-                        <td>{{ orphans_count }}</td>
-                    </tr>
-                    <tr>
-                        <td>Total Orphans</td>
-                        <td>{{ total_orphans_count }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Vulnerability Statistics -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shield-exclamation"></i> Vulnerability Statistics
+            </div>
+            <div class="card-body">
+                <table class="info-table">
+                    <tbody>
+                        <tr>
+                            <td>Special Needs Applicants</td>
+                            <td>{{ special_needs_count|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Orphans</td>
+                            <td>{{ orphans_count|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Orphans</td>
+                            <td>{{ total_orphans_count|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Disabled Applicants</td>
+                            <td>{{ disabled_count|default:"0" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h2>Applications by Location</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Location</th>
-                        <th>Applications</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in location_distribution %}
-                    <tr>
-                        <td>{{ item.applicant__location__name }}</td>
-                        <td>{{ item.count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Applications by Location -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-geo-alt"></i> Applications by Location
+            </div>
+            <div class="card-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Applications</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in location_distribution %}
+                        <tr>
+                            <td>{{ item.applicant__location__name|default:"Not specified" }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>
+                                {% if applications_summary.total > 0 %}
+                                {% widthratio item.count applications_summary.total 100 %}%
+                                {% else %}
+                                0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>No location data available</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div>
-            <h3>Export Options</h3>
-            <div>
-                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=excel">
-                    Export Applications Report (Excel)
+        <!-- Export Options -->
+        <div class="export-section">
+            <h3><i class="bi bi-download"></i> Export Options</h3>
+            <div class="export-options">
+                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=excel" class="export-option">
+                    <div class="export-icon">
+                        <i class="bi bi-file-earmark-excel"></i>
+                    </div>
+                    <div class="export-info">
+                        <strong>Applications Report</strong>
+                        <small>Excel format (.xlsx)</small>
+                    </div>
                 </a>
-                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=csv">
-                    Export Applications Report (CSV)
+                <a href="{% url 'ward_admin_export_report' %}?type=applications&fiscal_year={{ selected_fy.id }}&format=csv" class="export-option">
+                    <div class="export-icon">
+                        <i class="bi bi-filetype-csv"></i>
+                    </div>
+                    <div class="export-info">
+                        <strong>Applications Report</strong>
+                        <small>CSV format (.csv)</small>
+                    </div>
                 </a>
-                <a href="{% url 'ward_admin_export_report' %}?type=allocations&fiscal_year={{ selected_fy.id }}&format=excel">
-                    Export Allocations Report (Excel)
+                <a href="{% url 'ward_admin_export_report' %}?type=allocations&fiscal_year={{ selected_fy.id }}&format=excel" class="export-option">
+                    <div class="export-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="export-info">
+                        <strong>Allocations Report</strong>
+                        <small>Excel format (.xlsx)</small>
+                    </div>
                 </a>
-                <a href="{% url 'ward_admin_export_report' %}?type=beneficiaries&fiscal_year={{ selected_fy.id }}&format=excel">
-                    Export Beneficiaries List (Excel)
+                <a href="{% url 'ward_admin_export_report' %}?type=beneficiaries&fiscal_year={{ selected_fy.id }}&format=excel" class="export-option">
+                    <div class="export-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="export-info">
+                        <strong>Beneficiaries List</strong>
+                        <small>Excel format (.xlsx)</small>
+                    </div>
                 </a>
             </div>
         </div>
 
         {% else %}
-        <div>
-            <p>No fiscal year selected. Please select a fiscal year to view reports.</p>
+        <!-- No Fiscal Year Selected -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h3 class="empty-title">No Fiscal Year Selected</h3>
+            <p class="empty-text">
+                Please select a fiscal year to view reports.
+            </p>
         </div>
         {% endif %}
 
-        <div>
-            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        <!-- Back Button -->
+        <div class="action-footer">
+            <a href="{% url 'ward_admin_dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any JavaScript functionality here if needed
+</script>
 {% endblock %}

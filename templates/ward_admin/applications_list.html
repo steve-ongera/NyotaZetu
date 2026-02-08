@@ -6,257 +6,767 @@
 
 {% block extra_css %}
 <style>
-    .filter-card {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 20px;
+    .breadcrumb {
+        padding: 0;
         margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
     }
-    
-    .application-badge {
-        padding: 5px 12px;
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        align-items: center;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .record-count {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
         border-radius: 20px;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
     }
-    
-    .table-actions .btn {
-        margin: 2px;
+
+    .applicants-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
     }
-    
-    .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    .applicants-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .applicants-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applicants-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applicants-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-purple {
+        background: #F3E8FF;
+        color: #6B21A8;
+    }
+
+    .badge-secondary {
+        background: #E2E8F0;
+        color: #475569;
+    }
+
+    .action-btn {
+        padding: 8px 16px;
+        background: white;
+        color: #3498db;
+        border: 1px solid #3498db;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn:hover {
+        background: #3498db;
         color: white;
-        padding: 20px 30px;
-        border-radius: 10px;
+        transform: translateY(-1px);
+    }
+
+    .action-btn.btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
         margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .applicant-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .applicant-id {
+        font-size: 12px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    @media (max-width: 768px) {
+        .filter-content {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .applicants-table {
+            font-size: 13px;
+        }
+
+        .applicants-table thead th,
+        .applicants-table tbody td {
+            padding: 10px;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1><i class="fas fa-file-alt"></i> Ward Applications</h1>
-        <p class="mb-0">{{ ward.name }} Ward - All Applications</p>
-    </div>
-
-    <!-- Filters -->
-    <div class="filter-card">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">
-                    <i class="fas fa-search"></i> Search
-                </label>
-                <input type="text" 
-                       name="search" 
-                       class="form-control" 
-                       value="{{ search_query }}" 
-                       placeholder="Application #, Name, ID Number...">
-            </div>
-            
-            <div class="col-md-2">
-                <label class="form-label">
-                    <i class="fas fa-filter"></i> Status
-                </label>
-                <select name="status" class="form-control">
-                    <option value="">All Status</option>
-                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
-                    <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
-                    <option value="under_review" {% if status_filter == 'under_review' %}selected{% endif %}>Under Review</option>
-                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
-                    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
-                    <option value="disbursed" {% if status_filter == 'disbursed' %}selected{% endif %}>Disbursed</option>
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label class="form-label">
-                    <i class="fas fa-layer-group"></i> Category
-                </label>
-                <select name="category" class="form-control">
-                    <option value="">All Categories</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}" 
-                            {% if category_filter == cat.id|stringformat:'s' %}selected{% endif %}>
-                        {{ cat.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label class="form-label">
-                    <i class="fas fa-school"></i> Institution
-                </label>
-                <select name="institution" class="form-control">
-                    <option value="">All Institutions</option>
-                    {% for inst in institutions %}
-                    <option value="{{ inst.id }}" 
-                            {% if institution_filter == inst.id|stringformat:'s' %}selected{% endif %}>
-                        {{ inst.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label class="form-label">
-                    <i class="fas fa-calendar"></i> Fiscal Year
-                </label>
-                <select name="fiscal_year" class="form-control">
-                    {% for fy in fiscal_years %}
-                    <option value="{{ fy.id }}" 
-                            {% if fiscal_year_id == fy.id|stringformat:'s' %}selected{% endif %}>
-                        {{ fy.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-1">
-                <label class="form-label">&nbsp;</label>
-                <button type="submit" class="btn btn-primary form-control">
-                    <i class="fas fa-search"></i> Filter
-                </button>
-            </div>
-        </form>
-        
-        <div class="row mt-3">
-            <div class="col-12">
-                <a href="{% url 'ward_admin_applications' %}" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-redo"></i> Reset Filters
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
                 </a>
-                <span class="ml-3 text-muted">
-                    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
-                </span>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    Ward Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Applications</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-text"></i>
+                    Ward Applications
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - All Applications
+                </p>
             </div>
         </div>
-    </div>
 
-    <!-- Applications Table -->
-    <div class="card">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-list"></i> Applications List
-            </h5>
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-header">
+                <h6 class="filter-title">
+                    <i class="bi bi-funnel"></i>
+                    Filter Applications
+                </h6>
+                <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+            </div>
+            
+            <div class="filter-content" id="filtersContent" style="display: none;">
+                <form method="get" id="filterForm">
+                    <div class="filter-content">
+                        <div class="filter-group">
+                            <label class="filter-label" for="search">
+                                <i class="bi bi-search"></i> Search
+                            </label>
+                            <input type="text" 
+                                   name="search" 
+                                   id="search"
+                                   class="form-control" 
+                                   value="{{ search_query|default:'' }}" 
+                                   placeholder="Application #, Name, ID Number...">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="status">
+                                <i class="bi bi-filter-circle"></i> Status
+                            </label>
+                            <select name="status" id="status" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
+                                <option value="under_review" {% if status_filter == 'under_review' %}selected{% endif %}>Under Review</option>
+                                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="disbursed" {% if status_filter == 'disbursed' %}selected{% endif %}>Disbursed</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="category">
+                                <i class="bi bi-layers"></i> Category
+                            </label>
+                            <select name="category" id="category" class="filter-select">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" 
+                                        {% if category_filter == cat.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="institution">
+                                <i class="bi bi-building"></i> Institution
+                            </label>
+                            <select name="institution" id="institution" class="filter-select">
+                                <option value="">All Institutions</option>
+                                {% for inst in institutions %}
+                                <option value="{{ inst.id }}" 
+                                        {% if institution_filter == inst.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ inst.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="fiscal_year">
+                                <i class="bi bi-calendar"></i> Fiscal Year
+                            </label>
+                            <select name="fiscal_year" id="fiscal_year" class="filter-select">
+                                {% for fy in fiscal_years %}
+                                <option value="{{ fy.id }}" 
+                                        {% if fiscal_year_id == fy.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ fy.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="filter-btn">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
+                            <i class="bi bi-x-circle"></i> Reset Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Application Number</th>
-                            <th>Applicant</th>
-                            <th>Institution</th>
-                            <th>Category</th>
-                            <th>Amount Requested</th>
-                            <th>Status</th>
-                            <th>Submitted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for app in page_obj %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td><strong>{{ app.application_number }}</strong></td>
-                            <td>
-                                <strong>{{ app.applicant.user.get_full_name }}</strong><br>
-                                <small class="text-muted">
-                                    <i class="fas fa-id-card"></i> {{ app.applicant.id_number }}
-                                </small>
-                            </td>
-                            <td>{{ app.institution.name }}</td>
-                            <td>
-                                <span class="badge badge-info">
-                                    {{ app.bursary_category.name }}
-                                </span>
-                            </td>
-                            <td>KES {{ app.amount_requested|intcomma }}</td>
-                            <td>
-                                <span class="application-badge 
-                                    {% if app.status == 'submitted' %}bg-warning text-dark
-                                    {% elif app.status == 'approved' %}bg-success text-white
-                                    {% elif app.status == 'rejected' %}bg-danger text-white
-                                    {% elif app.status == 'under_review' %}bg-info text-white
-                                    {% elif app.status == 'disbursed' %}bg-purple text-white
-                                    {% else %}bg-secondary text-white{% endif %}">
-                                    {{ app.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if app.date_submitted %}
-                                {{ app.date_submitted|date:"d M Y" }}
-                                {% else %}
-                                <span class="text-muted">Not submitted</span>
-                                {% endif %}
-                            </td>
-                            <td class="table-actions">
+
+        <!-- Applications Table -->
+        <div class="table-header">
+            <h6 class="table-title">
+                <i class="bi bi-table"></i>
+                Applications List
+            </h6>
+            <span class="record-count">{{ page_obj.paginator.count }} records</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="applicants-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Application Number</th>
+                        <th>Applicant</th>
+                        <th>Institution</th>
+                        <th>Category</th>
+                        <th>Amount Requested</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in page_obj %}
+                    <tr>
+                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                        <td><strong>{{ app.application_number }}</strong></td>
+                        <td>
+                            <div class="applicant-info">
+                                <div class="applicant-name">{{ app.applicant.user.get_full_name }}</div>
+                                <div class="applicant-id">
+                                    <i class="bi bi-card-text"></i> {{ app.applicant.id_number }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ app.institution.name }}</td>
+                        <td>
+                            <span class="badge badge-info">
+                                {{ app.bursary_category.name }}
+                            </span>
+                        </td>
+                        <td>KES {{ app.amount_requested|intcomma }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if app.status == 'submitted' %}badge-warning
+                                {% elif app.status == 'approved' %}badge-success
+                                {% elif app.status == 'rejected' %}badge-danger
+                                {% elif app.status == 'under_review' %}badge-info
+                                {% elif app.status == 'disbursed' %}badge-purple
+                                {% else %}badge-secondary{% endif %}">
+                                {{ app.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if app.date_submitted %}
+                            {{ app.date_submitted|date:"d M Y" }}
+                            {% else %}
+                            <span class="text-muted">Not submitted</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="d-flex gap-1 justify-content-end">
                                 <a href="{% url 'ward_admin_application_detail' app.id %}" 
-                                   class="btn btn-sm btn-outline-primary"
+                                   class="action-btn btn-sm"
                                    title="View Details">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="bi bi-eye"></i>
+                                    View
                                 </a>
                                 {% if app.status == 'submitted' %}
                                 <a href="{% url 'ward_admin_review_application' app.id %}" 
-                                   class="btn btn-sm btn-outline-success"
+                                   class="action-btn btn-sm"
+                                   style="background: #27ae60; color: white; border-color: #27ae60;"
                                    title="Review">
-                                    <i class="fas fa-check"></i>
+                                    <i class="bi bi-check"></i>
+                                    Review
                                 </a>
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="text-center py-5">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No applications found</p>
-                                <p class="text-muted">Try adjusting your filters</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Applications Found</h3>
+                                <p class="empty-text">
+                                    {% if search_query or status_filter or category_filter or institution_filter %}
+                                        No applications match your current filters.
+                                    {% else %}
+                                        There are no applications in your ward yet.
+                                    {% endif %}
+                                </p>
+                                {% if search_query or status_filter or category_filter or institution_filter %}
+                                <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
+                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        
+
         <!-- Pagination -->
         {% if page_obj.has_other_pages %}
-        <div class="card-footer">
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
+            </div>
+            
             <nav>
-                <ul class="pagination justify-content-center mb-0">
+                <ul class="pagination">
                     {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">
-                            <i class="fas fa-chevron-left"></i> Previous
-                        </a>
-                    </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
                     {% endif %}
 
                     {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">
-                            {{ num }}
-                        </a>
-                    </li>
-                    {% endif %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">
-                            Next <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
                     {% endif %}
                 </ul>
             </nav>
@@ -264,4 +774,44 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-expand filters if any filter is active
+        const hasActiveFilters = "{{ search_query|default:'' }}" !== "" || 
+                                "{{ status_filter|default:'' }}" !== "" || 
+                                "{{ category_filter|default:'' }}" !== "" ||
+                                "{{ institution_filter|default:'' }}" !== "";
+        
+        if (hasActiveFilters) {
+            document.getElementById('filtersContent').style.display = 'grid';
+            document.getElementById('filterToggle').classList.add('rotated');
+        }
+
+        // Auto-focus search input if search query exists
+        const searchInput = document.getElementById('search');
+        const searchQuery = "{{ search_query|default:'' }}";
+        if (searchQuery && searchInput) {
+            searchInput.focus();
+            // Move cursor to end of input
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+    });
+
+    // Toggle filters visibility
+    function toggleFilters() {
+        const content = document.getElementById('filtersContent');
+        const toggle = document.getElementById('filterToggle');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'grid';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+</script>
 {% endblock %}
