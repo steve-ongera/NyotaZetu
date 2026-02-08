@@ -1,0 +1,1010 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Create Allocation - Finance Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .back-button-container {
+        margin-bottom: 20px;
+    }
+
+    .btn-secondary-custom {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        color: #64748B;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Application Summary */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    .summary-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .info-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .text-danger {
+        color: #DC2626;
+        font-weight: 600;
+    }
+
+    /* Vulnerability Assessment */
+    .vulnerability-section {
+        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+        border: 1px solid #E2E8F0;
+    }
+
+    .vulnerability-score {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .score-badge {
+        background: white;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 4px solid;
+        transition: all 0.3s ease;
+    }
+
+    .score-critical { border-color: #DC2626; }
+    .score-high { border-color: #F59E0B; }
+    .score-medium { border-color: #FBBF24; }
+    .score-low { border-color: #10B981; }
+
+    .score-badge .score {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .score-badge .label {
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .score-interpretation {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .priority-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-critical {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+    }
+
+    .badge-high {
+        background: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FBBF24;
+    }
+
+    .badge-medium {
+        background: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FBBF24;
+    }
+
+    .badge-low {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #34D399;
+    }
+
+    .vulnerability-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 16px;
+    }
+
+    .vulnerability-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .vulnerability-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .vulnerability-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    /* Form Styles */
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-group label.required::after {
+        content: "*";
+        color: #DC2626;
+        margin-left: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-group small {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 6px;
+    }
+
+    .recommended-amount {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: #D1FAE5;
+        border: 1px solid #34D399;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .recommended-amount .amount-display {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .recommended-amount .amount {
+        font-size: 20px;
+        font-weight: 700;
+        color: #065F46;
+    }
+
+    .btn-use-amount {
+        padding: 8px 16px;
+        background: white;
+        color: #065F46;
+        border: 1px solid #34D399;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-use-amount:hover {
+        background: #34D399;
+        color: white;
+    }
+
+    .amount-limits {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .amount-limit {
+        font-size: 13px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .amount-limit i {
+        color: #3498db;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        padding-top: 24px;
+        margin-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border: 1px solid #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+        color: #64748B;
+    }
+
+    /* Alert Messages */
+    .alert {
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        border: 1px solid #93C5FD;
+        color: #1E40AF;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border: 1px solid #FBBF24;
+        color: #92400E;
+    }
+
+    .alert-danger {
+        background: #FEE2E2;
+        border: 1px solid #FCA5A5;
+        color: #991B1B;
+    }
+
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 16px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .vulnerability-score {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .score-badge {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .recommended-amount {
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 18px;
+        }
+        
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .vulnerability-table {
+            font-size: 13px;
+        }
+        
+        .vulnerability-table thead th,
+        .vulnerability-table tbody td {
+            padding: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">Pending Disbursements</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Create Allocation</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-cash-coin"></i>
+                Create Allocation
+            </h1>
+            <p class="page-subtitle">
+                Application: {{ application.application_number }}
+            </p>
+        </div>
+        <a href="{% url 'application_detail' application.id %}" class="btn-secondary-custom">
+            <i class="bi bi-arrow-left"></i>
+            Back to Application
+        </a>
+    </div>
+
+    <!-- Application Summary -->
+    <div class="section-container">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="bi bi-file-text"></i>
+            </div>
+            <h3 class="card-title">Application Summary</h3>
+        </div>
+        
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Student Name</span>
+                        <span class="info-value">{{ application.applicant.user.get_full_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">ID Number</span>
+                        <span class="info-value">{{ application.applicant.id_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Institution</span>
+                        <span class="info-value">{{ application.institution.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ward</span>
+                        <span class="info-value">{{ application.applicant.ward.name|default:"N/A" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Category</span>
+                        <span class="info-value">{{ application.bursary_category.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Fees</span>
+                        <span class="info-value">KES {{ application.total_fees_payable|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fees Paid</span>
+                        <span class="info-value">KES {{ application.fees_paid|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fee Balance</span>
+                        <span class="info-value text-danger">KES {{ application.fees_balance|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Vulnerability Assessment -->
+    <div class="section-container vulnerability-section">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3 class="card-title">AI Vulnerability Assessment</h3>
+        </div>
+
+        <div class="vulnerability-score">
+            <div class="score-badge {% if vulnerability_score >= 80 %}score-critical{% elif vulnerability_score >= 60 %}score-high{% elif vulnerability_score >= 40 %}score-medium{% else %}score-low{% endif %}">
+                <span class="score">{{ vulnerability_score }}</span>
+                <span class="label">/100</span>
+            </div>
+            
+            <div class="score-interpretation">
+                {% if vulnerability_score >= 80 %}
+                    <span class="priority-badge badge-critical">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Critical Priority
+                    </span>
+                    <p style="margin-top: 8px; color: #64748B; font-size: 14px;">
+                        Immediate attention required. High vulnerability factors detected.
+                    </p>
+                {% elif vulnerability_score >= 60 %}
+                    <span class="priority-badge badge-high">
+                        <i class="bi bi-exclamation-circle"></i>
+                        High Priority
+                    </span>
+                    <p style="margin-top: 8px; color: #64748B; font-size: 14px;">
+                        Significant vulnerability factors present.
+                    </p>
+                {% elif vulnerability_score >= 40 %}
+                    <span class="priority-badge badge-medium">
+                        <i class="bi bi-info-circle"></i>
+                        Medium Priority
+                    </span>
+                    <p style="margin-top: 8px; color: #64748B; font-size: 14px;">
+                        Moderate vulnerability factors identified.
+                    </p>
+                {% else %}
+                    <span class="priority-badge badge-low">
+                        <i class="bi bi-check-circle"></i>
+                        Low Priority
+                    </span>
+                    <p style="margin-top: 8px; color: #64748B; font-size: 14px;">
+                        Minimal vulnerability factors detected.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <h4 style="margin-top: 24px; margin-bottom: 16px; color: #1E293B; font-size: 15px;">
+            <i class="bi bi-list-check"></i> Vulnerability Factors
+        </h4>
+
+        <div class="table-responsive">
+            <table class="vulnerability-table">
+                <thead>
+                    <tr>
+                        <th>Factor</th>
+                        <th>Points</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in vulnerability_details %}
+                    <tr>
+                        <td>{{ detail.factor }}</td>
+                        <td>{{ detail.points }}</td>
+                        <td>
+                            {% if detail.priority == 'Critical' %}
+                                <span class="badge-critical">{{ detail.priority }}</span>
+                            {% elif detail.priority == 'High' %}
+                                <span class="badge-high">{{ detail.priority }}</span>
+                            {% else %}
+                                <span class="badge-medium">{{ detail.priority }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 40px; color: #64748B;">
+                            No special vulnerability factors identified
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Allocation Form -->
+    <div class="section-container">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <h3 class="card-title">Allocation Details</h3>
+        </div>
+
+        <!-- AI Recommendation -->
+        <div class="alert alert-info">
+            <i class="bi bi-lightbulb"></i>
+            <div>
+                <strong>AI Recommendation</strong>
+                <p>Based on vulnerability assessment, fee balance analysis, and category limits</p>
+            </div>
+        </div>
+
+        <div class="recommended-amount">
+            <div class="amount-display">
+                <i class="bi bi-coin" style="color: #065F46; font-size: 24px;"></i>
+                <span class="amount">KES {{ recommended_amount|floatformat:2|intcomma }}</span>
+            </div>
+            <button type="button" class="btn-use-amount" onclick="useRecommended()">
+                <i class="bi bi-check-circle"></i> Use This Amount
+            </button>
+        </div>
+
+        <!-- Allocation Form -->
+        <form method="post" action="">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="amount_allocated" class="required">
+                        <i class="bi bi-cash-stack"></i>
+                        Allocation Amount
+                    </label>
+                    <input 
+                        type="number" 
+                        id="amount_allocated" 
+                        name="amount_allocated" 
+                        step="0.01" 
+                        min="0" 
+                        max="{{ category_max }}"
+                        value="{{ form_data.amount_allocated|default:recommended_amount }}"
+                        required
+                        oninput="validateAmount()"
+                    >
+                    <div class="amount-limits">
+                        <span class="amount-limit">
+                            <i class="bi bi-arrow-up"></i>
+                            Maximum: KES {{ category_max|floatformat:2|intcomma }}
+                        </span>
+                        <span class="amount-limit">
+                            <i class="bi bi-graph-up"></i>
+                            Fee Balance: KES {{ application.fees_balance|floatformat:2|intcomma }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="payment_method" class="required">
+                        <i class="bi bi-credit-card"></i>
+                        Payment Method
+                    </label>
+                    <select id="payment_method" name="payment_method" required onchange="toggleChequeNumber()">
+                        <option value="">Select payment method</option>
+                        <option value="cheque" {% if form_data.payment_method == 'cheque' %}selected{% endif %}>Cheque</option>
+                        <option value="bank_transfer" {% if form_data.payment_method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="mpesa" {% if form_data.payment_method == 'mpesa' %}selected{% endif %}>M-Pesa</option>
+                        <option value="bulk_cheque" {% if form_data.payment_method == 'bulk_cheque' %}selected{% endif %}>Bulk Cheque</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row" id="cheque_number_row" style="display: none;">
+                <div class="form-group">
+                    <label for="cheque_number" class="required">
+                        <i class="bi bi-receipt"></i>
+                        Cheque Number
+                    </label>
+                    <input 
+                        type="text" 
+                        id="cheque_number" 
+                        name="cheque_number" 
+                        value="{{ form_data.cheque_number }}"
+                        placeholder="Enter cheque number"
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="remarks">
+                        <i class="bi bi-chat-left-text"></i>
+                        Remarks
+                    </label>
+                    <textarea 
+                        id="remarks" 
+                        name="remarks" 
+                        rows="4"
+                        placeholder="Add any additional notes or comments about this allocation..."
+                    >{{ form_data.remarks }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check-circle"></i>
+                    Create Allocation
+                </button>
+                <a href="{% url 'application_detail' application.id %}" class="btn-secondary">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function useRecommended() {
+    document.getElementById('amount_allocated').value = {{ recommended_amount }};
+    showNotification('Amount set to AI recommended value: KES {{ recommended_amount|floatformat:2 }}', 'success');
+}
+
+function toggleChequeNumber() {
+    const paymentMethod = document.getElementById('payment_method').value;
+    const chequeRow = document.getElementById('cheque_number_row');
+    const chequeInput = document.getElementById('cheque_number');
+    
+    if (paymentMethod === 'cheque' || paymentMethod === 'bulk_cheque') {
+        chequeRow.style.display = 'grid';
+        chequeInput.required = true;
+    } else {
+        chequeRow.style.display = 'none';
+        chequeInput.required = false;
+        chequeInput.value = '';
+    }
+}
+
+function validateAmount() {
+    const amountInput = document.getElementById('amount_allocated');
+    const amount = parseFloat(amountInput.value);
+    const maxAmount = parseFloat({{ category_max }});
+    const feeBalance = parseFloat({{ application.fees_balance }});
+    
+    if (amount > maxAmount) {
+        showNotification(`Amount cannot exceed maximum limit of KES ${maxAmount.toLocaleString()}`, 'error');
+        amountInput.value = maxAmount;
+    }
+    
+    if (amount > feeBalance) {
+        showNotification(`Warning: Amount exceeds fee balance of KES ${feeBalance.toLocaleString()}`, 'warning');
+    }
+}
+
+function showNotification(message, type) {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(n => n.remove());
+    
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = `notification-toast alert alert-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 20px;
+        border-radius: 8px;
+        z-index: 9999;
+        max-width: 300px;
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+    
+    const icon = type === 'success' ? 'bi-check-circle' : 
+                type === 'warning' ? 'bi-exclamation-triangle' : 'bi-exclamation-circle';
+    
+    notification.innerHTML = `
+        <i class="bi ${icon}"></i>
+        <div style="flex: 1;">
+            <div style="font-size: 14px; line-height: 1.4;">${message}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 20px;">×</button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleChequeNumber();
+    validateAmount();
+    
+    // Add CSS for animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const amount = parseFloat(document.getElementById('amount_allocated').value);
+            const paymentMethod = document.getElementById('payment_method').value;
+            const chequeNumber = document.getElementById('cheque_number').value;
+            
+            if (!amount || amount <= 0) {
+                e.preventDefault();
+                showNotification('Please enter a valid allocation amount', 'error');
+                return;
+            }
+            
+            if (!paymentMethod) {
+                e.preventDefault();
+                showNotification('Please select a payment method', 'error');
+                return;
+            }
+            
+            if ((paymentMethod === 'cheque' || paymentMethod === 'bulk_cheque') && !chequeNumber.trim()) {
+                e.preventDefault();
+                showNotification('Please enter cheque number', 'error');
+                return;
+            }
+            
+            if (amount > {{ category_max }}) {
+                e.preventDefault();
+                showNotification(`Amount cannot exceed maximum limit of KES {{ category_max|floatformat:2 }}`, 'error');
+                return;
+            }
+        });
+    }
+});
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        document.querySelector('form').submit();
+    }
+    
+    if (e.key === 'Escape') {
+        window.location.href = "{% url 'application_detail' application.id %}";
+    }
+});
+</script>
+{% endblock %}

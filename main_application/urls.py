@@ -17,6 +17,10 @@ urlpatterns = [
     path('finance/allocations/pending/', views.pending_disbursement_list, name='finance_pending_disbursement'),
     path('finance/allocations/<int:allocation_id>/process/', views.process_disbursement, name='finance_process_disbursement'),
     path('finance/allocations/bulk-disbursement/', views.bulk_disbursement, name='finance_bulk_disbursement'),
+    # Allocation URLs
+    path('allocation/create/<int:application_id>/', views.allocation_create_single, name='allocation_create_single'),
+    path('allocation/bulk/', views.allocation_bulk_create, name='allocation_bulk_create'),
+    path('allocation/<int:allocation_id>/', views.allocation_detail, name='allocation_detail'),
     
     # ============= DISBURSEMENTS =============
     path('finance/disbursements/', views.disbursement_list, name='finance_disbursement_list'),
@@ -106,7 +110,7 @@ urlpatterns = [
     
     # Budget & Allocation
 
-    path('allocations/', views.allocation_list, name='allocation_list'),
+    path('allocations/', views.allocation_list, name='allocation_list'), 
     path('allocations/<int:allocation_id>/disburse/', views.disbursement_create, name='disbursement_create'),
 
     # Bulk cheque assignment page

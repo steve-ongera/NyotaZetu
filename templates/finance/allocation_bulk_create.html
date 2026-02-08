@@ -1,0 +1,355 @@
+<!-- templates/finance/allocation_bulk_create.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Bulk Allocation{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="page-header">
+        <h1>Bulk Allocation</h1>
+        <p>Create allocations for multiple applications with AI recommendations</p>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <h3>Filter Applications</h3>
+        <form method="get" id="filterForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fiscal Year</label>
+                    <select name="fiscal_year">
+                        <option value="">All Years</option>
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ward</label>
+                    <select name="ward">
+                        <option value="">All Wards</option>
+                        {% for ward in wards %}
+                        <option value="{{ ward.id }}" {% if request.GET.ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                            {{ ward.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Institution</label>
+                    <select name="institution">
+                        <option value="">All Institutions</option>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inst.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Filter</button>
+                    <button type="button" onclick="calculateRecommendations()" class="btn-success">
+                        Calculate AI Recommendations
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Applications Found</h3>
+            <p class="stat-value">{{ total_applications }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Selected for Allocation</h3>
+            <p class="stat-value" id="selectedCount">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Allocation Amount</h3>
+            <p class="stat-value" id="totalAmount">KES 0.00</p>
+        </div>
+    </div>
+
+    <!-- Recommendations Table -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Applications Ready for Allocation</h2>
+            <button type="button" onclick="selectAll()" class="btn-secondary btn-sm">Select All</button>
+            <button type="button" onclick="selectNone()" class="btn-secondary btn-sm">Clear All</button>
+            <button type="button" onclick="selectHighPriority()" class="btn-secondary btn-sm">Select High Priority Only</button>
+        </div>
+
+        <div id="recommendationsTable">
+            <p class="text-muted">Click "Calculate AI Recommendations" to generate allocation recommendations</p>
+        </div>
+
+        <div id="allocationsForm" style="display: none;">
+            <div class="form-actions">
+                <button type="button" onclick="processAllocations()" class="btn-primary">
+                    Process Selected Allocations
+                </button>
+                <button type="button" onclick="resetForm()" class="btn-secondary">Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let recommendations = [];
+let selectedAllocations = [];
+
+function calculateRecommendations() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Calculating...';
+    
+    const formData = new FormData(document.getElementById('filterForm'));
+    formData.append('action', 'calculate');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            recommendations = data.recommendations;
+            displayRecommendations(recommendations);
+            document.getElementById('allocationsForm').style.display = 'block';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Calculate AI Recommendations';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error calculating recommendations');
+        btn.disabled = false;
+        btn.textContent = 'Calculate AI Recommendations';
+    });
+}
+
+function displayRecommendations(recs) {
+    if (recs.length === 0) {
+        document.getElementById('recommendationsTable').innerHTML = '<p>No applications found matching the filters</p>';
+        return;
+    }
+    
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th><input type="checkbox" onchange="toggleAll(this)"></th>
+                    <th>App No.</th>
+                    <th>Student Name</th>
+                    <th>Institution</th>
+                    <th>Ward</th>
+                    <th>Fee Balance</th>
+                    <th>Vulnerability</th>
+                    <th>Priority</th>
+                    <th>Recommended Amount</th>
+                    <th>Edit Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    recs.forEach((rec, index) => {
+        const priorityClass = rec.vulnerability_score >= 80 ? 'badge-critical' : 
+                            rec.vulnerability_score >= 60 ? 'badge-high' : 
+                            rec.vulnerability_score >= 40 ? 'badge-medium' : 'badge-low';
+        
+        const priorityText = rec.vulnerability_score >= 80 ? 'Critical' : 
+                           rec.vulnerability_score >= 60 ? 'High' : 
+                           rec.vulnerability_score >= 40 ? 'Medium' : 'Low';
+        
+        const specialBadges = [];
+        if (rec.is_total_orphan) specialBadges.push('<span class="badge-critical">Total Orphan</span>');
+        else if (rec.is_orphan) specialBadges.push('<span class="badge-high">Orphan</span>');
+        if (rec.is_disabled) specialBadges.push('<span class="badge-high">Disabled</span>');
+        
+        html += `
+            <tr data-index="${index}">
+                <td><input type="checkbox" class="app-checkbox" data-index="${index}" onchange="updateSelection()"></td>
+                <td>${rec.application_number}</td>
+                <td>
+                    ${rec.student_name}
+                    <div>${specialBadges.join(' ')}</div>
+                </td>
+                <td>${rec.institution}</td>
+                <td>${rec.ward}</td>
+                <td>KES ${rec.fees_balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td>${rec.vulnerability_score}/100</td>
+                <td><span class="${priorityClass}">${priorityText}</span></td>
+                <td class="text-success"><strong>KES ${rec.recommended_amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+                <td>
+                    <input 
+                        type="number" 
+                        class="amount-input" 
+                        data-index="${index}" 
+                        value="${rec.recommended_amount}" 
+                        step="100"
+                        min="0"
+                        onchange="updateAmount(${index}, this.value)"
+                    >
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    document.getElementById('recommendationsTable').innerHTML = html;
+}
+
+function toggleAll(checkbox) {
+    document.querySelectorAll('.app-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelection();
+}
+
+function selectAll() {
+    document.querySelectorAll('.app-checkbox').forEach(cb => {
+        cb.checked = true;
+    });
+    updateSelection();
+}
+
+function selectNone() {
+    document.querySelectorAll('.app-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    updateSelection();
+}
+
+function selectHighPriority() {
+    recommendations.forEach((rec, index) => {
+        const checkbox = document.querySelector(`.app-checkbox[data-index="${index}"]`);
+        if (checkbox) {
+            checkbox.checked = rec.vulnerability_score >= 60;
+        }
+    });
+    updateSelection();
+}
+
+function updateAmount(index, value) {
+    recommendations[index].recommended_amount = parseFloat(value);
+    updateSelection();
+}
+
+function updateSelection() {
+    selectedAllocations = [];
+    let totalAmount = 0;
+    
+    document.querySelectorAll('.app-checkbox:checked').forEach(cb => {
+        const index = parseInt(cb.dataset.index);
+        const rec = recommendations[index];
+        const amountInput = document.querySelector(`.amount-input[data-index="${index}"]`);
+        const amount = parseFloat(amountInput.value);
+        
+        selectedAllocations.push({
+            application_id: rec.application_id,
+            application_number: rec.application_number,
+            amount: amount,
+            vulnerability_score: rec.vulnerability_score
+        });
+        
+        totalAmount += amount;
+    });
+    
+    document.getElementById('selectedCount').textContent = selectedAllocations.length;
+    document.getElementById('totalAmount').textContent = 'KES ' + totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
+}
+
+function processAllocations() {
+    if (selectedAllocations.length === 0) {
+        alert('Please select at least one application');
+        return;
+    }
+    
+    if (!confirm(`Process ${selectedAllocations.length} allocations totaling KES ${document.getElementById('totalAmount').textContent}?`)) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'allocate');
+    formData.append('allocations_data', JSON.stringify(selectedAllocations));
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully created ${data.created_count} allocations!`);
+            window.location.href = '{% url "allocation_list" %}';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error processing allocations');
+    });
+}
+
+function resetForm() {
+    selectedAllocations = [];
+    recommendations = [];
+    document.getElementById('recommendationsTable').innerHTML = '<p class="text-muted">Click "Calculate AI Recommendations" to generate allocation recommendations</p>';
+    document.getElementById('allocationsForm').style.display = 'none';
+    document.getElementById('selectedCount').textContent = '0';
+    document.getElementById('totalAmount').textContent = 'KES 0.00';
+}
+</script>
+
+<style>
+.amount-input {
+    width: 120px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-header button {
+    margin-left: 10px;
+}
+</style>
+{% endblock %}

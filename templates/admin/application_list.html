@@ -641,6 +641,7 @@
 
     <div class="section-container">
         <!-- Page Header -->
+        <!-- In the page-header div, update the button area -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
@@ -651,10 +652,17 @@
                     Monitor and manage all bursary applications
                 </p>
             </div>
-            <button class="export-btn" data-bs-toggle="modal" data-bs-target="#exportModal">
-                <i class="bi bi-download"></i>
-                Export Data
-            </button>
+            <!-- UPDATE THIS SECTION -->
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'allocation_bulk_create' %}" class="export-btn" style="background: #27ae60;">
+                    <i class="bi bi-cash-stack"></i>
+                    Bulk Allocation
+                </a>
+                <button class="export-btn" data-bs-toggle="modal" data-bs-target="#exportModal">
+                    <i class="bi bi-download"></i>
+                    Export Data
+                </button>
+            </div>
         </div>
 
         <!-- Statistics Cards -->
@@ -865,6 +873,7 @@
                             <span class="date-main">{{ application.date_submitted|date:"M d, Y" }}</span>
                             <span class="date-time">{{ application.date_submitted|date:"g:i A" }}</span>
                         </td>
+                        <!-- In the Applications Table tbody, update the actions cell -->
                         <td>
                             <div class="action-buttons">
                                 <a href="{% url 'application_detail' application.id %}" class="action-btn" title="View Details">
@@ -874,6 +883,19 @@
                                 {% if application.status == 'submitted' or application.status == 'under_review' %}
                                 <a href="{% url 'application_review' application.id %}" class="action-btn" title="Review Application">
                                     <i class="bi bi-clipboard-check"></i>
+                                </a>
+                                {% endif %}
+                                
+                                <!-- ADD THESE NEW ALLOCATION LINKS -->
+                                {% if application.status == 'approved' and not application.allocation %}
+                                <a href="{% url 'allocation_create_single' application.id %}" class="action-btn" title="Create Allocation">
+                                    <i class="bi bi-cash-stack"></i>
+                                </a>
+                                {% endif %}
+                                
+                                {% if application.allocation %}
+                                <a href="{% url 'allocation_detail' application.allocation.id %}" class="action-btn" title="View Allocation">
+                                    <i class="bi bi-receipt"></i>
                                 </a>
                                 {% endif %}
                             </div>

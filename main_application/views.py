@@ -1394,6 +1394,579 @@ def allocation_list(request):
     return render(request, 'finance/allocation_list.html', context)
 
 
+
+# allocation_views.py
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db import transaction
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Q, Sum, Count
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from decimal import Decimal
+import json
+
+from .models import (
+    User, Application, Allocation, Applicant, 
+    FiscalYear, BursaryCategory, Institution,
+    Ward, Notification, SMSLog, EmailLog
+)
+
+
+def is_admin_or_reviewer(user):
+    """Check if user can allocate bursaries"""
+    return user.user_type in ['admin', 'reviewer', 'finance']
+
+
+def calculate_vulnerability_score(application):
+    """
+    AI-powered vulnerability assessment
+    Returns a score from 0-100 (higher = more vulnerable/needy)
+    """
+    score = 0
+    
+    # 1. Orphan Status (30 points max)
+    if application.is_total_orphan:
+        score += 30
+    elif application.is_orphan:
+        score += 20
+    
+    # 2. Disability/Special Needs (20 points max)
+    if application.is_disabled:
+        score += 15
+    if application.applicant.special_needs:
+        score += 10
+    if application.has_chronic_illness:
+        score += 10
+    # Cap at 20 for this category
+    score = min(score, 50)
+    
+    # 3. Financial Need (30 points max)
+    if application.household_monthly_income:
+        income = float(application.household_monthly_income)
+        if income < 10000:
+            score += 30
+        elif income < 20000:
+            score += 25
+        elif income < 30000:
+            score += 15
+        elif income < 50000:
+            score += 10
+    else:
+        # No income reported - assume high need
+        score += 25
+    
+    # 4. Siblings in School (10 points max)
+    if application.number_of_siblings_in_school > 0:
+        siblings_score = min(application.number_of_siblings_in_school * 2, 10)
+        score += siblings_score
+    
+    # 5. Fee Balance vs Total Fees (10 points max)
+    if application.total_fees_payable > 0:
+        balance_ratio = float(application.fees_balance) / float(application.total_fees_payable)
+        if balance_ratio >= 0.8:
+            score += 10
+        elif balance_ratio >= 0.6:
+            score += 7
+        elif balance_ratio >= 0.4:
+            score += 5
+        else:
+            score += 3
+    
+    # Cap total score at 100
+    return min(score, 100)
+
+
+def calculate_recommended_amount(application, category_max, available_budget):
+    """
+    AI-powered amount calculation based on:
+    - Vulnerability score
+    - Fee balance
+    - Category maximum
+    - Available budget
+    """
+    vulnerability_score = calculate_vulnerability_score(application)
+    
+    # Base amount on fee balance, but don't exceed it
+    fees_balance = float(application.fees_balance)
+    
+    # Calculate base amount (between 50% and 100% of fee balance)
+    # Higher vulnerability = higher percentage
+    percentage = 0.5 + (vulnerability_score / 200)  # 0.5 to 1.0
+    base_amount = fees_balance * percentage
+    
+    # Consider other bursaries received
+    if application.other_bursaries:
+        other_amount = float(application.other_bursaries_amount)
+        base_amount = max(0, min(base_amount, fees_balance - other_amount))
+    
+    # Apply category limits
+    category_max_float = float(category_max)
+    recommended_amount = min(base_amount, category_max_float)
+    
+    # Ensure minimum of 5000 for very needy cases
+    if vulnerability_score >= 70 and recommended_amount < 5000:
+        recommended_amount = min(5000, fees_balance, category_max_float)
+    
+    # Round to nearest 100
+    recommended_amount = round(recommended_amount / 100) * 100
+    
+    return Decimal(str(recommended_amount))
+
+def is_admin_reviewer_or_county_admin(user):
+    return (
+        user.is_authenticated and
+        user.user_type in ['admin', 'reviewer', 'county_admin']
+    )
+    
+@login_required
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
+def allocation_create_single(request, application_id):
+    """
+    Create allocation for a single application
+    """
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'institution',
+            'fiscal_year',
+            'bursary_category',
+            'applicant__ward'
+        ),
+        id=application_id
+    )
+    
+    # Check if already allocated
+    if hasattr(application, 'allocation'):
+        messages.warning(request, f'Application {application.application_number} is already allocated.')
+        return redirect('application_detail', application.id)
+    
+    # Check if application is approved
+    if application.status != 'approved':
+        messages.error(request, 'Only approved applications can be allocated.')
+        return redirect('application_detail', application.id)
+    
+    # Calculate vulnerability score
+    vulnerability_score = calculate_vulnerability_score(application)
+    
+    # Get category max amount
+    category_max = application.bursary_category.max_amount_per_applicant
+    
+    # Calculate recommended amount
+    recommended_amount = calculate_recommended_amount(
+        application,
+        category_max,
+        None
+    )
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            amount_allocated = Decimal(request.POST.get('amount_allocated', 0))
+            payment_method = request.POST.get('payment_method', '').strip()
+            cheque_number = request.POST.get('cheque_number', '').strip()
+            remarks = request.POST.get('remarks', '').strip()
+            
+            # Validation
+            errors = []
+            
+            if amount_allocated <= 0:
+                errors.append('Allocation amount must be greater than zero')
+            
+            if amount_allocated > category_max:
+                errors.append(f'Amount exceeds category maximum of KES {category_max:,.2f}')
+            
+            if amount_allocated > application.fees_balance:
+                errors.append(f'Amount exceeds fee balance of KES {application.fees_balance:,.2f}')
+            
+            if not payment_method:
+                errors.append('Payment method is required')
+            
+            if payment_method in ['cheque', 'bulk_cheque'] and not cheque_number:
+                errors.append('Cheque number is required for cheque payment')
+            
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+                return render(request, 'finance/allocation_create_single.html', {
+                    'application': application,
+                    'vulnerability_score': vulnerability_score,
+                    'recommended_amount': recommended_amount,
+                    'category_max': category_max,
+                    'form_data': request.POST,
+                    'vulnerability_details': get_vulnerability_details(application),
+                })
+            
+            # Create allocation within transaction
+            with transaction.atomic():
+                # Create allocation
+                allocation = Allocation.objects.create(
+                    application=application,
+                    applicant=application.applicant,
+                    fiscal_year=application.fiscal_year,
+                    amount_allocated=amount_allocated,
+                    approved_amount=amount_allocated,
+                    approved_by=request.user,
+                    payment_method=payment_method,
+                    cheque_number=cheque_number if payment_method in ['cheque', 'bulk_cheque'] else None,
+                    remarks=remarks,
+                    status='approved',
+                    is_disbursed=False
+                )
+                
+                # Update application status (already approved, so keep it)
+                application.status = 'approved'
+                application.save(update_fields=['status'])
+                
+                # Send notification to applicant
+                try:
+                    send_allocation_notification(allocation, application)
+                except Exception as notif_error:
+                    # Log notification error but don't fail the allocation
+                    print(f"Notification error: {str(notif_error)}")
+                
+                messages.success(
+                    request,
+                    f'Allocation of KES {amount_allocated:,.2f} created successfully for {application.application_number}'
+                )
+                
+                return redirect('allocation_detail', allocation.id)
+                
+        except Decimal.InvalidOperation:
+            messages.error(request, 'Invalid amount format. Please enter a valid number.')
+        except IntegrityError as e:
+            messages.error(request, f'Database error: This application may already have an allocation. {str(e)}')
+        except Exception as e:
+            messages.error(request, f'Error creating allocation: {str(e)}')
+            # Print full traceback for debugging
+            import traceback
+            print(traceback.format_exc())
+    
+    context = {
+        'application': application,
+        'vulnerability_score': vulnerability_score,
+        'recommended_amount': recommended_amount,
+        'category_max': category_max,
+        'vulnerability_details': get_vulnerability_details(application),
+    }
+    
+    return render(request, 'finance/allocation_create_single.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
+def allocation_bulk_create(request):
+    """
+    Bulk allocation creation with AI recommendations
+    """
+    # Get filter parameters
+    fiscal_year_id = request.GET.get('fiscal_year')
+    category_id = request.GET.get('category')
+    ward_id = request.GET.get('ward')
+    institution_id = request.GET.get('institution')
+    
+    # Base queryset - only approved applications without allocations
+    applications = Application.objects.filter(
+        status='approved'
+    ).exclude(
+        id__in=Allocation.objects.values_list('application_id', flat=True)
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'institution',
+        'fiscal_year',
+        'bursary_category'
+    )
+    
+    # Apply filters
+    if fiscal_year_id:
+        applications = applications.filter(fiscal_year_id=fiscal_year_id)
+    if category_id:
+        applications = applications.filter(bursary_category_id=category_id)
+    if ward_id:
+        applications = applications.filter(applicant__ward_id=ward_id)
+    if institution_id:
+        applications = applications.filter(institution_id=institution_id)
+    
+    # Get dropdown data
+    fiscal_years = FiscalYear.objects.filter(is_active=True).order_by('-start_date')
+    categories = BursaryCategory.objects.filter(is_active=True).order_by('name')
+    wards = Ward.objects.filter(is_active=True).order_by('name')
+    institutions = Institution.objects.filter(is_active=True).order_by('name')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'calculate':
+            # Calculate AI recommendations for filtered applications
+            recommendations = []
+            
+            for app in applications[:100]:  # Limit to 100 for performance
+                vulnerability_score = calculate_vulnerability_score(app)
+                recommended_amount = calculate_recommended_amount(
+                    app,
+                    app.bursary_category.max_amount_per_applicant,
+                    None
+                )
+                
+                recommendations.append({
+                    'application_id': app.id,
+                    'application_number': app.application_number,
+                    'student_name': app.applicant.user.get_full_name(),
+                    'institution': app.institution.name,
+                    'ward': app.applicant.ward.name if app.applicant.ward else 'N/A',
+                    'fees_balance': float(app.fees_balance),
+                    'vulnerability_score': vulnerability_score,
+                    'recommended_amount': float(recommended_amount),
+                    'is_orphan': app.is_orphan,
+                    'is_total_orphan': app.is_total_orphan,
+                    'is_disabled': app.is_disabled,
+                })
+            
+            # Sort by vulnerability score (highest first)
+            recommendations.sort(key=lambda x: x['vulnerability_score'], reverse=True)
+            
+            return JsonResponse({
+                'success': True,
+                'recommendations': recommendations,
+                'total_applications': len(recommendations)
+            })
+        
+        elif action == 'allocate':
+            # Process bulk allocation
+            try:
+                allocations_data = json.loads(request.POST.get('allocations_data', '[]'))
+                
+                if not allocations_data:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'No allocations to process'
+                    })
+                
+                created_count = 0
+                errors = []
+                
+                with transaction.atomic():
+                    for item in allocations_data:
+                        try:
+                            app = Application.objects.get(id=item['application_id'])
+                            
+                            # Skip if already allocated
+                            if hasattr(app, 'allocation'):
+                                continue
+                            
+                            amount = Decimal(str(item['amount']))
+                            
+                            # Create allocation
+                            allocation = Allocation.objects.create(
+                                application=app,
+                                applicant=app.applicant,
+                                fiscal_year=app.fiscal_year,
+                                amount_allocated=amount,
+                                approved_amount=amount,
+                                approved_by=request.user,
+                                payment_method='cheque',  # Default
+                                status='approved',
+                                is_disbursed=False,
+                                remarks=f"Bulk allocation - Vulnerability Score: {item.get('vulnerability_score', 0)}"
+                            )
+                            
+                            # Send notification
+                            send_allocation_notification(allocation, app)
+                            
+                            created_count += 1
+                            
+                        except Exception as e:
+                            errors.append(f"App {item.get('application_number', 'Unknown')}: {str(e)}")
+                
+                messages.success(request, f'Successfully created {created_count} allocations')
+                
+                if errors:
+                    for error in errors[:5]:  # Show first 5 errors
+                        messages.warning(request, error)
+                
+                return JsonResponse({
+                    'success': True,
+                    'created_count': created_count,
+                    'errors': errors
+                })
+                
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': str(e)
+                })
+    
+    # Pagination
+    paginator = Paginator(applications, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'applications': page_obj,
+        'fiscal_years': fiscal_years,
+        'categories': categories,
+        'wards': wards,
+        'institutions': institutions,
+        'total_applications': applications.count(),
+    }
+    
+    return render(request, 'finance/allocation_bulk_create.html', context)
+
+
+def get_vulnerability_details(application):
+    """
+    Get detailed breakdown of vulnerability assessment
+    """
+    details = []
+    
+    if application.is_total_orphan:
+        details.append({'factor': 'Total Orphan', 'points': 30, 'priority': 'Critical'})
+    elif application.is_orphan:
+        details.append({'factor': 'Partial Orphan', 'points': 20, 'priority': 'High'})
+    
+    if application.is_disabled:
+        details.append({'factor': 'Disability', 'points': 15, 'priority': 'High'})
+    
+    if application.applicant.special_needs:
+        details.append({'factor': 'Special Needs', 'points': 10, 'priority': 'High'})
+    
+    if application.has_chronic_illness:
+        details.append({'factor': 'Chronic Illness', 'points': 10, 'priority': 'Medium'})
+    
+    if application.household_monthly_income:
+        income = float(application.household_monthly_income)
+        if income < 10000:
+            details.append({'factor': 'Very Low Income (<10K)', 'points': 30, 'priority': 'Critical'})
+        elif income < 20000:
+            details.append({'factor': 'Low Income (<20K)', 'points': 25, 'priority': 'High'})
+        elif income < 30000:
+            details.append({'factor': 'Below Average Income (<30K)', 'points': 15, 'priority': 'Medium'})
+    
+    if application.number_of_siblings_in_school > 0:
+        points = min(application.number_of_siblings_in_school * 2, 10)
+        details.append({
+            'factor': f'{application.number_of_siblings_in_school} Siblings in School',
+            'points': points,
+            'priority': 'Medium'
+        })
+    
+    return details
+
+
+def send_allocation_notification(allocation, application):
+    """
+    Send email and SMS notification to applicant about allocation
+    """
+    applicant = application.applicant
+    user = applicant.user
+    
+    # Create in-app notification
+    Notification.objects.create(
+        user=user,
+        notification_type='allocation',
+        title='Bursary Allocation Approved',
+        message=f'Your bursary application {application.application_number} has been allocated KES {allocation.amount_allocated:,.2f}. The disbursement process will begin shortly.',
+        related_application=application
+    )
+    
+    # Send email
+    try:
+        subject = f'Bursary Allocation Approved - {application.application_number}'
+        message = f"""
+Dear {user.get_full_name()},
+
+Congratulations! Your bursary application has been approved and allocated.
+
+Application Details:
+-------------------
+Application Number: {application.application_number}
+Institution: {application.institution.name}
+Academic Year: {application.fiscal_year.name}
+
+Allocation Details:
+------------------
+Amount Allocated: KES {allocation.amount_allocated:,.2f}
+Payment Method: {allocation.get_payment_method_display()}
+Allocation Date: {allocation.allocation_date}
+
+Next Steps:
+----------
+Your bursary will be disbursed to your institution shortly. You will receive another notification once the payment has been processed.
+
+If you have any questions, please contact the bursary office.
+
+Best regards,
+Bursary Management Team
+        """
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=True,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            related_application=application,
+            status='sent'
+        )
+        
+    except Exception as e:
+        print(f"Email send error: {e}")
+    
+    # Send SMS
+    if user.phone_number:
+        try:
+            sms_message = f"Bursary allocation approved! Amount: KES {allocation.amount_allocated:,.2f} for {application.institution.name}. App No: {application.application_number}"
+            
+            # Log SMS (actual sending depends on your SMS gateway)
+            SMSLog.objects.create(
+                recipient=user,
+                phone_number=user.phone_number,
+                message=sms_message,
+                related_application=application,
+                status='pending'
+            )
+            
+        except Exception as e:
+            print(f"SMS log error: {e}")
+
+
+@login_required
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
+def allocation_detail(request, allocation_id):
+    """
+    View allocation details
+    """
+    allocation = get_object_or_404(
+        Allocation.objects.select_related(
+            'application__applicant__user',
+            'application__institution',
+            'application__fiscal_year',
+            'approved_by'
+        ),
+        id=allocation_id
+    )
+    
+    context = {
+        'allocation': allocation,
+        'vulnerability_score': calculate_vulnerability_score(allocation.application),
+        'vulnerability_details': get_vulnerability_details(allocation.application),
+    }
+    
+    return render(request, 'finance/allocation_detail.html', context)
+
+
 @login_required
 @user_passes_test(is_finance)
 def pending_disbursement_list(request):
@@ -9438,7 +10011,7 @@ def is_admin_or_reviewer(user):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def create_application_view(request):
     """Main view for creating applications"""
     context = {
@@ -9453,7 +10026,7 @@ def create_application_view(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def search_student_ajax(request):
     """AJAX endpoint to search for students"""
     if request.method != 'POST':
@@ -9535,7 +10108,7 @@ def search_student_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def check_existing_application_ajax(request):
     """Check if student has already applied for active fiscal year"""
     if request.method != 'POST':
@@ -9591,7 +10164,7 @@ def check_existing_application_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def search_institution_ajax(request):
     """AJAX endpoint to search institutions"""
     if request.method != 'POST':
@@ -9644,7 +10217,7 @@ def search_institution_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def get_locations_ajax(request):
     """Get locations for selected ward"""
     if request.method != 'POST':
@@ -9674,7 +10247,7 @@ def get_locations_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def get_sublocations_ajax(request):
     """Get sublocations for selected location"""
     if request.method != 'POST':
@@ -9704,7 +10277,7 @@ def get_sublocations_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def get_villages_ajax(request):
     """Get villages for selected sublocation"""
     if request.method != 'POST':
@@ -9734,7 +10307,7 @@ def get_villages_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def get_bursary_categories_ajax(request):
     """Get bursary categories for selected fiscal year"""
     if request.method != 'POST':
@@ -9773,7 +10346,7 @@ def get_bursary_categories_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_reviewer)
+@user_passes_test(is_admin_reviewer_or_county_admin, login_url='login_view')
 def submit_application_ajax(request):
     """Handle complete application submission with documents"""
     if request.method != 'POST':

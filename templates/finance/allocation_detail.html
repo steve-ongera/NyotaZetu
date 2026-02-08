@@ -1,0 +1,1302 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Allocation Details - Finance Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border: 1px solid #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+        color: #64748B;
+    }
+
+    /* Summary Card */
+    .summary-card {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+    }
+
+    .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .summary-header h2 {
+        color: white;
+        margin: 0;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10B981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-critical {
+        background: rgba(220, 38, 38, 0.2);
+        color: #DC2626;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+    .badge-high {
+        background: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-medium {
+        background: rgba(251, 191, 36, 0.2);
+        color: #FBBF24;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .badge-low {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10B981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .stat-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-item label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .stat-value-large {
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    /* Section Styles */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+    }
+
+    .info-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .text-success {
+        color: #10B981;
+        font-weight: 600;
+    }
+
+    .text-danger {
+        color: #DC2626;
+        font-weight: 600;
+    }
+
+    /* Vulnerability Assessment */
+    .vulnerability-score {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        padding: 20px;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        flex-wrap: wrap;
+    }
+
+    .score-badge {
+        background: white;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 4px solid;
+        transition: all 0.3s ease;
+    }
+
+    .score-critical { border-color: #DC2626; }
+    .score-high { border-color: #F59E0B; }
+    .score-medium { border-color: #FBBF24; }
+    .score-low { border-color: #10B981; }
+
+    .score-badge .score {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .score-badge .label {
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .score-interpretation {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .score-interpretation h3 {
+        margin: 0 0 8px 0;
+        color: #1E293B;
+        font-size: 18px;
+    }
+
+    .score-interpretation p {
+        margin: 0;
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .vulnerability-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 16px;
+    }
+
+    .vulnerability-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .vulnerability-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .vulnerability-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    /* Special Circumstances */
+    .special-circumstances {
+        margin-top: 24px;
+        padding: 20px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+    }
+
+    .circumstances-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 16px 0;
+    }
+
+    .circumstance-detail {
+        margin-top: 16px;
+        padding: 16px;
+        background: white;
+        border-left: 4px solid #3498db;
+        border-radius: 6px;
+    }
+
+    .circumstance-detail label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 8px;
+        color: #1E293B;
+    }
+
+    .circumstance-detail p {
+        margin: 0;
+        color: #64748B;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* Remarks Section */
+    .remarks-section {
+        margin-top: 16px;
+        padding: 16px;
+        background: #FEF3C7;
+        border: 1px solid #FBBF24;
+        border-radius: 6px;
+    }
+
+    .remarks-section h4 {
+        margin: 0 0 8px 0;
+        color: #92400E;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .remarks-section p {
+        margin: 0;
+        color: #92400E;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* Confirmation Section */
+    .confirmation-section {
+        background: #D1FAE5;
+        border: 1px solid #34D399;
+    }
+
+    /* Table Styles */
+    .audit-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .audit-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .audit-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .audit-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    /* Print Styles */
+    @media print {
+        .breadcrumb,
+        .action-buttons {
+            display: none !important;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: 1px solid #ccc;
+            break-inside: avoid;
+        }
+        
+        .summary-card {
+            background: white;
+            color: #1E293B;
+            border: 2px solid #3498db;
+        }
+        
+        .stat-item {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+        }
+        
+        .score-badge {
+            background: white;
+            border: 3px solid;
+        }
+        
+        .badge {
+            background: #F8FAFC !important;
+            color: #64748B !important;
+            border: 1px solid #E2E8F0 !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .section-container {
+            padding: 16px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .summary-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .vulnerability-score {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .score-badge {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .summary-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .circumstances-badges {
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 18px;
+        }
+        
+        .vulnerability-table,
+        .audit-table {
+            font-size: 13px;
+        }
+        
+        .vulnerability-table thead th,
+        .vulnerability-table tbody td,
+        .audit-table thead th,
+        .audit-table tbody td {
+            padding: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'allocation_list' %}">Allocations</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Allocation Details</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-cash-coin"></i>
+                Allocation Details
+            </h1>
+            <p class="page-subtitle">
+                Application: {{ allocation.application.application_number }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'allocation_list' %}" class="btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to List
+        </a>
+        {% if not allocation.is_disbursed %}
+            <a href="{% url 'finance_process_disbursement' allocation.id %}" class="btn-primary">
+                <i class="bi bi-check-circle"></i>
+                Process Disbursement
+            </a>
+        {% else %}
+            <span class="badge badge-success">
+                <i class="bi bi-check-circle"></i>
+                Already Disbursed
+            </span>
+        {% endif %}
+        <button onclick="printAllocation()" class="btn-secondary">
+            <i class="bi bi-printer"></i>
+            Print
+        </button>
+    </div>
+
+    <!-- Allocation Summary -->
+    <div class="summary-card">
+        <div class="summary-header">
+            <h2>
+                <i class="bi bi-file-earmark-text"></i>
+                Allocation Summary
+            </h2>
+            <div class="status-badges">
+                {% if allocation.is_disbursed %}
+                    <span class="badge badge-success">Disbursed</span>
+                {% else %}
+                    <span class="badge badge-warning">Pending Disbursement</span>
+                {% endif %}
+                
+                {% if vulnerability_score >= 80 %}
+                    <span class="badge badge-critical">Critical Priority</span>
+                {% elif vulnerability_score >= 60 %}
+                    <span class="badge badge-high">High Priority</span>
+                {% elif vulnerability_score >= 40 %}
+                    <span class="badge badge-medium">Medium Priority</span>
+                {% else %}
+                    <span class="badge badge-low">Low Priority</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="summary-stats">
+            <div class="stat-item">
+                <label>Amount Allocated</label>
+                <div class="stat-value-large">KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</div>
+            </div>
+            <div class="stat-item">
+                <label>Allocation Date</label>
+                <div class="stat-value">{{ allocation.allocation_date|date:"F d, Y" }}</div>
+            </div>
+            <div class="stat-item">
+                <label>Approved By</label>
+                <div class="stat-value">{{ allocation.approved_by.get_full_name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Information -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-person"></i>
+            </div>
+            <h3 class="section-title">Student Information</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Full Name</span>
+                <span class="info-value">{{ allocation.application.applicant.user.get_full_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">ID Number</span>
+                <span class="info-value">{{ allocation.application.applicant.id_number }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ allocation.application.applicant.user.email }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Phone Number</span>
+                <span class="info-value">{{ allocation.application.applicant.user.phone_number|default:"N/A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Gender</span>
+                <span class="info-value">{{ allocation.application.applicant.get_gender_display }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date of Birth</span>
+                <span class="info-value">{{ allocation.application.applicant.date_of_birth|date:"F d, Y" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">County</span>
+                <span class="info-value">{{ allocation.application.applicant.county.name|default:"N/A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Constituency</span>
+                <span class="info-value">{{ allocation.application.applicant.constituency.name|default:"N/A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Ward</span>
+                <span class="info-value">{{ allocation.application.applicant.ward.name|default:"N/A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Village</span>
+                <span class="info-value">{{ allocation.application.applicant.village.name|default:"N/A" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-mortarboard"></i>
+            </div>
+            <h3 class="section-title">Academic Information</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Institution</span>
+                <span class="info-value">{{ allocation.application.institution.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Institution Type</span>
+                <span class="info-value">{{ allocation.application.institution.get_institution_type_display }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Admission Number</span>
+                <span class="info-value">{{ allocation.application.admission_number }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Year of Study</span>
+                <span class="info-value">Year {{ allocation.application.year_of_study }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Course</span>
+                <span class="info-value">{{ allocation.application.course_name|default:"N/A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Expected Completion</span>
+                <span class="info-value">{{ allocation.application.expected_completion_date|date:"F Y" }}</span>
+            </div>
+            {% if allocation.application.previous_academic_year_average %}
+            <div class="info-item">
+                <span class="info-label">Previous Year Average</span>
+                <span class="info-value">{{ allocation.application.previous_academic_year_average }}%</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Financial Information -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <h3 class="section-title">Financial Information</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Fiscal Year</span>
+                <span class="info-value">{{ allocation.application.fiscal_year.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Bursary Category</span>
+                <span class="info-value">{{ allocation.application.bursary_category.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Fees Payable</span>
+                <span class="info-value">KES {{ allocation.application.total_fees_payable|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fees Paid</span>
+                <span class="info-value">KES {{ allocation.application.fees_paid|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fee Balance</span>
+                <span class="info-value text-danger">KES {{ allocation.application.fees_balance|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Amount Requested</span>
+                <span class="info-value">KES {{ allocation.application.amount_requested|floatformat:2|intcomma }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Amount Allocated</span>
+                <span class="info-value text-success">KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</span>
+            </div>
+            {% if allocation.application.other_bursaries %}
+            <div class="info-item">
+                <span class="info-label">Other Bursaries</span>
+                <span class="info-value">{{ allocation.application.other_bursaries_source }}: KES {{ allocation.application.other_bursaries_amount|floatformat:2|intcomma }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if allocation.application.household_monthly_income %}
+        <div style="margin-top: 24px;">
+            <div class="info-item">
+                <span class="info-label">Household Monthly Income</span>
+                <span class="info-value">KES {{ allocation.application.household_monthly_income|floatformat:2|intcomma }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Vulnerability Assessment -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3 class="section-title">AI Vulnerability Assessment</h3>
+        </div>
+
+        <div class="vulnerability-score">
+            <div class="score-badge {% if vulnerability_score >= 80 %}score-critical{% elif vulnerability_score >= 60 %}score-high{% elif vulnerability_score >= 40 %}score-medium{% else %}score-low{% endif %}">
+                <span class="score">{{ vulnerability_score }}</span>
+                <span class="label">/100</span>
+            </div>
+            
+            <div class="score-interpretation">
+                <h3>
+                    {% if vulnerability_score >= 80 %}
+                        Critical Priority
+                    {% elif vulnerability_score >= 60 %}
+                        High Priority
+                    {% elif vulnerability_score >= 40 %}
+                        Medium Priority
+                    {% else %}
+                        Low Priority
+                    {% endif %}
+                </h3>
+                <p>This score helps prioritize allocations based on need and vulnerability</p>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 24px; margin-bottom: 16px; color: #1E293B; font-size: 15px;">
+            <i class="bi bi-list-check"></i> Vulnerability Factors
+        </h4>
+
+        <div class="table-responsive">
+            <table class="vulnerability-table">
+                <thead>
+                    <tr>
+                        <th>Factor</th>
+                        <th>Points</th>
+                        <th>Priority Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in vulnerability_details %}
+                    <tr>
+                        <td>{{ detail.factor }}</td>
+                        <td><strong>{{ detail.points }}</strong></td>
+                        <td>
+                            {% if detail.priority == 'Critical' %}
+                                <span class="badge badge-critical">{{ detail.priority }}</span>
+                            {% elif detail.priority == 'High' %}
+                                <span class="badge badge-high">{{ detail.priority }}</span>
+                            {% else %}
+                                <span class="badge badge-medium">{{ detail.priority }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 40px; color: #64748B;">
+                            No special vulnerability factors identified
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Special Circumstances -->
+        {% if allocation.application.is_orphan or allocation.application.is_total_orphan or allocation.application.is_disabled or allocation.application.has_chronic_illness %}
+        <div class="special-circumstances">
+            <h4 style="margin: 0 0 16px 0; color: #1E293B;">
+                <i class="bi bi-heart-pulse"></i> Special Circumstances
+            </h4>
+            
+            <div class="circumstances-badges">
+                {% if allocation.application.is_total_orphan %}
+                    <span class="badge badge-critical">Total Orphan</span>
+                {% elif allocation.application.is_orphan %}
+                    <span class="badge badge-high">Partial Orphan</span>
+                {% endif %}
+                
+                {% if allocation.application.is_disabled %}
+                    <span class="badge badge-high">Person with Disability</span>
+                {% endif %}
+                
+                {% if allocation.application.has_chronic_illness %}
+                    <span class="badge badge-medium">Chronic Illness</span>
+                {% endif %}
+                
+                {% if allocation.application.applicant.special_needs %}
+                    <span class="badge badge-medium">Special Needs</span>
+                {% endif %}
+            </div>
+            
+            {% if allocation.application.chronic_illness_description %}
+            <div class="circumstance-detail">
+                <label>Chronic Illness Details:</label>
+                <p>{{ allocation.application.chronic_illness_description }}</p>
+            </div>
+            {% endif %}
+            
+            {% if allocation.application.applicant.special_needs_description %}
+            <div class="circumstance-detail">
+                <label>Special Needs Details:</label>
+                <p>{{ allocation.application.applicant.special_needs_description }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Family Information -->
+        <div style="margin-top: 24px;">
+            <h4 style="margin: 0 0 16px 0; color: #1E293B;">
+                <i class="bi bi-people"></i> Family Information
+            </h4>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Number of Siblings</span>
+                    <span class="info-value">{{ allocation.application.number_of_siblings }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Siblings in School</span>
+                    <span class="info-value">{{ allocation.application.number_of_siblings_in_school }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Information -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-credit-card"></i>
+            </div>
+            <h3 class="section-title">Payment Information</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Payment Method</span>
+                <span class="info-value">{{ allocation.get_payment_method_display }}</span>
+            </div>
+            {% if allocation.cheque_number %}
+            <div class="info-item">
+                <span class="info-label">Cheque Number</span>
+                <span class="info-value"><strong>{{ allocation.cheque_number }}</strong></span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">Disbursement Status</span>
+                <span class="info-value">
+                    {% if allocation.is_disbursed %}
+                        <span class="badge badge-success">Disbursed</span>
+                    {% else %}
+                        <span class="badge badge-warning">Pending</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if allocation.is_disbursed %}
+            <div class="info-item">
+                <span class="info-label">Disbursement Date</span>
+                <span class="info-value">{{ allocation.disbursement_date|date:"F d, Y" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Disbursed By</span>
+                <span class="info-value">{{ allocation.disbursed_by.get_full_name }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if allocation.remarks %}
+        <div class="remarks-section">
+            <h4>
+                <i class="bi bi-chat-left-text"></i>
+                Remarks
+            </h4>
+            <p>{{ allocation.remarks }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Institution Information -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-building"></i>
+            </div>
+            <h3 class="section-title">Institution Details</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Institution Name</span>
+                <span class="info-value">{{ allocation.application.institution.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Institution Type</span>
+                <span class="info-value">{{ allocation.application.institution.get_institution_type_display }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">County</span>
+                <span class="info-value">{{ allocation.application.institution.county.name|default:"N/A" }}</span>
+            </div>
+            {% if allocation.application.institution.email %}
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ allocation.application.institution.email }}</span>
+            </div>
+            {% endif %}
+            {% if allocation.application.institution.phone_number %}
+            <div class="info-item">
+                <span class="info-label">Phone</span>
+                <span class="info-value">{{ allocation.application.institution.phone_number }}</span>
+            </div>
+            {% endif %}
+            {% if allocation.application.institution.postal_address %}
+            <div class="info-item">
+                <span class="info-label">Postal Address</span>
+                <span class="info-value">{{ allocation.application.institution.postal_address }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bank Details for Disbursement -->
+        {% if allocation.application.institution.bank_name %}
+        <div style="margin-top: 24px;">
+            <h4 style="margin: 0 0 16px 0; color: #1E293B;">
+                <i class="bi bi-bank"></i> Institution Bank Details
+            </h4>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Bank Name</span>
+                    <span class="info-value">{{ allocation.application.institution.bank_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Branch</span>
+                    <span class="info-value">{{ allocation.application.institution.bank_branch|default:"N/A" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Number</span>
+                    <span class="info-value">{{ allocation.application.institution.account_number|default:"N/A" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Name</span>
+                    <span class="info-value">{{ allocation.application.institution.account_name|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Institutional Confirmation -->
+    {% if allocation.is_received_by_institution %}
+    <div class="section-container confirmation-section">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <h3 class="section-title">Institution Confirmation</h3>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Confirmation Status</span>
+                <span class="info-value">
+                    <span class="badge badge-success">Confirmed</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Confirmation Date</span>
+                <span class="info-value">{{ allocation.institution_confirmation_date|date:"F d, Y" }}</span>
+            </div>
+            {% if allocation.institution_receipt_number %}
+            <div class="info-item">
+                <span class="info-label">Receipt Number</span>
+                <span class="info-value">{{ allocation.institution_receipt_number }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Audit Trail -->
+    <div class="section-container">
+        <div class="section-header">
+            <div class="section-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <h3 class="section-title">Audit Trail</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Allocation Created</td>
+                        <td>{{ allocation.allocation_date }}</td>
+                        <td>{{ allocation.approved_by.get_full_name }}</td>
+                    </tr>
+                    {% if allocation.is_disbursed %}
+                    <tr>
+                        <td>Disbursed</td>
+                        <td>{{ allocation.disbursement_date }}</td>
+                        <td>{{ allocation.disbursed_by.get_full_name }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if allocation.is_received_by_institution %}
+                    <tr>
+                        <td>Institution Confirmation</td>
+                        <td>{{ allocation.institution_confirmation_date }}</td>
+                        <td>Institution</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function printAllocation() {
+    // Add print-specific styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @media print {
+            @page {
+                size: A4;
+                margin: 20mm;
+            }
+            body {
+                font-size: 12pt;
+            }
+            .section-container {
+                break-inside: avoid;
+                margin-bottom: 15mm;
+            }
+            .summary-card {
+                background: white !important;
+                color: #1E293B !important;
+                border: 2px solid #3498db;
+            }
+            .stat-item {
+                background: #F8FAFC !important;
+                border: 1px solid #E2E8F0 !important;
+            }
+            .badge {
+                background: #F8FAFC !important;
+                color: #64748B !important;
+                border: 1px solid #E2E8F0 !important;
+            }
+            .score-badge {
+                background: white !important;
+                border: 3px solid;
+            }
+            .btn {
+                display: none !important;
+            }
+            .breadcrumb {
+                display: none !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    window.print();
+    
+    // Remove the print styles after printing
+    setTimeout(() => {
+        document.head.removeChild(style);
+    }, 100);
+}
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        printAllocation();
+    }
+    
+    if (e.key === 'Escape') {
+        window.location.href = "{% url 'allocation_list' %}";
+    }
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    // Add data-tooltips to badges
+    document.querySelectorAll('.badge').forEach(badge => {
+        if (badge.classList.contains('badge-critical')) {
+            badge.title = 'Critical priority - Immediate attention required';
+        } else if (badge.classList.contains('badge-high')) {
+            badge.title = 'High priority - Needs attention soon';
+        } else if (badge.classList.contains('badge-medium')) {
+            badge.title = 'Medium priority - Moderate attention needed';
+        } else if (badge.classList.contains('badge-low')) {
+            badge.title = 'Low priority - Minimal attention needed';
+        } else if (badge.classList.contains('badge-success')) {
+            badge.title = 'Completed successfully';
+        } else if (badge.classList.contains('badge-warning')) {
+            badge.title = 'Pending action required';
+        }
+    });
+    
+    // Add scroll to top button for long pages
+    if (document.body.scrollHeight > window.innerHeight * 2) {
+        const scrollBtn = document.createElement('button');
+        scrollBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
+        scrollBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            z-index: 1000;
+        `;
+        scrollBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.body.appendChild(scrollBtn);
+        
+        window.addEventListener('scroll', () => {
+            scrollBtn.style.display = window.scrollY > 500 ? 'flex' : 'none';
+        });
+    }
+});
+</script>
+{% endblock %}
