@@ -1,0 +1,145 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Profile - Ward Admin{% endblock %}
+
+{% block content %}
+<div>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+            </li>
+            <li>Profile</li>
+        </ol>
+    </nav>
+
+    <div>
+        <div>
+            <h1>Profile Settings</h1>
+            <p>Manage your account information</p>
+        </div>
+
+        <div>
+            <div>
+                <h2>Personal Information</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                    </div>
+
+                    <div>
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                    </div>
+
+                    <div>
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+
+                    <div>
+                        <label for="phone_number">Phone Number</label>
+                        <input type="text" id="phone_number" name="phone_number" value="{{ user.phone_number }}">
+                        <small>Format: +254XXXXXXXXX</small>
+                    </div>
+
+                    <div>
+                        <button type="submit">Save Changes</button>
+                        <a href="{% url 'ward_admin_dashboard' %}">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <h2>Account Information</h2>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Username</td>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td>User Type</td>
+                            <td>{{ user.get_user_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Assigned Ward</td>
+                            <td>{{ ward.name }}</td>
+                        </tr>
+                        <tr>
+                            <td>Constituency</td>
+                            <td>{{ ward.constituency.name }}</td>
+                        </tr>
+                        <tr>
+                            <td>County</td>
+                            <td>{{ ward.constituency.county.name }}</td>
+                        </tr>
+                        <tr>
+                            <td>Account Status</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span>Active</span>
+                                {% else %}
+                                <span>Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Date Joined</td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Last Login</td>
+                            <td>
+                                {% if user.last_login %}
+                                {{ user.last_login|date:"M d, Y g:i A" }}
+                                {% else %}
+                                Never
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <h2>Change Password</h2>
+                <p>For security reasons, password changes must be requested through the system administrator.</p>
+                <a href="{% url 'ward_admin_dashboard' %}">Contact Administrator</a>
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <h2>Activity Summary</h2>
+                <div>
+                    <div>
+                        <h3>Reviews Submitted</h3>
+                        <p>{{ user.reviews.count }}</p>
+                    </div>
+                    <div>
+                        <h3>Applications Processed</h3>
+                        <p>{{ user.reviews.count }}</p>
+                    </div>
+                    <div>
+                        <h3>Account Age</h3>
+                        <p>{{ user.date_joined|timesince }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

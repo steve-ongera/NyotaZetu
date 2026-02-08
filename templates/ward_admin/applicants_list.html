@@ -1,0 +1,396 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Applicants - Ward Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Applicants</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-people"></i>
+                    Ward Applicants
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - {{ page_obj.paginator.count }} registered applicant(s)
+                </p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print List
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                    <i class="bi bi-download"></i> Export Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="filter-section">
+            <div class="filter-header" onclick="toggleFilters()">
+                <h6 class="filter-title">
+                    <i class="bi bi-search"></i>
+                    Search & Filter
+                </h6>
+                <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+            </div>
+            
+            <div class="filter-content" id="filtersContent" style="display: {% if search_query %}block{% else %}none{% endif %};">
+                <form method="get" id="searchForm">
+                    <div class="search-input-group">
+                        <i class="bi bi-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            name="search" 
+                            value="{{ search_query }}"
+                            placeholder="Search by name, ID number, or email..."
+                        >
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        {% if search_query %}
+                        <a href="{% url 'ward_admin_applicants' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ page_obj.paginator.count }}</div>
+                    <div class="stat-label">Total Applicants</div>
+                </div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-person-check"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">
+                        {{ page_obj.paginator.object_list|length }}
+                    </div>
+                    <div class="stat-label">Verified Profiles</div>
+                </div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-shield-exclamation"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">
+                        {% widthratio page_obj.paginator.object_list|length 1 1 %}
+                    </div>
+                    <div class="stat-label">Special Needs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applicants Table -->
+        <div class="table-section">
+            <div class="table-header">
+                <h6 class="table-title">
+                    <i class="bi bi-table"></i>
+                    Applicants List
+                </h6>
+                <div class="table-controls">
+                    <select class="form-select" id="perPageSelect">
+                        <option value="20" selected>20 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID Number</th>
+                            <th>Gender</th>
+                            <th>Contact</th>
+                            <th>Location</th>
+                            <th>Applications</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for applicant in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="applicant-cell">
+                                    <div class="applicant-avatar">
+                                        {% if applicant.profile_picture %}
+                                        <img src="{{ applicant.profile_picture.url }}" alt="{{ applicant.user.get_full_name }}">
+                                        {% else %}
+                                        <i class="bi bi-person-circle"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="applicant-info">
+                                        <strong>{{ applicant.user.get_full_name }}</strong>
+                                        <small>{{ applicant.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="id-number">{{ applicant.id_number }}</span>
+                            </td>
+                            <td>
+                                <span class="gender-badge gender-{{ applicant.gender|lower }}">
+                                    {{ applicant.get_gender_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="contact-info">
+                                    <div class="contact-item">
+                                        <i class="bi bi-telephone"></i>
+                                        <span>{{ applicant.user.phone_number }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="location-cell">
+                                    <strong>{{ applicant.location.name|default:"Not specified" }}</strong>
+                                    <small>{{ applicant.sublocation.name|default:"-" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="applications-count">
+                                    <span class="count-badge">
+                                        {{ applicant.applications.count }}
+                                    </span>
+                                    <small>application(s)</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status-cell">
+                                    {% if applicant.is_verified %}
+                                    <span class="badge badge-success">
+                                        <i class="bi bi-check-circle"></i> Verified
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-warning">
+                                        <i class="bi bi-clock"></i> Pending
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if applicant.special_needs %}
+                                    <span class="badge badge-info">
+                                        <i class="bi bi-shield-exclamation"></i> Special Needs
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'ward_admin_applicant_detail' applicant.id %}" 
+                                       class="btn btn-sm btn-primary"
+                                       title="View Profile">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Applicants Found</h3>
+                                    <p class="empty-text">
+                                        {% if search_query %}
+                                        No applicants match your search criteria.
+                                        {% else %}
+                                        There are no registered applicants in this ward yet.
+                                        {% endif %}
+                                    </p>
+                                    {% if search_query %}
+                                    <a href="{% url 'ward_admin_applicants' %}" class="btn btn-primary">
+                                        <i class="bi bi-x-circle"></i> Clear Search
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applicants
+                </div>
+                
+                <nav>
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal" id="exportModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-download"></i>
+                    Export Applicants Data
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id="exportForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="export_format">
+                            <i class="bi bi-file-earmark"></i> Export Format
+                        </label>
+                        <select class="form-control" name="format" id="export_format">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Include Fields</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="fields" value="personal" checked>
+                                <span>Personal Information</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="fields" value="contact" checked>
+                                <span>Contact Details</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="fields" value="location" checked>
+                                <span>Location Information</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="fields" value="applications">
+                                <span>Application History</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" form="exportForm" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-expand search if active
+    const hasSearch = "{{ search_query }}" !== "";
+    if (hasSearch) {
+        document.getElementById('filtersContent').style.display = 'block';
+        document.getElementById('filterToggle').classList.add('rotated');
+    }
+});
+
+function toggleFilters() {
+    const content = document.getElementById('filtersContent');
+    const toggle = document.getElementById('filterToggle');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        toggle.classList.add('rotated');
+    } else {
+        content.style.display = 'none';
+        toggle.classList.remove('rotated');
+    }
+}
+
+function closeModal() {
+    document.getElementById('exportModal').classList.remove('show');
+}
+
+// Open modal
+document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-bs-toggle="modal"]')) {
+        e.preventDefault();
+        const targetModal = e.target.closest('[data-bs-toggle="modal"]').getAttribute('data-bs-target');
+        document.querySelector(targetModal).classList.add('show');
+    }
+});
+
+// Close modal on background click
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('show');
+    }
+});
+</script>
+{% endblock %}

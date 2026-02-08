@@ -1,0 +1,132 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Notifications - Ward Admin{% endblock %}
+
+{% block content %}
+<div>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+            </li>
+            <li>Notifications</li>
+        </ol>
+    </nav>
+
+    <div>
+        <div>
+            <div>
+                <h1>Notifications</h1>
+                <p>Your notification center</p>
+            </div>
+            <div>
+                <a href="?mark_all_read=true">Mark All as Read</a>
+            </div>
+        </div>
+
+        <div>
+            <h2>All Notifications</h2>
+            
+            {% if page_obj %}
+            <div>
+                {% for notification in page_obj %}
+                <div>
+                    <div>
+                        {% if notification.notification_type == 'application_status' %}
+                        <span>Application Status</span>
+                        {% elif notification.notification_type == 'document_request' %}
+                        <span>Document Request</span>
+                        {% elif notification.notification_type == 'allocation' %}
+                        <span>Allocation</span>
+                        {% elif notification.notification_type == 'disbursement' %}
+                        <span>Disbursement</span>
+                        {% elif notification.notification_type == 'review_comment' %}
+                        <span>Review Comment</span>
+                        {% elif notification.notification_type == 'deadline' %}
+                        <span>Deadline</span>
+                        {% else %}
+                        <span>System</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <div>
+                            <h3>{{ notification.title }}</h3>
+                            {% if not notification.is_read %}
+                            <span>New</span>
+                            {% endif %}
+                        </div>
+                        
+                        <p>{{ notification.message }}</p>
+                        
+                        <div>
+                            <small>{{ notification.created_at|date:"M d, Y g:i A" }}</small>
+                            {% if notification.related_application %}
+                            <a href="{% url 'ward_admin_application_detail' notification.related_application.id %}">
+                                View Application
+                            </a>
+                            {% endif %}
+                            {% if not notification.is_read %}
+                            <a href="?mark_read={{ notification.id }}">
+                                Mark as Read
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <div>
+                <div>
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} notifications
+                </div>
+                <nav>
+                    <ul>
+                        {% if page_obj.has_previous %}
+                        <li>
+                            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li>
+                                <span>{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li>
+                                <a href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li>
+                            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div>
+                <div>
+                    <p>📭</p>
+                    <h3>No Notifications</h3>
+                    <p>You're all caught up! No new notifications at this time.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

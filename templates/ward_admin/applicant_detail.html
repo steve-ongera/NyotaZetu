@@ -1,0 +1,459 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}{{ applicant.user.get_full_name }} - Ward Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_applicants' %}">Applicants</a>
+            </li>
+            <li class="breadcrumb-item active">{{ applicant.user.get_full_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-main">
+                <div class="profile-avatar-large">
+                    {% if applicant.profile_picture %}
+                    <img src="{{ applicant.profile_picture.url }}" alt="{{ applicant.user.get_full_name }}">
+                    {% else %}
+                    <i class="bi bi-person-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="profile-info">
+                    <h1 class="profile-name">{{ applicant.user.get_full_name }}</h1>
+                    <p class="profile-id">ID: {{ applicant.id_number }}</p>
+                    <div class="profile-meta">
+                        <span class="meta-item">
+                            <i class="bi bi-calendar"></i>
+                            {{ applicant.date_of_birth|date:"M d, Y" }} ({{ applicant.date_of_birth|timesince }} old)
+                        </span>
+                        <span class="meta-item">
+                            <i class="bi bi-gender-{{ applicant.gender|lower }}"></i>
+                            {{ applicant.get_gender_display }}
+                        </span>
+                        <span class="meta-item">
+                            <i class="bi bi-geo-alt"></i>
+                            {{ applicant.ward.name }} Ward
+                        </span>
+                    </div>
+                    <div class="profile-badges">
+                        {% if applicant.is_verified %}
+                        <span class="badge badge-success">
+                            <i class="bi bi-check-circle"></i> Verified
+                        </span>
+                        {% else %}
+                        <span class="badge badge-warning">
+                            <i class="bi bi-clock"></i> Not Verified
+                        </span>
+                        {% endif %}
+                        
+                        {% if applicant.special_needs %}
+                        <span class="badge badge-info">
+                            <i class="bi bi-shield-exclamation"></i> Special Needs
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button onclick="window.print()" class="btn btn-outline">
+                    <i class="bi bi-printer"></i> Print Profile
+                </button>
+            </div>
+        </div>
+
+        <!-- Special Needs Alert -->
+        {% if applicant.special_needs %}
+        <div class="alert-info">
+            <div class="alert-icon">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="alert-content">
+                <strong>Special Needs:</strong> {{ applicant.special_needs_description }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Profile Sections -->
+        <div class="profile-sections">
+            <!-- Contact Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-telephone"></i> Contact Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Phone Number</label>
+                            <value>
+                                <i class="bi bi-telephone"></i>
+                                <a href="tel:{{ applicant.user.phone_number }}">{{ applicant.user.phone_number }}</a>
+                            </value>
+                        </div>
+                        <div class="info-item">
+                            <label>Email Address</label>
+                            <value>
+                                <i class="bi bi-envelope"></i>
+                                <a href="mailto:{{ applicant.user.email }}">{{ applicant.user.email }}</a>
+                            </value>
+                        </div>
+                        <div class="info-item full-width">
+                            <label>Physical Address</label>
+                            <value>{{ applicant.physical_address }}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Postal Address</label>
+                            <value>{{ applicant.postal_address|default:"Not provided" }}</value>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-geo-alt"></i> Location Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="location-hierarchy">
+                        <div class="hierarchy-item">
+                            <label>County</label>
+                            <value>{{ applicant.county.name }}</value>
+                        </div>
+                        <div class="hierarchy-separator">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                        <div class="hierarchy-item">
+                            <label>Constituency</label>
+                            <value>{{ applicant.constituency.name }}</value>
+                        </div>
+                        <div class="hierarchy-separator">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                        <div class="hierarchy-item">
+                            <label>Ward</label>
+                            <value>{{ applicant.ward.name }}</value>
+                        </div>
+                        <div class="hierarchy-separator">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                        <div class="hierarchy-item">
+                            <label>Location</label>
+                            <value>{{ applicant.location.name|default:"Not specified" }}</value>
+                        </div>
+                    </div>
+                    
+                    {% if applicant.sublocation or applicant.village %}
+                    <div class="info-grid">
+                        {% if applicant.sublocation %}
+                        <div class="info-item">
+                            <label>Sub-location</label>
+                            <value>{{ applicant.sublocation.name }}</value>
+                        </div>
+                        {% endif %}
+                        {% if applicant.village %}
+                        <div class="info-item">
+                            <label>Village</label>
+                            <value>{{ applicant.village.name }}</value>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Guardian Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-people"></i> Guardian/Parent Information</h3>
+                </div>
+                <div class="card-body">
+                    {% for guardian in guardians %}
+                    <div class="guardian-card {% if guardian.is_primary_contact %}primary-guardian{% endif %}">
+                        <div class="guardian-header">
+                            <div class="guardian-title">
+                                <h4>{{ guardian.name }}</h4>
+                                {% if guardian.is_primary_contact %}
+                                <span class="badge badge-primary">
+                                    <i class="bi bi-star"></i> Primary Contact
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="guardian-relation">{{ guardian.get_relationship_display }}</span>
+                        </div>
+                        
+                        <div class="guardian-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label><i class="bi bi-telephone"></i> Phone</label>
+                                    <value>{{ guardian.phone_number }}</value>
+                                </div>
+                                {% if guardian.email %}
+                                <div class="info-item">
+                                    <label><i class="bi bi-envelope"></i> Email</label>
+                                    <value>{{ guardian.email }}</value>
+                                </div>
+                                {% endif %}
+                                {% if guardian.id_number %}
+                                <div class="info-item">
+                                    <label><i class="bi bi-credit-card"></i> ID Number</label>
+                                    <value>{{ guardian.id_number }}</value>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="employment-section">
+                                <h5>Employment Information</h5>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Employment Status</label>
+                                        <value>
+                                            <span class="employment-badge employment-{{ guardian.employment_status }}">
+                                                {{ guardian.get_employment_status_display }}
+                                            </span>
+                                        </value>
+                                    </div>
+                                    {% if guardian.occupation %}
+                                    <div class="info-item">
+                                        <label>Occupation</label>
+                                        <value>{{ guardian.occupation }}</value>
+                                    </div>
+                                    {% endif %}
+                                    {% if guardian.employer %}
+                                    <div class="info-item">
+                                        <label>Employer</label>
+                                        <value>{{ guardian.employer }}</value>
+                                    </div>
+                                    {% endif %}
+                                    {% if guardian.monthly_income %}
+                                    <div class="info-item">
+                                        <label>Monthly Income</label>
+                                        <value class="amount-highlight">KSh {{ guardian.monthly_income|floatformat:0|intcomma }}</value>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-message">
+                        <i class="bi bi-info-circle"></i>
+                        <p>No guardian information available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Sibling Information -->
+            {% if siblings %}
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-person-hearts"></i> Siblings ({{ siblings.count }})</h3>
+                </div>
+                <div class="card-body">
+                    <div class="siblings-list">
+                        {% for sibling in siblings %}
+                        <div class="sibling-item">
+                            <div class="sibling-icon">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <div class="sibling-info">
+                                <h4>{{ sibling.name }}</h4>
+                                <div class="sibling-details">
+                                    <span class="detail-item">
+                                        <i class="bi bi-calendar"></i>
+                                        {{ sibling.age }} years old
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="bi bi-book"></i>
+                                        {{ sibling.education_level }}
+                                    </span>
+                                    {% if sibling.school_name %}
+                                    <span class="detail-item">
+                                        <i class="bi bi-building"></i>
+                                        {{ sibling.school_name }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="sibling-status">
+                                {% if sibling.is_in_school %}
+                                <span class="badge badge-success">
+                                    <i class="bi bi-check-circle"></i> In School
+                                </span>
+                                {% else %}
+                                <span class="badge badge-secondary">
+                                    <i class="bi bi-x-circle"></i> Not in School
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Application History -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-folder2-open"></i> Application History</h3>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                    <div class="applications-timeline">
+                        {% for application in applications %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker status-{{ application.status }}">
+                                {% if application.status == 'approved' %}
+                                <i class="bi bi-check-circle"></i>
+                                {% elif application.status == 'rejected' %}
+                                <i class="bi bi-x-circle"></i>
+                                {% elif application.status == 'disbursed' %}
+                                <i class="bi bi-cash-coin"></i>
+                                {% else %}
+                                <i class="bi bi-clock"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h4>
+                                        <a href="{% url 'ward_admin_application_detail' application.id %}">
+                                            {{ application.application_number }}
+                                        </a>
+                                    </h4>
+                                    <span class="timeline-date">{{ application.date_submitted|date:"M d, Y" }}</span>
+                                </div>
+                                <div class="timeline-body">
+                                    <div class="application-summary">
+                                        <div class="summary-item">
+                                            <label>Institution</label>
+                                            <value>{{ application.institution.name }}</value>
+                                        </div>
+                                        <div class="summary-item">
+                                            <label>Category</label>
+                                            <value>{{ application.bursary_category.name }}</value>
+                                        </div>
+                                        <div class="summary-item">
+                                            <label>Amount Requested</label>
+                                            <value>KSh {{ application.amount_requested|floatformat:0|intcomma }}</value>
+                                        </div>
+                                        <div class="summary-item">
+                                            <label>Status</label>
+                                            <value>
+                                                {% if application.status == 'submitted' %}
+                                                <span class="badge badge-warning">Submitted</span>
+                                                {% elif application.status == 'under_review' %}
+                                                <span class="badge badge-info">Under Review</span>
+                                                {% elif application.status == 'approved' %}
+                                                <span class="badge badge-success">Approved</span>
+                                                {% elif application.status == 'rejected' %}
+                                                <span class="badge badge-danger">Rejected</span>
+                                                {% elif application.status == 'disbursed' %}
+                                                <span class="badge badge-primary">Disbursed</span>
+                                                {% endif %}
+                                            </value>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if application.allocation %}
+                                    <div class="allocation-info">
+                                        <i class="bi bi-cash-stack"></i>
+                                        <strong>Allocated:</strong> KSh {{ application.allocation.amount_allocated|floatformat:0|intcomma }}
+                                        {% if application.allocation.is_disbursed %}
+                                        <span class="badge badge-success">
+                                            <i class="bi bi-check-circle"></i> Disbursed
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-footer">
+                                    <a href="{% url 'ward_admin_application_detail' application.id %}" class="btn btn-sm btn-outline">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-message">
+                        <i class="bi bi-inbox"></i>
+                        <p>No applications submitted yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Account Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-info-circle"></i> Account Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Username</label>
+                            <value>{{ applicant.user.username }}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Date Joined</label>
+                            <value>{{ applicant.created_at|date:"M d, Y" }}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Last Login</label>
+                            <value>
+                                {% if applicant.user.last_login %}
+                                {{ applicant.user.last_login|date:"M d, Y g:i A" }}
+                                {% else %}
+                                Never logged in
+                                {% endif %}
+                            </value>
+                        </div>
+                        <div class="info-item">
+                            <label>Account Status</label>
+                            <value>
+                                {% if applicant.user.is_active %}
+                                <span class="badge badge-success">Active</span>
+                                {% else %}
+                                <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </value>
+                        </div>
+                    </div>
+                    
+                    {% if applicant.is_verified %}
+                    <div class="verification-info">
+                        <i class="bi bi-shield-check"></i>
+                        <span>
+                            Verified by {{ applicant.verified_by.get_full_name }} 
+                            on {{ applicant.verification_date|date:"M d, Y" }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="action-footer">
+            <a href="{% url 'ward_admin_applicants' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Applicants List
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

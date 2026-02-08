@@ -1,0 +1,263 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Pending Review - Ward Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Pending Review</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-clock-history"></i>
+                    Applications Pending Review
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - {{ page_obj.paginator.count }} application(s) awaiting your review
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row">
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ page_obj.paginator.count }}</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+            </div>
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-week"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">
+                        {% with page_obj.object_list|first as first_app %}
+                            {% if first_app %}
+                                {{ first_app.date_submitted|timesince }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-label">Oldest Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Alert -->
+        <div class="alert-info">
+            <div class="alert-icon">
+                <i class="bi bi-info-circle"></i>
+            </div>
+            <div class="alert-content">
+                <strong>Review Process:</strong> 
+                Review each application carefully, assess the need, merit, and vulnerability scores, 
+                then provide your recommendation and comments. Your input is crucial for fair allocation of bursary funds.
+            </div>
+        </div>
+
+        <!-- Applications List -->
+        {% if page_obj %}
+        <div class="applications-section">
+            {% for application in page_obj %}
+            <div class="application-card">
+                <div class="application-header">
+                    <div class="app-number-section">
+                        <span class="app-number">{{ application.application_number }}</span>
+                        <span class="app-date">Submitted {{ application.date_submitted|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="urgency-indicator">
+                        {% with days_pending=application.date_submitted|timesince %}
+                            {% if 'week' in days_pending or 'month' in days_pending %}
+                                <span class="badge badge-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> Urgent
+                                </span>
+                            {% elif 'day' in days_pending %}
+                                <span class="badge badge-warning">
+                                    <i class="bi bi-clock"></i> Review Soon
+                                </span>
+                            {% else %}
+                                <span class="badge badge-info">
+                                    <i class="bi bi-check-circle"></i> Recent
+                                </span>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <div class="application-body">
+                    <div class="applicant-section">
+                        <div class="applicant-info">
+                            <i class="bi bi-person-circle"></i>
+                            <div>
+                                <h4>{{ application.applicant.user.get_full_name }}</h4>
+                                <p class="text-muted">{{ application.applicant.id_number }}</p>
+                            </div>
+                        </div>
+                        <div class="location-info">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>{{ application.applicant.location.name|default:"Location not specified" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <label><i class="bi bi-building"></i> Institution</label>
+                            <value>{{ application.institution.name }}</value>
+                            <small>{{ application.institution.get_institution_type_display }}</small>
+                        </div>
+
+                        <div class="detail-item">
+                            <label><i class="bi bi-tag"></i> Category</label>
+                            <value>{{ application.bursary_category.name }}</value>
+                        </div>
+
+                        <div class="detail-item">
+                            <label><i class="bi bi-cash"></i> Amount Requested</label>
+                            <value class="amount-highlight">KSh {{ application.amount_requested|floatformat:0|intcomma }}</value>
+                        </div>
+
+                        <div class="detail-item">
+                            <label><i class="bi bi-credit-card-2-front"></i> Fees Balance</label>
+                            <value>KSh {{ application.fees_balance|floatformat:0|intcomma }}</value>
+                        </div>
+                    </div>
+
+                    <!-- Vulnerability Indicators -->
+                    <div class="vulnerability-indicators">
+                        {% if application.is_orphan %}
+                        <span class="indicator-badge badge-danger">
+                            <i class="bi bi-person-x"></i> Orphan
+                        </span>
+                        {% endif %}
+                        {% if application.is_total_orphan %}
+                        <span class="indicator-badge badge-danger">
+                            <i class="bi bi-person-x-fill"></i> Total Orphan
+                        </span>
+                        {% endif %}
+                        {% if application.is_disabled %}
+                        <span class="indicator-badge badge-warning">
+                            <i class="bi bi-universal-access"></i> PWD
+                        </span>
+                        {% endif %}
+                        {% if application.has_chronic_illness %}
+                        <span class="indicator-badge badge-warning">
+                            <i class="bi bi-heart-pulse"></i> Chronic Illness
+                        </span>
+                        {% endif %}
+                        {% if application.applicant.special_needs %}
+                        <span class="indicator-badge badge-info">
+                            <i class="bi bi-shield-exclamation"></i> Special Needs
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Household Info -->
+                    <div class="household-summary">
+                        <div class="household-item">
+                            <i class="bi bi-people"></i>
+                            <span>{{ application.number_of_siblings }} sibling(s), {{ application.number_of_siblings_in_school }} in school</span>
+                        </div>
+                        {% if application.household_monthly_income %}
+                        <div class="household-item">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Household Income: KSh {{ application.household_monthly_income|floatformat:0|intcomma }}/month</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="application-footer">
+                    <div class="documents-count">
+                        <i class="bi bi-paperclip"></i>
+                        <span>{{ application.documents.count }} document(s) uploaded</span>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="{% url 'ward_admin_application_detail' application.id %}" class="btn btn-outline">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <a href="{% url 'ward_admin_review_application' application.id %}" class="btn btn-primary">
+                            <i class="bi bi-clipboard-check"></i> Review Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <h3 class="empty-title">All Caught Up!</h3>
+            <p class="empty-text">
+                There are no applications pending your review at this time.
+            </p>
+            <a href="{% url 'ward_admin_applications' %}" class="btn btn-primary">
+                <i class="bi bi-folder2-open"></i> View All Applications
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

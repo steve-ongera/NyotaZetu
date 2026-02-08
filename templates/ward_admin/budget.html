@@ -1,0 +1,383 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Budget Management - Ward Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Budget Management</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-cash-stack"></i>
+                    Ward Budget Management
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - Budget allocation and utilization tracking
+                </p>
+            </div>
+            <div class="header-actions">
+                <form method="get" class="fiscal-year-selector">
+                    <label for="fiscal_year">Fiscal Year:</label>
+                    <select name="fiscal_year" id="fiscal_year" class="form-select" onchange="this.form.submit()">
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if selected_fy.id == fy.id %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        {% if selected_fy %}
+        <!-- Budget Overview Cards -->
+        <div class="budget-overview">
+            <div class="budget-card budget-total">
+                <div class="budget-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="budget-content">
+                    <label>Total Ward Allocation</label>
+                    <value class="budget-amount">
+                        {% if ward_allocation %}
+                        KSh {{ ward_allocation.allocated_amount|floatformat:0|intcomma }}
+                        {% else %}
+                        Not Allocated
+                        {% endif %}
+                    </value>
+                </div>
+            </div>
+
+            <div class="budget-card budget-spent">
+                <div class="budget-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="budget-content">
+                    <label>Amount Spent</label>
+                    <value class="budget-amount">
+                        {% if ward_allocation %}
+                        KSh {{ ward_allocation.spent_amount|floatformat:0|intcomma }}
+                        {% else %}
+                        KSh 0
+                        {% endif %}
+                    </value>
+                    {% if ward_allocation %}
+                    <small class="budget-percentage">
+                        {% widthratio ward_allocation.spent_amount 1 ward_allocation.allocated_amount %}% utilized
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="budget-card budget-balance">
+                <div class="budget-icon">
+                    <i class="bi bi-piggy-bank"></i>
+                </div>
+                <div class="budget-content">
+                    <label>Remaining Balance</label>
+                    <value class="budget-amount">
+                        {% if ward_allocation %}
+                        KSh {{ ward_allocation.balance|floatformat:0|intcomma }}
+                        {% else %}
+                        KSh 0
+                        {% endif %}
+                    </value>
+                </div>
+            </div>
+
+            <div class="budget-card budget-beneficiaries">
+                <div class="budget-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="budget-content">
+                    <label>Beneficiaries</label>
+                    <value class="budget-count">
+                        {% if ward_allocation %}
+                        {{ ward_allocation.beneficiaries_count }}
+                        {% else %}
+                        0
+                        {% endif %}
+                    </value>
+                    <small>students assisted</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Utilization Progress Bar -->
+        {% if ward_allocation %}
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-graph-up"></i> Budget Utilization</h3>
+            </div>
+            <div class="card-body">
+                <div class="utilization-summary">
+                    <div class="utilization-label">
+                        <span>Utilization Rate</span>
+                        <strong>{% widthratio ward_allocation.spent_amount 1 ward_allocation.allocated_amount %}%</strong>
+                    </div>
+                    <div class="utilization-bar">
+                        <div class="utilization-fill" style="width: {% widthratio ward_allocation.spent_amount 100 ward_allocation.allocated_amount %}%">
+                            <span class="utilization-text">
+                                KSh {{ ward_allocation.spent_amount|floatformat:0|intcomma }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="utilization-legend">
+                        <span>KSh 0</span>
+                        <span>KSh {{ ward_allocation.allocated_amount|floatformat:0|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Budget Breakdown by Category -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-pie-chart"></i> Budget by Category</h3>
+            </div>
+            <div class="card-body">
+                {% if category_breakdown %}
+                <div class="category-breakdown">
+                    {% for category in category_breakdown %}
+                    <div class="category-item">
+                        <div class="category-header">
+                            <h4>{{ category.bursary_category__name }}</h4>
+                            <span class="category-count">{{ category.applications_count }} application(s)</span>
+                        </div>
+                        <div class="category-details">
+                            <div class="detail-row">
+                                <label>Total Requested:</label>
+                                <value>KSh {{ category.total_requested|floatformat:0|intcomma }}</value>
+                            </div>
+                            <div class="detail-row">
+                                <label>Approved:</label>
+                                <value class="text-success">{{ category.approved_count }} application(s)</value>
+                            </div>
+                        </div>
+                        <div class="category-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" 
+                                     style="width: {% if category.total_requested %}{% widthratio category.applications_count 100 applications.count %}%{% else %}0%{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-message">
+                    <i class="bi bi-inbox"></i>
+                    <p>No applications for this fiscal year</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top Institutions by Funding -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-building"></i> Top Institutions by Requested Amount</h3>
+            </div>
+            <div class="card-body">
+                {% if institution_breakdown %}
+                <div class="institutions-list">
+                    {% for institution in institution_breakdown %}
+                    <div class="institution-item">
+                        <div class="institution-rank">{{ forloop.counter }}</div>
+                        <div class="institution-info">
+                            <h4>{{ institution.institution__name }}</h4>
+                            <p class="institution-type">{{ institution.institution__institution_type }}</p>
+                        </div>
+                        <div class="institution-stats">
+                            <div class="stat-item">
+                                <label>Applications</label>
+                                <value>{{ institution.applications_count }}</value>
+                            </div>
+                            <div class="stat-item">
+                                <label>Amount Requested</label>
+                                <value class="amount-highlight">KSh {{ institution.total_requested|floatformat:0|intcomma }}</value>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-message">
+                    <i class="bi bi-inbox"></i>
+                    <p>No institution data available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Allocations Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-check-circle"></i> Allocations Summary</h3>
+            </div>
+            <div class="card-body">
+                <div class="allocations-summary">
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <div class="summary-content">
+                                <label>Total Allocated</label>
+                                <value class="amount-large">
+                                    {% if approved_allocations.total_allocated %}
+                                    KSh {{ approved_allocations.total_allocated|floatformat:0|intcomma }}
+                                    {% else %}
+                                    KSh 0
+                                    {% endif %}
+                                </value>
+                                <small>
+                                    {% if approved_allocations.count %}
+                                    {{ approved_allocations.count }} allocation(s)
+                                    {% else %}
+                                    No allocations yet
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="bi bi-send-check"></i>
+                            </div>
+                            <div class="summary-content">
+                                <label>Disbursed</label>
+                                <value class="amount-large">
+                                    {% if disbursed.total_disbursed %}
+                                    KSh {{ disbursed.total_disbursed|floatformat:0|intcomma }}
+                                    {% else %}
+                                    KSh 0
+                                    {% endif %}
+                                </value>
+                                <small>
+                                    {% if disbursed.count %}
+                                    {{ disbursed.count }} disbursement(s)
+                                    {% else %}
+                                    No disbursements yet
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div class="summary-content">
+                                <label>Pending Disbursement</label>
+                                <value class="amount-large">
+                                    {% if approved_allocations.total_allocated and disbursed.total_disbursed %}
+                                    KSh {% widthratio approved_allocations.total_allocated 1 1 %}
+                                    {% else %}
+                                    KSh 0
+                                    {% endif %}
+                                </value>
+                                <small>
+                                    {% if approved_allocations.count and disbursed.count %}
+                                    {% widthratio approved_allocations.count 1 disbursed.count %} pending
+                                    {% else %}
+                                    0 pending
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applications Overview -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-folder2-open"></i> Applications Overview</h3>
+            </div>
+            <div class="card-body">
+                <div class="applications-stats">
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <i class="bi bi-folder2"></i>
+                            <div class="stat-content">
+                                <label>Total Applications</label>
+                                <value>{{ applications.count }}</value>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <i class="bi bi-clock-history"></i>
+                            <div class="stat-content">
+                                <label>Pending</label>
+                                <value>{{ applications|length }}</value>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <i class="bi bi-search"></i>
+                            <div class="stat-content">
+                                <label>Under Review</label>
+                                <value>0</value>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <i class="bi bi-check-circle"></i>
+                            <div class="stat-content">
+                                <label>Approved</label>
+                                <value>0</value>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3><i class="bi bi-lightning"></i> Quick Actions</h3>
+            <div class="actions-grid">
+                <a href="{% url 'ward_admin_applications' %}" class="action-card">
+                    <i class="bi bi-folder2-open"></i>
+                    <span>View All Applications</span>
+                </a>
+                <a href="{% url 'ward_admin_reports' %}" class="action-card">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Generate Reports</span>
+                </a>
+                <a href="{% url 'ward_admin_statistics' %}" class="action-card">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Detailed Statistics</span>
+                </a>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- No Fiscal Year Selected -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h3 class="empty-title">No Active Fiscal Year</h3>
+            <p class="empty-text">
+                There is no active fiscal year to display budget information.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

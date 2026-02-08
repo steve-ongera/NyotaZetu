@@ -1,0 +1,167 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Disbursements - Ward Admin{% endblock %}
+
+{% block content %}
+<div>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+            </li>
+            <li>Disbursements</li>
+        </ol>
+    </nav>
+
+    <div>
+        <div>
+            <div>
+                <h1>Disbursements</h1>
+                <p>{{ ward.name }} Ward - Payment Tracking</p>
+            </div>
+            <div>
+                <form method="get">
+                    <label for="fiscal_year">Fiscal Year:</label>
+                    <select name="fiscal_year" id="fiscal_year" onchange="this.form.submit()">
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <h3>Total Disbursed</h3>
+                <p>KSh {{ total_disbursed|floatformat:0|intcomma }}</p>
+            </div>
+            <div>
+                <h3>Beneficiaries</h3>
+                <p>{{ beneficiaries_count }}</p>
+            </div>
+        </div>
+
+        <div>
+            <h2>Disbursement Records</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Applicant</th>
+                        <th>Institution</th>
+                        <th>Amount</th>
+                        <th>Payment Method</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for disbursement in page_obj %}
+                    <tr>
+                        <td>{{ disbursement.disbursement_date|date:"M d, Y" }}</td>
+                        <td>
+                            <div>
+                                <strong>{{ disbursement.applicant.user.get_full_name }}</strong>
+                                <small>{{ disbursement.applicant.id_number }}</small>
+                            </div>
+                        </td>
+                        <td>{{ disbursement.allocation.application.institution.name }}</td>
+                        <td>KSh {{ disbursement.amount|floatformat:0|intcomma }}</td>
+                        <td>{{ disbursement.get_payment_method_display }}</td>
+                        <td>{{ disbursement.reference_number }}</td>
+                        <td>
+                            {% if disbursement.status == 'completed' %}
+                            <span>Completed</span>
+                            {% elif disbursement.status == 'pending' %}
+                            <span>Pending</span>
+                            {% elif disbursement.status == 'processing' %}
+                            <span>Processing</span>
+                            {% elif disbursement.status == 'failed' %}
+                            <span>Failed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div>
+                                <p>No disbursements found for this fiscal year</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div>
+            <div>
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} disbursements
+            </div>
+            <nav>
+                <ul>
+                    {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if fiscal_year %}&fiscal_year={{ fiscal_year.id }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li>
+                            <span>{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li>
+                            <a href="?page={{ num }}{% if fiscal_year %}&fiscal_year={{ fiscal_year.id }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if fiscal_year %}&fiscal_year={{ fiscal_year.id }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        <div>
+            <h2>Disbursement Summary by Institution</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Institution</th>
+                        <th>Number of Students</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in page_obj %}
+                    <tr>
+                        <td>{{ item.allocation.application.institution.name }}</td>
+                        <td>1</td>
+                        <td>KSh {{ item.amount|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

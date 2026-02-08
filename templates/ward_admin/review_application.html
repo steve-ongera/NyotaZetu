@@ -1,0 +1,565 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Review Application - Ward Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_pending_review' %}">Pending Review</a>
+            </li>
+            <li class="breadcrumb-item active">Review {{ application.application_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-clipboard-check"></i>
+                    Review Application
+                </h1>
+                <p class="page-subtitle">
+                    {{ application.application_number }} - {{ application.applicant.user.get_full_name }}
+                </p>
+            </div>
+        </div>
+
+        <div class="review-layout">
+            <!-- Left Column: Application Summary -->
+            <div class="application-summary-column">
+                <!-- Applicant Quick Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-person"></i> Applicant</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="applicant-profile">
+                            <div class="profile-avatar">
+                                {% if application.applicant.profile_picture %}
+                                <img src="{{ application.applicant.profile_picture.url }}" alt="Profile">
+                                {% else %}
+                                <i class="bi bi-person-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div class="profile-info">
+                                <h4>{{ application.applicant.user.get_full_name }}</h4>
+                                <p>{{ application.applicant.id_number }}</p>
+                                <p>{{ application.applicant.get_gender_display }}, {{ application.applicant.date_of_birth|date:"Y" }} birth</p>
+                            </div>
+                        </div>
+
+                        <div class="info-list">
+                            <div class="info-row">
+                                <i class="bi bi-telephone"></i>
+                                <span>{{ application.applicant.user.phone_number }}</span>
+                            </div>
+                            <div class="info-row">
+                                <i class="bi bi-envelope"></i>
+                                <span>{{ application.applicant.user.email }}</span>
+                            </div>
+                            <div class="info-row">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>{{ application.applicant.location.name }}, {{ application.applicant.ward.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-cash-stack"></i> Financial Details</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="financial-item">
+                            <label>Total Fees Payable</label>
+                            <value>KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</value>
+                        </div>
+                        <div class="financial-item">
+                            <label>Fees Paid</label>
+                            <value class="text-success">KSh {{ application.fees_paid|floatformat:0|intcomma }}</value>
+                        </div>
+                        <div class="financial-item highlight">
+                            <label>Fees Balance</label>
+                            <value class="text-danger">KSh {{ application.fees_balance|floatformat:0|intcomma }}</value>
+                        </div>
+                        <div class="financial-item highlight">
+                            <label>Amount Requested</label>
+                            <value class="text-primary">KSh {{ application.amount_requested|floatformat:0|intcomma }}</value>
+                        </div>
+
+                        {% if application.other_bursaries %}
+                        <div class="alert-warning small-alert">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Received KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }} from {{ application.other_bursaries_source }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if application.household_monthly_income %}
+                        <div class="financial-item">
+                            <label>Household Monthly Income</label>
+                            <value>KSh {{ application.household_monthly_income|floatformat:0|intcomma }}</value>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Academic Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-book"></i> Academic</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="academic-item">
+                            <label>Institution</label>
+                            <value>{{ application.institution.name }}</value>
+                            <small>{{ application.institution.get_institution_type_display }}</small>
+                        </div>
+                        <div class="academic-item">
+                            <label>Year of Study</label>
+                            <value>Year {{ application.year_of_study }}</value>
+                        </div>
+                        <div class="academic-item">
+                            <label>Course</label>
+                            <value>{{ application.course_name|default:"Not specified" }}</value>
+                        </div>
+                        {% if application.previous_academic_year_average %}
+                        <div class="academic-item">
+                            <label>Previous Average</label>
+                            <value>{{ application.previous_academic_year_average }}%</value>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Vulnerability Flags -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-shield-exclamation"></i> Vulnerability</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="flag-list">
+                            <div class="flag-item {% if application.is_orphan %}active{% endif %}">
+                                <i class="bi bi-{% if application.is_orphan %}check-circle-fill{% else %}circle{% endif %}"></i>
+                                <span>Orphan (One Parent)</span>
+                            </div>
+                            <div class="flag-item {% if application.is_total_orphan %}active{% endif %}">
+                                <i class="bi bi-{% if application.is_total_orphan %}check-circle-fill{% else %}circle{% endif %}"></i>
+                                <span>Total Orphan (Both Parents)</span>
+                            </div>
+                            <div class="flag-item {% if application.is_disabled %}active{% endif %}">
+                                <i class="bi bi-{% if application.is_disabled %}check-circle-fill{% else %}circle{% endif %}"></i>
+                                <span>Person with Disability</span>
+                            </div>
+                            <div class="flag-item {% if application.has_chronic_illness %}active{% endif %}">
+                                <i class="bi bi-{% if application.has_chronic_illness %}check-circle-fill{% else %}circle{% endif %}"></i>
+                                <span>Chronic Illness</span>
+                            </div>
+                            <div class="flag-item {% if application.applicant.special_needs %}active{% endif %}">
+                                <i class="bi bi-{% if application.applicant.special_needs %}check-circle-fill{% else %}circle{% endif %}"></i>
+                                <span>Special Needs</span>
+                            </div>
+                        </div>
+
+                        {% if application.has_chronic_illness and application.chronic_illness_description %}
+                        <div class="description-box">
+                            <label>Illness Description:</label>
+                            <p>{{ application.chronic_illness_description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Guardians -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-people"></i> Guardians</h3>
+                    </div>
+                    <div class="card-body">
+                        {% for guardian in guardians %}
+                        <div class="guardian-item">
+                            <div class="guardian-header">
+                                <strong>{{ guardian.name }}</strong>
+                                {% if guardian.is_primary_contact %}
+                                <span class="badge badge-primary">Primary</span>
+                                {% endif %}
+                            </div>
+                            <div class="guardian-details">
+                                <small>{{ guardian.get_relationship_display }}</small>
+                                <small>{{ guardian.get_employment_status_display }}</small>
+                                {% if guardian.monthly_income %}
+                                <small>Income: KSh {{ guardian.monthly_income|floatformat:0|intcomma }}/mo</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No guardian information</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-paperclip"></i> Documents ({{ documents.count }})</h3>
+                    </div>
+                    <div class="card-body">
+                        {% for document in documents %}
+                        <div class="document-link">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            <a href="{% url 'serve_pdf_document' application.id document.id %}" target="_blank">
+                                {{ document.get_document_type_display }}
+                            </a>
+                            {% if document.is_verified %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No documents uploaded</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Review Form -->
+            <div class="review-form-column">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-pencil-square"></i> Your Review</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="reviewForm">
+                            {% csrf_token %}
+
+                            <!-- Scoring Section -->
+                            <div class="form-section">
+                                <h4><i class="bi bi-star"></i> Assessment Scores</h4>
+                                <p class="section-help">
+                                    Rate each criterion from 0 (lowest) to 10 (highest)
+                                </p>
+
+                                <!-- Need Score -->
+                                <div class="form-group">
+                                    <label for="need_score">
+                                        Need Score
+                                        <span class="required">*</span>
+                                    </label>
+                                    <p class="help-text">
+                                        Consider: household income, fees balance, family size, other support
+                                    </p>
+                                    <div class="score-input-group">
+                                        <input 
+                                            type="range" 
+                                            class="score-slider" 
+                                            id="need_score" 
+                                            name="need_score" 
+                                            min="0" 
+                                            max="10" 
+                                            value="5"
+                                            required
+                                        >
+                                        <div class="score-display">
+                                            <span id="need_score_value">5</span>/10
+                                        </div>
+                                    </div>
+                                    <div class="score-labels">
+                                        <span>Low Need</span>
+                                        <span>High Need</span>
+                                    </div>
+                                </div>
+
+                                <!-- Merit Score -->
+                                <div class="form-group">
+                                    <label for="merit_score">
+                                        Merit Score
+                                        <span class="required">*</span>
+                                    </label>
+                                    <p class="help-text">
+                                        Consider: academic performance, attendance, discipline record
+                                    </p>
+                                    <div class="score-input-group">
+                                        <input 
+                                            type="range" 
+                                            class="score-slider" 
+                                            id="merit_score" 
+                                            name="merit_score" 
+                                            min="0" 
+                                            max="10" 
+                                            value="5"
+                                            required
+                                        >
+                                        <div class="score-display">
+                                            <span id="merit_score_value">5</span>/10
+                                        </div>
+                                    </div>
+                                    <div class="score-labels">
+                                        <span>Low Merit</span>
+                                        <span>High Merit</span>
+                                    </div>
+                                </div>
+
+                                <!-- Vulnerability Score -->
+                                <div class="form-group">
+                                    <label for="vulnerability_score">
+                                        Vulnerability Score
+                                        <span class="required">*</span>
+                                    </label>
+                                    <p class="help-text">
+                                        Consider: orphan status, disability, chronic illness, special needs
+                                    </p>
+                                    <div class="score-input-group">
+                                        <input 
+                                            type="range" 
+                                            class="score-slider" 
+                                            id="vulnerability_score" 
+                                            name="vulnerability_score" 
+                                            min="0" 
+                                            max="10" 
+                                            value="5"
+                                            required
+                                        >
+                                        <div class="score-display">
+                                            <span id="vulnerability_score_value">5</span>/10
+                                        </div>
+                                    </div>
+                                    <div class="score-labels">
+                                        <span>Low Vulnerability</span>
+                                        <span>High Vulnerability</span>
+                                    </div>
+                                </div>
+
+                                <!-- Total Score Display -->
+                                <div class="total-score-display">
+                                    <label>Total Score</label>
+                                    <div class="total-score">
+                                        <span id="total_score">15</span>/30
+                                    </div>
+                                    <div class="score-bar">
+                                        <div class="score-fill" id="total_score_bar" style="width: 50%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendation Section -->
+                            <div class="form-section">
+                                <h4><i class="bi bi-check-circle"></i> Recommendation</h4>
+                                
+                                <div class="form-group">
+                                    <label for="recommendation">
+                                        Your Recommendation
+                                        <span class="required">*</span>
+                                    </label>
+                                    <select class="form-control" id="recommendation" name="recommendation" required>
+                                        <option value="">-- Select Recommendation --</option>
+                                        <option value="approve">Approve - Recommend for Allocation</option>
+                                        <option value="forward">Forward - Send to Next Review Level</option>
+                                        <option value="reject">Reject - Do Not Recommend</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="recommended_amount_group">
+                                    <label for="recommended_amount">
+                                        Recommended Amount (KSh)
+                                    </label>
+                                    <p class="help-text">
+                                        Maximum for category: KSh {{ application.bursary_category.max_amount_per_applicant|floatformat:0|intcomma }}
+                                    </p>
+                                    <input 
+                                        type="number" 
+                                        class="form-control" 
+                                        id="recommended_amount" 
+                                        name="recommended_amount"
+                                        min="0"
+                                        max="{{ application.bursary_category.max_amount_per_applicant }}"
+                                        step="1000"
+                                        placeholder="Enter recommended amount"
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Comments Section -->
+                            <div class="form-section">
+                                <h4><i class="bi bi-chat-left-text"></i> Review Comments</h4>
+                                
+                                <div class="form-group">
+                                    <label for="comments">
+                                        Comments and Justification
+                                        <span class="required">*</span>
+                                    </label>
+                                    <p class="help-text">
+                                        Provide detailed comments to support your recommendation
+                                    </p>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="comments" 
+                                        name="comments" 
+                                        rows="6"
+                                        placeholder="Enter your review comments here..."
+                                        required
+                                    ></textarea>
+                                    <small class="char-counter">
+                                        <span id="char_count">0</span> characters
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Review Guidelines -->
+                            <div class="guidelines-box">
+                                <h5><i class="bi bi-lightbulb"></i> Review Guidelines</h5>
+                                <ul>
+                                    <li>Review all supporting documents carefully</li>
+                                    <li>Verify applicant information for accuracy</li>
+                                    <li>Consider household size and income level</li>
+                                    <li>Assess vulnerability factors fairly</li>
+                                    <li>Recommend amounts within category limits</li>
+                                    <li>Provide clear justification for your decision</li>
+                                </ul>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <a href="{% url 'ward_admin_pending_review' %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                <button type="button" class="btn btn-outline" id="saveAndExit">
+                                    <i class="bi bi-save"></i> Save & Review Later
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> Submit Review
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal" id="confirmModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-question-circle"></i>
+                    Confirm Review Submission
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to submit this review? This action cannot be undone.</p>
+                <div class="review-summary">
+                    <div class="summary-item">
+                        <label>Recommendation:</label>
+                        <value id="confirm_recommendation"></value>
+                    </div>
+                    <div class="summary-item">
+                        <label>Total Score:</label>
+                        <value id="confirm_score"></value>
+                    </div>
+                    <div class="summary-item">
+                        <label>Recommended Amount:</label>
+                        <value id="confirm_amount"></value>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSubmit()">Confirm Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Score sliders
+    const needScore = document.getElementById('need_score');
+    const meritScore = document.getElementById('merit_score');
+    const vulnerabilityScore = document.getElementById('vulnerability_score');
+    
+    const needDisplay = document.getElementById('need_score_value');
+    const meritDisplay = document.getElementById('merit_score_value');
+    const vulnerabilityDisplay = document.getElementById('vulnerability_score_value');
+    
+    const totalDisplay = document.getElementById('total_score');
+    const totalBar = document.getElementById('total_score_bar');
+    
+    function updateScores() {
+        needDisplay.textContent = needScore.value;
+        meritDisplay.textContent = meritScore.value;
+        vulnerabilityDisplay.textContent = vulnerabilityScore.value;
+        
+        const total = parseInt(needScore.value) + parseInt(meritScore.value) + parseInt(vulnerabilityScore.value);
+        totalDisplay.textContent = total;
+        
+        const percentage = (total / 30) * 100;
+        totalBar.style.width = percentage + '%';
+    }
+    
+    needScore.addEventListener('input', updateScores);
+    meritScore.addEventListener('input', updateScores);
+    vulnerabilityScore.addEventListener('input', updateScores);
+    
+    // Character counter
+    const commentsField = document.getElementById('comments');
+    const charCount = document.getElementById('char_count');
+    
+    commentsField.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+    
+    // Recommendation change handler
+    const recommendationSelect = document.getElementById('recommendation');
+    const amountGroup = document.getElementById('recommended_amount_group');
+    
+    recommendationSelect.addEventListener('change', function() {
+        if (this.value === 'approve') {
+            amountGroup.style.display = 'block';
+        } else {
+            amountGroup.style.display = 'none';
+        }
+    });
+    
+    // Form submission
+    const form = document.getElementById('reviewForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show confirmation modal
+        const recommendation = document.getElementById('recommendation');
+        const recommendedAmount = document.getElementById('recommended_amount');
+        
+        document.getElementById('confirm_recommendation').textContent = 
+            recommendation.options[recommendation.selectedIndex].text;
+        document.getElementById('confirm_score').textContent = 
+            totalDisplay.textContent + '/30';
+        document.getElementById('confirm_amount').textContent = 
+            recommendedAmount.value ? 'KSh ' + parseInt(recommendedAmount.value).toLocaleString() : 'N/A';
+        
+        document.getElementById('confirmModal').classList.add('show');
+    });
+});
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+function confirmSubmit() {
+    document.getElementById('reviewForm').submit();
+}
+</script>
+{% endblock %}

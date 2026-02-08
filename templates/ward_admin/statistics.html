@@ -1,0 +1,146 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Statistics - Ward Admin{% endblock %}
+
+{% block content %}
+<div>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'ward_admin_dashboard' %}">Dashboard</a>
+            </li>
+            <li>Statistics</li>
+        </ol>
+    </nav>
+
+    <div>
+        <div>
+            <div>
+                <h1>Ward Statistics</h1>
+                <p>{{ ward.name }} Ward - Detailed Analytics</p>
+            </div>
+            <div>
+                <form method="get">
+                    <label for="fiscal_year">Fiscal Year:</label>
+                    <select name="fiscal_year" id="fiscal_year" onchange="this.form.submit()">
+                        {% for fy in fiscal_years %}
+                        <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>
+                            {{ fy.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        {% if fiscal_year %}
+        <div>
+            <h2>Overview Statistics</h2>
+            <div>
+                <div>
+                    <h3>Total Applications</h3>
+                    <p>{{ total_applications }}</p>
+                </div>
+                <div>
+                    <h3>Approval Rate</h3>
+                    <p>{{ approval_rate }}%</p>
+                </div>
+                <div>
+                    <h3>Avg Processing Time</h3>
+                    <p>
+                        {% if avg_processing_time %}
+                        {{ avg_processing_time }} days
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2>Year-over-Year Comparison</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fiscal Year</th>
+                        <th>Applications</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in previous_years_data %}
+                    <tr>
+                        <td>{{ data.year }}</td>
+                        <td>{{ data.applications }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <h2>Performance Metrics</h2>
+            <div>
+                <div>
+                    <h3>Applications Processed</h3>
+                    <p>{{ total_applications }}</p>
+                    <small>Total applications this year</small>
+                </div>
+                <div>
+                    <h3>Success Rate</h3>
+                    <p>{{ approval_rate }}%</p>
+                    <small>Applications approved</small>
+                </div>
+                <div>
+                    <h3>Average Time</h3>
+                    <p>
+                        {% if avg_processing_time %}
+                        {{ avg_processing_time }} days
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </p>
+                    <small>From submission to decision</small>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2>Trends Analysis</h2>
+            <div>
+                <h3>Application Trends</h3>
+                <p>Comparing {{ fiscal_year.name }} with previous years</p>
+                <ul>
+                    {% for data in previous_years_data %}
+                    <li>{{ data.year }}: {{ data.applications }} applications</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div>
+            <h2>Key Insights</h2>
+            <ul>
+                <li>Total applications received: {{ total_applications }}</li>
+                <li>Approval rate: {{ approval_rate }}%</li>
+                {% if avg_processing_time %}
+                <li>Average processing time: {{ avg_processing_time }} days</li>
+                {% endif %}
+                <li>Historical comparison available for last 5 years</li>
+            </ul>
+        </div>
+
+        {% else %}
+        <div>
+            <p>No fiscal year selected. Please select a fiscal year to view statistics.</p>
+        </div>
+        {% endif %}
+
+        <div>
+            <a href="{% url 'ward_admin_dashboard' %}">Back to Dashboard</a>
+            <a href="{% url 'ward_admin_reports' %}">View Reports</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
