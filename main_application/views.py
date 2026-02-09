@@ -18240,7 +18240,6 @@ def constituency_analytics(request):
 # ============= APPLICATION MANAGEMENT =============
 
 @login_required
-
 def constituency_applications_list(request):
     """
     List all CDF bursary applications for the constituency
