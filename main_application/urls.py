@@ -344,6 +344,9 @@ urlpatterns = [
     # ============= SETTINGS & CONFIGURATION =============
     path('constituency/settings/', views.constituency_settings, name='constituency_settings'),
     path('constituency/notifications/send/', views.constituency_send_notifications, name='constituency_send_notifications'),
+     # Profile & Help (NEW)
+    path('constituency/profile/settings/', views.constituency_profile_settings, name='constituency_profile_settings'),
+    path('constituency/help-support/', views.constituency_help_support, name='constituency_help_support'), 
     
     
      # ============= DASHBOARD =============

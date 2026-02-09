@@ -21191,15 +21191,6 @@ def send_sms_notification(user, phone_number, message):
         return False
 
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-from django.db.models import Q
-from main_application.models import User, Constituency, AuditLog
-from main_application.utils import get_constituency_for_user, create_audit_log, is_constituency_admin
-
 
 @login_required
 @user_passes_test(is_constituency_admin)

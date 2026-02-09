@@ -1,0 +1,631 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Help & Support - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .help-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .help-sidebar {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #E2E8F0;
+        height: fit-content;
+    }
+
+    .quick-links {
+        margin-bottom: 24px;
+    }
+
+    .quick-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        text-decoration: none;
+        color: #334155;
+        transition: all 0.3s ease;
+        border: 1px solid #E2E8F0;
+    }
+
+    .quick-link:hover {
+        background: #3498db;
+        color: white;
+        transform: translateX(5px);
+    }
+
+    .quick-link i {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+    }
+
+    .contact-card {
+        background: white;
+        border-radius: 6px;
+        padding: 16px;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 16px;
+    }
+
+    .contact-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 12px;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: start;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .contact-item i {
+        color: #3498db;
+        margin-top: 2px;
+    }
+
+    .faq-container {
+        background: white;
+    }
+
+    .faq-search {
+        margin-bottom: 24px;
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 16px 12px 45px;
+        border: 1px solid #CBD5E1;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748B;
+    }
+
+    .faq-category {
+        margin-bottom: 32px;
+    }
+
+    .category-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .category-title i {
+        color: #3498db;
+    }
+
+    .faq-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .faq-item:hover {
+        border-color: #3498db;
+    }
+
+    .faq-question {
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        font-weight: 500;
+        color: #334155;
+        user-select: none;
+    }
+
+    .faq-question:hover {
+        background: #F1F5F9;
+    }
+
+    .faq-question i {
+        color: #3498db;
+        transition: transform 0.3s ease;
+    }
+
+    .faq-question.active i {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+        padding: 0 16px;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        color: #64748B;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .faq-answer.active {
+        padding: 16px;
+        max-height: 500px;
+    }
+
+    .support-ticket-form {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-top: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #DC2626;
+        margin-left: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #1E40AF;
+    }
+
+    .info-note strong {
+        color: #1E293B;
+    }
+
+    @media (max-width: 768px) {
+        .help-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Help & Support</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-question-circle"></i>
+                Help & Support
+            </h1>
+            <p class="page-subtitle">
+                Find answers to common questions and get support
+            </p>
+        </div>
+
+        <!-- Help Grid -->
+        <div class="help-grid">
+            <!-- Sidebar -->
+            <div class="help-sidebar">
+                <h3 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-bookmark"></i>
+                    Quick Links
+                </h3>
+
+                <div class="quick-links">
+                    <a href="#getting-started" class="quick-link">
+                        <i class="bi bi-rocket-takeoff"></i>
+                        <span>Getting Started</span>
+                    </a>
+                    <a href="#applications" class="quick-link">
+                        <i class="bi bi-file-text"></i>
+                        <span>Managing Applications</span>
+                    </a>
+                    <a href="#allocations" class="quick-link">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Allocations & Disbursement</span>
+                    </a>
+                    <a href="#reports" class="quick-link">
+                        <i class="bi bi-graph-up"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="#technical" class="quick-link">
+                        <i class="bi bi-tools"></i>
+                        <span>Technical Issues</span>
+                    </a>
+                    <a href="#contact" class="quick-link">
+                        <i class="bi bi-headset"></i>
+                        <span>Contact Support</span>
+                    </a>
+                </div>
+
+                <h3 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-telephone"></i>
+                    Contact Information
+                </h3>
+
+                <div class="contact-card">
+                    <div class="contact-title">CDF Office</div>
+                    <div class="contact-item">
+                        <i class="bi bi-envelope"></i>
+                        <span>{{ constituency.cdf_office_email|default:"Not available" }}</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="bi bi-phone"></i>
+                        <span>{{ constituency.cdf_office_phone|default:"Not available" }}</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>{{ constituency.cdf_office_location|default:"Not available" }}</span>
+                    </div>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-title">Technical Support</div>
+                    <div class="contact-item">
+                        <i class="bi bi-envelope"></i>
+                        <span>support@nyotazetu.go.ke</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="bi bi-clock"></i>
+                        <span>Mon - Fri: 8:00 AM - 5:00 PM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="faq-container">
+                <!-- Search Box -->
+                <div class="faq-search">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input 
+                            type="text" 
+                            id="faqSearch" 
+                            placeholder="Search for help..."
+                            class="form-control"
+                        >
+                    </div>
+                </div>
+
+                <!-- FAQs -->
+                {% for category, questions in faqs.items %}
+                <div class="faq-category" id="{{ category|lower|cut:' '|cut:'&' }}">
+                    <h2 class="category-title">
+                        <i class="bi bi-folder"></i>
+                        {{ category }}
+                    </h2>
+
+                    {% for faq in questions %}
+                    <div class="faq-item">
+                        <div class="faq-question" onclick="toggleFAQ(this)">
+                            <span>{{ faq.question }}</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            {{ faq.answer }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <!-- Submit Support Ticket -->
+                <div id="contact">
+                    <h2 class="section-title">
+                        <i class="bi bi-headset"></i>
+                        Submit Support Ticket
+                    </h2>
+
+                    <div class="info-note">
+                        <strong>Can't find what you're looking for?</strong> Submit a support ticket and our team will get back to you within 24 hours.
+                    </div>
+
+                    <div class="support-ticket-form">
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="form-group">
+                                <label class="form-label" for="subject">
+                                    Subject<span class="required">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    name="subject" 
+                                    id="subject" 
+                                    class="form-control" 
+                                    placeholder="Brief description of your issue"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="category">
+                                    Category<span class="required">*</span>
+                                </label>
+                                <select name="category" id="category" class="form-control" required>
+                                    <option value="">Select a category</option>
+                                    {% for value, label in support_categories %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="priority">
+                                    Priority<span class="required">*</span>
+                                </label>
+                                <select name="priority" id="priority" class="form-control" required>
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="message">
+                                    Message<span class="required">*</span>
+                                </label>
+                                <textarea 
+                                    name="message" 
+                                    id="message" 
+                                    class="form-control" 
+                                    placeholder="Describe your issue in detail..."
+                                    required
+                                    rows="6"
+                                ></textarea>
+                                <div class="form-help">Please provide as much detail as possible to help us resolve your issue quickly.</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                                Submit Ticket
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Toggle FAQ answer
+    function toggleFAQ(element) {
+        const answer = element.nextElementSibling;
+        const isActive = answer.classList.contains('active');
+        
+        // Close all FAQs
+        document.querySelectorAll('.faq-answer').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelectorAll('.faq-question').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Open clicked FAQ if it wasn't active
+        if (!isActive) {
+            answer.classList.add('active');
+            element.classList.add('active');
+        }
+    }
+
+    // Search functionality
+    const searchInput = document.getElementById('faqSearch');
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const faqItems = document.querySelectorAll('.faq-item');
+        
+        faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question span').textContent.toLowerCase();
+            const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+            
+            if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+
+    // Smooth scroll for quick links
+    document.querySelectorAll('.quick-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

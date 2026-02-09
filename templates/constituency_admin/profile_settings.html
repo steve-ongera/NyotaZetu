@@ -1,0 +1,652 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Profile Settings - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .profile-sidebar {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #E2E8F0;
+        height: fit-content;
+    }
+
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 48px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .profile-info {
+        text-align: center;
+    }
+
+    .profile-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .profile-role {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 16px;
+    }
+
+    .profile-meta {
+        background: white;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 20px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .profile-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .profile-meta-item:last-child {
+        border-bottom: none;
+    }
+
+    .profile-meta-item i {
+        color: #3498db;
+        width: 20px;
+    }
+
+    .tab-container {
+        background: white;
+    }
+
+    .tab-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 2px solid #F1F5F9;
+        margin-bottom: 24px;
+    }
+
+    .tab-button {
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.3s ease;
+    }
+
+    .tab-button:hover {
+        color: #3498db;
+    }
+
+    .tab-button.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #DC2626;
+        margin-left: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+
+    .activity-log {
+        margin-top: 24px;
+    }
+
+    .activity-item {
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        border-left: 3px solid #3498db;
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 8px;
+    }
+
+    .activity-action {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .activity-time {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .activity-description {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #1E40AF;
+    }
+
+    .info-note.success {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        color: #166534;
+    }
+
+    .info-note.warning {
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        color: #92400E;
+    }
+
+    @media (max-width: 768px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .tab-nav {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Profile Settings</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-person-circle"></i>
+                Profile Settings
+            </h1>
+            <p class="page-subtitle">
+                Manage your account information and preferences
+            </p>
+        </div>
+
+        <!-- Profile Grid -->
+        <div class="profile-grid">
+            <!-- Sidebar -->
+            <div class="profile-sidebar">
+                <div class="profile-avatar">
+                    {{ user.first_name.0|upper }}{{ user.last_name.0|upper }}
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">{{ user.first_name }} {{ user.last_name }}</div>
+                    <div class="profile-role">Constituency Administrator</div>
+                </div>
+
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <i class="bi bi-envelope"></i>
+                        <span>{{ user.email|default:"Not set" }}</span>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-phone"></i>
+                        <span>{{ user.phone_number|default:"Not set" }}</span>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>{{ constituency.name }}</span>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-calendar"></i>
+                        <span>Joined {{ user.date_joined|date:"F Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="tab-container">
+                <!-- Tab Navigation -->
+                <div class="tab-nav">
+                    <button class="tab-button active" onclick="switchTab('profile')">
+                        <i class="bi bi-person"></i> Profile Information
+                    </button>
+                    <button class="tab-button" onclick="switchTab('security')">
+                        <i class="bi bi-shield-lock"></i> Security
+                    </button>
+                    <button class="tab-button" onclick="switchTab('activity')">
+                        <i class="bi bi-clock-history"></i> Recent Activity
+                    </button>
+                </div>
+
+                <!-- Profile Information Tab -->
+                <div class="tab-content active" id="profile-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-person-badge"></i>
+                        Personal Information
+                    </h2>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="form-group">
+                            <label class="form-label" for="first_name">
+                                First Name<span class="required">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="first_name" 
+                                id="first_name" 
+                                class="form-control" 
+                                value="{{ user.first_name }}"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="last_name">
+                                Last Name<span class="required">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="last_name" 
+                                id="last_name" 
+                                class="form-control" 
+                                value="{{ user.last_name }}"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="email">
+                                Email Address
+                            </label>
+                            <input 
+                                type="email" 
+                                name="email" 
+                                id="email" 
+                                class="form-control" 
+                                value="{{ user.email }}"
+                            >
+                            <div class="form-help">Used for notifications and account recovery</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="phone_number">
+                                Phone Number
+                            </label>
+                            <input 
+                                type="tel" 
+                                name="phone_number" 
+                                id="phone_number" 
+                                class="form-control" 
+                                value="{{ user.phone_number }}"
+                                placeholder="+254XXXXXXXXX"
+                            >
+                            <div class="form-help">Format: +254XXXXXXXXX</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                value="{{ user.username }}"
+                                disabled
+                            >
+                            <div class="form-help">Username cannot be changed</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Assigned Constituency</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                value="{{ constituency.name }}"
+                                disabled
+                            >
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i>
+                            Save Changes
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Security Tab -->
+                <div class="tab-content" id="security-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-shield-lock"></i>
+                        Change Password
+                    </h2>
+
+                    <div class="info-note warning">
+                        <strong>Security Tips:</strong> Use a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="form-group">
+                            <label class="form-label" for="current_password">
+                                Current Password<span class="required">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                name="current_password" 
+                                id="current_password" 
+                                class="form-control" 
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="new_password">
+                                New Password<span class="required">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                name="new_password" 
+                                id="new_password" 
+                                class="form-control" 
+                                required
+                                minlength="8"
+                            >
+                            <div class="form-help">Minimum 8 characters</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="confirm_password">
+                                Confirm New Password<span class="required">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                name="confirm_password" 
+                                id="confirm_password" 
+                                class="form-control" 
+                                required
+                                minlength="8"
+                            >
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-key"></i>
+                            Change Password
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Activity Tab -->
+                <div class="tab-content" id="activity-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-clock-history"></i>
+                        Recent Activity
+                    </h2>
+
+                    <div class="activity-log">
+                        {% for activity in recent_activities %}
+                        <div class="activity-item">
+                            <div class="activity-header">
+                                <div class="activity-action">
+                                    {{ activity.get_action_display }}
+                                </div>
+                                <div class="activity-time">
+                                    {{ activity.timestamp|timesince }} ago
+                                </div>
+                            </div>
+                            <div class="activity-description">
+                                {{ activity.description }}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="info-note">
+                            No recent activity to display.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function switchTab(tabName) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Remove active class from all buttons
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Show selected tab
+        const selectedTab = document.getElementById(tabName + '-tab');
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+
+        // Highlight selected button
+        event.target.closest('.tab-button').classList.add('active');
+    }
+
+    // Password validation
+    const newPassword = document.getElementById('new_password');
+    const confirmPassword = document.getElementById('confirm_password');
+
+    if (confirmPassword) {
+        confirmPassword.addEventListener('input', function() {
+            if (newPassword.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Passwords do not match');
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}
