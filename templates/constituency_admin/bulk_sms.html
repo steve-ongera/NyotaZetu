@@ -1,0 +1,662 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Bulk SMS - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-purple { color: #9b59b6; }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #DC2626;
+        margin-left: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+        font-family: inherit;
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+    }
+
+    .char-counter {
+        font-size: 13px;
+        color: #64748B;
+        text-align: right;
+        margin-top: 4px;
+    }
+
+    .char-counter.warning {
+        color: #f39c12;
+        font-weight: 600;
+    }
+
+    .char-counter.danger {
+        color: #e74c3c;
+        font-weight: 600;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 12px;
+    }
+
+    .checkbox-item:hover {
+        background: #F1F5F9;
+        border-color: #CBD5E1;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-item label {
+        cursor: pointer;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        flex: 1;
+    }
+
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #1E40AF;
+    }
+
+    .info-note.warning {
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        color: #92400E;
+    }
+
+    .info-note.success {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        color: #166534;
+    }
+
+    .info-note strong {
+        color: #1E293B;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .sms-preview {
+        background: #1E293B;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .phone-mockup {
+        background: white;
+        border-radius: 20px;
+        padding: 40px 20px 20px;
+        max-width: 320px;
+        margin: 0 auto;
+        position: relative;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .phone-notch {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 20px;
+        background: #1E293B;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .sms-bubble {
+        background: #3498db;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 18px;
+        border-bottom-right-radius: 4px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .sms-sender {
+        font-size: 11px;
+        color: #64748B;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .sms-time {
+        font-size: 11px;
+        color: #94A3B8;
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Bulk SMS</li>
+        </ol>
+    </nav>
+
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-phone"></i>
+                Bulk SMS Messaging
+            </h1>
+            <p class="page-subtitle">
+                Send SMS messages to applicants and beneficiaries in {{ constituency.name }} Constituency
+            </p>
+        </div>
+
+        <!-- Recipient Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-people"></i>
+            Recipient Statistics
+        </h2>
+
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-value">{{ stats.total|intcomma }}</div>
+                <div class="stat-label">Total Applicants</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-value">{{ stats.pending|intcomma }}</div>
+                <div class="stat-label">Pending Applications</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-value">{{ stats.approved|intcomma }}</div>
+                <div class="stat-label">Approved Applications</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-value">{{ stats.allocated|intcomma }}</div>
+                <div class="stat-label">Allocated</div>
+            </div>
+            
+            <div class="stat-card stat-purple">
+                <div class="stat-value">{{ stats.disbursed|intcomma }}</div>
+                <div class="stat-label">Disbursed</div>
+            </div>
+            
+            <div class="stat-card stat-danger">
+                <div class="stat-value">{{ stats.rejected|intcomma }}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+        </div>
+
+        <!-- Information Notes -->
+        <div class="info-note warning">
+            <strong>⚠️ Important:</strong> SMS messages are limited to 160 characters. Longer messages will be split into multiple SMS and may incur additional charges.
+        </div>
+
+        <div class="info-note">
+            <strong>💡 Tip:</strong> Keep your messages clear, concise, and professional. Always include contact information for follow-up.
+        </div>
+
+        <!-- SMS Form -->
+        <form method="post" id="smsForm">
+            {% csrf_token %}
+
+            <h2 class="section-title">
+                <i class="bi bi-funnel"></i>
+                Select Recipients
+            </h2>
+
+            <div class="form-group">
+                <label class="form-label">
+                    Recipient Group<span class="required">*</span>
+                </label>
+                <select name="recipient_type" id="recipientType" class="form-control" required>
+                    <option value="all">All CDF Applicants</option>
+                    <option value="pending">Pending Applications</option>
+                    <option value="approved">Approved Applications</option>
+                    <option value="allocated">Allocated Beneficiaries</option>
+                    <option value="disbursed">Disbursed Beneficiaries</option>
+                    <option value="rejected">Rejected Applications</option>
+                </select>
+                <div class="form-help">Select the group of recipients for this SMS</div>
+            </div>
+
+            <h2 class="section-title">
+                <i class="bi bi-chat-text"></i>
+                Compose Message
+            </h2>
+
+            <div class="form-group">
+                <label class="form-label" for="sender_id">
+                    Sender ID
+                </label>
+                <input 
+                    type="text" 
+                    name="sender_id" 
+                    id="sender_id" 
+                    class="form-control" 
+                    value="NYOTAZETU"
+                    maxlength="11"
+                    placeholder="e.g., NYOTAZETU"
+                >
+                <div class="form-help">Maximum 11 characters (alphanumeric only)</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="message_text">
+                    Message<span class="required">*</span>
+                </label>
+                <textarea 
+                    name="message_text" 
+                    id="message_text" 
+                    class="form-control" 
+                    placeholder="Type your SMS message here..."
+                    required
+                    maxlength="480"
+                    rows="4"
+                ></textarea>
+                <div class="char-counter" id="charCounter">0 / 160 characters (1 SMS)</div>
+                <div class="form-help">Keep it under 160 characters for a single SMS</div>
+            </div>
+
+            <!-- SMS Preview -->
+            <div class="sms-preview">
+                <div class="phone-mockup">
+                    <div class="phone-notch"></div>
+                    <div class="sms-sender" id="previewSender">NYOTAZETU</div>
+                    <div class="sms-bubble" id="previewMessage">
+                        Your message will appear here...
+                    </div>
+                    <div class="sms-time" id="previewTime">Now</div>
+                </div>
+            </div>
+
+            <!-- Schedule Option -->
+            <h2 class="section-title">
+                <i class="bi bi-calendar-event"></i>
+                Delivery Options
+            </h2>
+
+            <div class="checkbox-item">
+                <input type="checkbox" name="schedule_send" id="schedule_send">
+                <label for="schedule_send">
+                    Schedule for later
+                </label>
+            </div>
+
+            <div id="schedule_options" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="schedule_date">
+                        Date
+                    </label>
+                    <input 
+                        type="date" 
+                        name="schedule_date" 
+                        id="schedule_date" 
+                        class="form-control"
+                        min="{{ today|date:'Y-m-d' }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="schedule_time">
+                        Time
+                    </label>
+                    <input 
+                        type="time" 
+                        name="schedule_time" 
+                        id="schedule_time" 
+                        class="form-control"
+                    >
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary" id="sendBtn">
+                    <i class="bi bi-send"></i>
+                    Send SMS
+                </button>
+                <a href="{% url 'constituency_dashboard' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Character counter
+    const messageText = document.getElementById('message_text');
+    const charCounter = document.getElementById('charCounter');
+    const previewMessage = document.getElementById('previewMessage');
+    const senderId = document.getElementById('sender_id');
+    const previewSender = document.getElementById('previewSender');
+
+    messageText.addEventListener('input', function() {
+        const length = this.value.length;
+        const smsCount = Math.ceil(length / 160) || 1;
+        
+        charCounter.textContent = `${length} / 160 characters (${smsCount} SMS)`;
+        
+        // Update preview
+        previewMessage.textContent = this.value || 'Your message will appear here...';
+        
+        // Color coding
+        if (length > 160) {
+            charCounter.classList.add('warning');
+        } else {
+            charCounter.classList.remove('warning');
+        }
+        
+        if (length > 320) {
+            charCounter.classList.add('danger');
+        } else {
+            charCounter.classList.remove('danger');
+        }
+    });
+
+    // Update sender ID preview
+    senderId.addEventListener('input', function() {
+        previewSender.textContent = this.value || 'NYOTAZETU';
+    });
+
+    // Schedule toggle
+    const scheduleCheckbox = document.getElementById('schedule_send');
+    const scheduleOptions = document.getElementById('schedule_options');
+
+    scheduleCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            scheduleOptions.style.display = 'block';
+        } else {
+            scheduleOptions.style.display = 'none';
+        }
+    });
+
+    // Form validation
+    const smsForm = document.getElementById('smsForm');
+    
+    smsForm.addEventListener('submit', function(e) {
+        const message = messageText.value.trim();
+        
+        if (!message) {
+            e.preventDefault();
+            alert('Please enter a message.');
+            return false;
+        }
+        
+        const smsCount = Math.ceil(message.length / 160);
+        let confirmMsg = `You are about to send this SMS. `;
+        
+        if (smsCount > 1) {
+            confirmMsg += `This message will be sent as ${smsCount} SMS messages. `;
+        }
+        
+        confirmMsg += 'Continue?';
+        
+        const confirmed = confirm(confirmMsg);
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Update time preview
+    setInterval(function() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        document.getElementById('previewTime').textContent = time;
+    }, 1000);
+</script>
+{% endblock %}
+{% endblock %}
