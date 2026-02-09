@@ -21826,6 +21826,327 @@ def ward_admin_review_application_view(request, application_id):
     
     return render(request, 'ward_admin/review_application.html', context)
 
+# ADD THESE VIEWS TO YOUR views.py
+
+from django.http import JsonResponse, HttpResponse, FileResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+import json
+import os
+from pathlib import Path
+
+from .models import Document, Application, User, Notification, AuditLog
+from .decorators import ward_admin_required
+
+
+@login_required
+@ward_admin_required
+@require_http_methods(["GET"])
+def document_proxy(request, application_id, document_id):
+    """
+    API endpoint to fetch document data for the modal viewer
+    Returns JSON with document information
+    
+    URL: /ward/application/<application_id>/document/<document_id>/proxy/
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(
+            Document,
+            id=document_id,
+            application_id=application_id
+        )
+        
+        # Check permissions - ward admin should only see documents from their ward
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return JsonResponse({
+                'error': 'No ward assigned to your account'
+            }, status=403)
+        
+        if document.application.applicant.ward != ward:
+            return JsonResponse({
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Get file info
+        file_path = document.file.path if document.file else None
+        file_size = None
+        
+        if file_path and os.path.exists(file_path):
+            file_size_bytes = os.path.getsize(file_path)
+            # Convert to human-readable format
+            if file_size_bytes < 1024:
+                file_size = f"{file_size_bytes} B"
+            elif file_size_bytes < 1024 * 1024:
+                file_size = f"{file_size_bytes / 1024:.1f} KB"
+            else:
+                file_size = f"{file_size_bytes / (1024 * 1024):.1f} MB"
+        
+        # Prepare response data
+        data = {
+            'document_id': document.id,
+            'application_id': document.application.id,
+            'document_type': document.get_document_type_display(),
+            'file_url': request.build_absolute_uri(document.file.url) if document.file else None,
+            'uploaded_at': document.uploaded_at.isoformat(),
+            'is_verified': document.is_verified,
+            'verified_by': document.verified_by.get_full_name() if document.verified_by else None,
+            'file_size': file_size,
+            'description': document.description or '',
+            'file_extension': Path(document.file.name).suffix if document.file else None
+        }
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+@require_http_methods(["POST"])
+def verify_document(request, document_id):
+    """
+    API endpoint to verify/reject a document
+    Accepts JSON with verification status and comments
+    
+    URL: /ward/document/<document_id>/verify/
+    
+    POST Data:
+    {
+        "document_id": 123,
+        "application_id": 456,
+        "verification_status": "verified|rejected|needs_review",
+        "comments": "Optional comments"
+    }
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(Document, id=document_id)
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return JsonResponse({
+                'success': False,
+                'error': 'No ward assigned to your account'
+            }, status=403)
+        
+        if document.application.applicant.ward != ward:
+            return JsonResponse({
+                'success': False,
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Parse request data
+        data = json.loads(request.body)
+        verification_status = data.get('verification_status')
+        comments = data.get('comments', '')
+        
+        # Validate status
+        if verification_status not in ['verified', 'rejected', 'needs_review']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid verification status'
+            }, status=400)
+        
+        # Update document
+        if verification_status == 'verified':
+            document.is_verified = True
+            document.verified_by = user
+        elif verification_status == 'rejected':
+            document.is_verified = False
+            document.verified_by = user
+        else:  # needs_review
+            document.is_verified = False
+            document.verified_by = None
+        
+        # Update description with verification comments if provided
+        if comments:
+            if document.description:
+                document.description += f"\n\nVerification Note ({user.get_full_name()}): {comments}"
+            else:
+                document.description = f"Verification Note ({user.get_full_name()}): {comments}"
+        
+        document.save()
+        
+        # Create audit log
+        AuditLog.objects.create(
+            user=user,
+            action='approve' if verification_status == 'verified' else 'reject',
+            table_affected='Document',
+            record_id=str(document.id),
+            description=f'Document verification: {verification_status} - {document.get_document_type_display()}',
+            ip_address=request.META.get('REMOTE_ADDR', ''),
+            new_values={
+                'verification_status': verification_status,
+                'comments': comments,
+                'document_type': document.document_type,
+                'application_number': document.application.application_number
+            }
+        )
+        
+        # Create notification for applicant
+        Notification.objects.create(
+            user=document.application.applicant.user,
+            notification_type='document_request',
+            title=f'Document {verification_status.title()}',
+            message=f'Your {document.get_document_type_display()} has been {verification_status} by the ward administrator.',
+            related_application=document.application
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Document {verification_status} successfully',
+            'document_id': document.id,
+            'is_verified': document.is_verified
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+def serve_pdf_document(request, application_id, document_id):
+    """
+    Serve document file securely
+    Checks permissions before serving
+    
+    URL: /ward/application/<application_id>/document/<document_id>/serve/
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(
+            Document,
+            id=document_id,
+            application_id=application_id
+        )
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return HttpResponse('No ward assigned', status=403)
+        
+        if document.application.applicant.ward != ward:
+            return HttpResponse('Permission denied', status=403)
+        
+        # Log document view
+        AuditLog.objects.create(
+            user=user,
+            action='view',
+            table_affected='Document',
+            record_id=str(document.id),
+            description=f'Viewed document: {document.get_document_type_display()} for application {document.application.application_number}',
+            ip_address=request.META.get('REMOTE_ADDR', '')
+        )
+        
+        # Serve the file
+        file_path = document.file.path
+        
+        if os.path.exists(file_path):
+            # Determine content type
+            file_ext = Path(file_path).suffix.lower()
+            content_types = {
+                '.pdf': 'application/pdf',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }
+            content_type = content_types.get(file_ext, 'application/octet-stream')
+            
+            # Open and return file
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            
+            # Set content disposition for download if not PDF or image
+            if file_ext not in ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                response['Content-Disposition'] = f'attachment; filename="{document.get_document_type_display()}{file_ext}"'
+            
+            return response
+        else:
+            return HttpResponse('File not found', status=404)
+            
+    except Exception as e:
+        return HttpResponse(f'Error: {str(e)}', status=500)
+
+
+@login_required
+@ward_admin_required
+@require_http_methods(["GET"])
+def get_application_documents(request, application_id):
+    """
+    API endpoint to get all documents for an application
+    Returns JSON array of document data
+    
+    URL: /ward/application/<application_id>/documents/
+    """
+    try:
+        # Get the application
+        application = get_object_or_404(Application, id=application_id)
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return JsonResponse({
+                'error': 'No ward assigned'
+            }, status=403)
+        
+        if application.applicant.ward != ward:
+            return JsonResponse({
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Get all documents
+        documents = application.documents.all()
+        
+        # Prepare response
+        docs_data = []
+        for doc in documents:
+            docs_data.append({
+                'id': doc.id,
+                'document_type': doc.get_document_type_display(),
+                'document_type_code': doc.document_type,
+                'file_url': request.build_absolute_uri(doc.file.url) if doc.file else None,
+                'uploaded_at': doc.uploaded_at.isoformat(),
+                'is_verified': doc.is_verified,
+                'verified_by': doc.verified_by.get_full_name() if doc.verified_by else None,
+                'description': doc.description or ''
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'documents': docs_data,
+            'count': len(docs_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
 
 # ============= APPLICANTS MANAGEMENT =============
 

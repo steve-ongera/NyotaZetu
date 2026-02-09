@@ -398,6 +398,11 @@ urlpatterns = [
     path('ward/applications/<int:application_id>/',  views.ward_admin_application_detail_view, name='ward_admin_application_detail'),
     path('ward/applications/pending-review/', views.ward_admin_pending_review_view, name='ward_admin_pending_review'),
     path('ward/applications/<int:application_id>/review/',  views.ward_admin_review_application_view, name='ward_admin_review_application'),
+    # Document proxy API - Get document data for modal viewer
+    path('ward/application/<int:application_id>/document/<int:document_id>/proxy/', views.document_proxy, name='document_proxy'),
+    path('ward/document/<int:document_id>/verify/', views.verify_document, name='verify_document'),
+    path('ward/application/<int:application_id>/document/<int:document_id>/serve/', views.serve_pdf_document, name='serve_pdf_document'),
+    path('ward/application/<int:application_id>/documents/', views.get_application_documents, name='get_application_documents'),
     path('ward/applicants/', views.ward_admin_applicants_list_view, name='ward_admin_applicants'),
     
     path('ward/applicants/<int:applicant_id>/', views.ward_admin_applicant_detail_view, name='ward_admin_applicant_detail'),
