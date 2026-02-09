@@ -1,201 +1,712 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Disbursements - {{ constituency.name }} Constituency{% endblock %}
+{% block title %}Disbursements - {{ constituency.name }} Constituency - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c0392b;
+        transform: translateY(-1px);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-info { color: #3498db; }
+    .stat-card.stat-primary { color: #9b59b6; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .disbursements-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .disbursements-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .disbursements-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .disbursements-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .disbursements-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .filters-container {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filters-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .form-select,
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #374151;
+        background: white;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-select:focus,
+    .form-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-link {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .action-link-primary {
+        background: #E3F2FD;
+        color: #1976D2;
+    }
+
+    .action-link-primary:hover {
+        background: #1976D2;
+        color: white;
+    }
+
+    .action-link-secondary {
+        background: #F5F5F5;
+        color: #616161;
+    }
+
+    .action-link-secondary:hover {
+        background: #616161;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+    }
+
+    .export-options {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    @media print {
+        .btn,
+        .export-options,
+        .filters-container {
+            display: none;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: none;
+            page-break-inside: avoid;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .filters-form {
+            grid-template-columns: 1fr;
+        }
+
+        .disbursements-table {
+            font-size: 13px;
+        }
+
+        .disbursements-table thead th,
+        .disbursements-table tbody td {
+            padding: 10px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div>
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'dashboard' %}">Dashboard</a>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>
-                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
             </li>
-            <li>Disbursements</li>
+            <li class="breadcrumb-item active" aria-current="page">Disbursements</li>
         </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div>
-        <div>
-            <h1>Disbursement Management</h1>
-            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
-        </div>
-        <div>
-            <button>Process Bulk Disbursement</button>
-        </div>
-    </div>
-
-    <!-- Summary Statistics -->
-    <div>
-        <h2>Summary</h2>
-        <div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <div>
-                <div>
-                    <h3>Pending Disbursements</h3>
-                    <p>{{ summary.pending_count }}</p>
-                    <p>KES {{ summary.pending_amount|floatformat:0|intcomma }}</p>
-                </div>
+                <h1 class="page-title">
+                    <i class="bi bi-cash-stack"></i>
+                    Disbursement Management
+                </h1>
+                <p class="page-subtitle">
+                    {{ constituency.name }} Constituency - {{ current_fiscal_year.name }}
+                </p>
             </div>
             <div>
-                <div>
-                    <h3>Completed Disbursements</h3>
-                    <p>{{ summary.completed_count }}</p>
-                    <p>KES {{ summary.completed_amount|floatformat:0|intcomma }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Total Allocations</h3>
-                    <p>{{ summary.total_allocations }}</p>
-                    <p>KES {{ summary.total_allocated|floatformat:0|intcomma }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Disbursed Percentage</h3>
-                    <p>{{ summary.disbursed_percentage }}%</p>
-                </div>
+                <button class="btn btn-primary">
+                    <i class="bi bi-lightning-charge"></i>
+                    Process Bulk Disbursement
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Filters -->
-    <div>
-        <h3>Filters</h3>
-        <form method="get">
-            <div>
-                <label>Payment Method:</label>
-                <select name="payment_method">
-                    <option value="">All Methods</option>
-                    {% for method in payment_methods %}
-                    <option value="{{ method.0 }}" {% if selected_payment_method == method.0 %}selected{% endif %}>
-                        {{ method.1 }}
-                    </option>
-                    {% endfor %}
-                </select>
+        <!-- Summary Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-bar-chart-line"></i>
+            Summary Statistics
+        </h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">{{ summary.pending_count }}</div>
+                <div class="stat-label">Pending Disbursements</div>
+                <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                    KES {{ summary.pending_amount|floatformat:0|intcomma }}
+                </div>
             </div>
-            <div>
-                <label>Ward:</label>
-                <select name="ward">
-                    <option value="">All Wards</option>
-                    {% for ward in wards %}
-                    <option value="{{ ward.id }}" {% if selected_ward == ward.id|stringformat:"s" %}selected{% endif %}>
-                        {{ ward.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ summary.completed_count }}</div>
+                <div class="stat-label">Completed Disbursements</div>
+                <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                    KES {{ summary.completed_amount|floatformat:0|intcomma }}
+                </div>
             </div>
-            <div>
-                <label>Institution:</label>
-                <select name="institution">
-                    <option value="">All Institutions</option>
-                    {% for institution in institutions %}
-                    <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
-                        {{ institution.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="stat-value">{{ summary.total_allocations }}</div>
+                <div class="stat-label">Total Allocations</div>
+                <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                    KES {{ summary.total_allocated|floatformat:0|intcomma }}
+                </div>
             </div>
-            <div>
-                <label>Search:</label>
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or app number">
+            
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="stat-value">{{ summary.disbursed_percentage }}%</div>
+                <div class="stat-label">Disbursed Percentage</div>
+                <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                    Completion Rate
+                </div>
             </div>
-            <button type="submit">Apply Filters</button>
-            <a href="{% url 'constituency_disbursements' %}">Reset</a>
-        </form>
-    </div>
+        </div>
 
-    <!-- Pending Disbursements -->
-    <div>
-        <h2>Pending Disbursements ({{ summary.pending_count }})</h2>
-        {% if pending_disbursements %}
-        <table>
-            <thead>
-                <tr>
-                    <th>App Number</th>
-                    <th>Applicant</th>
-                    <th>Ward</th>
-                    <th>Institution</th>
-                    <th>Amount</th>
-                    <th>Allocation Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for allocation in pending_disbursements %}
-                <tr>
-                    <td>{{ allocation.application.application_number }}</td>
-                    <td>{{ allocation.application.applicant.user.get_full_name }}</td>
-                    <td>{{ allocation.application.applicant.ward.name }}</td>
-                    <td>{{ allocation.application.institution.name }}</td>
-                    <td>KES {{ allocation.amount_allocated|floatformat:0|intcomma }}</td>
-                    <td>{{ allocation.allocation_date|date:"d/m/Y" }}</td>
-                    <td>
-                        <a href="{% url 'constituency_process_disbursement' allocation.id %}">Process</a>
-                        <a href="{% url 'constituency_application_detail' allocation.application.id %}">View App</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No pending disbursements found.</p>
-        {% endif %}
-    </div>
+        <!-- Filters -->
+        <div class="filters-container">
+            <h3 class="section-title" style="border: none; margin-bottom: 16px; padding-bottom: 0;">
+                <i class="bi bi-funnel"></i>
+                Filter Disbursements
+            </h3>
+            <form method="get" class="filters-form">
+                <div class="form-group">
+                    <label class="form-label">Payment Method:</label>
+                    <select name="payment_method" class="form-select">
+                        <option value="">All Methods</option>
+                        {% for method in payment_methods %}
+                        <option value="{{ method.0 }}" {% if selected_payment_method == method.0 %}selected{% endif %}>
+                            {{ method.1 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ward:</label>
+                    <select name="ward" class="form-select">
+                        <option value="">All Wards</option>
+                        {% for ward in wards %}
+                        <option value="{{ ward.id }}" {% if selected_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                            {{ ward.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institution:</label>
+                    <select name="institution" class="form-select">
+                        <option value="">All Institutions</option>
+                        {% for institution in institutions %}
+                        <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
+                            {{ institution.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Search:</label>
+                    <input type="text" name="search" class="form-input" 
+                           value="{{ search_query }}" placeholder="Search by name or app number">
+                </div>
+                <div class="form-group" style="display: flex; gap: 8px; align-items: center;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-filter"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'constituency_disbursements' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
 
-    <!-- Completed Disbursements -->
-    <div>
-        <h2>Completed Disbursements ({{ summary.completed_count }})</h2>
-        {% if completed_disbursements %}
-        <table>
-            <thead>
-                <tr>
-                    <th>App Number</th>
-                    <th>Applicant</th>
-                    <th>Ward</th>
-                    <th>Payment Method</th>
-                    <th>Reference/Cheque</th>
-                    <th>Amount</th>
-                    <th>Disbursement Date</th>
-                    <th>Processed By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for disbursement in completed_disbursements %}
-                <tr>
-                    <td>{{ disbursement.allocation.application.application_number }}</td>
-                    <td>{{ disbursement.applicant.user.get_full_name }}</td>
-                    <td>{{ disbursement.applicant.ward.name }}</td>
-                    <td>{{ disbursement.get_payment_method_display }}</td>
-                    <td>
-                        {% if disbursement.payment_method == 'cheque' %}
-                        {{ disbursement.cheque_number }}
-                        {% else %}
-                        {{ disbursement.reference_number }}
-                        {% endif %}
-                    </td>
-                    <td>KES {{ disbursement.amount|floatformat:0|intcomma }}</td>
-                    <td>{{ disbursement.disbursement_date|date:"d/m/Y" }}</td>
-                    <td>{{ disbursement.processed_by.get_full_name }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No completed disbursements found.</p>
-        {% endif %}
-    </div>
+        <!-- Pending Disbursements -->
+        <div class="section-container">
+            <h2 class="section-title">
+                <i class="bi bi-clock-history"></i>
+                Pending Disbursements
+                <span class="badge badge-warning">{{ summary.pending_count }}</span>
+            </h2>
+            
+            {% if pending_disbursements %}
+            <div class="table-responsive">
+                <table class="disbursements-table">
+                    <thead>
+                        <tr>
+                            <th>App Number</th>
+                            <th>Applicant</th>
+                            <th>Ward</th>
+                            <th>Institution</th>
+                            <th>Amount</th>
+                            <th>Allocation Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for allocation in pending_disbursements %}
+                        <tr>
+                            <td style="font-weight: 600; color: #1E293B;">
+                                {{ allocation.application.application_number }}
+                            </td>
+                            <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+                            <td>
+                                <span class="badge badge-info">{{ allocation.application.applicant.ward.name }}</span>
+                            </td>
+                            <td>{{ allocation.application.institution.name }}</td>
+                            <td style="font-weight: 600; color: #27ae60;">
+                                KES {{ allocation.amount_allocated|floatformat:0|intcomma }}
+                            </td>
+                            <td>{{ allocation.allocation_date|date:"d/m/Y" }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'constituency_process_disbursement' allocation.id %}" 
+                                       class="action-link action-link-primary">
+                                        <i class="bi bi-cash-coin"></i> Process
+                                    </a>
+                                    <a href="{% url 'constituency_application_detail' allocation.application.id %}" 
+                                       class="action-link action-link-secondary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3 class="empty-title">No Pending Disbursements</h3>
+                <p class="empty-text">
+                    All disbursements have been processed. Great job!
+                </p>
+            </div>
+            {% endif %}
+        </div>
 
-    <!-- Export Options -->
-    <div>
-        <h3>Export Data</h3>
-        <div>
-            <button onclick="exportDisbursements()">Export Disbursements</button>
-            <button onclick="window.print()">Print Report</button>
+        <!-- Completed Disbursements -->
+        <div class="section-container">
+            <h2 class="section-title">
+                <i class="bi bi-check-circle"></i>
+                Completed Disbursements
+                <span class="badge badge-success">{{ summary.completed_count }}</span>
+            </h2>
+            
+            {% if completed_disbursements %}
+            <div class="table-responsive">
+                <table class="disbursements-table">
+                    <thead>
+                        <tr>
+                            <th>App Number</th>
+                            <th>Applicant</th>
+                            <th>Ward</th>
+                            <th>Payment Method</th>
+                            <th>Reference/Cheque</th>
+                            <th>Amount</th>
+                            <th>Disbursement Date</th>
+                            <th>Processed By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for disbursement in completed_disbursements %}
+                        <tr>
+                            <td style="font-weight: 600; color: #1E293B;">
+                                {{ disbursement.allocation.application.application_number }}
+                            </td>
+                            <td>{{ disbursement.applicant.user.get_full_name }}</td>
+                            <td>
+                                <span class="badge badge-info">{{ disbursement.applicant.ward.name }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if disbursement.payment_method == 'cheque' %}badge-warning{% else %}badge-success{% endif %}">
+                                    {{ disbursement.get_payment_method_display }}
+                                </span>
+                            </td>
+                            <td style="font-family: monospace; font-size: 13px;">
+                                {% if disbursement.payment_method == 'cheque' %}
+                                    {{ disbursement.cheque_number }}
+                                {% else %}
+                                    {{ disbursement.reference_number }}
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: 600; color: #27ae60;">
+                                KES {{ disbursement.amount|floatformat:0|intcomma }}
+                            </td>
+                            <td>{{ disbursement.disbursement_date|date:"d/m/Y" }}</td>
+                            <td>{{ disbursement.processed_by.get_full_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h3 class="empty-title">No Completed Disbursements</h3>
+                <p class="empty-text">
+                    No disbursements have been processed yet.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Export Options -->
+        <div class="export-options">
+            <h3 class="section-title" style="border: none; margin: 0; padding: 0;">
+                <i class="bi bi-download"></i>
+                Export Data
+            </h3>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="exportDisbursements()">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Export Disbursements
+                </button>
+                <button class="btn btn-secondary" onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    Print Report
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -203,9 +714,25 @@
 {% block extra_js %}
 <script>
 function exportDisbursements() {
-    // Implement export functionality
-    alert('Export functionality to be implemented');
+    // Get filter parameters
+    const params = new URLSearchParams(window.location.search);
+    
+    // Create export URL
+    const exportUrl = "#" + params.toString();
+    
+    // Trigger download
+    window.location.href = exportUrl;
 }
+
+// Add confirmation for bulk disbursement
+document.querySelector('.btn-primary').addEventListener('click', function() {
+    if (this.textContent.includes('Bulk Disbursement')) {
+        if (confirm('Are you sure you want to process bulk disbursement? This action will process all pending disbursements.')) {
+            // Implement bulk disbursement logic here
+            window.location.href = "#";
+        }
+    }
+});
 </script>
 {% endblock %}
 {% endblock %}
