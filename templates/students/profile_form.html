@@ -325,6 +325,18 @@
         to { transform: rotate(360deg); }
     }
 
+    /* Slide in animation for tooltip */
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
     @media (max-width: 768px) {
         .page-header {
             flex-direction: column;
@@ -597,7 +609,90 @@
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show/hide special needs description
+    // ========================================================================
+    // LOCK CRITICAL FIELDS DURING PROFILE UPDATES
+    // Prevents students from modifying: Gender, ID Number, Birth Date, County, Constituency, Ward
+    // ========================================================================
+    {% if is_update %}
+    const fieldsToLock = [
+        'id_gender',
+        'id_id_number', 
+        'id_date_of_birth',
+        'id_county',
+        'id_constituency',
+        'id_ward'
+    ];
+    
+    fieldsToLock.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            // Disable the field
+            field.disabled = true;
+            field.style.cursor = 'not-allowed';
+            field.style.backgroundColor = '#F8FAFC';
+            field.style.opacity = '0.7';
+            
+            // Add lock icon to label
+            const formGroup = field.closest('.form-group');
+            if (formGroup) {
+                const label = formGroup.querySelector('.form-label');
+                if (label && !label.querySelector('.locked-indicator')) {
+                    const lockIcon = document.createElement('i');
+                    lockIcon.className = 'bi bi-lock-fill locked-indicator';
+                    lockIcon.style.marginLeft = '8px';
+                    lockIcon.style.color = '#64748B';
+                    lockIcon.style.fontSize = '12px';
+                    lockIcon.title = 'This field cannot be modified';
+                    label.appendChild(lockIcon);
+                }
+            }
+        }
+    });
+    
+    // Show informational message when user clicks on locked fields
+    fieldsToLock.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('click', function(e) {
+                // Only show tooltip once at a time
+                if (!document.getElementById('locked-field-tooltip')) {
+                    const tooltip = document.createElement('div');
+                    tooltip.id = 'locked-field-tooltip';
+                    tooltip.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(100, 116, 139, 0.95);
+                        color: white;
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        font-size: 13px;
+                        z-index: 10000;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        max-width: 300px;
+                        animation: slideIn 0.3s ease;
+                    `;
+                    tooltip.innerHTML = `
+                        <i class="bi bi-info-circle me-2"></i>
+                        This field is locked and cannot be changed. Contact support if you need to update this information.
+                    `;
+                    document.body.appendChild(tooltip);
+                    
+                    // Auto-remove after 3 seconds
+                    setTimeout(() => {
+                        tooltip.style.opacity = '0';
+                        tooltip.style.transition = 'opacity 0.3s ease';
+                        setTimeout(() => tooltip.remove(), 300);
+                    }, 3000);
+                }
+            });
+        }
+    });
+    {% endif %}
+    
+    // ========================================================================
+    // SHOW/HIDE SPECIAL NEEDS DESCRIPTION
+    // ========================================================================
     const specialNeedsCheckbox = document.getElementById('id_special_needs');
     const descriptionSection = document.getElementById('special-needs-description');
     
@@ -617,12 +712,78 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Location cascade dropdowns
+    // ========================================================================
+    // LOCATION CASCADE DROPDOWNS
+    // ========================================================================
+    const countySelect = document.getElementById('id_county');
+    const constituencySelect = document.getElementById('id_constituency');
     const wardSelect = document.getElementById('id_ward');
     const locationSelect = document.getElementById('id_location');
     const sublocationSelect = document.getElementById('id_sublocation');
     const villageSelect = document.getElementById('id_village');
 
+    // County -> Constituency cascade
+    if (countySelect && constituencySelect) {
+        countySelect.addEventListener('change', function() {
+            const countyId = this.value;
+            
+            if (countyId) {
+                constituencySelect.classList.add('loading');
+                
+                fetch(`/get-constituencies/?county_id=${countyId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        constituencySelect.innerHTML = '<option value="">---------</option>';
+                        wardSelect.innerHTML = '<option value="">---------</option>';
+                        locationSelect.innerHTML = '<option value="">---------</option>';
+                        sublocationSelect.innerHTML = '<option value="">---------</option>';
+                        villageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        data.forEach(constituency => {
+                            constituencySelect.innerHTML += `<option value="${constituency.id}">${constituency.name}</option>`;
+                        });
+                        
+                        constituencySelect.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        constituencySelect.classList.remove('loading');
+                    });
+            }
+        });
+    }
+
+    // Constituency -> Ward cascade
+    if (constituencySelect && wardSelect) {
+        constituencySelect.addEventListener('change', function() {
+            const constituencyId = this.value;
+            
+            if (constituencyId) {
+                wardSelect.classList.add('loading');
+                
+                fetch(`/get-wards/?constituency_id=${constituencyId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        wardSelect.innerHTML = '<option value="">---------</option>';
+                        locationSelect.innerHTML = '<option value="">---------</option>';
+                        sublocationSelect.innerHTML = '<option value="">---------</option>';
+                        villageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        data.forEach(ward => {
+                            wardSelect.innerHTML += `<option value="${ward.id}">${ward.name}</option>`;
+                        });
+                        
+                        wardSelect.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        wardSelect.classList.remove('loading');
+                    });
+            }
+        });
+    }
+
+    // Ward -> Location cascade
     if (wardSelect) {
         wardSelect.addEventListener('change', function() {
             const wardId = this.value;
@@ -651,6 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Location -> Sub-location cascade
     if (locationSelect) {
         locationSelect.addEventListener('change', function() {
             const locationId = this.value;
@@ -678,6 +840,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Sub-location -> Village cascade
     if (sublocationSelect) {
         sublocationSelect.addEventListener('change', function() {
             const sublocationId = this.value;
@@ -704,7 +867,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Form submission handling
+    // ========================================================================
+    // FORM SUBMISSION HANDLING
+    // ========================================================================
     const profileForm = document.getElementById('profileForm');
     if (profileForm) {
         profileForm.addEventListener('submit', function() {
