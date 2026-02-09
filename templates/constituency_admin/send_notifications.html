@@ -1,338 +1,663 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Send Notifications - {{ constituency.name }}{% endblock %}
+{% block title %}Send Notifications - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #1E40AF;
+    }
+
+    .info-note strong {
+        color: #1E293B;
+    }
+
+    .info-note.warning {
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        color: #92400E;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-label .required {
+        color: #DC2626;
+        margin-left: 4px;
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+        font-weight: 400;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+        line-height: 1.5;
+    }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checkbox-item:hover {
+        background: #F1F5F9;
+        border-color: #CBD5E1;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-item label {
+        cursor: pointer;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        flex: 1;
+    }
+
+    .checkbox-item .checkbox-help {
+        font-size: 12px;
+        color: #64748B;
+        display: block;
+        margin-top: 4px;
+        font-weight: 400;
+    }
+
+    .recipient-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-danger { color: #e74c3c; }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #7f8c8d;
+        transform: translateY(-1px);
+    }
+
+    .btn-large {
+        padding: 14px 32px;
+        font-size: 16px;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        flex-wrap: wrap;
+    }
+
+    .message-preview {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 16px;
+    }
+
+    .message-preview-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .message-preview-content {
+        font-size: 13px;
+        color: #64748B;
+        line-height: 1.6;
+    }
+
+    .char-counter {
+        font-size: 12px;
+        color: #64748B;
+        text-align: right;
+        margin-top: 4px;
+    }
+
+    .char-counter.warning {
+        color: #f39c12;
+    }
+
+    .char-counter.danger {
+        color: #e74c3c;
+    }
+
+    @media (max-width: 768px) {
+        .recipient-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Send Notifications</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Send Notifications</li>
+        </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1>Send Bulk Notifications</h1>
-        <p>Send notifications to applicants and beneficiaries</p>
-    </div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-bell"></i>
+                    Send Bulk Notifications
+                </h1>
+                <p class="page-subtitle">
+                    Send notifications to applicants and beneficiaries in {{ constituency.name }} Constituency
+                </p>
+            </div>
+        </div>
 
-    <!-- Notification Form -->
-    <div class="content-section">
-        <h2>Compose Notification</h2>
-        
-        <form method="post">
+        <!-- Information Note -->
+        <div class="info-note">
+            <p><strong>Note:</strong> You can send notifications to all applicants or filter by application status. Messages will be sent via in-app notifications, and optionally via SMS and email if enabled.</p>
+        </div>
+
+        <div class="info-note warning">
+            <p><strong>Warning:</strong> SMS messages may incur charges. Please ensure your message is clear and concise. SMS messages are limited to 160 characters.</p>
+        </div>
+
+        <!-- Notification Form -->
+        <form method="post" id="notificationForm">
             {% csrf_token %}
-            
+
+            <!-- Recipient Selection -->
+            <h2 class="section-title">
+                <i class="bi bi-people"></i>
+                Select Recipients
+            </h2>
+
             <div class="form-group">
-                <label for="recipient_type">Recipient Group</label>
-                <select name="recipient_type" id="recipient_type" class="form-control" required>
-                    <option value="">Select recipient group</option>
-                    <option value="all">All Applicants</option>
+                <label class="form-label">
+                    Recipient Group<span class="required">*</span>
+                </label>
+                <select name="recipient_type" id="recipientType" class="form-control" required>
+                    <option value="all">All CDF Applicants</option>
                     <option value="pending">Pending Applications</option>
                     <option value="approved">Approved Applications</option>
+                    <option value="allocated">Allocated Beneficiaries</option>
+                    <option value="disbursed">Disbursed Beneficiaries</option>
                     <option value="rejected">Rejected Applications</option>
-                    <option value="disbursed">Disbursed Applications</option>
-                    <option value="under_review">Applications Under Review</option>
                 </select>
-                <small class="form-help">Select which group of applicants to notify</small>
+                <div class="form-help">Select the group of recipients for this notification</div>
+            </div>
+
+            <!-- Message Composition -->
+            <h2 class="section-title">
+                <i class="bi bi-envelope"></i>
+                Compose Message
+            </h2>
+
+            <div class="form-group">
+                <label class="form-label" for="messageTitle">
+                    Message Title<span class="required">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    name="message_title" 
+                    id="messageTitle" 
+                    class="form-control" 
+                    placeholder="Enter notification title"
+                    required
+                    maxlength="200"
+                >
+                <div class="form-help">A clear, descriptive title for the notification</div>
             </div>
 
             <div class="form-group">
-                <label for="message_title">Message Title</label>
-                <input type="text" name="message_title" id="message_title" class="form-control" 
-                       required placeholder="Enter notification title" maxlength="200">
+                <label class="form-label" for="messageText">
+                    Message Content<span class="required">*</span>
+                </label>
+                <textarea 
+                    name="message_text" 
+                    id="messageText" 
+                    class="form-control" 
+                    placeholder="Enter your message here..."
+                    required
+                    rows="6"
+                ></textarea>
+                <div class="char-counter" id="charCounter">0 / 500 characters</div>
+                <div class="form-help">The main content of your notification. Keep it clear and concise.</div>
             </div>
 
-            <div class="form-group">
-                <label for="message_text">Message Content</label>
-                <textarea name="message_text" id="message_text" class="form-control" 
-                          rows="8" required placeholder="Enter your message here..."></textarea>
-                <small class="form-help">
-                    Character count: <span id="char-count">0</span> / 500
-                </small>
-            </div>
+            <!-- Delivery Methods -->
+            <h2 class="section-title">
+                <i class="bi bi-send"></i>
+                Delivery Methods
+            </h2>
 
-            <div class="form-group">
-                <label>Delivery Methods</label>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="send_sms" id="send_sms">
-                        <label for="send_sms">Send via SMS</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="send_email" id="send_email">
-                        <label for="send_email">Send via Email</label>
-                    </div>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="sendInApp" checked disabled>
+                    <label for="sendInApp">
+                        In-App Notification
+                        <span class="checkbox-help">Always enabled - Messages will appear in the user's notification panel</span>
+                    </label>
                 </div>
-                <small class="form-help">
-                    Select at least one delivery method. In-app notifications will always be sent.
-                </small>
-            </div>
 
-            <!-- Preview Section -->
-            <div class="preview-section">
-                <h3>Preview</h3>
-                <div class="notification-preview">
-                    <div class="preview-title" id="preview-title">Message Title</div>
-                    <div class="preview-content" id="preview-content">Message content will appear here...</div>
-                    <div class="preview-meta">
-                        <span>From: {{ constituency.name }} CDF Office</span>
-                        <span id="recipient-count">Recipients: 0</span>
-                    </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" name="send_email" id="sendEmail">
+                    <label for="sendEmail">
+                        Email Notification
+                        <span class="checkbox-help">Send notification via email to all recipients with registered email addresses</span>
+                    </label>
+                </div>
+
+                <div class="checkbox-item">
+                    <input type="checkbox" name="send_sms" id="sendSMS">
+                    <label for="sendSMS">
+                        SMS Notification
+                        <span class="checkbox-help">Send notification via SMS (160 character limit, may incur charges)</span>
+                    </label>
                 </div>
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="icon-send"></i> Send Notifications
+            <!-- SMS Preview (shown when SMS is selected) -->
+            <div class="message-preview" id="smsPreview" style="display: none;">
+                <div class="message-preview-title">
+                    <i class="bi bi-phone"></i> SMS Preview (160 character limit)
+                </div>
+                <div class="message-preview-content" id="smsPreviewText">
+                    Your message will appear here...
+                </div>
+                <div class="char-counter" id="smsCharCounter">0 / 160 characters</div>
+            </div>
+
+            <!-- Email Preview (shown when Email is selected) -->
+            <div class="message-preview" id="emailPreview" style="display: none;">
+                <div class="message-preview-title">
+                    <i class="bi bi-envelope"></i> Email Preview
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>Subject:</strong> <span id="emailSubject">-</span>
+                </div>
+                <div class="message-preview-content" id="emailPreviewText">
+                    Your message will appear here...
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary btn-large">
+                    <i class="bi bi-send"></i>
+                    Send Notifications
                 </button>
                 <a href="{% url 'constituency_dashboard' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i>
                     Cancel
                 </a>
             </div>
         </form>
     </div>
-
-    <!-- Guidelines -->
-    <div class="content-section">
-        <h2>Notification Guidelines</h2>
-        <div class="guidelines-content">
-            <h3>Best Practices</h3>
-            <ul>
-                <li>Keep messages clear and concise</li>
-                <li>Include all relevant information (dates, amounts, next steps)</li>
-                <li>Be professional and respectful in tone</li>
-                <li>Double-check all details before sending</li>
-                <li>For SMS, keep messages under 160 characters for single message delivery</li>
-            </ul>
-
-            <h3>What to Include</h3>
-            <ul>
-                <li>Purpose of the notification</li>
-                <li>Any action required from the recipient</li>
-                <li>Relevant dates or deadlines</li>
-                <li>Contact information for follow-up questions</li>
-            </ul>
-
-            <h3>Important Notes</h3>
-            <ul>
-                <li>SMS notifications may incur costs - use wisely</li>
-                <li>Email notifications are free but may take longer to deliver</li>
-                <li>All sent notifications are logged for audit purposes</li>
-                <li>Recipients may not receive SMS/email immediately</li>
-                <li>Consider sending test notifications to yourself first</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Recent Notifications -->
-    <div class="content-section">
-        <h2>Recent Notifications Sent</h2>
-        <div class="notifications-list">
-            <div class="notification-item">
-                <div class="notification-header">
-                    <h4>Sample: Application Review Update</h4>
-                    <span class="notification-date">Jan 15, 2025</span>
-                </div>
-                <p class="notification-content">
-                    Your CDF bursary application has been reviewed and approved...
-                </p>
-                <div class="notification-meta">
-                    <span>Recipients: 45</span>
-                    <span>Via: SMS, Email</span>
-                    <span class="badge badge-success">Delivered</span>
-                </div>
-            </div>
-
-            <div class="notification-item">
-                <div class="notification-header">
-                    <h4>Sample: Disbursement Notice</h4>
-                    <span class="notification-date">Jan 10, 2025</span>
-                </div>
-                <p class="notification-content">
-                    Your bursary has been disbursed to your institution...
-                </p>
-                <div class="notification-meta">
-                    <span>Recipients: 32</span>
-                    <span>Via: SMS, Email</span>
-                    <span class="badge badge-success">Delivered</span>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
+{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const messageTitle = document.getElementById('message_title');
-    const messageText = document.getElementById('message_text');
-    const previewTitle = document.getElementById('preview-title');
-    const previewContent = document.getElementById('preview-content');
-    const charCount = document.getElementById('char-count');
-    const recipientType = document.getElementById('recipient_type');
-    const recipientCount = document.getElementById('recipient-count');
-
-    // Update preview on input
-    messageTitle.addEventListener('input', function() {
-        previewTitle.textContent = this.value || 'Message Title';
-    });
-
+    // Character counter for message text
+    const messageText = document.getElementById('messageText');
+    const charCounter = document.getElementById('charCounter');
+    const messageTitle = document.getElementById('messageTitle');
+    
     messageText.addEventListener('input', function() {
-        previewContent.textContent = this.value || 'Message content will appear here...';
-        charCount.textContent = this.value.length;
+        const length = this.value.length;
+        charCounter.textContent = `${length} / 500 characters`;
+        
+        if (length > 450) {
+            charCounter.classList.add('warning');
+        } else {
+            charCounter.classList.remove('warning');
+        }
+        
+        if (length > 500) {
+            charCounter.classList.add('danger');
+        } else {
+            charCounter.classList.remove('danger');
+        }
+        
+        updatePreviews();
     });
 
-    // Update recipient count (would be AJAX in real implementation)
-    recipientType.addEventListener('change', function() {
-        // This would typically be an AJAX call to get actual count
-        const counts = {
-            'all': 150,
-            'pending': 45,
-            'approved': 80,
-            'rejected': 15,
-            'disbursed': 60,
-            'under_review': 25
-        };
-        recipientCount.textContent = 'Recipients: ' + (counts[this.value] || 0);
+    // Toggle SMS preview
+    const sendSMS = document.getElementById('sendSMS');
+    const smsPreview = document.getElementById('smsPreview');
+    const smsPreviewText = document.getElementById('smsPreviewText');
+    const smsCharCounter = document.getElementById('smsCharCounter');
+    
+    sendSMS.addEventListener('change', function() {
+        if (this.checked) {
+            smsPreview.style.display = 'block';
+            updatePreviews();
+        } else {
+            smsPreview.style.display = 'none';
+        }
     });
+
+    // Toggle Email preview
+    const sendEmail = document.getElementById('sendEmail');
+    const emailPreview = document.getElementById('emailPreview');
+    const emailSubject = document.getElementById('emailSubject');
+    const emailPreviewText = document.getElementById('emailPreviewText');
+    
+    sendEmail.addEventListener('change', function() {
+        if (this.checked) {
+            emailPreview.style.display = 'block';
+            updatePreviews();
+        } else {
+            emailPreview.style.display = 'none';
+        }
+    });
+
+    messageTitle.addEventListener('input', updatePreviews);
+
+    function updatePreviews() {
+        const title = messageTitle.value || 'No title';
+        const message = messageText.value || 'No message';
+        
+        // Update SMS preview
+        if (sendSMS.checked) {
+            const smsText = message.substring(0, 160);
+            smsPreviewText.textContent = smsText || 'Your message will appear here...';
+            const smsLength = smsText.length;
+            smsCharCounter.textContent = `${smsLength} / 160 characters`;
+            
+            if (smsLength > 140) {
+                smsCharCounter.classList.add('warning');
+            } else {
+                smsCharCounter.classList.remove('warning');
+            }
+            
+            if (smsLength >= 160) {
+                smsCharCounter.classList.add('danger');
+            } else {
+                smsCharCounter.classList.remove('danger');
+            }
+        }
+        
+        // Update Email preview
+        if (sendEmail.checked) {
+            emailSubject.textContent = title;
+            emailPreviewText.textContent = message || 'Your message will appear here...';
+        }
+    }
 
     // Form validation
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        const sendSMS = document.getElementById('send_sms').checked;
-        const sendEmail = document.getElementById('send_email').checked;
+    const notificationForm = document.getElementById('notificationForm');
+    
+    notificationForm.addEventListener('submit', function(e) {
+        const title = messageTitle.value.trim();
+        const message = messageText.value.trim();
         
-        if (!sendSMS && !sendEmail) {
+        if (!title || !message) {
             e.preventDefault();
-            alert('Please select at least one delivery method (SMS or Email)');
+            alert('Please fill in both message title and content.');
             return false;
         }
-
-        if (messageText.value.length > 500) {
+        
+        if (sendSMS.checked && message.length > 160) {
+            const confirmSMS = confirm('Your message is longer than 160 characters and will be truncated for SMS. Continue?');
+            if (!confirmSMS) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        const confirmed = confirm('Are you sure you want to send this notification? This action cannot be undone.');
+        if (!confirmed) {
             e.preventDefault();
-            alert('Message is too long. Maximum 500 characters allowed.');
             return false;
         }
-
-        return confirm('Are you sure you want to send this notification to ' + recipientCount.textContent.split(': ')[1] + ' recipients?');
     });
-});
+
+    // Recipient type change handler
+    const recipientType = document.getElementById('recipientType');
+    recipientType.addEventListener('change', function() {
+        // You can add logic here to show estimated recipient count
+        console.log('Selected recipient type:', this.value);
+    });
 </script>
-
-<style>
-.checkbox-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.checkbox-item input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-}
-
-.preview-section {
-    margin: 30px 0;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.notification-preview {
-    background: white;
-    padding: 20px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-}
-
-.preview-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.preview-content {
-    margin-bottom: 20px;
-    line-height: 1.6;
-    color: #333;
-}
-
-.preview-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #666;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
-.form-help {
-    display: block;
-    margin-top: 5px;
-    font-size: 13px;
-    color: #666;
-}
-
-.guidelines-content h3 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-}
-
-.guidelines-content ul {
-    margin-left: 20px;
-    line-height: 1.8;
-}
-
-.notifications-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.notification-item {
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border-left: 4px solid #0066cc;
-}
-
-.notification-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.notification-header h4 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.notification-date {
-    font-size: 13px;
-    color: #666;
-}
-
-.notification-content {
-    margin: 10px 0;
-    color: #333;
-}
-
-.notification-meta {
-    display: flex;
-    gap: 20px;
-    font-size: 13px;
-    color: #666;
-    padding-top: 10px;
-    border-top: 1px solid #ddd;
-}
-</style>
+{% endblock %}
 {% endblock %}

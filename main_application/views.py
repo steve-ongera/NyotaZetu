@@ -20851,12 +20851,17 @@ def constituency_settings(request):
 
 
 # ============= NOTIFICATIONS =============
+from django.db.models import Q
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 
 @login_required
 @user_passes_test(is_constituency_admin)
 def constituency_send_notifications(request):
     """
-    Send bulk notifications to applicants/beneficiaries
+    Send bulk notifications to applicants/beneficiaries via in-app, email, and SMS
     """
     constituency = get_constituency_for_user(request.user)
     
@@ -20875,7 +20880,7 @@ def constituency_send_notifications(request):
     ).first()
     
     if request.method == 'POST':
-        recipient_type = request.POST.get('recipient_type', 'all')  # all, approved, pending, disbursed, etc.
+        recipient_type = request.POST.get('recipient_type', 'all')
         message_title = request.POST.get('message_title', '').strip()
         message_text = request.POST.get('message_text', '').strip()
         send_sms = request.POST.get('send_sms') == 'on'
@@ -20913,7 +20918,6 @@ def constituency_send_notifications(request):
         elif recipient_type == 'rejected':
             target_applications = cdf_applications.filter(status='rejected')
         elif recipient_type == 'allocated':
-            # Get applicants with allocations
             allocated_app_ids = Allocation.objects.filter(
                 application__in=cdf_applications
             ).values_list('application_id', flat=True)
@@ -20925,54 +20929,76 @@ def constituency_send_notifications(request):
         user_ids = target_applications.values_list('applicant__user_id', flat=True).distinct()
         users = User.objects.filter(id__in=user_ids)
         
-        count = 0
+        notification_count = 0
+        email_count = 0
+        sms_count = 0
         errors = []
         
         for user in users:
             try:
-                # Create notification
+                # Create in-app notification
                 Notification.objects.create(
                     user=user,
                     notification_type='system',
                     title=message_title,
                     message=message_text
                 )
+                notification_count += 1
+                
+                # Send Email if requested and user has email
+                if send_email and user.email:
+                    try:
+                        email_status = send_email_notification(
+                            user=user,
+                            subject=message_title,
+                            message=message_text,
+                            constituency=constituency
+                        )
+                        if email_status:
+                            email_count += 1
+                    except Exception as e:
+                        errors.append(f"Email to {user.email}: {str(e)}")
                 
                 # Send SMS if requested and user has phone number
                 if send_sms and user.phone_number:
                     try:
-                        # You would implement your SMS sending logic here
-                        # send_sms_notification(user.phone_number, message_text[:160])
-                        pass
+                        # Truncate message to 160 characters for SMS
+                        sms_text = message_text[:160]
+                        sms_status = send_sms_notification(
+                            user=user,
+                            phone_number=user.phone_number,
+                            message=sms_text
+                        )
+                        if sms_status:
+                            sms_count += 1
                     except Exception as e:
                         errors.append(f"SMS to {user.phone_number}: {str(e)}")
-                
-                # Send email if requested and user has email
-                if send_email and user.email:
-                    try:
-                        # You would implement your email sending logic here
-                        # send_email_notification(user.email, message_title, message_text)
-                        pass
-                    except Exception as e:
-                        errors.append(f"Email to {user.email}: {str(e)}")
-                
-                count += 1
                 
             except Exception as e:
                 errors.append(f"User {user.username}: {str(e)}")
         
+        # Create audit log
         create_audit_log(
             request.user, 'create', 'Notification', None,
-            f"Sent bulk notifications to {count} recipients",
+            f"Sent bulk notifications to {notification_count} recipients (Email: {email_count}, SMS: {sms_count})",
             request
         )
         
+        # Show success/error messages
+        if notification_count > 0:
+            success_msg = f'Notifications sent successfully! '
+            success_msg += f'In-app: {notification_count}'
+            if send_email:
+                success_msg += f', Email: {email_count}'
+            if send_sms:
+                success_msg += f', SMS: {sms_count}'
+            messages.success(request, success_msg)
+        
         if errors:
-            messages.warning(request, f'Notifications sent to {count} recipients with {len(errors)} errors.')
-            # Log errors but don't show all to user
-            print(f"Notification errors: {errors[:10]}")
-        else:
-            messages.success(request, f'Notifications sent to {count} recipients successfully.')
+            messages.warning(request, f'{len(errors)} notification(s) failed to send. Check logs for details.')
+            # Log first 10 errors for debugging
+            for error in errors[:10]:
+                print(f"Notification error: {error}")
         
         return redirect('constituency_dashboard')
     
@@ -20983,6 +21009,186 @@ def constituency_send_notifications(request):
     }
     
     return render(request, 'constituency_admin/send_notifications.html', context)
+
+
+def send_email_notification(user, subject, message, constituency):
+    """
+    Send email notification to a user and log the attempt
+    Returns True if successful, False otherwise
+    """
+    try:
+        # Prepare email content
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        
+        # Create HTML email content
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                .header {{
+                    background-color: #3498db;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 5px 5px 0 0;
+                }}
+                .content {{
+                    background-color: #f9f9f9;
+                    padding: 30px;
+                    border: 1px solid #ddd;
+                }}
+                .footer {{
+                    background-color: #f1f1f1;
+                    padding: 15px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #666;
+                    border-radius: 0 0 5px 5px;
+                }}
+                .message-box {{
+                    background-color: white;
+                    padding: 20px;
+                    border-left: 4px solid #3498db;
+                    margin: 20px 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Nyota Zetu Bursary System</h2>
+                    <p>{constituency.name} Constituency</p>
+                </div>
+                <div class="content">
+                    <p>Dear {user.first_name} {user.last_name},</p>
+                    
+                    <div class="message-box">
+                        <h3>{subject}</h3>
+                        <p>{message}</p>
+                    </div>
+                    
+                    <p>If you have any questions, please contact your constituency CDF office.</p>
+                    
+                    <p>Best regards,<br>
+                    {constituency.name} Constituency CDF Office</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message from the Nyota Zetu Bursary System.</p>
+                    <p>Please do not reply to this email.</p>
+                    <p>&copy; 2024 {constituency.county.name} County Government. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Create plain text version
+        text_content = f"""
+        Nyota Zetu Bursary System
+        {constituency.name} Constituency
+        
+        Dear {user.first_name} {user.last_name},
+        
+        {subject}
+        
+        {message}
+        
+        If you have any questions, please contact your constituency CDF office.
+        
+        Best regards,
+        {constituency.name} Constituency CDF Office
+        
+        ---
+        This is an automated message from the Nyota Zetu Bursary System.
+        Please do not reply to this email.
+        """
+        
+        # Send email
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=from_email,
+            to=recipient_list
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+        
+        # Log successful email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            status='sent'
+        )
+        
+        return True
+        
+    except Exception as e:
+        # Log failed email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            status='failed'
+        )
+        print(f"Email error for {user.email}: {str(e)}")
+        return False
+
+
+def send_sms_notification(user, phone_number, message):
+    """
+    Send SMS notification to a user and log the attempt
+    Returns True if successful, False otherwise
+    
+    NOTE: You need to integrate with an SMS gateway like Africa's Talking, Twilio, etc.
+    This is a placeholder implementation
+    """
+    try:
+        # TODO: Integrate with your SMS gateway
+        # Example for Africa's Talking:
+        # import africastalking
+        # username = settings.AFRICASTALKING_USERNAME
+        # api_key = settings.AFRICASTALKING_API_KEY
+        # africastalking.initialize(username, api_key)
+        # sms = africastalking.SMS
+        # response = sms.send(message, [phone_number])
+        
+        # For now, just log the SMS (placeholder)
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=phone_number,
+            message=message,
+            status='pending'  # Change to 'sent' when actual SMS gateway is integrated
+        )
+        
+        # Return False for now since we haven't actually sent the SMS
+        # Change to True when SMS gateway is integrated
+        return False
+        
+    except Exception as e:
+        # Log failed SMS
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=phone_number,
+            message=message,
+            status='failed'
+        )
+        print(f"SMS error for {phone_number}: {str(e)}")
+        return False
 
 # ============= HELPER FUNCTIONS =============
 
