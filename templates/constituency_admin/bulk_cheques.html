@@ -1,165 +1,741 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Bulk Cheques - {{ constituency.name }} Constituency{% endblock %}
+{% block title %}Bulk Cheques - {{ constituency.name }} Constituency - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-primary {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        padding: 10px 20px;
+        background: #64748B;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        padding: 10px 20px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-success:hover {
+        background: #229954;
+        transform: translateY(-1px);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #1abc9c; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .analytics-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .analytics-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .analytics-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .analytics-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .analytics-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .filter-container {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .action-links {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .action-link {
+        color: #3498db;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: color 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .action-link:hover {
+        color: #2980b9;
+        text-decoration: underline;
+    }
+
+    .action-link.success {
+        color: #27ae60;
+    }
+
+    .action-link.success:hover {
+        color: #229954;
+    }
+
+    .action-link.danger {
+        color: #e74c3c;
+    }
+
+    .action-link.danger:hover {
+        color: #c0392b;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #F8FAFC;
+        border: 1px dashed #CBD5E1;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 16px;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.collected {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+
+    .status-badge.pending {
+        background: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .analytics-table {
+            font-size: 13px;
+        }
+
+        .analytics-table thead th,
+        .analytics-table tbody td {
+            padding: 10px;
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+
+    @media print {
+        .export-btn,
+        .btn-primary,
+        .btn-secondary,
+        .btn-success,
+        .filter-container,
+        .btn-group {
+            display: none;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: none;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div>
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'dashboard' %}">Dashboard</a>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>
-                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
             </li>
-            <li>Bulk Cheques</li>
+            <li class="breadcrumb-item active" aria-current="page">Bulk Cheques</li>
         </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div>
-        <div>
-            <h1>Bulk Cheque Management</h1>
-            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
-        </div>
-        <div>
-            <a href="{% url 'constituency_create_bulk_cheque' %}">Create New Bulk Cheque</a>
-        </div>
-    </div>
-
-    <!-- Summary Statistics -->
-    <div>
-        <h2>Summary</h2>
-        <div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <div>
-                <div>
-                    <h3>Total Bulk Cheques</h3>
-                    <p>{{ summary.total_cheques }}</p>
-                </div>
+                <h1 class="page-title">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    Bulk Cheque Management
+                </h1>
+                <p class="page-subtitle">
+                    {{ constituency.name }} Constituency - {{ current_fiscal_year.name }}
+                </p>
             </div>
             <div>
-                <div>
-                    <h3>Collected</h3>
-                    <p>{{ summary.collected }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Pending Collection</h3>
-                    <p>{{ summary.pending }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Total Amount</h3>
-                    <p>KES {{ summary.total_amount|floatformat:0|intcomma }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Total Students</h3>
-                    <p>{{ summary.total_students }}</p>
-                </div>
+                <a href="{% url 'constituency_create_bulk_cheque' %}" class="btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    Create New Bulk Cheque
+                </a>
             </div>
         </div>
-    </div>
 
-    <!-- Filters -->
-    <div>
-        <h3>Filters</h3>
-        <form method="get">
-            <div>
-                <label>Institution:</label>
-                <select name="institution">
-                    <option value="">All Institutions</option>
-                    {% for institution in institutions %}
-                    <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
-                        {{ institution.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+        <!-- Summary Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-bar-chart-line"></i>
+            Summary Statistics
+        </h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div class="stat-value">{{ summary.total_cheques }}</div>
+                <div class="stat-label">Total Bulk Cheques</div>
             </div>
-            <div>
-                <label>Status:</label>
-                <select name="status">
-                    <option value="">All Status</option>
-                    <option value="collected" {% if selected_status == 'collected' %}selected{% endif %}>Collected</option>
-                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
-                </select>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ summary.collected }}</div>
+                <div class="stat-label">Collected</div>
             </div>
-            <div>
-                <label>Search:</label>
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by cheque number or institution">
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <div class="stat-value">{{ summary.pending }}</div>
+                <div class="stat-label">Pending Collection</div>
             </div>
-            <button type="submit">Apply Filters</button>
-            <a href="{% url 'constituency_bulk_cheques' %}">Reset</a>
-        </form>
-    </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-value">KES {{ summary.total_amount|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Amount</div>
+            </div>
+            
+            <div class="stat-card stat-teal">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">{{ summary.total_students }}</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+        </div>
 
-    <!-- Bulk Cheques Table -->
-    <div>
-        <h2>Bulk Cheques List</h2>
+        <!-- Filters -->
+        <div class="filter-container">
+            <h3 class="section-title">
+                <i class="bi bi-funnel"></i>
+                Filter Options
+            </h3>
+            
+            <form method="get" class="filter-form">
+                <div class="form-group">
+                    <label class="form-label">Institution</label>
+                    <select name="institution" class="form-control">
+                        <option value="">All Institutions</option>
+                        {% for institution in institutions %}
+                        <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
+                            {{ institution.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Status</option>
+                        <option value="collected" {% if selected_status == 'collected' %}selected{% endif %}>Collected</option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" value="{{ search_query }}" 
+                           placeholder="Search by cheque number or institution">
+                </div>
+                
+                <div class="form-group form-actions">
+                    <button type="submit" class="btn-secondary">
+                        <i class="bi bi-funnel"></i>
+                        Apply Filters
+                    </button>
+                    <a href="{% url 'constituency_bulk_cheques' %}" class="btn-primary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Reset Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bulk Cheques Table -->
+        <h2 class="section-title">
+            <i class="bi bi-list-check"></i>
+            Bulk Cheques List
+        </h2>
+        
         {% if bulk_cheques %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Cheque Number</th>
-                    <th>Institution</th>
-                    <th>Cheque Holder</th>
-                    <th>Students</th>
-                    <th>Amount</th>
-                    <th>Created Date</th>
-                    <th>Status</th>
-                    <th>Collected Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cheque in bulk_cheques %}
-                <tr>
-                    <td>{{ cheque.cheque_number }}</td>
-                    <td>{{ cheque.institution.name }}</td>
-                    <td>{{ cheque.cheque_holder_name }}</td>
-                    <td>{{ cheque.student_count }}</td>
-                    <td>KES {{ cheque.total_amount|floatformat:0|intcomma }}</td>
-                    <td>{{ cheque.created_date|date:"d/m/Y" }}</td>
-                    <td>
-                        {% if cheque.is_collected %}
-                        <span>Collected</span>
-                        {% else %}
-                        <span>Pending</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if cheque.collection_date %}
-                        {{ cheque.collection_date|date:"d/m/Y" }}
-                        {% else %}
-                        Not collected
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="#">View Details</a>
-                        {% if not cheque.is_collected %}
-                        <a href="#">Mark as Collected</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Cheque Number</th>
+                        <th>Institution</th>
+                        <th>Cheque Holder</th>
+                        <th>Students</th>
+                        <th>Amount</th>
+                        <th>Created Date</th>
+                        <th>Status</th>
+                        <th>Collected Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cheque in bulk_cheques %}
+                    <tr>
+                        <td style="font-weight: 600; color: #1E293B;">{{ cheque.cheque_number }}</td>
+                        <td>{{ cheque.institution.name }}</td>
+                        <td>{{ cheque.cheque_holder_name }}</td>
+                        <td>{{ cheque.student_count }}</td>
+                        <td style="font-weight: 600; color: #27ae60;">
+                            KES {{ cheque.total_amount|floatformat:0|intcomma }}
+                        </td>
+                        <td>{{ cheque.created_date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if cheque.is_collected %}
+                            <span class="status-badge collected">Collected</span>
+                            {% else %}
+                            <span class="status-badge pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if cheque.collection_date %}
+                            {{ cheque.collection_date|date:"d/m/Y" }}
+                            {% else %}
+                            <span style="color: #94A3B8; font-style: italic;">Not collected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-links">
+                                <a href="#" class="action-link">
+                                    <i class="bi bi-eye"></i>
+                                    View
+                                </a>
+                                {% if not cheque.is_collected %}
+                                <a href="#" class="action-link success">
+                                    <i class="bi bi-check-circle"></i>
+                                    Mark Collected
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <p>No bulk cheques found.</p>
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <h3 class="empty-title">No Bulk Cheques Found</h3>
+            <p class="empty-text">
+                {% if selected_institution or selected_status or search_query %}
+                No bulk cheques match your current filters. Try adjusting your search criteria.
+                {% else %}
+                No bulk cheques have been created yet. Click "Create New Bulk Cheque" to get started.
+                {% endif %}
+            </p>
+            {% if selected_institution or selected_status or search_query %}
+            <a href="{% url 'constituency_bulk_cheques' %}" class="btn-primary">
+                <i class="bi bi-arrow-clockwise"></i>
+                Reset Filters
+            </a>
+            {% endif %}
+        </div>
         {% endif %}
-    </div>
 
-    <!-- Export Options -->
-    <div>
-        <h3>Export Data</h3>
-        <div>
-            <button onclick="exportBulkCheques()">Export Bulk Cheques</button>
-            <button onclick="window.print()">Print Report</button>
+        <!-- Export Options -->
+        <h2 class="section-title">
+            <i class="bi bi-download"></i>
+            Export Options
+        </h2>
+        
+        <div class="btn-group">
+            <button class="export-btn" onclick="exportBulkCheques()">
+                <i class="bi bi-file-earmark-excel"></i>
+                Export Bulk Cheques
+            </button>
+            <button class="export-btn" onclick="window.print()">
+                <i class="bi bi-printer"></i>
+                Print Report
+            </button>
         </div>
     </div>
 </div>
@@ -167,9 +743,63 @@
 {% block extra_js %}
 <script>
 function exportBulkCheques() {
-    // Implement export functionality
-    alert('Export functionality to be implemented');
+    // Get all table data
+    const table = document.querySelector('.analytics-table');
+    if (!table) {
+        alert('No data to export');
+        return;
+    }
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    const rows = table.querySelectorAll('tr');
+    const tableData = [];
+    
+    rows.forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('th, td');
+        
+        cells.forEach(cell => {
+            // Skip action columns
+            if (cell.closest('.action-links')) return;
+            
+            let text = cell.textContent.trim();
+            text = text.replace(/\s+/g, ' ').replace(/\n/g, ' ');
+            
+            // Remove badge content and icons
+            const badge = cell.querySelector('.status-badge');
+            if (badge) {
+                text = badge.textContent.trim();
+            }
+            
+            rowData.push(`"${text}"`);
+        });
+        
+        if (rowData.length > 0) {
+            tableData.push(rowData.join(','));
+        }
+    });
+    
+    csvContent += tableData.join('\n');
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "bulk_cheques_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
+
+// Auto-scroll to section on page load if hash exists
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+        const element = document.querySelector(window.location.hash);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+});
 </script>
 {% endblock %}
 {% endblock %}
