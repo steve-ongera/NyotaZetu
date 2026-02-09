@@ -1,107 +1,683 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Beneficiaries - {{ constituency.name }}{% endblock %}
+{% block title %}Beneficiaries - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #1abc9c; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .stat-sublabel {
+        font-size: 11px;
+        color: #94A3B8;
+        margin-top: 4px;
+    }
+
+    .filters-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        padding-left: 40px;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748B;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-bottom: 20px;
+    }
+
+    .beneficiaries-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 14px;
+    }
+
+    .beneficiaries-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #E2E8F0;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .beneficiaries-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        color: #334155;
+    }
+
+    .beneficiaries-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .beneficiaries-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .beneficiary-name {
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .beneficiary-id {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 2px;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-primary {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .amount {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 24px;
+    }
+
+    .pagination a,
+    .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .pagination a:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .pagination .current {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .pagination .disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-state-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+        font-size: 14px;
+        color: #94A3B8;
+    }
+
+    .export-btn {
+        padding: 8px 16px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .export-btn:hover {
+        background: #229954;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .beneficiaries-table {
+            font-size: 13px;
+        }
+
+        .beneficiaries-table thead th,
+        .beneficiaries-table tbody td {
+            padding: 10px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Beneficiaries</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Beneficiaries</li>
+        </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>CDF Bursary Beneficiaries</h1>
-            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
-        </div>
-    </div>
-
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <h3>Filter Beneficiaries</h3>
-        <form method="get" class="filter-form">
-            <div class="filter-grid">
-                <div class="form-group">
-                    <label for="ward">Ward</label>
-                    <select name="ward" id="ward" class="form-control">
-                        <option value="">All Wards</option>
-                        {% for ward in wards %}
-                        <option value="{{ ward.id }}" {% if request.GET.ward == ward.id|stringformat:"s" %}selected{% endif %}>
-                            {{ ward.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="search">Search</label>
-                    <input type="text" name="search" id="search" class="form-control" 
-                           placeholder="Name, ID Number..." 
-                           value="{{ request.GET.search }}">
-                </div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-people-fill"></i>
+                    Bursary Beneficiaries
+                </h1>
+                <p class="page-subtitle">
+                    Manage and track all beneficiaries in {{ constituency.name }} Constituency - {{ current_fiscal_year.name }}
+                </p>
             </div>
-
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
-                <a href="{% url 'constituency_beneficiaries' %}" class="btn btn-secondary">Reset</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="#" onclick="window.print()" class="export-btn">
+                    <i class="bi bi-printer"></i>
+                    Print
+                </a>
+                <a href="#" class="export-btn">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Export Excel
+                </a>
             </div>
-        </form>
-    </div>
-
-    <!-- Beneficiaries Table -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Beneficiaries List</h2>
-            <p>Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
         </div>
 
+        <!-- Summary Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-bar-chart-line"></i>
+            Summary Statistics
+        </h2>
+
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">{{ summary.total|intcomma }}</div>
+                <div class="stat-label">Total Beneficiaries</div>
+            </div>
+
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ summary.disbursed|intcomma }}</div>
+                <div class="stat-label">Disbursed</div>
+                <div class="stat-sublabel">{{ summary.disbursed_percentage }}% of total</div>
+            </div>
+
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <div class="stat-value">{{ summary.pending|intcomma }}</div>
+                <div class="stat-label">Pending Disbursement</div>
+                <div class="stat-sublabel">{{ summary.pending_percentage }}% of total</div>
+            </div>
+
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-value">KES {{ summary.total_amount|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Allocated</div>
+            </div>
+
+            <div class="stat-card stat-purple">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="stat-value">KES {{ summary.disbursed_amount|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Disbursed</div>
+            </div>
+
+            <div class="stat-card stat-teal">
+                <div class="stat-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-value">KES {{ summary.pending_amount|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Pending Amount</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <h2 class="section-title">
+            <i class="bi bi-funnel"></i>
+            Filter Beneficiaries
+        </h2>
+
+        <div class="filters-section">
+            <form method="get" id="filterForm">
+                <div class="filters-grid">
+                    <div class="form-group">
+                        <label class="form-label">Ward</label>
+                        <select name="ward" class="form-control" onchange="document.getElementById('filterForm').submit()">
+                            <option value="all">All Wards</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}" {% if selected_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ward.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Disbursement Status</label>
+                        <select name="status" class="form-control" onchange="document.getElementById('filterForm').submit()">
+                            <option value="all">All Statuses</option>
+                            <option value="disbursed" {% if selected_status == 'disbursed' %}selected{% endif %}>Disbursed</option>
+                            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-control" onchange="document.getElementById('filterForm').submit()">
+                            <option value="all">All Methods</option>
+                            {% for value, label in payment_methods %}
+                            <option value="{{ value }}" {% if selected_payment_method == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Search</label>
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                class="form-control" 
+                                placeholder="Name, ID, or Institution..."
+                                value="{{ search_query }}"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 12px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'constituency_beneficiaries' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Beneficiaries Table -->
+        <h2 class="section-title">
+            <i class="bi bi-table"></i>
+            Beneficiaries List
+        </h2>
+
+        {% if page_obj %}
         <div class="table-container">
-            <table class="data-table">
+            <table class="beneficiaries-table">
                 <thead>
                     <tr>
-                        <th>No.</th>
-                        <th>Name</th>
-                        <th>ID Number</th>
+                        <th>#</th>
+                        <th>Beneficiary Details</th>
                         <th>Ward</th>
                         <th>Institution</th>
                         <th>Amount Allocated</th>
-                        <th>Disbursement Status</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                        <th>Allocation Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for allocation in page_obj %}
+                    {% for beneficiary in page_obj %}
                     <tr>
                         <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
-                        <td>{{ allocation.application.applicant.user.get_full_name }}</td>
-                        <td>{{ allocation.application.applicant.id_number }}</td>
-                        <td>{{ allocation.application.applicant.ward.name|default:"N/A" }}</td>
-                        <td>{{ allocation.application.institution.name|truncatewords:3 }}</td>
-                        <td>KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</td>
                         <td>
-                            {% if allocation.is_disbursed %}
-                            <span class="badge badge-success">Disbursed</span>
+                            <div class="beneficiary-name">
+                                {{ beneficiary.application.applicant.user.first_name }} 
+                                {{ beneficiary.application.applicant.user.last_name }}
+                            </div>
+                            <div class="beneficiary-id">
+                                {{ beneficiary.application.application_number }}
+                            </div>
+                        </td>
+                        <td>{{ beneficiary.application.applicant.ward.name|default:"N/A" }}</td>
+                        <td>{{ beneficiary.application.institution.name|truncatewords:5 }}</td>
+                        <td class="amount">KES {{ beneficiary.amount_allocated|floatformat:0|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-info">
+                                {{ beneficiary.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if beneficiary.is_disbursed %}
+                            <span class="badge badge-success">
+                                <i class="bi bi-check-circle"></i> Disbursed
+                            </span>
                             {% else %}
-                            <span class="badge badge-warning">Pending</span>
+                            <span class="badge badge-warning">
+                                <i class="bi bi-clock"></i> Pending
+                            </span>
                             {% endif %}
                         </td>
+                        <td>{{ beneficiary.allocation_date|date:"M d, Y" }}</td>
                         <td>
-                            <a href="{% url 'constituency_beneficiary_profile' allocation.application.applicant.id %}" 
-                               class="btn btn-sm btn-primary">
-                                View Profile
+                            <a href="{% url 'constituency_beneficiary_profile' beneficiary.application.applicant.id %}" 
+                               class="btn btn-sm btn-primary"
+                               title="View Profile">
+                                <i class="bi bi-eye"></i>
                             </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center">
-                            <div class="empty-state">
-                                <p>No beneficiaries found.</p>
-                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -111,41 +687,60 @@
 
         <!-- Pagination -->
         {% if page_obj.has_other_pages %}
-        <div class="pagination-container">
-            <div class="pagination-info">
-                Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }} results
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_method %}&payment_method={{ selected_payment_method }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-bar-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_method %}&payment_method={{ selected_payment_method }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="disabled"><i class="bi bi-chevron-bar-left"></i></span>
+                <span class="disabled"><i class="bi bi-chevron-left"></i></span>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_method %}&payment_method={{ selected_payment_method }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_ward %}&ward={{ selected_ward }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_method %}&payment_method={{ selected_payment_method }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-bar-right"></i>
+                </a>
+            {% else %}
+                <span class="disabled"><i class="bi bi-chevron-right"></i></span>
+                <span class="disabled"><i class="bi bi-chevron-bar-right"></i></span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="bi bi-people"></i>
             </div>
-            <ul class="pagination">
-                {% if page_obj.has_previous %}
-                <li>
-                    <a href="?page=1{% if request.GET.ward %}&ward={{ request.GET.ward }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">First</a>
-                </li>
-                <li>
-                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.ward %}&ward={{ request.GET.ward }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
-                </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="active"><span>{{ num }}</span></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li>
-                        <a href="?page={{ num }}{% if request.GET.ward %}&ward={{ request.GET.ward }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li>
-                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.ward %}&ward={{ request.GET.ward }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
-                </li>
-                <li>
-                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.ward %}&ward={{ request.GET.ward }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Last</a>
-                </li>
-                {% endif %}
-            </ul>
+            <div class="empty-state-title">No Beneficiaries Found</div>
+            <div class="empty-state-text">
+                No beneficiaries match your current filters. Try adjusting your search criteria.
+            </div>
         </div>
         {% endif %}
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    // Auto-submit search on enter
+    document.querySelector('input[name="search"]').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('filterForm').submit();
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %}

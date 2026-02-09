@@ -1,251 +1,984 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}{{ applicant.user.get_full_name }} - Beneficiary Profile{% endblock %}
+{% block title %}{{ applicant.user.get_full_name }} - Profile - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .profile-sidebar {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-radius: 12px;
+        padding: 32px 24px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        height: fit-content;
+    }
+
+    .profile-avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 56px;
+        font-weight: 700;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-name {
+        text-align: center;
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .profile-id {
+        text-align: center;
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 24px;
+    }
+
+    .profile-details {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .detail-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .detail-item i {
+        font-size: 18px;
+        opacity: 0.9;
+        width: 20px;
+        flex-shrink: 0;
+    }
+
+    .detail-item .label {
+        opacity: 0.8;
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+
+    .detail-item .value {
+        font-weight: 600;
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .stat-box {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .stat-box-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .stat-box-label {
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    .profile-content {
+        background: white;
+    }
+
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .summary-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .summary-card.stat-primary { color: #3498db; }
+    .summary-card.stat-success { color: #27ae60; }
+    .summary-card.stat-warning { color: #f39c12; }
+    .summary-card.stat-info { color: #16a085; }
+
+    .summary-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .summary-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .tab-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 2px solid #F1F5F9;
+        margin-bottom: 24px;
+        overflow-x: auto;
+    }
+
+    .tab-button {
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .tab-button:hover {
+        color: #3498db;
+    }
+
+    .tab-button.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #E2E8F0;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 24px;
+        padding-left: 16px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -26px;
+        top: 4px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid currentColor;
+    }
+
+    .timeline-item.success { color: #27ae60; }
+    .timeline-item.warning { color: #f39c12; }
+    .timeline-item.info { color: #3498db; }
+
+    .timeline-date {
+        font-size: 12px;
+        color: #94A3B8;
+        margin-bottom: 4px;
+    }
+
+    .timeline-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .timeline-content {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .info-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+    }
+
+    .info-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-card-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-bottom: 20px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 14px;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #E2E8F0;
+    }
+
+    .data-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        color: #334155;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94A3B8;
+    }
+
+    @media (max-width: 768px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-cards {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .tab-nav {
+            overflow-x: auto;
+        }
+    }
+
+    @media print {
+        .btn, .tab-nav {
+            display: none !important;
+        }
+        
+        .tab-content {
+            display: block !important;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <a href="{% url 'constituency_beneficiaries' %}">Beneficiaries</a>
-        <span class="separator">/</span>
-        <span class="current">{{ applicant.user.get_full_name }}</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_beneficiaries' %}">
+                    Beneficiaries
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ applicant.user.get_full_name }}</li>
+        </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>{{ applicant.user.get_full_name }}</h1>
-            <p>Beneficiary Profile & History</p>
-        </div>
-        <div class="header-actions">
-            <a href="{% url 'constituency_beneficiaries' %}" class="btn btn-secondary">
-                <i class="icon-back"></i> Back to List
-            </a>
-        </div>
-    </div>
-
-    <div class="content-grid">
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Personal Information -->
-            <div class="content-section">
-                <h2>Personal Information</h2>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Full Name</label>
-                        <p>{{ applicant.user.get_full_name }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>ID Number</label>
-                        <p>{{ applicant.id_number }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Gender</label>
-                        <p>{{ applicant.get_gender_display }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Date of Birth</label>
-                        <p>{{ applicant.date_of_birth|date:"M d, Y" }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Phone Number</label>
-                        <p>{{ applicant.user.phone_number }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Email</label>
-                        <p>{{ applicant.user.email }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Location Information -->
-            <div class="content-section">
-                <h2>Location Information</h2>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>County</label>
-                        <p>{{ applicant.county.name }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Constituency</label>
-                        <p>{{ applicant.constituency.name }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Ward</label>
-                        <p>{{ applicant.ward.name|default:"N/A" }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Location</label>
-                        <p>{{ applicant.location.name|default:"N/A" }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Sub-location</label>
-                        <p>{{ applicant.sublocation.name|default:"N/A" }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Village</label>
-                        <p>{{ applicant.village.name|default:"N/A" }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Application History -->
-            <div class="content-section">
-                <h2>Application History</h2>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Application No.</th>
-                                <th>Fiscal Year</th>
-                                <th>Institution</th>
-                                <th>Amount Requested</th>
-                                <th>Status</th>
-                                <th>Date Submitted</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for app in applications %}
-                            <tr>
-                                <td>{{ app.application_number }}</td>
-                                <td>{{ app.fiscal_year.name }}</td>
-                                <td>{{ app.institution.name|truncatewords:3 }}</td>
-                                <td>KES {{ app.amount_requested|floatformat:2|intcomma }}</td>
-                                <td>
-                                    <span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span>
-                                </td>
-                                <td>{{ app.date_submitted|date:"M d, Y"|default:"N/A" }}</td>
-                                <td>
-                                    <a href="{% url 'constituency_application_detail' app.id %}" class="btn btn-sm">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center">
-                                    <p>No applications found.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Allocation History -->
-            <div class="content-section">
-                <h2>Allocation History</h2>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Fiscal Year</th>
-                                <th>Application</th>
-                                <th>Amount Allocated</th>
-                                <th>Allocation Date</th>
-                                <th>Disbursement Status</th>
-                                <th>Disbursement Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for allocation in allocations %}
-                            <tr>
-                                <td>{{ allocation.application.fiscal_year.name }}</td>
-                                <td>{{ allocation.application.application_number }}</td>
-                                <td>KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</td>
-                                <td>{{ allocation.allocation_date|date:"M d, Y" }}</td>
-                                <td>
-                                    {% if allocation.is_disbursed %}
-                                    <span class="badge badge-success">Disbursed</span>
-                                    {% else %}
-                                    <span class="badge badge-warning">Pending</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if allocation.disbursement_date %}
-                                    {{ allocation.disbursement_date|date:"M d, Y" }}
-                                    {% else %}
-                                    N/A
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center">
-                                    <p>No allocations found.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
+    <!-- Profile Grid -->
+    <div class="profile-grid">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <!-- Summary Statistics -->
-            <div class="sidebar-section">
-                <h3>Summary Statistics</h3>
-                <div class="summary-list">
-                    <div class="summary-item">
-                        <label>Total Applications</label>
-                        <p>{{ applications.count }}</p>
+        <div class="profile-sidebar">
+            <div class="profile-avatar">
+                {{ applicant.user.first_name.0|upper }}{{ applicant.user.last_name.0|upper }}
+            </div>
+            
+            <div class="profile-name">
+                {{ applicant.user.first_name }} {{ applicant.user.last_name }}
+            </div>
+            
+            <div class="profile-id">
+                ID: {{ applicant.id_number }}
+            </div>
+
+            <div class="profile-details">
+                <div class="detail-item">
+                    <i class="bi bi-envelope"></i>
+                    <div>
+                        <div class="label">Email</div>
+                        <div class="value">{{ applicant.user.email|default:"Not provided" }}</div>
                     </div>
-                    <div class="summary-item">
-                        <label>Total Received</label>
-                        <p class="amount-highlight">KES {{ total_received|floatformat:2|intcomma }}</p>
+                </div>
+
+                <div class="detail-item">
+                    <i class="bi bi-phone"></i>
+                    <div>
+                        <div class="label">Phone</div>
+                        <div class="value">{{ applicant.user.phone_number|default:"Not provided" }}</div>
                     </div>
-                    <div class="summary-item">
-                        <label>Years Assisted</label>
-                        <p>{{ allocations.count }}</p>
+                </div>
+
+                <div class="detail-item">
+                    <i class="bi bi-geo-alt"></i>
+                    <div>
+                        <div class="label">Ward</div>
+                        <div class="value">{{ applicant.ward.name|default:"N/A" }}</div>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <i class="bi bi-geo"></i>
+                    <div>
+                        <div class="label">Village</div>
+                        <div class="value">{{ applicant.village.name|default:"N/A" }}</div>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <i class="bi bi-calendar"></i>
+                    <div>
+                        <div class="label">Date of Birth</div>
+                        <div class="value">{{ applicant.date_of_birth|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <i class="bi bi-person"></i>
+                    <div>
+                        <div class="label">Gender</div>
+                        <div class="value">{{ applicant.get_gender_display }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Links -->
-            <div class="sidebar-section">
-                <h3>Quick Links</h3>
-                <div class="action-list">
-                    {% for app in applications %}
-                    {% if app.status == 'submitted' or app.status == 'under_review' %}
-                    <a href="{% url 'constituency_application_detail' app.id %}" class="action-link">
-                        <i class="icon-document"></i> Review {{ app.fiscal_year.name }} Application
-                    </a>
-                    {% endif %}
-                    {% endfor %}
-                    <a href="{% url 'constituency_beneficiaries' %}?search={{ applicant.id_number }}" class="action-link">
-                        <i class="icon-search"></i> Search Applications
-                    </a>
-                    <a href="{% url 'constituency_ward_detail' applicant.ward.id %}" class="action-link">
-                        <i class="icon-location"></i> View Ward Applications
-                    </a>
+            <div class="stats-summary">
+                <div class="stat-box">
+                    <div class="stat-box-value">{{ totals.applications }}</div>
+                    <div class="stat-box-label">Applications</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-value">{{ totals.allocations }}</div>
+                    <div class="stat-box-label">Allocations</div>
                 </div>
             </div>
 
-            <!-- Beneficiary Notes -->
-            <div class="sidebar-section">
-                <h3>Notes</h3>
-                <div class="notes-content">
-                    {% if applicant.special_needs %}
-                    <div class="note-item alert-info">
-                        <h4>Special Needs</h4>
-                        <p>{{ applicant.special_needs_description|default:"Yes" }}</p>
-                    </div>
-                    {% endif %}
-                    
-                    <p class="text-muted">
-                        This beneficiary has been assisted through the CDF bursary program 
-                        for {{ allocations.count }} fiscal year{{ allocations.count|pluralize }}.
+            <div style="margin-top: 24px;">
+                <a href="{% url 'constituency_beneficiaries' %}" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Beneficiaries
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="profile-content">
+            <div class="section-container">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="bi bi-person-badge"></i>
+                        Beneficiary Profile
+                    </h1>
+                    <p class="page-subtitle">
+                        Complete profile and history for {{ applicant.user.get_full_name }}
                     </p>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card stat-primary">
+                        <div class="summary-value">{{ totals.applications }}</div>
+                        <div class="summary-label">Total Applications</div>
+                    </div>
+
+                    <div class="summary-card stat-success">
+                        <div class="summary-value">{{ totals.allocations }}</div>
+                        <div class="summary-label">Allocations Received</div>
+                    </div>
+
+                    <div class="summary-card stat-info">
+                        <div class="summary-value">KES {{ totals.total_allocated|floatformat:0|intcomma }}</div>
+                        <div class="summary-label">Total Allocated</div>
+                    </div>
+
+                    <div class="summary-card stat-warning">
+                        <div class="summary-value">KES {{ totals.total_disbursed|floatformat:0|intcomma }}</div>
+                        <div class="summary-label">Total Disbursed</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-nav">
+                    <button class="tab-button active" onclick="switchTab('applications')">
+                        <i class="bi bi-file-text"></i> Applications
+                    </button>
+                    <button class="tab-button" onclick="switchTab('allocations')">
+                        <i class="bi bi-cash-coin"></i> Allocations
+                    </button>
+                    <button class="tab-button" onclick="switchTab('disbursements')">
+                        <i class="bi bi-wallet2"></i> Disbursements
+                    </button>
+                    <button class="tab-button" onclick="switchTab('family')">
+                        <i class="bi bi-people"></i> Family Info
+                    </button>
+                    <button class="tab-button" onclick="switchTab('timeline')">
+                        <i class="bi bi-clock-history"></i> Timeline
+                    </button>
+                </div>
+
+                <!-- Applications Tab -->
+                <div class="tab-content active" id="applications-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-file-text"></i>
+                        Application History
+                    </h2>
+
+                    {% if applications %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Application #</th>
+                                    <th>Fiscal Year</th>
+                                    <th>Institution</th>
+                                    <th>Amount Requested</th>
+                                    <th>Status</th>
+                                    <th>Date Submitted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in applications %}
+                                <tr>
+                                    <td>{{ app.application_number }}</td>
+                                    <td>{{ app.fiscal_year.name }}</td>
+                                    <td>{{ app.institution.name|truncatewords:5 }}</td>
+                                    <td>KES {{ app.amount_requested|floatformat:0|intcomma }}</td>
+                                    <td>
+                                        {% if app.status == 'approved' %}
+                                        <span class="badge badge-success">Approved</span>
+                                        {% elif app.status == 'disbursed' %}
+                                        <span class="badge badge-success">Disbursed</span>
+                                        {% elif app.status == 'rejected' %}
+                                        <span class="badge badge-danger">Rejected</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">{{ app.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ app.date_submitted|date:"M d, Y"|default:"Not submitted" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-file-text" style="font-size: 48px;"></i>
+                        <p>No applications found</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Allocations Tab -->
+                <div class="tab-content" id="allocations-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-cash-coin"></i>
+                        Allocation History
+                    </h2>
+
+                    {% if allocations %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Fiscal Year</th>
+                                    <th>Institution</th>
+                                    <th>Amount Allocated</th>
+                                    <th>Payment Method</th>
+                                    <th>Disbursed</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alloc in allocations %}
+                                <tr>
+                                    <td>{{ alloc.application.fiscal_year.name }}</td>
+                                    <td>{{ alloc.application.institution.name|truncatewords:5 }}</td>
+                                    <td>KES {{ alloc.amount_allocated|floatformat:0|intcomma }}</td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ alloc.get_payment_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if alloc.is_disbursed %}
+                                        <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ alloc.allocation_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-cash-coin" style="font-size: 48px;"></i>
+                        <p>No allocations found</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Disbursements Tab -->
+                <div class="tab-content" id="disbursements-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-wallet2"></i>
+                        Disbursement History
+                    </h2>
+
+                    {% if disbursements %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference #</th>
+                                    <th>Fiscal Year</th>
+                                    <th>Amount</th>
+                                    <th>Payment Method</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for disb in disbursements %}
+                                <tr>
+                                    <td>{{ disb.reference_number }}</td>
+                                    <td>{{ disb.allocation.application.fiscal_year.name }}</td>
+                                    <td>KES {{ disb.amount|floatformat:0|intcomma }}</td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ disb.get_payment_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if disb.status == 'completed' %}
+                                        <span class="badge badge-success">Completed</span>
+                                        {% elif disb.status == 'failed' %}
+                                        <span class="badge badge-danger">Failed</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">{{ disb.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ disb.disbursement_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-wallet2" style="font-size: 48px;"></i>
+                        <p>No disbursements found</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Family Info Tab -->
+                <div class="tab-content" id="family-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-people"></i>
+                        Family Information
+                    </h2>
+
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 16px;">
+                        Parents/Guardians
+                    </h3>
+
+                    {% if guardians %}
+                    <div class="info-grid">
+                        {% for guardian in guardians %}
+                        <div class="info-card">
+                            <div class="info-card-title">{{ guardian.get_relationship_display }}</div>
+                            <div class="info-card-value" style="margin-bottom: 8px;">{{ guardian.name }}</div>
+                            <div style="font-size: 13px; color: #64748B;">
+                                <div><i class="bi bi-phone"></i> {{ guardian.phone_number }}</div>
+                                <div><i class="bi bi-briefcase"></i> {{ guardian.get_employment_status_display }}</div>
+                                {% if guardian.occupation %}
+                                <div><i class="bi bi-person-workspace"></i> {{ guardian.occupation }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state" style="padding: 20px;">
+                        <p>No guardian information available</p>
+                    </div>
+                    {% endif %}
+
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1E293B; margin: 24px 0 16px;">
+                        Siblings
+                    </h3>
+
+                    {% if siblings %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Age</th>
+                                    <th>Education Level</th>
+                                    <th>School</th>
+                                    <th>In School</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sibling in siblings %}
+                                <tr>
+                                    <td>{{ sibling.name }}</td>
+                                    <td>{{ sibling.age }} years</td>
+                                    <td>{{ sibling.education_level }}</td>
+                                    <td>{{ sibling.school_name|default:"N/A" }}</td>
+                                    <td>
+                                        {% if sibling.is_in_school %}
+                                        <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state" style="padding: 20px;">
+                        <p>No sibling information available</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Timeline Tab -->
+                <div class="tab-content" id="timeline-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-clock-history"></i>
+                        Activity Timeline
+                    </h2>
+
+                    <div class="timeline">
+                        {% for app in applications %}
+                        <div class="timeline-item {% if app.status == 'approved' or app.status == 'disbursed' %}success{% elif app.status == 'rejected' %}warning{% else %}info{% endif %}">
+                            <div class="timeline-date">{{ app.date_submitted|date:"M d, Y"|default:"Draft" }}</div>
+                            <div class="timeline-title">Application {{ app.application_number }}</div>
+                            <div class="timeline-content">
+                                <strong>{{ app.fiscal_year.name }}</strong> - {{ app.institution.name }}<br>
+                                Amount Requested: KES {{ app.amount_requested|floatformat:0|intcomma }}<br>
+                                Status: {{ app.get_status_display }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% for alloc in allocations %}
+                        <div class="timeline-item success">
+                            <div class="timeline-date">{{ alloc.allocation_date|date:"M d, Y" }}</div>
+                            <div class="timeline-title">Allocation Approved</div>
+                            <div class="timeline-content">
+                                Amount Allocated: KES {{ alloc.amount_allocated|floatformat:0|intcomma }}<br>
+                                Payment Method: {{ alloc.get_payment_method_display }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% for disb in disbursements %}
+                        <div class="timeline-item success">
+                            <div class="timeline-date">{{ disb.disbursement_date|date:"M d, Y" }}</div>
+                            <div class="timeline-title">Funds Disbursed</div>
+                            <div class="timeline-content">
+                                Reference: {{ disb.reference_number }}<br>
+                                Amount: KES {{ disb.amount|floatformat:0|intcomma }}<br>
+                                Status: {{ disb.get_status_display }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% if not applications and not allocations and not disbursements %}
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history" style="font-size: 48px;"></i>
+                            <p>No activity found</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    function switchTab(tabName) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Remove active class from all buttons
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Show selected tab
+        const selectedTab = document.getElementById(tabName + '-tab');
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+
+        // Highlight selected button
+        event.target.closest('.tab-button').classList.add('active');
+    }
+</script>
+{% endblock %}
 {% endblock %}
