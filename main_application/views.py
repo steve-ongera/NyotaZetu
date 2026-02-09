@@ -21423,6 +21423,540 @@ def constituency_help_support(request):
     return render(request, 'constituency_admin/help_support.html', context)
 
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Q, Count
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.utils import timezone
+from main_application.models import (
+    Application, Allocation, User, FiscalYear, 
+    SMSLog, EmailLog, Notification
+)
+
+@login_required
+@user_passes_test(is_constituency_admin)
+def constituency_bulk_sms(request):
+    """
+    Send bulk SMS to applicants/beneficiaries
+    """
+    constituency = get_constituency_for_user(request.user)
+    
+    if not constituency:
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
+    
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
+    
+    # Get statistics for different recipient groups
+    applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
+        fiscal_year=current_fiscal_year
+    ).filter(
+        Q(bursary_source__iexact='cdf') |
+        Q(bursary_source__iexact='both') |
+        Q(bursary_source__icontains='cdf')
+    ).distinct()
+    
+    stats = {
+        'total': applications.count(),
+        'pending': applications.filter(status__in=['submitted', 'under_review']).count(),
+        'approved': applications.filter(status='approved').count(),
+        'disbursed': applications.filter(status='disbursed').count(),
+        'rejected': applications.filter(status='rejected').count(),
+        'allocated': Allocation.objects.filter(
+            application__in=applications
+        ).count(),
+    }
+    
+    if request.method == 'POST':
+        recipient_type = request.POST.get('recipient_type', 'all')
+        message_text = request.POST.get('message_text', '').strip()
+        sender_id = request.POST.get('sender_id', 'NYOTAZETU').strip()
+        schedule_send = request.POST.get('schedule_send') == 'on'
+        schedule_date = request.POST.get('schedule_date')
+        schedule_time = request.POST.get('schedule_time')
+        
+        if not message_text:
+            messages.error(request, "Message text is required.")
+            return redirect('constituency_bulk_sms')
+        
+        # Validate SMS length
+        if len(message_text) > 160:
+            messages.warning(request, "Message is longer than 160 characters and will be sent as multiple SMS.")
+        
+        # Filter recipients based on type
+        if recipient_type == 'approved':
+            target_applications = applications.filter(status='approved')
+        elif recipient_type == 'pending':
+            target_applications = applications.filter(status__in=['submitted', 'under_review'])
+        elif recipient_type == 'disbursed':
+            target_applications = applications.filter(status='disbursed')
+        elif recipient_type == 'rejected':
+            target_applications = applications.filter(status='rejected')
+        elif recipient_type == 'allocated':
+            allocated_app_ids = Allocation.objects.filter(
+                application__in=applications
+            ).values_list('application_id', flat=True)
+            target_applications = applications.filter(id__in=allocated_app_ids)
+        else:  # 'all'
+            target_applications = applications
+        
+        # Get unique users with phone numbers
+        user_ids = target_applications.values_list('applicant__user_id', flat=True).distinct()
+        users = User.objects.filter(
+            id__in=user_ids,
+            phone_number__isnull=False
+        ).exclude(phone_number='')
+        
+        success_count = 0
+        failed_count = 0
+        errors = []
+        
+        for user in users:
+            try:
+                # Send SMS
+                sms_status = send_sms_message(
+                    user=user,
+                    phone_number=user.phone_number,
+                    message=message_text,
+                    sender_id=sender_id,
+                    scheduled=schedule_send,
+                    schedule_datetime=f"{schedule_date} {schedule_time}" if schedule_send else None
+                )
+                
+                if sms_status:
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                failed_count += 1
+                errors.append(f"{user.phone_number}: {str(e)}")
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'create', 'SMSLog', None,
+            f"Sent bulk SMS to {success_count} recipients",
+            request
+        )
+        
+        # Show results
+        if success_count > 0:
+            messages.success(request, f'SMS sent to {success_count} recipient(s) successfully!')
+        
+        if failed_count > 0:
+            messages.warning(request, f'{failed_count} SMS(s) failed to send.')
+        
+        if errors and len(errors) <= 5:
+            for error in errors:
+                messages.error(request, error)
+        
+        return redirect('constituency_bulk_sms')
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'stats': stats,
+    }
+    
+    return render(request, 'constituency_admin/bulk_sms.html', context)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+def constituency_bulk_email(request):
+    """
+    Send bulk emails to applicants/beneficiaries
+    """
+    constituency = get_constituency_for_user(request.user)
+    
+    if not constituency:
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
+    
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
+    
+    # Get statistics for different recipient groups
+    applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
+        fiscal_year=current_fiscal_year
+    ).filter(
+        Q(bursary_source__iexact='cdf') |
+        Q(bursary_source__iexact='both') |
+        Q(bursary_source__icontains='cdf')
+    ).distinct()
+    
+    stats = {
+        'total': applications.count(),
+        'pending': applications.filter(status__in=['submitted', 'under_review']).count(),
+        'approved': applications.filter(status='approved').count(),
+        'disbursed': applications.filter(status='disbursed').count(),
+        'rejected': applications.filter(status='rejected').count(),
+        'allocated': Allocation.objects.filter(
+            application__in=applications
+        ).count(),
+    }
+    
+    if request.method == 'POST':
+        recipient_type = request.POST.get('recipient_type', 'all')
+        subject = request.POST.get('subject', '').strip()
+        message_text = request.POST.get('message_text', '').strip()
+        use_template = request.POST.get('use_template') == 'on'
+        schedule_send = request.POST.get('schedule_send') == 'on'
+        schedule_date = request.POST.get('schedule_date')
+        schedule_time = request.POST.get('schedule_time')
+        
+        if not subject or not message_text:
+            messages.error(request, "Subject and message are required.")
+            return redirect('constituency_bulk_email')
+        
+        # Filter recipients based on type
+        if recipient_type == 'approved':
+            target_applications = applications.filter(status='approved')
+        elif recipient_type == 'pending':
+            target_applications = applications.filter(status__in=['submitted', 'under_review'])
+        elif recipient_type == 'disbursed':
+            target_applications = applications.filter(status='disbursed')
+        elif recipient_type == 'rejected':
+            target_applications = applications.filter(status='rejected')
+        elif recipient_type == 'allocated':
+            allocated_app_ids = Allocation.objects.filter(
+                application__in=applications
+            ).values_list('application_id', flat=True)
+            target_applications = applications.filter(id__in=allocated_app_ids)
+        else:  # 'all'
+            target_applications = applications
+        
+        # Get unique users with email addresses
+        user_ids = target_applications.values_list('applicant__user_id', flat=True).distinct()
+        users = User.objects.filter(
+            id__in=user_ids,
+            email__isnull=False
+        ).exclude(email='')
+        
+        success_count = 0
+        failed_count = 0
+        errors = []
+        
+        for user in users:
+            try:
+                # Send email
+                email_status = send_bulk_email_message(
+                    user=user,
+                    subject=subject,
+                    message=message_text,
+                    constituency=constituency,
+                    use_template=use_template,
+                    scheduled=schedule_send,
+                    schedule_datetime=f"{schedule_date} {schedule_time}" if schedule_send else None
+                )
+                
+                if email_status:
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                failed_count += 1
+                errors.append(f"{user.email}: {str(e)}")
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'create', 'EmailLog', None,
+            f"Sent bulk email to {success_count} recipients: {subject}",
+            request
+        )
+        
+        # Show results
+        if success_count > 0:
+            messages.success(request, f'Email sent to {success_count} recipient(s) successfully!')
+        
+        if failed_count > 0:
+            messages.warning(request, f'{failed_count} email(s) failed to send.')
+        
+        if errors and len(errors) <= 5:
+            for error in errors:
+                messages.error(request, error)
+        
+        return redirect('constituency_bulk_email')
+    
+    # Email templates
+    email_templates = [
+        {
+            'name': 'Application Received',
+            'subject': 'Your Bursary Application Has Been Received',
+            'message': 'Dear [NAME], we have received your bursary application. Your application number is [APP_NUMBER]. We will review it and get back to you soon.'
+        },
+        {
+            'name': 'Application Approved',
+            'subject': 'Congratulations! Your Bursary Application Approved',
+            'message': 'Dear [NAME], congratulations! Your bursary application [APP_NUMBER] has been approved. You have been allocated KES [AMOUNT]. Disbursement details will be communicated soon.'
+        },
+        {
+            'name': 'Disbursement Notice',
+            'subject': 'Bursary Disbursement Notice',
+            'message': 'Dear [NAME], your bursary of KES [AMOUNT] has been disbursed to your institution. Please check with your school accounts office.'
+        },
+        {
+            'name': 'Document Request',
+            'subject': 'Additional Documents Required',
+            'message': 'Dear [NAME], we need additional documents for your application [APP_NUMBER]. Please submit the required documents within 7 days.'
+        },
+    ]
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'stats': stats,
+        'email_templates': email_templates,
+    }
+    
+    return render(request, 'constituency_admin/bulk_email.html', context)
+
+
+# Helper Functions
+
+def send_sms_message(user, phone_number, message, sender_id='NYOTAZETU', scheduled=False, schedule_datetime=None):
+    """
+    Send SMS to a single user
+    Returns True if successful, False otherwise
+    """
+    try:
+        # TODO: Integrate with your SMS gateway (Africa's Talking, Twilio, etc.)
+        # For now, just log the SMS
+        
+        # Example for Africa's Talking:
+        # import africastalking
+        # username = settings.AFRICASTALKING_USERNAME
+        # api_key = settings.AFRICASTALKING_API_KEY
+        # africastalking.initialize(username, api_key)
+        # sms = africastalking.SMS
+        # response = sms.send(message, [phone_number], sender_id)
+        
+        # Create SMS log
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=phone_number,
+            message=message,
+            status='pending' if scheduled else 'sent',
+            gateway_message_id=None,  # Will be populated by actual gateway
+        )
+        
+        # Return False for now since we haven't actually sent the SMS
+        # Change to True when SMS gateway is integrated
+        return False
+        
+    except Exception as e:
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=phone_number,
+            message=message,
+            status='failed',
+        )
+        print(f"SMS error for {phone_number}: {str(e)}")
+        return False
+
+
+def send_bulk_email_message(user, subject, message, constituency, use_template=True, scheduled=False, schedule_datetime=None):
+    """
+    Send email to a single user
+    Returns True if successful, False otherwise
+    """
+    try:
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        
+        if use_template:
+            # Create HTML email with template
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #3498db, #2980b9);
+                        color: white;
+                        padding: 30px 20px;
+                        text-align: center;
+                        border-radius: 8px 8px 0 0;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 24px;
+                    }}
+                    .content {{
+                        background: #f9f9f9;
+                        padding: 30px;
+                        border: 1px solid #ddd;
+                    }}
+                    .message-box {{
+                        background: white;
+                        padding: 25px;
+                        border-left: 4px solid #3498db;
+                        margin: 20px 0;
+                        border-radius: 4px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }}
+                    .footer {{
+                        background: #f1f1f1;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 13px;
+                        color: #666;
+                        border-radius: 0 0 8px 8px;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        padding: 12px 30px;
+                        background: #3498db;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin: 15px 0;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🎓 Nyota Zetu Bursary System</h1>
+                        <p style="margin: 5px 0 0 0;">{constituency.name} Constituency</p>
+                    </div>
+                    <div class="content">
+                        <p>Dear {user.first_name} {user.last_name},</p>
+                        
+                        <div class="message-box">
+                            <h2 style="margin-top: 0; color: #2c3e50;">{subject}</h2>
+                            <p style="white-space: pre-line;">{message}</p>
+                        </div>
+                        
+                        <p>If you have any questions, please contact your constituency CDF office.</p>
+                        
+                        <p style="margin-top: 30px;">
+                            Best regards,<br>
+                            <strong>{constituency.name} Constituency CDF Office</strong>
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p><strong>Contact Information</strong></p>
+                        <p>📧 {constituency.cdf_office_email or 'Not available'}<br>
+                        📞 {constituency.cdf_office_phone or 'Not available'}</p>
+                        <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <p>This is an automated message from the Nyota Zetu Bursary System.</p>
+                        <p>&copy; 2024 {constituency.county.name} County Government. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Plain text version
+            text_content = f"""
+            Nyota Zetu Bursary System
+            {constituency.name} Constituency
+            
+            Dear {user.first_name} {user.last_name},
+            
+            {subject}
+            
+            {message}
+            
+            If you have any questions, please contact your constituency CDF office.
+            
+            Best regards,
+            {constituency.name} Constituency CDF Office
+            
+            Contact: {constituency.cdf_office_email or 'N/A'} | {constituency.cdf_office_phone or 'N/A'}
+            
+            ---
+            This is an automated message from the Nyota Zetu Bursary System.
+            """
+        else:
+            # Simple plain text email
+            html_content = None
+            text_content = f"""
+            Dear {user.first_name} {user.last_name},
+            
+            {message}
+            
+            Best regards,
+            {constituency.name} Constituency CDF Office
+            """
+        
+        # Send email
+        if html_content:
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=from_email,
+                to=recipient_list
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send()
+        else:
+            send_mail(
+                subject=subject,
+                message=text_content,
+                from_email=from_email,
+                recipient_list=recipient_list,
+            )
+        
+        # Log successful email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            status='sent'
+        )
+        
+        return True
+        
+    except Exception as e:
+        # Log failed email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            status='failed'
+        )
+        print(f"Email error for {user.email}: {str(e)}")
+        return False
+
+
 # ============= HELPER FUNCTIONS =============
 
 
