@@ -18501,28 +18501,77 @@ def constituency_analytics(request):
     return render(request, 'constituency_admin/analytics.html', context)
 
 # ============= APPLICATION MANAGEMENT =============
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction
+from django.db.models import Q
+from decimal import Decimal
+
+def get_user_constituency(user):
+    """
+    Helper function to get constituency for any user type
+    """
+    # Direct constituency assignment
+    if user.assigned_constituency:
+        return user.assigned_constituency
+    
+    # Get from assigned area
+    assigned_area = user.get_assigned_area()
+    if isinstance(assigned_area, Constituency):
+        return assigned_area
+    
+    # Check if assigned to a ward
+    if user.assigned_ward and user.assigned_ward.constituency:
+        return user.assigned_ward.constituency
+    
+    # Check if assigned to a county
+    if user.assigned_county:
+        # Return first constituency in county (for county admins)
+        constituency = user.assigned_county.constituencies.first()
+        if constituency:
+            return constituency
+    
+    return None
 
 @login_required
+@user_passes_test(is_constituency_admin)
 def constituency_applications_list(request):
     """
     List all CDF bursary applications for the constituency
     With advanced filtering and search
     """
+    # Get constituency for user
     constituency = get_user_constituency(request.user)
     
-    # Base queryset
-    applications = Application.objects.filter(
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both']
-    ).select_related(
-        'applicant__user',
-        'institution',
-        'fiscal_year',
-        'bursary_category',
-        'applicant__ward'
-    ).prefetch_related('documents', 'reviews')
+    if not constituency:
+        messages.error(request, "No constituency assigned to your account.")
+        return render(request, 'constituency_admin/no_assignment.html')
     
-    # Filters
+    # Get active fiscal year for constituency's county
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
+    
+    # Base queryset - use the same filtering logic as dashboard
+    applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
+        fiscal_year=current_fiscal_year
+    ).distinct()
+    
+    # Filter for CDF applications
+    cdf_applications = applications.filter(
+        Q(bursary_source__iexact='cdf') |
+        Q(bursary_source__iexact='both') |
+        Q(bursary_source__icontains='cdf')
+    ).distinct()
+    
+    # Fallback to all applications if no CDF applications found
+    if cdf_applications.count() == 0:
+        messages.info(request, "No CDF applications found. Showing all applications.")
+        cdf_applications = applications
+    
+    # Apply filters
     status = request.GET.get('status')
     ward = request.GET.get('ward')
     institution_type = request.GET.get('institution_type')
@@ -18530,66 +18579,119 @@ def constituency_applications_list(request):
     category = request.GET.get('category')
     search = request.GET.get('search')
     
-    if status:
-        applications = applications.filter(status=status)
+    if status and status != 'all':
+        cdf_applications = cdf_applications.filter(status=status)
     
-    if ward:
-        applications = applications.filter(applicant__ward_id=ward)
+    if ward and ward != 'all':
+        cdf_applications = cdf_applications.filter(applicant__ward_id=ward)
     
-    if institution_type:
-        applications = applications.filter(institution__institution_type=institution_type)
+    if institution_type and institution_type != 'all':
+        cdf_applications = cdf_applications.filter(
+            institution__institution_type=institution_type
+        )
     
-    if fiscal_year_id:
-        applications = applications.filter(fiscal_year_id=fiscal_year_id)
+    if fiscal_year_id and fiscal_year_id != 'all':
+        cdf_applications = cdf_applications.filter(fiscal_year_id=fiscal_year_id)
     
-    if category:
-        applications = applications.filter(bursary_category_id=category)
+    if category and category != 'all':
+        cdf_applications = cdf_applications.filter(bursary_category_id=category)
     
     if search:
-        applications = applications.filter(
+        cdf_applications = cdf_applications.filter(
             Q(application_number__icontains=search) |
             Q(applicant__user__first_name__icontains=search) |
             Q(applicant__user__last_name__icontains=search) |
+            Q(applicant__user__username__icontains=search) |
             Q(applicant__id_number__icontains=search) |
             Q(institution__name__icontains=search)
         )
     
     # Sorting
     sort_by = request.GET.get('sort', '-date_submitted')
-    applications = applications.order_by(sort_by)
+    valid_sort_fields = ['date_submitted', 'application_number', 'amount_requested', 'status']
+    if sort_by.lstrip('-') in valid_sort_fields:
+        cdf_applications = cdf_applications.order_by(sort_by)
+    else:
+        cdf_applications = cdf_applications.order_by('-date_submitted')
+    
+    # Select related and prefetch for performance
+    cdf_applications = cdf_applications.select_related(
+        'applicant__user',
+        'institution',
+        'fiscal_year',
+        'bursary_category',
+        'applicant__ward'
+    ).prefetch_related('documents', 'reviews')
+    
+    # Get status counts for filters
+    status_counts = {}
+    for status_choice in Application.APPLICATION_STATUS:
+        status_code, status_name = status_choice
+        count = cdf_applications.filter(status=status_code).count()
+        status_counts[status_code] = {
+            'name': status_name,
+            'count': count
+        }
     
     # Pagination
-    paginator = Paginator(applications, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    items_per_page = 25
+    paginator = Paginator(cdf_applications, items_per_page)
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
     
     # Get filter options
-    wards = Ward.objects.filter(constituency=constituency)
-    fiscal_years = FiscalYear.objects.all()
-    categories = BursaryCategory.objects.filter(fiscal_year__is_active=True)
+    wards = Ward.objects.filter(constituency=constituency, is_active=True).order_by('name')
+    fiscal_years = FiscalYear.objects.filter(county=constituency.county).order_by('-start_date')
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    ).order_by('name')
     
+    # Prepare context
     context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
         'page_obj': page_obj,
         'wards': wards,
         'fiscal_years': fiscal_years,
         'categories': categories,
-        'current_filters': request.GET,
-        'total_count': applications.count(),
+        'current_filters': request.GET.dict(),
+        'total_count': cdf_applications.count(),
+        'status_counts': status_counts,
+        'selected_status': status,
+        'selected_ward': ward,
+        'selected_category': category,
+        'selected_institution_type': institution_type,
+        'selected_fiscal_year': fiscal_year_id,
+        'search_query': search,
+        'sort_by': sort_by,
     }
     
     return render(request, 'constituency_admin/applications_list.html', context)
 
 
 @login_required
-
+@user_passes_test(is_constituency_admin)
 def constituency_application_detail(request, application_id):
     """
     Detailed view of a single CDF application
     """
+    # Get constituency for user
     constituency = get_user_constituency(request.user)
     
-    application = get_object_or_404(
-        Application.objects.select_related(
+    if not constituency:
+        messages.error(request, "No constituency assigned to your account.")
+        return render(request, 'constituency_admin/no_assignment.html')
+    
+    try:
+        # Get application with proper filtering
+        application = Application.objects.select_related(
             'applicant__user',
             'applicant__ward',
             'applicant__constituency',
@@ -18599,12 +18701,20 @@ def constituency_application_detail(request, application_id):
         ).prefetch_related(
             'documents',
             'reviews__reviewer',
-            'applicant__guardians'
-        ),
-        id=application_id,
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both']
-    )
+            'applicant__guardians',
+            'applicant__siblings'
+        ).get(
+            id=application_id,
+            applicant__constituency=constituency
+        )
+        
+        # Check if it's a CDF application
+        if not (application.bursary_source.lower() in ['cdf', 'both'] or 'cdf' in application.bursary_source.lower()):
+            messages.warning(request, "This is not a CDF bursary application.")
+        
+    except Application.DoesNotExist:
+        messages.error(request, "Application not found or you don't have permission to view it.")
+        return redirect('constituency_applications_list')
     
     # Get related data
     guardians = application.applicant.guardians.all()
@@ -18614,9 +18724,15 @@ def constituency_application_detail(request, application_id):
     
     # Check if allocation exists
     try:
-        allocation = application.allocation
+        allocation = Allocation.objects.select_related('approved_by').get(application=application)
     except Allocation.DoesNotExist:
         allocation = None
+    
+    # Check if disbursement exists
+    try:
+        disbursement = Disbursement.objects.get(allocation__application=application)
+    except Disbursement.DoesNotExist:
+        disbursement = None
     
     # Check if current user has reviewed
     user_review = reviews.filter(reviewer=request.user).first()
@@ -18629,7 +18745,35 @@ def constituency_application_detail(request, application_id):
         'Academic Info': application.admission_number is not None,
         'Financial Info': application.total_fees_payable > 0,
     }
-    completeness_score = sum(completeness_items.values()) / len(completeness_items) * 100
+    completeness_score = 0
+    if completeness_items:
+        completeness_score = sum(completeness_items.values()) / len(completeness_items) * 100
+    
+    # Calculate document completeness
+    required_docs = [
+        ('id_card', 'National ID/Birth Certificate'),
+        ('admission_letter', 'Admission Letter'),
+        ('fee_structure', 'Fee Structure'),
+        ('fee_statement', 'Fee Statement'),
+        ('academic_results', 'Academic Results'),
+    ]
+    
+    document_status = []
+    for doc_type, doc_name in required_docs:
+        has_doc = documents.filter(document_type=doc_type, is_verified=True).exists()
+        document_status.append({
+            'name': doc_name,
+            'type': doc_type,
+            'present': has_doc,
+            'doc': documents.filter(document_type=doc_type).first()
+        })
+    
+    # Check if application is reviewable by current user
+    is_reviewable = (
+        application.status in ['submitted', 'under_review'] and
+        not user_review and
+        request.user.user_type == 'constituency_admin'
+    )
     
     context = {
         'application': application,
@@ -18638,9 +18782,14 @@ def constituency_application_detail(request, application_id):
         'documents': documents,
         'reviews': reviews,
         'allocation': allocation,
+        'disbursement': disbursement,
         'user_review': user_review,
         'completeness_items': completeness_items,
         'completeness_score': completeness_score,
+        'document_status': document_status,
+        'is_reviewable': is_reviewable,
+        'constituency': constituency,
+        'has_bulk_cheque': allocation and allocation.payment_method == 'bulk_cheque',
     }
     
     create_audit_log(
@@ -18653,74 +18802,110 @@ def constituency_application_detail(request, application_id):
 
 
 @login_required
-
+@user_passes_test(is_constituency_admin)
 def constituency_review_application(request, application_id):
     """
     Review and recommend action on CDF application
     """
+    if request.method != 'POST':
+        messages.error(request, "Invalid request method.")
+        return redirect('constituency_applications_list')
+    
+    # Get constituency for user
     constituency = get_user_constituency(request.user)
     
-    application = get_object_or_404(
-        Application,
-        id=application_id,
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both']
-    )
+    if not constituency:
+        messages.error(request, "No constituency assigned to your account.")
+        return redirect('constituency_applications_list')
     
-    if request.method == 'POST':
-        recommendation = request.POST.get('recommendation')
-        comments = request.POST.get('comments')
-        recommended_amount = request.POST.get('recommended_amount')
-        need_score = request.POST.get('need_score')
-        merit_score = request.POST.get('merit_score')
-        vulnerability_score = request.POST.get('vulnerability_score')
-        
-        # Validate
-        if not recommendation or not comments:
-            messages.error(request, "Recommendation and comments are required.")
-            return redirect('constituency_application_detail', application_id)
-        
-        try:
-            with transaction.atomic():
-                # Create review
-                review = Review.objects.create(
-                    application=application,
-                    reviewer=request.user,
-                    review_level='constituency',
-                    recommendation=recommendation,
-                    comments=comments,
-                    recommended_amount=Decimal(recommended_amount) if recommended_amount else None,
-                    need_score=int(need_score) if need_score else None,
-                    merit_score=int(merit_score) if merit_score else None,
-                    vulnerability_score=int(vulnerability_score) if vulnerability_score else None
-                )
+    try:
+        application = Application.objects.get(
+            id=application_id,
+            applicant__constituency=constituency
+        )
+    except Application.DoesNotExist:
+        messages.error(request, "Application not found or you don't have permission to review it.")
+        return redirect('constituency_applications_list')
+    
+    # Get form data
+    recommendation = request.POST.get('recommendation')
+    comments = request.POST.get('comments', '').strip()
+    recommended_amount = request.POST.get('recommended_amount')
+    need_score = request.POST.get('need_score')
+    merit_score = request.POST.get('merit_score')
+    vulnerability_score = request.POST.get('vulnerability_score')
+    
+    # Validate required fields
+    if not recommendation:
+        messages.error(request, "Recommendation is required.")
+        return redirect('constituency_application_detail', application_id=application_id)
+    
+    if not comments:
+        messages.error(request, "Comments are required.")
+        return redirect('constituency_application_detail', application_id=application_id)
+    
+    try:
+        with transaction.atomic():
+            # Create review
+            review_data = {
+                'application': application,
+                'reviewer': request.user,
+                'review_level': 'constituency',
+                'recommendation': recommendation,
+                'comments': comments,
+            }
+            
+            # Add optional fields if provided
+            if recommended_amount:
+                try:
+                    review_data['recommended_amount'] = Decimal(recommended_amount)
+                except (ValueError, TypeError):
+                    messages.error(request, "Invalid amount format.")
+                    return redirect('constituency_application_detail', application_id=application_id)
+            
+            if need_score and need_score.isdigit():
+                review_data['need_score'] = int(need_score)
+            
+            if merit_score and merit_score.isdigit():
+                review_data['merit_score'] = int(merit_score)
+            
+            if vulnerability_score and vulnerability_score.isdigit():
+                review_data['vulnerability_score'] = int(vulnerability_score)
+            
+            review = Review.objects.create(**review_data)
+            
+            # Update application status based on recommendation
+            if recommendation == 'approve':
+                application.status = 'approved'
                 
-                # Update application status based on recommendation
-                if recommendation == 'approve':
-                    application.status = 'approved'
-                    
-                    # Create allocation if amount recommended
-                    if recommended_amount:
+                # Create allocation if amount recommended
+                if recommended_amount:
+                    try:
+                        amount = Decimal(recommended_amount)
                         Allocation.objects.create(
                             application=application,
-                            amount_allocated=Decimal(recommended_amount),
+                            amount_allocated=amount,
+                            approved_amount=amount,
                             approved_by=request.user,
                             applicant=application.applicant,
-                            fiscal_year=application.fiscal_year
+                            fiscal_year=application.fiscal_year,
+                            bursary_category=application.bursary_category,
+                            status='approved'
                         )
-                    
-                elif recommendation == 'reject':
-                    application.status = 'rejected'
-                    
-                elif recommendation == 'more_info':
-                    application.status = 'pending_documents'
-                    
-                elif recommendation == 'forward':
-                    application.status = 'under_review'
+                    except (ValueError, TypeError) as e:
+                        messages.warning(request, f"Allocation not created: {str(e)}")
                 
-                application.save()
-                
-                # Create notification for applicant
+            elif recommendation == 'reject':
+                application.status = 'rejected'
+            elif recommendation == 'more_info':
+                application.status = 'pending_documents'
+            elif recommendation == 'forward':
+                application.status = 'under_review'
+            
+            application.save()
+            
+            # Create notification for applicant
+            try:
                 Notification.objects.create(
                     user=application.applicant.user,
                     notification_type='review_comment',
@@ -18728,55 +18913,86 @@ def constituency_review_application(request, application_id):
                     message=f'Your CDF bursary application has been reviewed. Status: {application.get_status_display()}',
                     related_application=application
                 )
-                
-                # Send SMS/Email
-                send_sms_notification(
-                    application.applicant.user.phone_number,
-                    f'Your CDF bursary application {application.application_number} status: {application.get_status_display()}'
-                )
-                
-                create_audit_log(
-                    request.user, 'update', 'Application', application.id,
-                    f"Reviewed application {application.application_number} - {recommendation}",
-                    request
-                )
-                
-                messages.success(request, f'Application reviewed successfully: {recommendation}')
-                return redirect('constituency_applications_list')
-                
-        except Exception as e:
-            messages.error(request, f'Error reviewing application: {str(e)}')
-            return redirect('constituency_application_detail', application_id)
-    
-    return redirect('constituency_application_detail', application_id)
+            except Exception as e:
+                # Log but don't fail the review
+                print(f"Failed to create notification: {e}")
+            
+            create_audit_log(
+                request.user, 'update', 'Application', application.id,
+                f"Reviewed application {application.application_number} - {recommendation}",
+                request
+            )
+            
+            messages.success(request, f'Application reviewed successfully: {recommendation}')
+            return redirect('constituency_applications_list')
+            
+    except Exception as e:
+        messages.error(request, f'Error reviewing application: {str(e)}')
+        return redirect('constituency_application_detail', application_id=application_id)
 
 
 @login_required
-
+@user_passes_test(is_constituency_admin)
 def constituency_bulk_approve(request):
     """
     Bulk approve multiple applications
     """
-    if request.method == 'POST':
-        application_ids = request.POST.getlist('application_ids')
-        default_amount = request.POST.get('default_amount')
-        
-        if not application_ids:
-            messages.error(request, "No applications selected.")
-            return redirect('constituency_applications_list')
-        
-        constituency = get_user_constituency(request.user)
-        
+    if request.method != 'POST':
+        messages.error(request, "Invalid request method.")
+        return redirect('constituency_applications_list')
+    
+    application_ids = request.POST.getlist('application_ids')
+    default_amount = request.POST.get('default_amount')
+    
+    if not application_ids:
+        messages.error(request, "No applications selected.")
+        return redirect('constituency_applications_list')
+    
+    # Validate amount
+    amount = None
+    if default_amount:
         try:
-            with transaction.atomic():
-                approved_count = 0
-                
-                for app_id in application_ids:
+            amount = Decimal(default_amount)
+            if amount <= 0:
+                messages.error(request, "Amount must be greater than 0.")
+                return redirect('constituency_applications_list')
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid amount format.")
+            return redirect('constituency_applications_list')
+    
+    constituency = get_user_constituency(request.user)
+    
+    if not constituency:
+        messages.error(request, "No constituency assigned to your account.")
+        return redirect('constituency_applications_list')
+    
+    try:
+        with transaction.atomic():
+            approved_count = 0
+            failed_applications = []
+            
+            for app_id in application_ids:
+                try:
                     application = Application.objects.get(
                         id=app_id,
                         applicant__constituency=constituency,
-                        bursary_source__in=['cdf', 'both']
+                        status__in=['submitted', 'under_review']
                     )
+                    
+                    # Check if it's a CDF application
+                    if not (application.bursary_source.lower() in ['cdf', 'both'] or 'cdf' in application.bursary_source.lower()):
+                        failed_applications.append(f"{application.application_number} - Not a CDF application")
+                        continue
+                    
+                    # Check if already reviewed by current user
+                    existing_review = Review.objects.filter(
+                        application=application,
+                        reviewer=request.user
+                    ).exists()
+                    
+                    if existing_review:
+                        failed_applications.append(f"{application.application_number} - Already reviewed")
+                        continue
                     
                     # Create review
                     Review.objects.create(
@@ -18785,37 +19001,55 @@ def constituency_bulk_approve(request):
                         review_level='constituency',
                         recommendation='approve',
                         comments='Bulk approval by constituency admin',
-                        recommended_amount=Decimal(default_amount) if default_amount else None
+                        recommended_amount=amount
                     )
                     
                     # Update status
                     application.status = 'approved'
                     application.save()
                     
-                    # Create allocation
-                    if default_amount:
-                        Allocation.objects.create(
-                            application=application,
-                            amount_allocated=Decimal(default_amount),
-                            approved_by=request.user,
-                            applicant=application.applicant,
-                            fiscal_year=application.fiscal_year
-                        )
+                    # Create allocation if amount provided
+                    if amount:
+                        # Check if allocation already exists
+                        if not hasattr(application, 'allocation'):
+                            Allocation.objects.create(
+                                application=application,
+                                amount_allocated=amount,
+                                approved_amount=amount,
+                                approved_by=request.user,
+                                applicant=application.applicant,
+                                fiscal_year=application.fiscal_year,
+                                bursary_category=application.bursary_category,
+                                status='approved'
+                            )
                     
                     approved_count += 1
+                    
+                except Application.DoesNotExist:
+                    failed_applications.append(f"ID {app_id} - Not found")
+                except Exception as e:
+                    failed_applications.append(f"ID {app_id} - Error: {str(e)}")
+            
+            # Create audit log
+            create_audit_log(
+                request.user, 'update', 'Application', None,
+                f"Bulk approved {approved_count} applications",
+                request
+            )
+            
+            # Show success message with any failures
+            if approved_count > 0:
+                success_msg = f'Successfully approved {approved_count} application(s).'
+                if failed_applications:
+                    success_msg += f' Failed: {", ".join(failed_applications[:5])}'
+                    if len(failed_applications) > 5:
+                        success_msg += f' and {len(failed_applications) - 5} more'
+                messages.success(request, success_msg)
+            else:
+                messages.error(request, f"No applications were approved. Issues: {', '.join(failed_applications[:10])}")
                 
-                create_audit_log(
-                    request.user, 'update', 'Application', None,
-                    f"Bulk approved {approved_count} applications",
-                    request
-                )
-                
-                messages.success(request, f'Successfully approved {approved_count} applications.')
-                
-        except Exception as e:
-            messages.error(request, f'Error in bulk approval: {str(e)}')
-        
-        return redirect('constituency_applications_list')
+    except Exception as e:
+        messages.error(request, f'Error in bulk approval: {str(e)}')
     
     return redirect('constituency_applications_list')
 
