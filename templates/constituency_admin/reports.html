@@ -3,6 +3,406 @@
 
 {% block title %}Reports - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
 
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #1abc9c; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .settings-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .settings-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .settings-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .settings-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .settings-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #1E40AF;
+    }
+
+    .info-note strong {
+        color: #1E293B;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .info-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-item label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .info-item p {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        margin-bottom: 20px;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .settings-table {
+            font-size: 13px;
+        }
+
+        .settings-table thead th,
+        .settings-table tbody td {
+            padding: 10px;
+        }
+    }
+
+    @media print {
+        .export-btn {
+            display: none;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: none;
+            page-break-inside: avoid;
+        }
+        
+        .info-note {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
@@ -22,56 +422,71 @@
         </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div>
-            <h1 class="page-title">
-                <i class="bi bi-file-earmark-text"></i>
-                CDF Bursary Reports
-            </h1>
-            <p class="page-subtitle">
-                Generate comprehensive reports for {{ constituency.name }} Constituency
-            </p>
-        </div>
-    </div>
-
-    <!-- Summary Statistics -->
-    <div class="stats-grid">
-        <div class="stat-card stat-primary">
-            <div class="stat-icon">
-                <i class="bi bi-file-earmark"></i>
-            </div>
-            <div class="stat-value">{{ summary_stats.total_applications|intcomma }}</div>
-            <div class="stat-label">Total Applications</div>
-        </div>
-        
-        <div class="stat-card stat-success">
-            <div class="stat-icon">
-                <i class="bi bi-check-circle"></i>
-            </div>
-            <div class="stat-value">{{ summary_stats.approved_applications|intcomma }}</div>
-            <div class="stat-label">Approved Applications</div>
-        </div>
-        
-        <div class="stat-card stat-warning">
-            <div class="stat-icon">
-                <i class="bi bi-cash-coin"></i>
-            </div>
-            <div class="stat-value">KES {{ summary_stats.total_allocated|floatformat:0|intcomma }}</div>
-            <div class="stat-label">Total Allocated</div>
-        </div>
-        
-        <div class="stat-card stat-info">
-            <div class="stat-icon">
-                <i class="bi bi-wallet2"></i>
-            </div>
-            <div class="stat-value">KES {{ summary_stats.total_disbursed|floatformat:0|intcomma }}</div>
-            <div class="stat-label">Total Disbursed</div>
-        </div>
-    </div>
-
-    <!-- Charts Section -->
     <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    CDF Bursary Reports
+                </h1>
+                <p class="page-subtitle">
+                    Generate comprehensive reports for {{ constituency.name }} Constituency
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="export-btn" onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    Print Report
+                </button>
+                <button class="export-btn" onclick="exportData()">
+                    <i class="bi bi-download"></i>
+                    Export Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-bar-chart-line"></i>
+            Summary Statistics
+        </h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark"></i>
+                </div>
+                <div class="stat-value">{{ summary_stats.total_applications|intcomma }}</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ summary_stats.approved_applications|intcomma }}</div>
+                <div class="stat-label">Approved Applications</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-value">KES {{ summary_stats.total_allocated|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Allocated</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="stat-value">KES {{ summary_stats.total_disbursed|floatformat:0|intcomma }}</div>
+                <div class="stat-label">Total Disbursed</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
         <h2 class="section-title">
             <i class="bi bi-graph-up"></i>
             Reports Overview
@@ -79,33 +494,40 @@
 
         <div class="form-grid">
             <!-- Chart 1: Application Status Distribution -->
-            <div class="form-group full-width">
-                <label class="form-label">Application Status Distribution</label>
+            <div class="chart-container full-width">
+                <h3 class="chart-title">
+                    <i class="bi bi-pie-chart"></i>
+                    Application Status Distribution
+                </h3>
                 <div style="height: 300px;">
                     <canvas id="statusChart"></canvas>
                 </div>
             </div>
 
             <!-- Chart 2: Ward Applications Overview -->
-            <div class="form-group full-width">
-                <label class="form-label">Ward Applications Overview</label>
+            <div class="chart-container full-width">
+                <h3 class="chart-title">
+                    <i class="bi bi-bar-chart"></i>
+                    Ward Applications Overview
+                </h3>
                 <div style="height: 400px;">
                     <canvas id="wardOverviewChart"></canvas>
                 </div>
             </div>
 
             <!-- Chart 3: Monthly Application Trend -->
-            <div class="form-group full-width">
-                <label class="form-label">Monthly Application Trend (Last 6 Months)</label>
+            <div class="chart-container full-width">
+                <h3 class="chart-title">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Monthly Application Trend (Last 6 Months)
+                </h3>
                 <div style="height: 300px;">
                     <canvas id="monthlyTrendChart"></canvas>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Report Generation Forms -->
-    <div class="section-container">
+        <!-- Report Generation Forms -->
         <h2 class="section-title">
             <i class="bi bi-download"></i>
             Generate Reports
@@ -121,9 +543,9 @@
                 <label>{{ report_name }}</label>
                 <p>Generate comprehensive {{ report_name|lower }} with detailed statistics and breakdowns.</p>
                 
-                <form method="get" action="{% if report_id == 'beneficiary_list' %}{% url 'constituency_generate_beneficiary_list' %}{% elif report_id == 'financial_report' %}{% url 'constituency_financial_report' %}{% else %}#{% endif %}" style="margin-top: 12px;">
+                <form method="get" action="{% if report_id == 'beneficiary_list' %}{% url 'constituency_generate_beneficiary_list' %}{% elif report_id == 'financial_report' %}{% url 'constituency_financial_report' %}{% else %}#{% endif %}">
                     <div class="form-group">
-                        <select name="fiscal_year" class="form-control" required style="margin-bottom: 8px;">
+                        <select name="fiscal_year" class="form-control" required>
                             <option value="">Select Fiscal Year</option>
                             {% for fy in fiscal_years %}
                             <option value="{{ fy.id }}" {% if fy.id == current_fiscal_year.id %}selected{% endif %}>
@@ -134,7 +556,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <select name="format" class="form-control" style="margin-bottom: 8px;">
+                        <select name="format" class="form-control">
                             <option value="html">View Online (HTML)</option>
                             <option value="excel">Download Excel</option>
                             <option value="pdf">Download PDF</option>
@@ -148,10 +570,8 @@
             </div>
             {% endfor %}
         </div>
-    </div>
 
-    <!-- Quick Stats Table -->
-    <div class="section-container">
+        <!-- Quick Stats Table -->
         <h2 class="section-title">
             <i class="bi bi-table"></i>
             Quick Statistics - {{ current_fiscal_year.name }}
@@ -332,6 +752,49 @@
                         precision: 0
                     }
                 }
+            }
+        }
+    });
+
+    function exportData() {
+        // Create a CSV export
+        const table = document.querySelector('.settings-table');
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        const rows = table.querySelectorAll('tr');
+        const tableData = [];
+        
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('th, td');
+            
+            cells.forEach(cell => {
+                let text = cell.textContent.trim();
+                text = text.replace(/\s+/g, ' ').replace(/\n/g, ' ');
+                rowData.push(`"${text}"`);
+            });
+            
+            tableData.push(rowData.join(','));
+        });
+        
+        csvContent += tableData.join('\n');
+        
+        // Create download link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "reports_summary.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Auto-scroll to section on page load if hash exists
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.hash) {
+            const element = document.querySelector(window.location.hash);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
             }
         }
     });
