@@ -19909,9 +19909,10 @@ def constituency_create_bulk_cheque(request):
 @user_passes_test(is_constituency_admin)
 def constituency_reports(request):
     """
-    Generate various reports for CDF bursary
+    Generate various reports for CDF bursary with summary charts
     """
-    constituency = get_constituency_for_user(request.user)
+    # Get constituency from the user's assignment
+    constituency = request.user.assigned_constituency
     
     if not constituency:
         messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
@@ -19940,23 +19941,164 @@ def constituency_reports(request):
         ('disbursement_report', 'Disbursement Report'),
     ]
     
+    # Get summary statistics for current fiscal year
+    if current_fiscal_year:
+        # Get all CDF applications
+        cdf_applications = Application.objects.filter(
+            applicant__constituency=constituency,
+            bursary_source__in=['cdf', 'both'],
+            fiscal_year=current_fiscal_year
+        )
+        
+        # Get allocations and disbursements
+        application_ids = cdf_applications.values_list('id', flat=True)
+        allocations = Allocation.objects.filter(application_id__in=application_ids)
+        disbursements = Disbursement.objects.filter(
+            allocation__application_id__in=application_ids
+        )
+        
+        # Summary statistics
+        total_applications = cdf_applications.count()
+        total_allocated = allocations.aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        total_disbursed = disbursements.filter(status='completed').aggregate(
+            total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        # CHART 1: Application Status Distribution (Donut Chart)
+        status_counts = {
+            'Submitted': cdf_applications.filter(status='submitted').count(),
+            'Under Review': cdf_applications.filter(status='under_review').count(),
+            'Approved': cdf_applications.filter(status='approved').count(),
+            'Rejected': cdf_applications.filter(status='rejected').count(),
+            'Disbursed': cdf_applications.filter(status='disbursed').count(),
+        }
+        
+        status_chart_data = {
+            'labels': list(status_counts.keys()),
+            'data': list(status_counts.values()),
+            'colors': ['#F59E0B', '#3498db', '#10B981', '#EF4444', '#8B5CF6']
+        }
+        
+        # CHART 2: Ward Applications Overview (Bar Chart)
+        ward_labels = []
+        ward_applications_data = []
+        ward_approved_data = []
+        
+        for ward in constituency.wards.all().order_by('name'):
+            ward_apps = cdf_applications.filter(applicant__ward=ward)
+            ward_labels.append(ward.name)
+            ward_applications_data.append(ward_apps.count())
+            ward_approved_data.append(ward_apps.filter(status='approved').count())
+        
+        ward_overview_chart_data = {
+            'labels': ward_labels,
+            'applications': ward_applications_data,
+            'approved': ward_approved_data
+        }
+        
+        # CHART 3: Monthly Application Trend (Line Chart)
+        monthly_labels = []
+        monthly_data = []
+        
+        today = timezone.now()
+        for i in range(5, -1, -1):
+            month_date = today - timedelta(days=30*i)
+            month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            if month_start.month == 12:
+                month_end = month_start.replace(year=month_start.year + 1, month=1)
+            else:
+                month_end = month_start.replace(month=month_start.month + 1)
+            
+            count = cdf_applications.filter(
+                date_submitted__gte=month_start,
+                date_submitted__lt=month_end
+            ).count()
+            
+            monthly_labels.append(month_start.strftime('%b %Y'))
+            monthly_data.append(count)
+        
+        monthly_trend_chart_data = {
+            'labels': monthly_labels,
+            'data': monthly_data
+        }
+        
+        # Summary stats for display
+        summary_stats = {
+            'total_applications': total_applications,
+            'total_allocated': total_allocated,
+            'total_disbursed': total_disbursed,
+            'pending_applications': cdf_applications.filter(status='submitted').count(),
+            'approved_applications': cdf_applications.filter(status='approved').count(),
+            'disbursed_applications': cdf_applications.filter(status='disbursed').count(),
+        }
+        
+        # Calculate percentages
+        if total_applications > 0:
+            summary_stats['approval_rate'] = round((summary_stats['approved_applications'] / total_applications) * 100, 1)
+        else:
+            summary_stats['approval_rate'] = 0
+        
+        if constituency.cdf_bursary_allocation and constituency.cdf_bursary_allocation > 0:
+            summary_stats['budget_utilization'] = round((float(total_allocated) / float(constituency.cdf_bursary_allocation)) * 100, 1)
+        else:
+            summary_stats['budget_utilization'] = 0
+        
+    else:
+        # No active fiscal year
+        summary_stats = {
+            'total_applications': 0,
+            'total_allocated': 0,
+            'total_disbursed': 0,
+            'pending_applications': 0,
+            'approved_applications': 0,
+            'disbursed_applications': 0,
+            'approval_rate': 0,
+            'budget_utilization': 0,
+        }
+        
+        status_chart_data = {
+            'labels': [],
+            'data': [],
+            'colors': []
+        }
+        
+        ward_overview_chart_data = {
+            'labels': [],
+            'applications': [],
+            'approved': []
+        }
+        
+        monthly_trend_chart_data = {
+            'labels': [],
+            'data': []
+        }
+    
     context = {
         'constituency': constituency,
         'fiscal_years': fiscal_years,
         'current_fiscal_year': current_fiscal_year,
         'report_types': report_types,
+        'summary_stats': summary_stats,
+        
+        # Chart Data (JSON serialized for JavaScript)
+        'status_chart_data': json.dumps(status_chart_data),
+        'ward_overview_chart_data': json.dumps(ward_overview_chart_data),
+        'monthly_trend_chart_data': json.dumps(monthly_trend_chart_data),
     }
     
     return render(request, 'constituency_admin/reports.html', context)
-
 
 @login_required
 @user_passes_test(is_constituency_admin)
 def constituency_generate_beneficiary_list(request):
     """
-    Generate beneficiary list for transparency
+    Generate beneficiary list for transparency with charts
     """
-    constituency = get_constituency_for_user(request.user)
+    # Get constituency from the user's assignment
+    constituency = request.user.assigned_constituency
     
     if not constituency:
         messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
@@ -19968,7 +20110,7 @@ def constituency_generate_beneficiary_list(request):
         return render(request, 'constituency_admin/no_assignment.html', context)
     
     fiscal_year_id = request.GET.get('fiscal_year')
-    report_format = request.GET.get('format', 'excel')
+    report_format = request.GET.get('format', 'html')
     
     if not fiscal_year_id:
         messages.error(request, "Please select a fiscal year.")
@@ -19983,24 +20125,12 @@ def constituency_generate_beneficiary_list(request):
         messages.error(request, "Fiscal year not found.")
         return redirect('constituency_reports')
     
-    # Get all applications for constituency
-    applications = Application.objects.filter(
-        Q(applicant__constituency=constituency) |
-        Q(applicant__ward__constituency=constituency),
+    # Get all CDF applications
+    cdf_applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
         fiscal_year=fiscal_year
-    ).distinct()
-    
-    # Filter for CDF applications
-    cdf_applications = applications.filter(
-        Q(bursary_source__iexact='cdf') |
-        Q(bursary_source__iexact='both') |
-        Q(bursary_source__icontains='cdf')
-    ).distinct()
-    
-    # If no CDF applications, show all
-    if cdf_applications.count() == 0:
-        cdf_applications = applications
-        messages.warning(request, "No CDF applications found. Showing all applications.")
+    )
     
     # Get beneficiaries (allocations)
     beneficiaries = Allocation.objects.filter(
@@ -20093,21 +20223,82 @@ def constituency_generate_beneficiary_list(request):
         response['Content-Disposition'] = f'attachment; filename={filename}'
         wb.save(response)
         
-        create_audit_log(
-            request.user, 'export', 'Report', None,
-            f"Exported beneficiary list for {fiscal_year.name}",
-            request
-        )
+        # Create audit log
+        try:
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0]
+            else:
+                ip_address = request.META.get('REMOTE_ADDR', '127.0.0.1')
+            
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            AuditLog.objects.create(
+                user=request.user,
+                action='export',
+                table_affected='Report',
+                record_id=None,
+                description=f"Exported beneficiary list for {fiscal_year.name}",
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+        except Exception as e:
+            print(f"Failed to create audit log: {e}")
         
         return response
     
-    elif report_format == 'pdf':
-        # For PDF generation, you would use ReportLab or similar
-        messages.info(request, "PDF export coming soon. Using Excel format for now.")
-        return redirect('constituency_reports')
-    
     else:
-        # HTML view
+        # HTML view with charts
+        
+        # CHART 1: Ward Distribution (Bar Chart)
+        ward_labels = []
+        ward_data = []
+        
+        for ward in constituency.wards.all().order_by('name'):
+            ward_beneficiaries = beneficiaries.filter(application__applicant__ward=ward)
+            ward_labels.append(ward.name)
+            ward_data.append(ward_beneficiaries.count())
+        
+        ward_chart_data = {
+            'labels': ward_labels,
+            'data': ward_data
+        }
+        
+        # CHART 2: Gender Distribution (Donut Chart)
+        male_count = beneficiaries.filter(application__applicant__gender='M').count()
+        female_count = beneficiaries.filter(application__applicant__gender='F').count()
+        
+        gender_chart_data = {
+            'labels': ['Male', 'Female'],
+            'data': [male_count, female_count],
+            'colors': ['#3498db', '#EC4899']
+        }
+        
+        # CHART 3: Institution Type Distribution (Pie Chart)
+        institution_type_labels = []
+        institution_type_data = []
+        
+        institution_types = [
+            ('highschool', 'High School'),
+            ('college', 'College'),
+            ('university', 'University'),
+            ('technical_institute', 'Technical Institute'),
+            ('special_school', 'Special School'),
+        ]
+        
+        for inst_type, inst_label in institution_types:
+            count = beneficiaries.filter(
+                application__institution__institution_type=inst_type
+            ).count()
+            if count > 0:
+                institution_type_labels.append(inst_label)
+                institution_type_data.append(count)
+        
+        institution_type_chart_data = {
+            'labels': institution_type_labels,
+            'data': institution_type_data
+        }
+        
         context = {
             'constituency': constituency,
             'fiscal_year': fiscal_year,
@@ -20116,6 +20307,13 @@ def constituency_generate_beneficiary_list(request):
             'total_amount': sum(float(b.amount_allocated) for b in beneficiaries),
             'disbursed_count': beneficiaries.filter(is_disbursed=True).count(),
             'pending_count': beneficiaries.filter(is_disbursed=False).count(),
+            'male_count': male_count,
+            'female_count': female_count,
+            
+            # Chart Data (JSON serialized for JavaScript)
+            'ward_chart_data': json.dumps(ward_chart_data),
+            'gender_chart_data': json.dumps(gender_chart_data),
+            'institution_type_chart_data': json.dumps(institution_type_chart_data),
         }
         
         return render(request, 'constituency_admin/beneficiary_list_report.html', context)
@@ -20125,9 +20323,10 @@ def constituency_generate_beneficiary_list(request):
 @user_passes_test(is_constituency_admin)
 def constituency_financial_report(request):
     """
-    Comprehensive financial report
+    Comprehensive financial report with charts
     """
-    constituency = get_constituency_for_user(request.user)
+    # Get constituency from the user's assignment
+    constituency = request.user.assigned_constituency
     
     if not constituency:
         messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
@@ -20154,24 +20353,12 @@ def constituency_financial_report(request):
         messages.error(request, "Fiscal year not found.")
         return redirect('constituency_reports')
     
-    # Get all applications for constituency
-    applications = Application.objects.filter(
-        Q(applicant__constituency=constituency) |
-        Q(applicant__ward__constituency=constituency),
+    # Get all CDF applications
+    cdf_applications = Application.objects.filter(
+        applicant__constituency=constituency,
+        bursary_source__in=['cdf', 'both'],
         fiscal_year=fiscal_year
-    ).distinct()
-    
-    # Filter for CDF applications
-    cdf_applications = applications.filter(
-        Q(bursary_source__iexact='cdf') |
-        Q(bursary_source__iexact='both') |
-        Q(bursary_source__icontains='cdf')
-    ).distinct()
-    
-    # If no CDF applications, show all
-    if cdf_applications.count() == 0:
-        cdf_applications = applications
-        messages.warning(request, "No CDF applications found. Showing all applications.")
+    )
     
     # Get allocations
     application_ids = cdf_applications.values_list('id', flat=True)
@@ -20220,7 +20407,7 @@ def constituency_financial_report(request):
         summary['disbursement_rate'] = 0
     
     if summary['total_allocated'] > 0:
-        summary['allocation_rate'] = round((float(summary['total_allocated']) / float(summary['total_requested'])) * 100, 1)
+        summary['allocation_rate'] = round((float(summary['total_allocated']) / float(summary['total_requested'])) * 100, 1) if summary['total_requested'] > 0 else 0
         summary['disbursed_percentage'] = round((float(summary['total_disbursed']) / float(summary['total_allocated'])) * 100, 1)
     else:
         summary['allocation_rate'] = 0
@@ -20228,23 +20415,31 @@ def constituency_financial_report(request):
     
     # Ward breakdown
     ward_breakdown = []
+    ward_labels = []
+    ward_allocated_data = []
+    ward_disbursed_data = []
+    
     for ward in constituency.wards.filter(is_active=True):
         ward_apps = cdf_applications.filter(applicant__ward=ward)
         ward_allocations = Allocation.objects.filter(application__in=ward_apps)
+        
+        allocated_amount = ward_allocations.aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        disbursed_amount = Disbursement.objects.filter(
+            allocation__application__in=ward_apps,
+            status='completed'
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
+        )['total']
         
         ward_data = {
             'ward': ward,
             'applications': ward_apps.count(),
             'approved': ward_apps.filter(status='approved').count(),
-            'allocated': ward_allocations.aggregate(
-                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
-            )['total'],
-            'disbursed': Disbursement.objects.filter(
-                allocation__application__in=ward_apps,
-                status='completed'
-            ).aggregate(
-                total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
-            )['total'],
+            'allocated': allocated_amount,
+            'disbursed': disbursed_amount,
         }
         
         # Ward allocation from WardAllocation
@@ -20262,6 +20457,55 @@ def constituency_financial_report(request):
             ward_data['budget_utilization'] = 0
         
         ward_breakdown.append(ward_data)
+        ward_labels.append(ward.name)
+        ward_allocated_data.append(float(allocated_amount))
+        ward_disbursed_data.append(float(disbursed_amount))
+    
+    # CHART 1: Ward Financial Distribution (Grouped Bar Chart)
+    ward_financial_chart_data = {
+        'labels': ward_labels,
+        'allocated': ward_allocated_data,
+        'disbursed': ward_disbursed_data
+    }
+    
+    # CHART 2: Budget Utilization (Donut Chart)
+    budget_chart_data = {
+        'labels': ['Allocated', 'Remaining'],
+        'data': [
+            float(summary['total_allocated']),
+            float(constituency.cdf_bursary_allocation - summary['total_allocated']) if constituency.cdf_bursary_allocation > summary['total_allocated'] else 0
+        ],
+        'colors': ['#3498db', '#E5E7EB']
+    }
+    
+    # CHART 3: Monthly Disbursement Trend (Line Chart)
+    monthly_labels = []
+    monthly_data = []
+    
+    today = timezone.now()
+    for i in range(5, -1, -1):
+        month_date = today - timedelta(days=30*i)
+        month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+        
+        month_disbursed = Disbursement.objects.filter(
+            allocation__application__in=cdf_applications,
+            disbursement_date__gte=month_start.date(),
+            disbursement_date__lt=month_end.date(),
+            status='completed'
+        ).aggregate(total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField()))['total']
+        
+        monthly_labels.append(month_start.strftime('%b %Y'))
+        monthly_data.append(float(month_disbursed))
+    
+    monthly_disbursement_chart_data = {
+        'labels': monthly_labels,
+        'data': monthly_data
+    }
     
     # Payment method breakdown
     payment_breakdown = disbursements.values('payment_method').annotate(
@@ -20269,30 +20513,7 @@ def constituency_financial_report(request):
         total_amount=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
     ).order_by('-total_amount')
     
-    # Monthly breakdown
-    monthly_breakdown = []
-    for month in range(1, 13):
-        month_apps = cdf_applications.filter(date_submitted__month=month)
-        month_data = {
-            'month': month,
-            'applications': month_apps.count(),
-            'allocated': Allocation.objects.filter(
-                application__in=month_apps
-            ).aggregate(
-                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
-            )['total'],
-            'disbursed': Disbursement.objects.filter(
-                allocation__application__in=month_apps,
-                status='completed'
-            ).aggregate(
-                total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
-            )['total'],
-        }
-        monthly_breakdown.append(month_data)
-    
     if report_format == 'excel':
-        # Create Excel file (similar to beneficiary list)
-        # For brevity, I'm showing HTML format
         messages.info(request, "Excel export functionality for financial report coming soon.")
         return redirect('constituency_reports')
     
@@ -20303,13 +20524,16 @@ def constituency_financial_report(request):
         'summary': summary,
         'ward_breakdown': ward_breakdown,
         'payment_breakdown': payment_breakdown,
-        'monthly_breakdown': monthly_breakdown,
         'cdf_budget': constituency.cdf_bursary_allocation or 0,
         'budget_utilization': round((float(summary['total_allocated']) / float(constituency.cdf_bursary_allocation or 1)) * 100, 1) if constituency.cdf_bursary_allocation else 0,
+        
+        # Chart Data (JSON serialized for JavaScript)
+        'ward_financial_chart_data': json.dumps(ward_financial_chart_data),
+        'budget_chart_data': json.dumps(budget_chart_data),
+        'monthly_disbursement_chart_data': json.dumps(monthly_disbursement_chart_data),
     }
     
     return render(request, 'constituency_admin/financial_report.html', context)
-
 
 # ============= BENEFICIARY MANAGEMENT =============
 

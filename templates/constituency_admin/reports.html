@@ -1,270 +1,340 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Reports - {{ constituency.name }} Constituency{% endblock %}
+{% block title %}Reports - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
 
 {% block content %}
-<div>
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav>
-        <ol>
-            <li>
-                <a href="{% url 'dashboard' %}">Dashboard</a>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
             </li>
-            <li>
-                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
             </li>
-            <li>Reports</li>
+            <li class="breadcrumb-item active" aria-current="page">Reports</li>
         </ol>
     </nav>
 
     <!-- Page Header -->
-    <div>
+    <div class="page-header">
         <div>
-            <h1>Reports Generator</h1>
-            <p>{{ constituency.name }} Constituency</p>
-            <p>Current Fiscal Year: {{ current_fiscal_year.name|default:"None active" }}</p>
+            <h1 class="page-title">
+                <i class="bi bi-file-earmark-text"></i>
+                CDF Bursary Reports
+            </h1>
+            <p class="page-subtitle">
+                Generate comprehensive reports for {{ constituency.name }} Constituency
+            </p>
         </div>
     </div>
 
-    <!-- Available Reports -->
-    <div>
-        <h2>Available Reports</h2>
-        <div>
-            {% for report_type, report_name in report_types %}
-            <div>
-                <div>
-                    <h3>{{ report_name }}</h3>
-                    <p>Generate detailed report for CDF bursary program</p>
-                    <button onclick="showReportForm('{{ report_type }}')">Generate Report</button>
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">
+                <i class="bi bi-file-earmark"></i>
+            </div>
+            <div class="stat-value">{{ summary_stats.total_applications|intcomma }}</div>
+            <div class="stat-label">Total Applications</div>
+        </div>
+        
+        <div class="stat-card stat-success">
+            <div class="stat-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-value">{{ summary_stats.approved_applications|intcomma }}</div>
+            <div class="stat-label">Approved Applications</div>
+        </div>
+        
+        <div class="stat-card stat-warning">
+            <div class="stat-icon">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="stat-value">KES {{ summary_stats.total_allocated|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Allocated</div>
+        </div>
+        
+        <div class="stat-card stat-info">
+            <div class="stat-icon">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="stat-value">KES {{ summary_stats.total_disbursed|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Disbursed</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-graph-up"></i>
+            Reports Overview
+        </h2>
+
+        <div class="form-grid">
+            <!-- Chart 1: Application Status Distribution -->
+            <div class="form-group full-width">
+                <label class="form-label">Application Status Distribution</label>
+                <div style="height: 300px;">
+                    <canvas id="statusChart"></canvas>
                 </div>
+            </div>
+
+            <!-- Chart 2: Ward Applications Overview -->
+            <div class="form-group full-width">
+                <label class="form-label">Ward Applications Overview</label>
+                <div style="height: 400px;">
+                    <canvas id="wardOverviewChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Monthly Application Trend -->
+            <div class="form-group full-width">
+                <label class="form-label">Monthly Application Trend (Last 6 Months)</label>
+                <div style="height: 300px;">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Generation Forms -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-download"></i>
+            Generate Reports
+        </h2>
+
+        <div class="info-note">
+            <p><strong>Note:</strong> Select a fiscal year and report type to generate detailed reports. Reports can be exported in Excel or PDF format.</p>
+        </div>
+
+        <div class="form-grid">
+            {% for report_id, report_name in report_types %}
+            <div class="info-item">
+                <label>{{ report_name }}</label>
+                <p>Generate comprehensive {{ report_name|lower }} with detailed statistics and breakdowns.</p>
+                
+                <form method="get" action="{% if report_id == 'beneficiary_list' %}{% url 'constituency_generate_beneficiary_list' %}{% elif report_id == 'financial_report' %}{% url 'constituency_financial_report' %}{% else %}#{% endif %}" style="margin-top: 12px;">
+                    <div class="form-group">
+                        <select name="fiscal_year" class="form-control" required style="margin-bottom: 8px;">
+                            <option value="">Select Fiscal Year</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}" {% if fy.id == current_fiscal_year.id %}selected{% endif %}>
+                                {{ fy.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <select name="format" class="form-control" style="margin-bottom: 8px;">
+                            <option value="html">View Online (HTML)</option>
+                            <option value="excel">Download Excel</option>
+                            <option value="pdf">Download PDF</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="bi bi-download"></i> Generate Report
+                    </button>
+                </form>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Report Generation Form -->
-    <div id="reportForm" style="display: none;">
-        <h2 id="reportFormTitle">Generate Report</h2>
-        <form method="get" id="reportGenerationForm">
-            <input type="hidden" name="report_type" id="reportType">
-            
-            <div>
-                <label>Select Fiscal Year *</label>
-                <select name="fiscal_year" required>
-                    <option value="">Select fiscal year...</option>
-                    {% for year in fiscal_years %}
-                    <option value="{{ year.id }}">{{ year.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+    <!-- Quick Stats Table -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-table"></i>
+            Quick Statistics - {{ current_fiscal_year.name }}
+        </h2>
 
-            <div id="additionalFilters">
-                <!-- Additional filters will be loaded here based on report type -->
-            </div>
-
-            <div>
-                <label>Report Format</label>
-                <select name="format">
-                    <option value="html">Web View</option>
-                    <option value="excel">Excel (.xlsx)</option>
-                    <option value="pdf">PDF (.pdf)</option>
-                </select>
-            </div>
-
-            <div>
-                <button type="submit">Generate Report</button>
-                <button type="button" onclick="hideReportForm()">Cancel</button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Recent Reports -->
-    {% if recent_reports %}
-    <div>
-        <h2>Recent Reports</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Report Type</th>
-                    <th>Fiscal Year</th>
-                    <th>Generated On</th>
-                    <th>Format</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for report in recent_reports %}
-                <tr>
-                    <td>{{ report.report_type }}</td>
-                    <td>{{ report.fiscal_year.name }}</td>
-                    <td>{{ report.generated_date|date:"d/m/Y H:i" }}</td>
-                    <td>{{ report.format }}</td>
-                    <td>
-                        <a href="{{ report.download_url }}">Download</a>
-                        <a href="{{ report.view_url }}">View</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    <!-- Quick Stats -->
-    <div>
-        <h2>Quick Statistics</h2>
-        <div>
-            <div>
-                <div>
-                    <h3>Total Applications</h3>
-                    <p>{{ quick_stats.total_applications|default:"0" }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Approved</h3>
-                    <p>{{ quick_stats.approved|default:"0" }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Total Allocated</h3>
-                    <p>KES {{ quick_stats.total_allocated|floatformat:0|intcomma|default:"0" }}</p>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <h3>Total Disbursed</h3>
-                    <p>KES {{ quick_stats.total_disbursed|floatformat:0|intcomma|default:"0" }}</p>
-                </div>
-            </div>
+        <div class="table-responsive">
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total Applications</td>
+                        <td>{{ summary_stats.total_applications|intcomma }}</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>Pending Applications</td>
+                        <td>{{ summary_stats.pending_applications|intcomma }}</td>
+                        <td>
+                            {% if summary_stats.total_applications > 0 %}
+                            {{ summary_stats.pending_applications|floatformat:0|intcomma|default:0 }}
+                            {% else %}
+                            0
+                            {% endif %}%
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Approved Applications</td>
+                        <td>{{ summary_stats.approved_applications|intcomma }}</td>
+                        <td>{{ summary_stats.approval_rate }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Disbursed Applications</td>
+                        <td>{{ summary_stats.disbursed_applications|intcomma }}</td>
+                        <td>
+                            {% if summary_stats.total_applications > 0 %}
+                            {% widthratio summary_stats.disbursed_applications summary_stats.total_applications 100 %}
+                            {% else %}
+                            0
+                            {% endif %}%
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>CDF Budget Allocation</td>
+                        <td>KES {{ constituency.cdf_bursary_allocation|floatformat:0|intcomma }}</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>Amount Allocated</td>
+                        <td>KES {{ summary_stats.total_allocated|floatformat:0|intcomma }}</td>
+                        <td>{{ summary_stats.budget_utilization }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Amount Disbursed</td>
+                        <td>KES {{ summary_stats.total_disbursed|floatformat:0|intcomma }}</td>
+                        <td>
+                            {% if summary_stats.total_allocated > 0 %}
+                            {% widthratio summary_stats.total_disbursed summary_stats.total_allocated 100 %}
+                            {% else %}
+                            0
+                            {% endif %}%
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const reportFilters = {
-    'beneficiary_list': {
-        title: 'Beneficiary List Report',
-        filters: `
-            <div>
-                <label>Include Contact Details</label>
-                <input type="checkbox" name="include_contacts" checked>
-            </div>
-            <div>
-                <label>Include Bank Details</label>
-                <input type="checkbox" name="include_bank">
-            </div>
-        `
-    },
-    'financial_report': {
-        title: 'Financial Report',
-        filters: `
-            <div>
-                <label>Report Level</label>
-                <select name="level">
-                    <option value="summary">Summary</option>
-                    <option value="detailed">Detailed</option>
-                    <option value="ward">Ward Level</option>
-                </select>
-            </div>
-        `
-    },
-    'ward_summary': {
-        title: 'Ward Summary Report',
-        filters: `
-            <div>
-                <label>Include Graphs</label>
-                <input type="checkbox" name="include_graphs" checked>
-            </div>
-        `
-    },
-    'institution_report': {
-        title: 'Institution Report',
-        filters: `
-            <div>
-                <label>Institution Type</label>
-                <select name="institution_type">
-                    <option value="">All Types</option>
-                    <option value="highschool">High School</option>
-                    <option value="college">College</option>
-                    <option value="university">University</option>
-                </select>
-            </div>
-        `
-    },
-    'category_report': {
-        title: 'Category Report',
-        filters: `
-            <div>
-                <label>Sort By</label>
-                <select name="sort">
-                    <option value="count">Number of Applicants</option>
-                    <option value="amount">Total Amount</option>
-                </select>
-            </div>
-        `
-    },
-    'disbursement_report': {
-        title: 'Disbursement Report',
-        filters: `
-            <div>
-                <label>Payment Method</label>
-                <select name="payment_method">
-                    <option value="">All Methods</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="mpesa">M-Pesa</option>
-                </select>
-            </div>
-        `
-    }
-};
+    // Chart 1: Application Status Distribution (Donut Chart)
+    const statusData = {{ status_chart_data|safe }};
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusData.labels,
+            datasets: [{
+                data: statusData.data,
+                backgroundColor: statusData.colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
 
-function showReportForm(reportType) {
-    const reportData = reportFilters[reportType];
-    
-    if (!reportData) {
-        alert('Report type not found');
-        return;
-    }
-    
-    document.getElementById('reportFormTitle').textContent = reportData.title;
-    document.getElementById('reportType').value = reportType;
-    document.getElementById('additionalFilters').innerHTML = reportData.filters;
-    document.getElementById('reportForm').style.display = 'block';
-    
-    // Scroll to form
-    document.getElementById('reportForm').scrollIntoView({ behavior: 'smooth' });
-}
+    // Chart 2: Ward Applications Overview (Grouped Bar Chart)
+    const wardOverviewData = {{ ward_overview_chart_data|safe }};
+    const wardOverviewCtx = document.getElementById('wardOverviewChart').getContext('2d');
+    new Chart(wardOverviewCtx, {
+        type: 'bar',
+        data: {
+            labels: wardOverviewData.labels,
+            datasets: [
+                {
+                    label: 'Total Applications',
+                    data: wardOverviewData.applications,
+                    backgroundColor: '#3498db',
+                    borderColor: '#2980b9',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Approved',
+                    data: wardOverviewData.approved,
+                    backgroundColor: '#10B981',
+                    borderColor: '#059669',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
 
-function hideReportForm() {
-    document.getElementById('reportForm').style.display = 'none';
-    document.getElementById('reportType').value = '';
-    document.getElementById('additionalFilters').innerHTML = '';
-}
-
-// Handle form submission
-document.getElementById('reportGenerationForm').addEventListener('submit', function(e) {
-    const reportType = document.getElementById('reportType').value;
-    const fiscalYear = this.elements['fiscal_year'].value;
-    
-    if (!reportType || !fiscalYear) {
-        e.preventDefault();
-        alert('Please select report type and fiscal year');
-        return false;
-    }
-    
-    // Set correct action URL based on report type
-    if (reportType === 'beneficiary_list') {
-        this.action = "{% url 'constituency_generate_beneficiary_list' %}";
-    } else if (reportType === 'financial_report') {
-        this.action = "{% url 'constituency_financial_report' %}";
-    }
-    // Add other report URLs as needed
-});
+    // Chart 3: Monthly Application Trend (Line Chart)
+    const monthlyTrendData = {{ monthly_trend_chart_data|safe }};
+    const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+    new Chart(monthlyTrendCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyTrendData.labels,
+            datasets: [{
+                label: 'Applications Submitted',
+                data: monthlyTrendData.data,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
 </script>
 {% endblock %}
 {% endblock %}
