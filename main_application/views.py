@@ -18032,9 +18032,9 @@ def constituency_dashboard(request):
 Constituency Analytics View
 File: views.py (constituency admin section)
 """
-
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db.models import Count, Sum, Q, Avg, F, FloatField
 from django.db.models.functions import TruncMonth, TruncDate
 from django.utils import timezone
@@ -18050,8 +18050,35 @@ from main_application.models import (
 
 def get_user_constituency(user):
     """Get constituency for constituency admin user"""
+    # Only check user_type, not the truthiness of assigned_constituency
+    if user.user_type == 'constituency_admin':
+        return user.assigned_constituency
+    return None
+
+
+# ALTERNATIVE: More robust version that handles edge cases
+def get_user_constituency_robust(user):
+    """
+    Get constituency for constituency admin user
+    More robust version that handles various edge cases
+    """
+    # Method 1: Direct check (original)
     if user.user_type == 'constituency_admin' and user.assigned_constituency:
         return user.assigned_constituency
+    
+    # Method 2: Try to get via related query (if Method 1 fails)
+    try:
+        if user.user_type == 'constituency_admin':
+            # Try to get constituency from database explicitly
+            from main_application.models import Constituency
+            constituency = Constituency.objects.filter(
+                admin_users=user
+            ).first()
+            if constituency:
+                return constituency
+    except Exception as e:
+        print(f"Error getting constituency: {e}")
+    
     return None
 
 
@@ -18060,12 +18087,37 @@ def constituency_dashboard(request):
     """
     Main constituency dashboard with comprehensive analytics and visualizations
     """
+    # DEBUGGING: Print user information
+    print(f"\n{'='*60}")
+    print(f"DEBUG CONSTITUENCY DASHBOARD")
+    print(f"{'='*60}")
+    print(f"User: {request.user.username}")
+    print(f"User ID: {request.user.id}")
+    print(f"User Type: {request.user.user_type}")
+    print(f"User Type (raw): {repr(request.user.user_type)}")
+    print(f"Assigned Constituency: {request.user.assigned_constituency}")
+    print(f"Assigned Constituency ID: {request.user.assigned_constituency.id if request.user.assigned_constituency else 'None'}")
+    
     # Get user's constituency
     constituency = get_user_constituency(request.user)
     
+    print(f"Returned Constituency: {constituency}")
+    print(f"{'='*60}\n")
+    
     if not constituency:
+        # Add debug message for user
+        messages.error(
+            request, 
+            f"No constituency assigned to user {request.user.username}. "
+            f"User type: {request.user.user_type}. "
+            f"Please contact administrator."
+        )
         # Redirect or show error if user doesn't have assigned constituency
-        return render(request, 'errors/no_constituency.html')
+        return render(request, 'errors/no_constituency.html', {
+            'user': request.user,
+            'user_type': request.user.user_type,
+            'assigned_constituency': request.user.assigned_constituency,
+        })
     
     # Get current fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
@@ -18404,7 +18456,13 @@ def constituency_analytics(request):
     constituency = get_user_constituency(request.user)
     
     if not constituency:
-        return render(request, 'errors/no_constituency.html')
+        messages.error(
+            request, 
+            f"No constituency assigned. User type: {request.user.user_type}"
+        )
+        return render(request, 'errors/no_constituency.html', {
+            'user': request.user,
+        })
     
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
@@ -18557,7 +18615,6 @@ def constituency_analytics(request):
     }
     
     return render(request, 'constituency_admin/analytics.html', context)
-
 
 # ============= APPLICATION MANAGEMENT =============
 

@@ -1,0 +1,92 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}No Constituency Assigned - Nyota Zetu Bursary System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        No Constituency Assigned
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5>Access Denied</h5>
+                        <p>Your account does not have a constituency assigned. Please contact the system administrator.</p>
+                    </div>
+                    
+                    <h5 class="mt-4">Diagnostic Information:</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Username</th>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>User ID</th>
+                            <td>{{ user.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>User Type</th>
+                            <td>
+                                <code>{{ user.user_type }}</code>
+                                {% if user_type %}
+                                    <br><small class="text-muted">Raw: {{ user_type }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Assigned Constituency</th>
+                            <td>
+                                {% if assigned_constituency %}
+                                    {{ assigned_constituency }}
+                                {% else %}
+                                    <span class="badge bg-danger">NULL / Not Assigned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Expected User Type</th>
+                            <td><code>constituency_admin</code></td>
+                        </tr>
+                    </table>
+                    
+                    <div class="alert alert-info mt-4">
+                        <h6>Possible Issues:</h6>
+                        <ul class="mb-0">
+                            <li><strong>User type mismatch:</strong> Your user_type is "{{ user.user_type }}" but should be "constituency_admin"</li>
+                            <li><strong>No constituency assigned:</strong> Your account doesn't have an assigned_constituency in the database</li>
+                            <li><strong>Permission issue:</strong> You may not have the correct permissions</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <h6>For Administrators:</h6>
+                        <p class="mb-2">To fix this issue:</p>
+                        <ol class="mb-0">
+                            <li>Go to Django Admin</li>
+                            <li>Navigate to Users</li>
+                            <li>Edit user: <strong>{{ user.username }}</strong></li>
+                            <li>Set "User type" to: <code>constituency_admin</code></li>
+                            <li>Select a constituency in "Assigned constituency" field</li>
+                            <li>Save the user</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <a href="{% url 'logout_view' %}" class="btn btn-secondary">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

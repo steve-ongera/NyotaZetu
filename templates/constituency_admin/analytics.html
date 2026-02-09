@@ -1,92 +1,698 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Analytics - {{ constituency.name }}{% endblock %}
+{% block title %}Constituency Analytics - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .export-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #16a085; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-danger { color: #e74c3c; }
+    .stat-card.stat-secondary { color: #95a5a6; }
+    .stat-card.stat-purple { color: #9b59b6; }
+    .stat-card.stat-teal { color: #1abc9c; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .analytics-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .analytics-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .analytics-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .analytics-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .analytics-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-bar-wrapper {
+        margin-bottom: 12px;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .progress-name {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .progress-value {
+        color: #64748B;
+        font-weight: 600;
+    }
+
+    .progress {
+        height: 8px;
+        background: #F1F5F9;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2980b9);
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-fill.success {
+        background: linear-gradient(90deg, #27ae60, #229954);
+    }
+
+    .progress-fill.warning {
+        background: linear-gradient(90deg, #f39c12, #e67e22);
+    }
+
+    .progress-fill.danger {
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
+    }
+
+    .info-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .info-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-card-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    .info-card-description {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+    }
+
+    @media print {
+        .export-btn {
+            display: none;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: none;
+            page-break-inside: avoid;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-2,
+        .grid-3 {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .analytics-table {
+            font-size: 13px;
+        }
+
+        .analytics-table thead th,
+        .analytics-table tbody td {
+            padding: 10px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Analytics</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+        </ol>
     </nav>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>CDF Bursary Analytics</h1>
-            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up"></i>
+                    CDF Bursary Analytics
+                </h1>
+                <p class="page-subtitle">
+                    {{ constituency.name }} Constituency - {{ current_fiscal_year.name }}
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="export-btn" onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    Print Report
+                </button>
+                <button class="export-btn" onclick="exportData()">
+                    <i class="bi bi-download"></i>
+                    Export Data
+                </button>
+            </div>
         </div>
-        <div class="header-actions">
-            <button onclick="window.print()" class="btn btn-secondary">
-                <i class="icon-print"></i> Print Report
-            </button>
-        </div>
-    </div>
 
-    <!-- Gender Distribution -->
-    <div class="content-section">
-        <h2>Gender Distribution</h2>
-        <div class="analytics-grid">
-            {% for gender in gender_dist %}
-            <div class="analytics-card">
-                <div class="analytics-icon">
-                    <i class="icon-{% if gender.applicant__gender == 'M' %}male{% else %}female{% endif %}"></i>
+        <!-- Overall Statistics -->
+        <h2 class="section-title">
+            <i class="bi bi-bar-chart-line"></i>
+            Overall Statistics
+        </h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card stat-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-folder2-open"></i>
                 </div>
-                <div class="analytics-content">
-                    <h3>{{ gender.count|intcomma }}</h3>
-                    <p>{{ gender.applicant__gender|default:"Unknown" }}</p>
-                    <div class="analytics-meta">
-                        KES {{ gender.total_amount|floatformat:2|intcomma|default:"0" }}
+                <div class="stat-value">{{ total_applications|default:0 }}</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+            
+            <div class="stat-card stat-success">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">
+                    {% for item in gender_dist %}
+                        {% if forloop.first %}{{ item.count|default:0 }}{% endif %}
+                    {% empty %}0{% endfor %}
+                </div>
+                <div class="stat-label">Male Applicants</div>
+            </div>
+            
+            <div class="stat-card stat-info">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">
+                    {% for item in gender_dist %}
+                        {% if forloop.last %}{{ item.count|default:0 }}{% endif %}
+                    {% empty %}0{% endfor %}
+                </div>
+                <div class="stat-label">Female Applicants</div>
+            </div>
+            
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-heart"></i>
+                </div>
+                <div class="stat-value">{{ orphan_stats.total_orphans|default:0 }}</div>
+                <div class="stat-label">Orphans</div>
+            </div>
+            
+            <div class="stat-card stat-purple">
+                <div class="stat-icon">
+                    <i class="bi bi-universal-access"></i>
+                </div>
+                <div class="stat-value">{{ special_needs_stats.total_special_needs|default:0 }}</div>
+                <div class="stat-label">Special Needs</div>
+            </div>
+            
+            <div class="stat-card stat-danger">
+                <div class="stat-icon">
+                    <i class="bi bi-person-wheelchair"></i>
+                </div>
+                <div class="stat-value">{{ disabled_stats.total_disabled|default:0 }}</div>
+                <div class="stat-label">Disabled Students</div>
+            </div>
+        </div>
+
+        <!-- Financial Overview -->
+        <h2 class="section-title">
+            <i class="bi bi-cash-stack"></i>
+            Financial Overview
+        </h2>
+        
+        <div class="grid-3">
+            <div class="info-card">
+                <div class="info-card-title">
+                    <i class="bi bi-wallet2"></i> Total Requested
+                </div>
+                <div class="info-card-value">
+                    KSh {% for item in gender_dist %}{{ item.total_requested|floatformat:0|intcomma }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                </div>
+                <div class="info-card-description">
+                    Amount requested by all applicants
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-title">
+                    <i class="bi bi-cash-coin"></i> Total Allocated
+                </div>
+                <div class="info-card-value">
+                    KSh {% for item in gender_dist %}{{ item.total_allocated|floatformat:0|intcomma }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                </div>
+                <div class="info-card-description">
+                    Amount allocated to beneficiaries
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-title">
+                    <i class="bi bi-graph-up"></i> Average Amount
+                </div>
+                <div class="info-card-value">
+                    KSh {% for item in gender_dist %}{% if forloop.first %}{{ item.avg_amount|floatformat:0|intcomma }}{% endif %}{% endfor %}
+                </div>
+                <div class="info-card-description">
+                    Average amount requested per applicant
+                </div>
+            </div>
+        </div>
+
+        <!-- Gender Distribution -->
+        <div class="grid-2">
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="bi bi-gender-ambiguous"></i>
+                    Gender Distribution
+                </h3>
+                
+                {% for item in gender_dist %}
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">
+                            {% if item.applicant__gender == 'M' %}
+                                Male
+                            {% else %}
+                                Female
+                            {% endif %}
+                        </span>
+                        <span class="progress-value">{{ item.count }} (KSh {{ item.total_requested|floatformat:0|intcomma }})</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill {% if item.applicant__gender == 'M' %}success{% else %}info{% endif %}" 
+                             style="width: {% widthratio item.count total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Vulnerable Groups -->
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="bi bi-shield-heart"></i>
+                    Vulnerable Groups
+                </h3>
+                
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">Single Orphans</span>
+                        <span class="progress-value">{{ orphan_stats.single_orphans }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill warning" 
+                             style="width: {% widthratio orphan_stats.single_orphans total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">Total Orphans</span>
+                        <span class="progress-value">{{ orphan_stats.total_orphans_count }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill danger" 
+                             style="width: {% widthratio orphan_stats.total_orphans_count total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">Special Needs</span>
+                        <span class="progress-value">{{ special_needs_stats.total_special_needs }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill" 
+                             style="width: {% widthratio special_needs_stats.total_special_needs total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">Disabled Students</span>
+                        <span class="progress-value">{{ disabled_stats.total_disabled }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill success" 
+                             style="width: {% widthratio disabled_stats.total_disabled total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F1F5F9;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; color: #64748B;">Total Allocated to Vulnerable Groups</span>
+                        <span style="font-size: 16px; font-weight: 600; color: #1E293B;">
+                            KSh {{ orphan_stats.total_orphans_amount|add:special_needs_stats.total_special_needs_amount|add:disabled_stats.total_disabled_amount|floatformat:0|intcomma }}
+                        </span>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
-    </div>
 
-    <!-- Institution Type Distribution -->
-    <div class="content-section">
-        <h2>Distribution by Institution Type</h2>
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Institution</th>
-                        <th>Type</th>
-                        <th>Applications</th>
-                        <th>Total Allocated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for inst in institution_dist %}
-                    <tr>
-                        <td>{{ inst.institution__name|default:"N/A" }}</td>
-                        <td>{{ inst.institution__institution_type|default:"N/A" }}</td>
-                        <td>{{ inst.count }}</td>
-                        <td>KES {{ inst.total_allocated|floatformat:2|intcomma|default:"0" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center">No data available</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Age Distribution -->
+        <div class="chart-container">
+            <h3 class="chart-title">
+                <i class="bi bi-calendar-range"></i>
+                Age Distribution
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                {% for age_range, count in age_groups.items %}
+                <div class="progress-bar-wrapper">
+                    <div class="progress-label">
+                        <span class="progress-name">{{ age_range }} years</span>
+                        <span class="progress-value">{{ count }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill {% cycle 'success' 'info' 'warning' 'danger' %}" 
+                             style="width: {% widthratio count total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-    </div>
 
-    <!-- Ward Distribution -->
-    <div class="content-section">
-        <h2>Distribution by Ward</h2>
-        <div class="table-container">
-            <table class="data-table">
+        <!-- Ward Distribution -->
+        <h2 class="section-title">
+            <i class="bi bi-geo-alt"></i>
+            Ward Distribution Analysis
+        </h2>
+        
+        <div class="table-responsive">
+            <table class="analytics-table">
                 <thead>
                     <tr>
                         <th>Ward</th>
-                        <th>Total Applications</th>
+                        <th>Applications</th>
                         <th>Approved</th>
+                        <th>Rejected</th>
+                        <th>Success Rate</th>
+                        <th>Male</th>
+                        <th>Female</th>
+                        <th>Orphans</th>
+                        <th>Special Needs</th>
                         <th>Amount Requested</th>
                         <th>Amount Allocated</th>
                     </tr>
@@ -94,131 +700,37 @@
                 <tbody>
                     {% for ward in ward_dist %}
                     <tr>
-                        <td>{{ ward.applicant__ward__name|default:"N/A" }}</td>
+                        <td style="font-weight: 600; color: #1E293B;">{{ ward.applicant__ward__name }}</td>
                         <td>{{ ward.count }}</td>
-                        <td>{{ ward.approved }}</td>
-                        <td>KES {{ ward.total_requested|floatformat:2|intcomma|default:"0" }}</td>
-                        <td>KES {{ ward.total_allocated|floatformat:2|intcomma|default:"0" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">No data available</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Monthly Trends -->
-    <div class="content-section">
-        <h2>Monthly Application Trends</h2>
-        <div class="chart-placeholder">
-            <div class="chart-info">
-                <p>Chart showing monthly application submissions and approvals</p>
-                <div class="trend-data">
-                    {% for trend in monthly_trends %}
-                    <div class="trend-item">
-                        <div class="trend-month">{{ trend.month|date:"M Y" }}</div>
-                        <div class="trend-stats">
-                            <span>Applications: {{ trend.applications }}</span>
-                            <span>Approved: {{ trend.approved }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Category Distribution -->
-    <div class="content-section">
-        <h2>Distribution by Category</h2>
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Type</th>
-                        <th>Applications</th>
-                        <th>Total Allocated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cat in category_dist %}
-                    <tr>
-                        <td>{{ cat.bursary_category__name|default:"N/A" }}</td>
-                        <td>{{ cat.bursary_category__category_type|default:"N/A" }}</td>
-                        <td>{{ cat.count }}</td>
-                        <td>KES {{ cat.total_allocated|floatformat:2|intcomma|default:"0" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center">No data available</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Orphan Statistics -->
-    <div class="content-section">
-        <h2>Vulnerable Groups Statistics</h2>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="icon-users"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ orphan_stats.total_orphans }}</h3>
-                    <p>Total Orphans Assisted</p>
-                    <div class="stat-meta">
-                        KES {{ orphan_stats.total_orphans_amount|floatformat:2|intcomma }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="icon-heart"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>{{ special_needs_stats.total_special_needs }}</h3>
-                    <p>Special Needs Students</p>
-                    <div class="stat-meta">
-                        KES {{ special_needs_stats.total_special_needs_amount|floatformat:2|intcomma }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ward Success Rate -->
-    <div class="content-section">
-        <h2>Ward Success Rate Comparison</h2>
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Ward</th>
-                        <th>Total Applications</th>
-                        <th>Approved</th>
-                        <th>Success Rate</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ward in ward_success_rate %}
-                    <tr>
-                        <td>{{ ward.ward }}</td>
-                        <td>{{ ward.total }}</td>
-                        <td>{{ ward.approved }}</td>
                         <td>
-                            <div class="progress-container">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: {{ ward.success_rate }}%"></div>
+                            <span class="badge badge-success">{{ ward.approved }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-danger">{{ total_applications|add:ward.approved|add:"-"|add:ward.count }}</span>
+                        </td>
+                        <td>
+                            {% widthratio ward.approved ward.count 100 %}%
+                        </td>
+                        <td>{{ ward.male }}</td>
+                        <td>{{ ward.female }}</td>
+                        <td>{{ ward.orphans }}</td>
+                        <td>{{ ward.special_needs }}</td>
+                        <td>KSh {{ ward.total_requested|floatformat:0|intcomma }}</td>
+                        <td style="font-weight: 600; color: #27ae60;">
+                            KSh {{ ward.total_allocated|floatformat:0|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
                                 </div>
-                                <span class="progress-label">{{ ward.success_rate|floatformat:1 }}%</span>
+                                <h3 class="empty-title">No Ward Data Available</h3>
+                                <p class="empty-text">
+                                    No applications have been submitted yet.
+                                </p>
                             </div>
                         </td>
                     </tr>
@@ -226,206 +738,205 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Key Insights -->
-    <div class="content-section">
-        <h2>Key Insights</h2>
-        <div class="insights-grid">
-            <div class="insight-card">
-                <h4>Most Active Ward</h4>
-                <p>{{ ward_dist.0.applicant__ward__name|default:"N/A" }}</p>
-                <span>{{ ward_dist.0.count|default:0 }} applications</span>
+        <!-- Ward Success Rate -->
+        <div class="chart-container" style="margin-top: 24px;">
+            <h3 class="chart-title">
+                <i class="bi bi-trophy"></i>
+                Ward Success Rate Comparison
+            </h3>
+            
+            {% for ward in ward_success_rate %}
+            <div class="progress-bar-wrapper">
+                <div class="progress-label">
+                    <span class="progress-name">{{ ward.ward }}</span>
+                    <span class="progress-value">
+                        {{ ward.approved }}/{{ ward.total }} ({{ ward.success_rate }}%)
+                    </span>
+                </div>
+                <div class="progress">
+                    <div class="progress-fill {% if ward.success_rate >= 70 %}success{% elif ward.success_rate >= 50 %}warning{% else %}danger{% endif %}" 
+                         style="width: {{ ward.success_rate }}%">
+                    </div>
+                </div>
             </div>
-
-            <div class="insight-card">
-                <h4>Average Amount Requested</h4>
-                <p>KES {{ ward_dist.0.total_requested|default:0|floatformat:2|intcomma }}</p>
-                <span>Per application</span>
-            </div>
-
-            <div class="insight-card">
-                <h4>Top Institution Type</h4>
-                <p>{{ institution_dist.0.institution__institution_type|default:"N/A" }}</p>
-                <span>{{ institution_dist.0.count|default:0 }} students</span>
-            </div>
-
-            <div class="insight-card">
-                <h4>Overall Approval Rate</h4>
-                {% if ward_dist %}
-                <p>
-                    {% widthratio ward_dist.0.approved ward_dist.0.count 100 %}%
-                </p>
-                {% else %}
-                <p>N/A</p>
-                {% endif %}
-                <span>Applications approved</span>
-            </div>
+            {% endfor %}
         </div>
-    </div>
 
-    <!-- Export Options -->
-    <div class="content-section">
-        <h2>Export Analytics</h2>
-        <div class="export-options">
-            <button class="btn btn-primary" onclick="window.print()">
-                <i class="icon-print"></i> Print Analytics Report
-            </button>
-            <a href="{% url 'constituency_export_data' %}?type=all_applications&fiscal_year={{ current_fiscal_year.id }}" 
-               class="btn btn-secondary">
-                <i class="icon-download"></i> Export to Excel
-            </a>
+        <!-- Institution Distribution -->
+        <h2 class="section-title">
+            <i class="bi bi-building"></i>
+            Top Institutions by Applications
+        </h2>
+        
+        <div class="table-responsive">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Institution</th>
+                        <th>Type</th>
+                        <th>Applications</th>
+                        <th>Amount Allocated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in institution_dist %}
+                    <tr>
+                        <td style="font-weight: 600; color: #64748B;">{{ forloop.counter }}</td>
+                        <td style="font-weight: 600; color: #1E293B;">{{ inst.institution__name }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ inst.institution__institution_type|title }}</span>
+                        </td>
+                        <td>{{ inst.count }}</td>
+                        <td style="font-weight: 600; color: #27ae60;">
+                            KSh {{ inst.total_allocated|floatformat:0|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Institution Data</h3>
+                                <p class="empty-text">
+                                    No applications have been submitted yet.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        <!-- Category Distribution -->
+        <h2 class="section-title" style="margin-top: 32px;">
+            <i class="bi bi-tags"></i>
+            Bursary Category Distribution
+        </h2>
+        
+        <div class="table-responsive">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Applications</th>
+                        <th>Total Allocated</th>
+                        <th>Average Allocation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in category_dist %}
+                    <tr>
+                        <td style="font-weight: 600; color: #1E293B;">{{ cat.bursary_category__name }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ cat.bursary_category__category_type|title }}</span>
+                        </td>
+                        <td>{{ cat.count }}</td>
+                        <td style="font-weight: 600; color: #27ae60;">
+                            KSh {{ cat.total_allocated|floatformat:0|intcomma }}
+                        </td>
+                        <td>KSh {{ cat.avg_allocation|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Category Data</h3>
+                                <p class="empty-text">
+                                    No applications have been categorized yet.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Monthly Trends -->
+        <h2 class="section-title" style="margin-top: 32px;">
+            <i class="bi bi-calendar3"></i>
+            Monthly Application Trends
+        </h2>
+        
+        <div class="table-responsive">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Applications</th>
+                        <th>Approved</th>
+                        <th>Approval Rate</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trend in monthly_trends %}
+                    <tr>
+                        <td style="font-weight: 600; color: #1E293B;">
+                            {{ trend.month|date:"F Y" }}
+                        </td>
+                        <td>{{ trend.applications }}</td>
+                        <td>
+                            <span class="badge badge-success">{{ trend.approved }}</span>
+                        </td>
+                        <td>
+                            {% if trend.applications > 0 %}
+                                {% widthratio trend.approved trend.applications 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: 600; color: #27ae60;">
+                            KSh {{ trend.total_amount|floatformat:0|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Monthly Data</h3>
+                                <p class="empty-text">
+                                    No monthly trends available yet.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
     </div>
 </div>
+{% endblock %}
 
-<style>
-.analytics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.analytics-card {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.analytics-icon {
-    width: 50px;
-    height: 50px;
-    background: #0066cc;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
-.analytics-content h3 {
-    margin: 0;
-    font-size: 28px;
-}
-
-.analytics-content p {
-    margin: 5px 0;
-    color: #666;
-}
-
-.analytics-meta {
-    font-size: 14px;
-    color: #0066cc;
-    font-weight: bold;
-}
-
-.chart-placeholder {
-    background: #f8f9fa;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    min-height: 300px;
-}
-
-.trend-data {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.trend-item {
-    background: white;
-    padding: 15px;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.trend-month {
-    font-weight: bold;
-}
-
-.trend-stats {
-    display: flex;
-    gap: 20px;
-    font-size: 14px;
-    color: #666;
-}
-
-.progress-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.progress-bar {
-    flex: 1;
-    height: 20px;
-    background: #f0f0f0;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #0066cc, #0088ff);
-    transition: width 0.3s;
-}
-
-.progress-label {
-    font-weight: bold;
-    color: #0066cc;
-}
-
-.insights-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.insight-card {
-    background: linear-gradient(135deg, #0066cc 0%, #0088ff 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-}
-
-.insight-card h4 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    opacity: 0.9;
-}
-
-.insight-card p {
-    margin: 0 0 5px 0;
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.insight-card span {
-    font-size: 13px;
-    opacity: 0.8;
-}
-
-.export-options {
-    display: flex;
-    gap: 15px;
-}
-
-@media print {
-    .page-header .header-actions,
-    .export-options,
-    .breadcrumb {
-        display: none;
+{% block extra_js %}
+<script>
+    function exportData() {
+        // Implement export functionality
+        alert('Export functionality to be implemented');
     }
-}
-</style>
+    
+    // Auto-scroll to section on page load if hash exists
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.hash) {
+            const element = document.querySelector(window.location.hash);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    });
+</script>
 {% endblock %}
