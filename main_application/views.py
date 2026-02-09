@@ -16,6 +16,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 from datetime import timedelta
 import logging
+from django.db.models import Max, Min, Value, DecimalField
+from django.db.models.functions import Coalesce
+
 
 logger = logging.getLogger(__name__)
 
@@ -18087,8 +18090,8 @@ def constituency_analytics(request):
     Advanced analytics and insights for CDF bursary program
     Detailed breakdowns and analysis
     """
-    # Get constituency from the user's assignment (same as dashboard)
-    constituency = request.user.assigned_constituency
+    # Get constituency using the same helper function as dashboard
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
         messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
@@ -18099,11 +18102,14 @@ def constituency_analytics(request):
         }
         return render(request, 'constituency_admin/no_assignment.html', context)
     
-    # Get active fiscal year
-    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    # Get active fiscal year with county filter
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
     
     if not current_fiscal_year:
-        messages.warning(request, "No active fiscal year found.")
+        messages.warning(request, "No active fiscal year found for your county.")
         context = {
             'constituency': constituency,
             'error': True,
@@ -18111,29 +18117,78 @@ def constituency_analytics(request):
         }
         return render(request, 'constituency_admin/analytics.html', context)
     
-    # Get applications
-    applications = Application.objects.filter(
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both'],
+    # Get all applications for constituency
+    all_applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
         fiscal_year=current_fiscal_year
-    ).select_related(
+    ).distinct()
+    
+    # Get CDF applications with better filtering
+    applications = all_applications.filter(
+        Q(bursary_source__iexact='cdf') |
+        Q(bursary_source__iexact='both') |
+        Q(bursary_source__icontains='cdf')
+    ).distinct().select_related(
         'applicant__user',
         'applicant__ward',
         'institution',
         'bursary_category'
-    )
+    ).prefetch_related('allocation')
+    
+    # If no CDF applications, show all applications
+    if applications.count() == 0:
+        messages.info(request, 
+            f"No CDF applications found. Showing all {all_applications.count()} applications for constituency.")
+        applications = all_applications.select_related(
+            'applicant__user',
+            'applicant__ward',
+            'institution',
+            'bursary_category'
+        ).prefetch_related('allocation')
     
     # ========================================================================
     # DETAILED ANALYTICS
     # ========================================================================
     
     # Gender distribution with amounts
-    gender_dist = applications.values('applicant__gender').annotate(
-        count=Count('id'),
-        total_requested=Sum('amount_requested'),
-        total_allocated=Sum('allocation__amount_allocated'),
-        avg_amount=Avg('amount_requested')
-    )
+    gender_dist = []
+    male_apps = applications.filter(applicant__gender='M')
+    female_apps = applications.filter(applicant__gender='F')
+    
+    gender_dist.append({
+        'gender': 'Male',
+        'gender_display': 'Male',
+        'count': male_apps.count(),
+        'total_requested': male_apps.aggregate(
+            total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+        )['total'],
+        'total_allocated': Allocation.objects.filter(
+            application__in=male_apps
+        ).aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total'],
+        'avg_amount': male_apps.aggregate(
+            avg=Coalesce(Avg('amount_requested'), Value(0), output_field=DecimalField())
+        )['avg']
+    })
+    
+    gender_dist.append({
+        'gender': 'Female',
+        'gender_display': 'Female',
+        'count': female_apps.count(),
+        'total_requested': female_apps.aggregate(
+            total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+        )['total'],
+        'total_allocated': Allocation.objects.filter(
+            application__in=female_apps
+        ).aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total'],
+        'avg_amount': female_apps.aggregate(
+            avg=Coalesce(Avg('amount_requested'), Value(0), output_field=DecimalField())
+        )['avg']
+    })
     
     # Institution type distribution
     institution_dist = applications.values(
@@ -18141,68 +18196,139 @@ def constituency_analytics(request):
         'institution__name'
     ).annotate(
         count=Count('id'),
-        total_allocated=Sum('allocation__amount_allocated')
+        total_allocated=Coalesce(
+            Sum('allocation__amount_allocated'), 
+            Value(0), 
+            output_field=DecimalField()
+        )
     ).order_by('-count')[:10]
     
     # Ward distribution with detailed stats
-    ward_dist = applications.values('applicant__ward__name').annotate(
-        count=Count('id'),
-        approved=Count('id', filter=Q(status='approved')),
-        total_requested=Sum('amount_requested'),
-        total_allocated=Sum('allocation__amount_allocated'),
-        male=Count('id', filter=Q(applicant__gender='M')),
-        female=Count('id', filter=Q(applicant__gender='F')),
-        orphans=Count('id', filter=Q(is_orphan=True)),
-        special_needs=Count('id', filter=Q(applicant__special_needs=True))
-    ).order_by('-count')
+    ward_dist = []
+    for ward in constituency.wards.filter(is_active=True):
+        ward_apps = applications.filter(applicant__ward=ward)
+        approved_apps = ward_apps.filter(status='approved')
+        
+        ward_dist.append({
+            'ward_name': ward.name,
+            'count': ward_apps.count(),
+            'approved': approved_apps.count(),
+            'total_requested': ward_apps.aggregate(
+                total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+            )['total'],
+            'total_allocated': Allocation.objects.filter(
+                application__in=ward_apps
+            ).aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+            'male': ward_apps.filter(applicant__gender='M').count(),
+            'female': ward_apps.filter(applicant__gender='F').count(),
+            'orphans': ward_apps.filter(is_orphan=True).count(),
+            'special_needs': ward_apps.filter(applicant__special_needs=True).count(),
+            'disabled': ward_apps.filter(is_disabled=True).count()
+        })
     
     # Monthly trends
-    monthly_trends = applications.filter(
-        date_submitted__gte=current_fiscal_year.start_date
-    ).annotate(
-        month=TruncMonth('date_submitted')
-    ).values('month').annotate(
-        applications=Count('id'),
-        approved=Count('id', filter=Q(status='approved')),
-        total_amount=Sum('amount_requested')
-    ).order_by('month')
+    monthly_trends = []
+    if current_fiscal_year.start_date:
+        start_date = current_fiscal_year.start_date
+        current_date = timezone.now().date()
+        
+        # Generate monthly data
+        import calendar
+        from dateutil.relativedelta import relativedelta
+        
+        current_month = start_date.replace(day=1)
+        
+        while current_month <= current_date:
+            next_month = current_month + relativedelta(months=1)
+            
+            month_apps = applications.filter(
+                date_submitted__date__gte=current_month,
+                date_submitted__date__lt=next_month
+            )
+            
+            monthly_trends.append({
+                'month': current_month,
+                'applications': month_apps.count(),
+                'approved': month_apps.filter(status='approved').count(),
+                'total_amount': month_apps.aggregate(
+                    total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+                )['total']
+            })
+            
+            current_month = next_month
     
     # Category distribution
-    category_dist = applications.values(
-        'bursary_category__name',
-        'bursary_category__category_type'
-    ).annotate(
-        count=Count('id'),
-        total_allocated=Sum('allocation__amount_allocated'),
-        avg_allocation=Avg('allocation__amount_allocated')
-    ).order_by('-count')
+    category_dist = []
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year,
+        is_active=True
+    )
+    
+    for category in categories:
+        cat_apps = applications.filter(bursary_category=category)
+        category_dist.append({
+            'category_name': category.name,
+            'category_type': category.get_category_type_display(),
+            'count': cat_apps.count(),
+            'total_allocated': Allocation.objects.filter(
+                application__in=cat_apps
+            ).aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+            'avg_allocation': Allocation.objects.filter(
+                application__in=cat_apps
+            ).aggregate(
+                avg=Coalesce(Avg('amount_allocated'), Value(0), output_field=DecimalField())
+            )['avg']
+        })
     
     # Orphan statistics
+    orphan_apps = applications.filter(is_orphan=True)
+    total_orphan_allocated = Allocation.objects.filter(
+        application__in=orphan_apps
+    ).aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
+    
     orphan_stats = {
-        'total_orphans': applications.filter(is_orphan=True).count(),
-        'total_orphans_amount': applications.filter(is_orphan=True).aggregate(
-            Sum('allocation__amount_allocated')
-        )['allocation__amount_allocated__sum'] or 0,
-        'single_orphans': applications.filter(is_orphan=True, is_total_orphan=False).count(),
-        'total_orphans_count': applications.filter(is_total_orphan=True).count(),
+        'total_orphans': orphan_apps.count(),
+        'total_orphans_amount': total_orphan_allocated,
+        'single_orphans': orphan_apps.filter(is_total_orphan=False).count(),
+        'total_orphans_count': orphan_apps.filter(is_total_orphan=True).count(),
+        'percentage': round((orphan_apps.count() / applications.count() * 100), 1) if applications.count() > 0 else 0,
+        'avg_orphan_amount': round(float(total_orphan_allocated / orphan_apps.count()), 2) if orphan_apps.count() > 0 else 0
     }
     
     # Special needs statistics
+    special_needs_apps = applications.filter(applicant__special_needs=True)
+    total_special_needs_allocated = Allocation.objects.filter(
+        application__in=special_needs_apps
+    ).aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
+    
     special_needs_stats = {
-        'total_special_needs': applications.filter(applicant__special_needs=True).count(),
-        'total_special_needs_amount': applications.filter(
-            applicant__special_needs=True
-        ).aggregate(
-            Sum('allocation__amount_allocated')
-        )['allocation__amount_allocated__sum'] or 0,
+        'total_special_needs': special_needs_apps.count(),
+        'total_special_needs_amount': total_special_needs_allocated,
+        'percentage': round((special_needs_apps.count() / applications.count() * 100), 1) if applications.count() > 0 else 0,
+        'avg_special_needs_amount': round(float(total_special_needs_allocated / special_needs_apps.count()), 2) if special_needs_apps.count() > 0 else 0
     }
     
-    # Disabled students
+    # Disabled students statistics
+    disabled_apps = applications.filter(is_disabled=True)
+    total_disabled_allocated = Allocation.objects.filter(
+        application__in=disabled_apps
+    ).aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
+    
     disabled_stats = {
-        'total_disabled': applications.filter(is_disabled=True).count(),
-        'total_disabled_amount': applications.filter(is_disabled=True).aggregate(
-            Sum('allocation__amount_allocated')
-        )['allocation__amount_allocated__sum'] or 0,
+        'total_disabled': disabled_apps.count(),
+        'total_disabled_amount': total_disabled_allocated,
+        'percentage': round((disabled_apps.count() / applications.count() * 100), 1) if applications.count() > 0 else 0,
+        'avg_disabled_amount': round(float(total_disabled_allocated / disabled_apps.count()), 2) if disabled_apps.count() > 0 else 0
     }
     
     # Success rate by ward
@@ -18213,34 +18339,111 @@ def constituency_analytics(request):
         approved = ward_apps.filter(status='approved').count()
         success_rate = round((approved / total * 100) if total > 0 else 0, 1)
         
+        total_ward_allocated = Allocation.objects.filter(
+            application__in=ward_apps.filter(status='approved')
+        ).aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
         ward_success_rate.append({
             'ward': ward.name,
             'total': total,
             'approved': approved,
             'rejected': ward_apps.filter(status='rejected').count(),
+            'pending': ward_apps.filter(status__in=['submitted', 'under_review']).count(),
             'success_rate': success_rate,
-            'total_allocated': ward_apps.aggregate(
-                Sum('allocation__amount_allocated')
-            )['allocation__amount_allocated__sum'] or 0
+            'total_allocated': total_ward_allocated,
+            'avg_allocation': round(float(total_ward_allocated / approved), 2) if approved > 0 else 0
         })
     
     # Age distribution
+    today = timezone.now().date()
     age_groups = {
         '15-18': applications.filter(
-            applicant__date_of_birth__gte=timezone.now().date() - timedelta(days=18*365),
-            applicant__date_of_birth__lte=timezone.now().date() - timedelta(days=15*365)
+            applicant__date_of_birth__gte=today - timedelta(days=18*365),
+            applicant__date_of_birth__lte=today - timedelta(days=15*365)
         ).count(),
         '19-22': applications.filter(
-            applicant__date_of_birth__gte=timezone.now().date() - timedelta(days=22*365),
-            applicant__date_of_birth__lte=timezone.now().date() - timedelta(days=19*365)
+            applicant__date_of_birth__gte=today - timedelta(days=22*365),
+            applicant__date_of_birth__lte=today - timedelta(days=19*365)
         ).count(),
         '23-26': applications.filter(
-            applicant__date_of_birth__gte=timezone.now().date() - timedelta(days=26*365),
-            applicant__date_of_birth__lte=timezone.now().date() - timedelta(days=23*365)
+            applicant__date_of_birth__gte=today - timedelta(days=26*365),
+            applicant__date_of_birth__lte=today - timedelta(days=23*365)
         ).count(),
         '27+': applications.filter(
-            applicant__date_of_birth__lt=timezone.now().date() - timedelta(days=27*365)
+            applicant__date_of_birth__lt=today - timedelta(days=27*365)
         ).count(),
+    }
+    
+    # Calculate age group percentages
+    total_age_applications = sum(age_groups.values())
+    age_group_percentages = {
+        age_range: round((count / total_age_applications * 100), 1) if total_age_applications > 0 else 0
+        for age_range, count in age_groups.items()
+    }
+    
+    # Additional Statistics
+    # Academic performance statistics
+    academic_stats = {
+        'has_academic_scores': applications.filter(
+            previous_academic_year_average__isnull=False
+        ).count(),
+        'avg_academic_score': applications.filter(
+            previous_academic_year_average__isnull=False
+        ).aggregate(avg=Coalesce(Avg('previous_academic_year_average'), Value(0), output_field=DecimalField())
+
+        )['avg'],
+        'top_performers': applications.filter(
+            previous_academic_year_average__gte=80
+        ).count(),
+        'average_performers': applications.filter(
+            previous_academic_year_average__gte=50,
+            previous_academic_year_average__lt=80
+        ).count(),
+    }
+    
+    # Financial need statistics
+    financial_stats = {
+        'avg_fees_balance': applications.aggregate(
+            avg=Coalesce(Avg('fees_balance'), Value(0), output_field=DecimalField())
+        )['avg'],
+        'avg_amount_requested': applications.aggregate(
+            avg=Coalesce(Avg('amount_requested'), Value(0), output_field=DecimalField())
+        )['avg'],
+        'avg_amount_allocated': Allocation.objects.filter(
+            application__in=applications
+        ).aggregate(
+            avg=Coalesce(Avg('amount_allocated'), Value(0), output_field=DecimalField())
+        )['avg'],
+        'max_amount_requested': applications.aggregate(
+            max=Coalesce(Max('amount_requested'), Value(0), output_field=DecimalField())
+        )['max'],
+        'min_amount_requested': applications.aggregate(
+            min=Coalesce(Min('amount_requested'), Value(0), output_field=DecimalField())
+        )['min'],
+    }
+    
+    # Prepare data for charts
+    # Gender chart data
+    gender_chart_data = {
+        'labels': [item['gender_display'] for item in gender_dist],
+        'data': [item['count'] for item in gender_dist],
+        'amounts': [float(item['total_allocated']) for item in gender_dist]
+    }
+    
+    # Ward success rate chart data
+    ward_success_chart_data = {
+        'labels': [item['ward'] for item in ward_success_rate],
+        'success_rates': [item['success_rate'] for item in ward_success_rate],
+        'applications': [item['total'] for item in ward_success_rate]
+    }
+    
+    # Age distribution chart data
+    age_chart_data = {
+        'labels': list(age_groups.keys()),
+        'data': list(age_groups.values()),
+        'percentages': list(age_group_percentages.values())
     }
     
     context = {
@@ -18250,41 +18453,50 @@ def constituency_analytics(request):
         'gender_dist': gender_dist,
         'institution_dist': institution_dist,
         'ward_dist': ward_dist,
-        'monthly_trends': list(monthly_trends),
+        'monthly_trends': monthly_trends,
         'category_dist': category_dist,
         'orphan_stats': orphan_stats,
         'special_needs_stats': special_needs_stats,
         'disabled_stats': disabled_stats,
         'ward_success_rate': ward_success_rate,
         'age_groups': age_groups,
+        'age_group_percentages': age_group_percentages,
+        'academic_stats': academic_stats,
+        'financial_stats': financial_stats,
+        
+        # Chart data (JSON serialized)
+        'gender_chart_data': json.dumps(gender_chart_data),
+        'ward_success_chart_data': json.dumps(ward_success_chart_data),
+        'age_chart_data': json.dumps(age_chart_data),
+        
+        # Summary statistics
+        'summary': {
+            'total_requested': applications.aggregate(
+                total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+            )['total'],
+            'total_allocated': Allocation.objects.filter(
+                application__in=applications
+            ).aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+            'total_disbursed': Disbursement.objects.filter(
+                allocation__application__in=applications,
+                status='completed'
+            ).aggregate(
+                total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
+            )['total'],
+            'approval_rate': round((applications.filter(status='approved').count() / applications.count() * 100), 1) 
+                if applications.count() > 0 else 0,
+            'avg_processing_time': None,  # Could calculate based on submission to approval dates
+        }
     }
     
-    # Create audit log with correct parameter order
-    # Based on AuditLog model: user, action, table_affected, record_id, description, ip_address, user_agent
-    try:
-        # Get client IP address
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip_address = x_forwarded_for.split(',')[0]
-        else:
-            ip_address = request.META.get('REMOTE_ADDR', '127.0.0.1')
-        
-        # Get user agent
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        
-        # Create audit log
-        AuditLog.objects.create(
-            user=request.user,
-            action='view',
-            table_affected='Analytics',
-            record_id=None,
-            description=f"Viewed constituency analytics for {constituency.name}",
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-    except Exception as e:
-        # Log the error but don't fail the request
-        print(f"Failed to create audit log: {e}")
+    # Create audit log
+    create_audit_log(
+        request.user, 'view', 'Analytics', None,
+        f"Viewed constituency analytics for {constituency.name}",
+        request
+    )
     
     return render(request, 'constituency_admin/analytics.html', context)
 
