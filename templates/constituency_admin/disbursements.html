@@ -1,144 +1,211 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Disbursements - {{ constituency.name }}{% endblock %}
+{% block title %}Disbursements - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Disbursements</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>Disbursements</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>CDF Bursary Disbursements</h1>
+    <div>
+        <div>
+            <h1>Disbursement Management</h1>
             <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
         </div>
-        <div class="header-actions">
-            <a href="{% url 'constituency_create_bulk_cheque' %}" class="btn btn-primary">
-                <i class="icon-cheque"></i> Create Bulk Cheque
-            </a>
+        <div>
+            <button>Process Bulk Disbursement</button>
         </div>
     </div>
 
-    <!-- Summary Stats -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon warning">
-                <i class="icon-pending"></i>
+    <!-- Summary Statistics -->
+    <div>
+        <h2>Summary</h2>
+        <div>
+            <div>
+                <div>
+                    <h3>Pending Disbursements</h3>
+                    <p>{{ summary.pending_count }}</p>
+                    <p>KES {{ summary.pending_amount|floatformat:0|intcomma }}</p>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3>KES {{ total_pending_amount|floatformat:2|intcomma }}</h3>
-                <p>Pending Disbursement</p>
+            <div>
+                <div>
+                    <h3>Completed Disbursements</h3>
+                    <p>{{ summary.completed_count }}</p>
+                    <p>KES {{ summary.completed_amount|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Allocations</h3>
+                    <p>{{ summary.total_allocations }}</p>
+                    <p>KES {{ summary.total_allocated|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Disbursed Percentage</h3>
+                    <p>{{ summary.disbursed_percentage }}%</p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="stat-card">
-            <div class="stat-icon success">
-                <i class="icon-check"></i>
+    <!-- Filters -->
+    <div>
+        <h3>Filters</h3>
+        <form method="get">
+            <div>
+                <label>Payment Method:</label>
+                <select name="payment_method">
+                    <option value="">All Methods</option>
+                    {% for method in payment_methods %}
+                    <option value="{{ method.0 }}" {% if selected_payment_method == method.0 %}selected{% endif %}>
+                        {{ method.1 }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="stat-content">
-                <h3>KES {{ total_disbursed_amount|floatformat:2|intcomma }}</h3>
-                <p>Total Disbursed</p>
+            <div>
+                <label>Ward:</label>
+                <select name="ward">
+                    <option value="">All Wards</option>
+                    {% for ward in wards %}
+                    <option value="{{ ward.id }}" {% if selected_ward == ward.id|stringformat:"s" %}selected{% endif %}>
+                        {{ ward.name }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
+            <div>
+                <label>Institution:</label>
+                <select name="institution">
+                    <option value="">All Institutions</option>
+                    {% for institution in institutions %}
+                    <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
+                        {{ institution.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Search:</label>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or app number">
+            </div>
+            <button type="submit">Apply Filters</button>
+            <a href="{% url 'constituency_disbursements' %}">Reset</a>
+        </form>
     </div>
 
     <!-- Pending Disbursements -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Pending Disbursements</h2>
-            <p>{{ pending_disbursements.count }} allocation(s) awaiting disbursement</p>
-        </div>
-
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Application No.</th>
-                        <th>Student</th>
-                        <th>Institution</th>
-                        <th>Amount Allocated</th>
-                        <th>Allocation Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for allocation in pending_disbursements %}
-                    <tr>
-                        <td>{{ allocation.application.application_number }}</td>
-                        <td>{{ allocation.application.applicant.user.get_full_name }}</td>
-                        <td>{{ allocation.application.institution.name|truncatewords:3 }}</td>
-                        <td>KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</td>
-                        <td>{{ allocation.allocation_date|date:"M d, Y" }}</td>
-                        <td>
-                            <a href="{% url 'constituency_process_disbursement' allocation.id %}" class="btn btn-sm btn-success">
-                                Process Disbursement
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            <div class="empty-state">
-                                <p>No pending disbursements.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div>
+        <h2>Pending Disbursements ({{ summary.pending_count }})</h2>
+        {% if pending_disbursements %}
+        <table>
+            <thead>
+                <tr>
+                    <th>App Number</th>
+                    <th>Applicant</th>
+                    <th>Ward</th>
+                    <th>Institution</th>
+                    <th>Amount</th>
+                    <th>Allocation Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for allocation in pending_disbursements %}
+                <tr>
+                    <td>{{ allocation.application.application_number }}</td>
+                    <td>{{ allocation.application.applicant.user.get_full_name }}</td>
+                    <td>{{ allocation.application.applicant.ward.name }}</td>
+                    <td>{{ allocation.application.institution.name }}</td>
+                    <td>KES {{ allocation.amount_allocated|floatformat:0|intcomma }}</td>
+                    <td>{{ allocation.allocation_date|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'constituency_process_disbursement' allocation.id %}">Process</a>
+                        <a href="{% url 'constituency_application_detail' allocation.application.id %}">View App</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No pending disbursements found.</p>
+        {% endif %}
     </div>
 
     <!-- Completed Disbursements -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Completed Disbursements</h2>
-        </div>
+    <div>
+        <h2>Completed Disbursements ({{ summary.completed_count }})</h2>
+        {% if completed_disbursements %}
+        <table>
+            <thead>
+                <tr>
+                    <th>App Number</th>
+                    <th>Applicant</th>
+                    <th>Ward</th>
+                    <th>Payment Method</th>
+                    <th>Reference/Cheque</th>
+                    <th>Amount</th>
+                    <th>Disbursement Date</th>
+                    <th>Processed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for disbursement in completed_disbursements %}
+                <tr>
+                    <td>{{ disbursement.allocation.application.application_number }}</td>
+                    <td>{{ disbursement.applicant.user.get_full_name }}</td>
+                    <td>{{ disbursement.applicant.ward.name }}</td>
+                    <td>{{ disbursement.get_payment_method_display }}</td>
+                    <td>
+                        {% if disbursement.payment_method == 'cheque' %}
+                        {{ disbursement.cheque_number }}
+                        {% else %}
+                        {{ disbursement.reference_number }}
+                        {% endif %}
+                    </td>
+                    <td>KES {{ disbursement.amount|floatformat:0|intcomma }}</td>
+                    <td>{{ disbursement.disbursement_date|date:"d/m/Y" }}</td>
+                    <td>{{ disbursement.processed_by.get_full_name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No completed disbursements found.</p>
+        {% endif %}
+    </div>
 
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Reference No.</th>
-                        <th>Student</th>
-                        <th>Institution</th>
-                        <th>Amount</th>
-                        <th>Payment Method</th>
-                        <th>Disbursement Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for disbursement in completed_disbursements %}
-                    <tr>
-                        <td>{{ disbursement.reference_number }}</td>
-                        <td>{{ disbursement.applicant.user.get_full_name }}</td>
-                        <td>{{ disbursement.allocation.application.institution.name|truncatewords:3 }}</td>
-                        <td>KES {{ disbursement.amount|floatformat:2|intcomma }}</td>
-                        <td>{{ disbursement.get_payment_method_display }}</td>
-                        <td>{{ disbursement.disbursement_date|date:"M d, Y" }}</td>
-                        <td>
-                            <span class="badge badge-success">{{ disbursement.get_status_display }}</span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center">
-                            <div class="empty-state">
-                                <p>No disbursements completed yet.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Export Options -->
+    <div>
+        <h3>Export Data</h3>
+        <div>
+            <button onclick="exportDisbursements()">Export Disbursements</button>
+            <button onclick="window.print()">Print Report</button>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+function exportDisbursements() {
+    // Implement export functionality
+    alert('Export functionality to be implemented');
+}
+</script>
+{% endblock %}
 {% endblock %}

@@ -1,235 +1,270 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Reports - {{ constituency.name }}{% endblock %}
+{% block title %}Reports - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Reports</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>Reports</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <h1>CDF Bursary Reports</h1>
-        <p>Generate and download reports for {{ constituency.name }} Constituency</p>
-    </div>
-
-    <!-- Report Types Grid -->
-    <div class="reports-grid">
-        <!-- Beneficiary List -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-users"></i>
-            </div>
-            <div class="report-content">
-                <h3>Beneficiary List</h3>
-                <p>Complete list of all beneficiaries with allocation details</p>
-            </div>
-            <form method="get" action="{% url 'constituency_generate_beneficiary_list' %}">
-                <div class="form-group">
-                    <label for="beneficiary_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="beneficiary_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-download"></i> Generate Beneficiary List
-                </button>
-            </form>
-        </div>
-
-        <!-- Financial Report -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-money"></i>
-            </div>
-            <div class="report-content">
-                <h3>Financial Report</h3>
-                <p>Comprehensive financial summary with ward breakdown</p>
-            </div>
-            <form method="get" action="{% url 'constituency_financial_report' %}">
-                <div class="form-group">
-                    <label for="financial_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="financial_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-view"></i> View Financial Report
-                </button>
-            </form>
-        </div>
-
-        <!-- Applications Export -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-file"></i>
-            </div>
-            <div class="report-content">
-                <h3>All Applications</h3>
-                <p>Export all applications to Excel format</p>
-            </div>
-            <form method="get" action="{% url 'constituency_export_data' %}">
-                <input type="hidden" name="type" value="all_applications">
-                <div class="form-group">
-                    <label for="all_apps_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="all_apps_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-download"></i> Export All Applications
-                </button>
-            </form>
-        </div>
-
-        <!-- Approved Applications Export -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-check"></i>
-            </div>
-            <div class="report-content">
-                <h3>Approved Applications</h3>
-                <p>Export approved applications only</p>
-            </div>
-            <form method="get" action="{% url 'constituency_export_data' %}">
-                <input type="hidden" name="type" value="approved_only">
-                <div class="form-group">
-                    <label for="approved_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="approved_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-download"></i> Export Approved Only
-                </button>
-            </form>
-        </div>
-
-        <!-- Disbursed Applications Export -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-cash"></i>
-            </div>
-            <div class="report-content">
-                <h3>Disbursed Applications</h3>
-                <p>Export disbursed applications with payment details</p>
-            </div>
-            <form method="get" action="{% url 'constituency_export_data' %}">
-                <input type="hidden" name="type" value="disbursed_only">
-                <div class="form-group">
-                    <label for="disbursed_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="disbursed_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-download"></i> Export Disbursed
-                </button>
-            </form>
-        </div>
-
-        <!-- Ward-wise Report -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-location"></i>
-            </div>
-            <div class="report-content">
-                <h3>Ward-wise Summary</h3>
-                <p>Breakdown of applications and allocations by ward</p>
-            </div>
-            <a href="{% url 'constituency_wards_overview' %}" class="btn btn-primary btn-block">
-                <i class="icon-view"></i> View Ward Summary
-            </a>
-        </div>
-
-        <!-- Bulk Cheques List -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-cheque"></i>
-            </div>
-            <div class="report-content">
-                <h3>Bulk Cheques List</h3>
-                <p>Printable list of all bulk cheques for collection</p>
-            </div>
-            <form method="get" action="{% url 'constituency_print_cheque_list' %}">
-                <div class="form-group">
-                    <label for="cheque_fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="cheque_fiscal_year" class="form-control" required>
-                        <option value="">Select year</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}">{{ fy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="icon-print"></i> Print Cheque List
-                </button>
-            </form>
-        </div>
-
-        <!-- Analytics Report -->
-        <div class="report-card">
-            <div class="report-icon">
-                <i class="icon-chart"></i>
-            </div>
-            <div class="report-content">
-                <h3>Analytics Dashboard</h3>
-                <p>Detailed analytics and insights on CDF bursary program</p>
-            </div>
-            <a href="{% url 'constituency_analytics' %}" class="btn btn-primary btn-block">
-                <i class="icon-view"></i> View Analytics
-            </a>
+    <div>
+        <div>
+            <h1>Reports Generator</h1>
+            <p>{{ constituency.name }} Constituency</p>
+            <p>Current Fiscal Year: {{ current_fiscal_year.name|default:"None active" }}</p>
         </div>
     </div>
 
-    <!-- Report Guidelines -->
-    <div class="content-section">
-        <h2>Report Guidelines</h2>
-        <div class="guidelines-content">
-            <h3>Generating Reports</h3>
-            <ul>
-                <li>Select the appropriate fiscal year for the report you want to generate</li>
-                <li>Ensure you have the necessary permissions to access the data</li>
-                <li>Reports are generated in real-time based on current database records</li>
-                <li>Excel reports can be opened with Microsoft Excel, Google Sheets, or LibreOffice</li>
-            </ul>
+    <!-- Available Reports -->
+    <div>
+        <h2>Available Reports</h2>
+        <div>
+            {% for report_type, report_name in report_types %}
+            <div>
+                <div>
+                    <h3>{{ report_name }}</h3>
+                    <p>Generate detailed report for CDF bursary program</p>
+                    <button onclick="showReportForm('{{ report_type }}')">Generate Report</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 
-            <h3>Using Reports</h3>
-            <ul>
-                <li>Beneficiary lists can be used for transparency and public disclosure</li>
-                <li>Financial reports help track budget utilization and planning</li>
-                <li>Application exports are useful for analysis and record-keeping</li>
-                <li>All report generation activities are logged for audit purposes</li>
-            </ul>
+    <!-- Report Generation Form -->
+    <div id="reportForm" style="display: none;">
+        <h2 id="reportFormTitle">Generate Report</h2>
+        <form method="get" id="reportGenerationForm">
+            <input type="hidden" name="report_type" id="reportType">
+            
+            <div>
+                <label>Select Fiscal Year *</label>
+                <select name="fiscal_year" required>
+                    <option value="">Select fiscal year...</option>
+                    {% for year in fiscal_years %}
+                    <option value="{{ year.id }}">{{ year.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <h3>Data Privacy</h3>
-            <ul>
-                <li>Handle all reports containing personal information with care</li>
-                <li>Do not share beneficiary data without proper authorization</li>
-                <li>Store downloaded reports securely</li>
-                <li>Delete old report files when no longer needed</li>
-            </ul>
+            <div id="additionalFilters">
+                <!-- Additional filters will be loaded here based on report type -->
+            </div>
+
+            <div>
+                <label>Report Format</label>
+                <select name="format">
+                    <option value="html">Web View</option>
+                    <option value="excel">Excel (.xlsx)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit">Generate Report</button>
+                <button type="button" onclick="hideReportForm()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Recent Reports -->
+    {% if recent_reports %}
+    <div>
+        <h2>Recent Reports</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Report Type</th>
+                    <th>Fiscal Year</th>
+                    <th>Generated On</th>
+                    <th>Format</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in recent_reports %}
+                <tr>
+                    <td>{{ report.report_type }}</td>
+                    <td>{{ report.fiscal_year.name }}</td>
+                    <td>{{ report.generated_date|date:"d/m/Y H:i" }}</td>
+                    <td>{{ report.format }}</td>
+                    <td>
+                        <a href="{{ report.download_url }}">Download</a>
+                        <a href="{{ report.view_url }}">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div>
+        <h2>Quick Statistics</h2>
+        <div>
+            <div>
+                <div>
+                    <h3>Total Applications</h3>
+                    <p>{{ quick_stats.total_applications|default:"0" }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Approved</h3>
+                    <p>{{ quick_stats.approved|default:"0" }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Allocated</h3>
+                    <p>KES {{ quick_stats.total_allocated|floatformat:0|intcomma|default:"0" }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Disbursed</h3>
+                    <p>KES {{ quick_stats.total_disbursed|floatformat:0|intcomma|default:"0" }}</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+const reportFilters = {
+    'beneficiary_list': {
+        title: 'Beneficiary List Report',
+        filters: `
+            <div>
+                <label>Include Contact Details</label>
+                <input type="checkbox" name="include_contacts" checked>
+            </div>
+            <div>
+                <label>Include Bank Details</label>
+                <input type="checkbox" name="include_bank">
+            </div>
+        `
+    },
+    'financial_report': {
+        title: 'Financial Report',
+        filters: `
+            <div>
+                <label>Report Level</label>
+                <select name="level">
+                    <option value="summary">Summary</option>
+                    <option value="detailed">Detailed</option>
+                    <option value="ward">Ward Level</option>
+                </select>
+            </div>
+        `
+    },
+    'ward_summary': {
+        title: 'Ward Summary Report',
+        filters: `
+            <div>
+                <label>Include Graphs</label>
+                <input type="checkbox" name="include_graphs" checked>
+            </div>
+        `
+    },
+    'institution_report': {
+        title: 'Institution Report',
+        filters: `
+            <div>
+                <label>Institution Type</label>
+                <select name="institution_type">
+                    <option value="">All Types</option>
+                    <option value="highschool">High School</option>
+                    <option value="college">College</option>
+                    <option value="university">University</option>
+                </select>
+            </div>
+        `
+    },
+    'category_report': {
+        title: 'Category Report',
+        filters: `
+            <div>
+                <label>Sort By</label>
+                <select name="sort">
+                    <option value="count">Number of Applicants</option>
+                    <option value="amount">Total Amount</option>
+                </select>
+            </div>
+        `
+    },
+    'disbursement_report': {
+        title: 'Disbursement Report',
+        filters: `
+            <div>
+                <label>Payment Method</label>
+                <select name="payment_method">
+                    <option value="">All Methods</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="mpesa">M-Pesa</option>
+                </select>
+            </div>
+        `
+    }
+};
+
+function showReportForm(reportType) {
+    const reportData = reportFilters[reportType];
+    
+    if (!reportData) {
+        alert('Report type not found');
+        return;
+    }
+    
+    document.getElementById('reportFormTitle').textContent = reportData.title;
+    document.getElementById('reportType').value = reportType;
+    document.getElementById('additionalFilters').innerHTML = reportData.filters;
+    document.getElementById('reportForm').style.display = 'block';
+    
+    // Scroll to form
+    document.getElementById('reportForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideReportForm() {
+    document.getElementById('reportForm').style.display = 'none';
+    document.getElementById('reportType').value = '';
+    document.getElementById('additionalFilters').innerHTML = '';
+}
+
+// Handle form submission
+document.getElementById('reportGenerationForm').addEventListener('submit', function(e) {
+    const reportType = document.getElementById('reportType').value;
+    const fiscalYear = this.elements['fiscal_year'].value;
+    
+    if (!reportType || !fiscalYear) {
+        e.preventDefault();
+        alert('Please select report type and fiscal year');
+        return false;
+    }
+    
+    // Set correct action URL based on report type
+    if (reportType === 'beneficiary_list') {
+        this.action = "{% url 'constituency_generate_beneficiary_list' %}";
+    } else if (reportType === 'financial_report') {
+        this.action = "{% url 'constituency_financial_report' %}";
+    }
+    // Add other report URLs as needed
+});
+</script>
+{% endblock %}
 {% endblock %}

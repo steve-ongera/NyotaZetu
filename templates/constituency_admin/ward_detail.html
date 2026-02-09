@@ -1,189 +1,264 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}{{ ward.name }} Ward - Details{% endblock %}
+{% block title %}{{ ward.name }} Ward - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <a href="{% url 'constituency_wards_overview' %}">Wards</a>
-        <span class="separator">/</span>
-        <span class="current">{{ ward.name }}</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_wards_overview' %}">Wards Overview</a>
+            </li>
+            <li>{{ ward.name }} Ward</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
+    <div>
+        <div>
             <h1>{{ ward.name }} Ward</h1>
-            <p>{{ constituency.name }} Constituency</p>
+            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
+            <p>MCA: {{ ward.current_mca|default:"Not specified" }}</p>
         </div>
-        <div class="header-actions">
-            <a href="{% url 'constituency_wards_overview' %}" class="btn btn-secondary">
-                <i class="icon-back"></i> Back to Wards
-            </a>
-        </div>
-    </div>
-
-    <!-- Ward Information -->
-    <div class="content-section">
-        <h2>Ward Information</h2>
-        <div class="info-grid">
-            {% if ward.current_mca %}
-            <div class="info-item">
-                <label>Current MCA</label>
-                <p>{{ ward.current_mca }}</p>
-            </div>
-            {% endif %}
-
-            {% if ward.mca_party %}
-            <div class="info-item">
-                <label>Party</label>
-                <p>{{ ward.mca_party }}</p>
-            </div>
-            {% endif %}
-
-            {% if ward.mca_phone %}
-            <div class="info-item">
-                <label>MCA Phone</label>
-                <p>{{ ward.mca_phone }}</p>
-            </div>
-            {% endif %}
-
-            {% if ward.mca_email %}
-            <div class="info-item">
-                <label>MCA Email</label>
-                <p>{{ ward.mca_email }}</p>
-            </div>
-            {% endif %}
-
-            {% if ward.population %}
-            <div class="info-item">
-                <label>Population</label>
-                <p>{{ ward.population|intcomma }}</p>
-            </div>
-            {% endif %}
-
-            {% if ward.ward_office_location %}
-            <div class="info-item">
-                <label>Ward Office</label>
-                <p>{{ ward.ward_office_location }}</p>
-            </div>
-            {% endif %}
+        <div>
+            <a href="{% url 'constituency_wards_overview' %}">Back to Wards</a>
         </div>
     </div>
 
-    <!-- Statistics -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="icon-applications"></i>
+    <!-- Statistics Summary -->
+    <div>
+        <h2>Summary Statistics</h2>
+        <div>
+            <div>
+                <div>
+                    <h3>Total Applications</h3>
+                    <p>{{ stats.total }}</p>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3>{{ stats.total }}</h3>
-                <p>Total Applications</p>
+            <div>
+                <div>
+                    <h3>Approved</h3>
+                    <p>{{ stats.approved }}</p>
+                </div>
             </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="icon-approved"></i>
+            <div>
+                <div>
+                    <h3>Under Review</h3>
+                    <p>{{ stats.under_review }}</p>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3>{{ stats.approved }}</h3>
-                <p>Approved</p>
+            <div>
+                <div>
+                    <h3>Rejected</h3>
+                    <p>{{ stats.rejected }}</p>
+                </div>
             </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="icon-pending"></i>
+            <div>
+                <div>
+                    <h3>Disbursed</h3>
+                    <p>{{ stats.disbursed }}</p>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3>{{ stats.pending }}</h3>
-                <p>Pending</p>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="icon-review"></i>
-            </div>
-            <div class="stat-content">
-                <h3>{{ stats.under_review }}</h3>
-                <p>Under Review</p>
+            <div>
+                <div>
+                    <h3>Approval Rate</h3>
+                    <p>{{ stats.approval_rate }}%</p>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Financial Summary -->
-    <div class="content-section">
+    <div>
         <h2>Financial Summary</h2>
-        <div class="financial-grid">
-            <div class="financial-item">
-                <label>Total Requested</label>
-                <div class="amount">KES {{ financial.total_requested|floatformat:2|intcomma }}</div>
+        <div>
+            <div>
+                <div>
+                    <h3>Total Requested</h3>
+                    <p>KES {{ financial.total_requested|floatformat:0|intcomma }}</p>
+                </div>
             </div>
-            <div class="financial-item">
-                <label>Total Allocated</label>
-                <div class="amount">KES {{ financial.total_allocated|floatformat:2|intcomma }}</div>
+            <div>
+                <div>
+                    <h3>Total Allocated</h3>
+                    <p>KES {{ financial.total_allocated|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Average Allocated</h3>
+                    <p>KES {{ financial.average_allocated|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Disbursed</h3>
+                    <p>KES {{ financial.total_disbursed|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Ward Allocation</h3>
+                    <p>KES {{ financial.ward_allocation|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Utilization</h3>
+                    <p>{{ financial.ward_utilization }}%</p>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Demographic Breakdown -->
+    <div>
+        <h2>Demographic Breakdown</h2>
+        <div>
+            <div>
+                <h3>Gender Distribution</h3>
+                <p>Male: {{ demographic.male }}</p>
+                <p>Female: {{ demographic.female }}</p>
+            </div>
+            <div>
+                <h3>Age Groups</h3>
+                <p>15-18: </p>
+                <p>19-22:</p>
+                <p>23-26: </p>
+                <p>27+: </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Special Cases -->
+    <div>
+        <h2>Special Cases</h2>
+        <div>
+            <p>Orphans: {{ stats.orphans }}</p>
+            <p>Special Needs: {{ stats.special_needs }}</p>
+            <p>Disabled: {{ stats.disabled }}</p>
+        </div>
+    </div>
+
+    <!-- Top Institutions -->
+    <div>
+        <h2>Top Institutions</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Institution</th>
+                    <th>Type</th>
+                    <th>Applications</th>
+                    <th>Amount Allocated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst in institutions %}
+                <tr>
+                    <td>{{ inst.institution__name }}</td>
+                    <td>{{ inst.institution__institution_type }}</td>
+                    <td>{{ inst.count }}</td>
+                    <td>KES {{ inst.total_allocated|floatformat:0|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No institution data</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div>
+        <h2>Category Breakdown</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Applications</th>
+                    <th>Amount Allocated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in categories %}
+                <tr>
+                    <td>{{ cat.category_name }}</td>
+                    <td>{{ cat.category_type }}</td>
+                    <td>{{ cat.count }}</td>
+                    <td>KES {{ cat.total_allocated|floatformat:0|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No category data</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <!-- Recent Applications -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Recent Applications</h2>
-            <a href="{% url 'constituency_applications_list' %}?ward={{ ward.id }}" class="btn btn-link">
-                View All Ward Applications
-            </a>
-        </div>
+    <div>
+        <h2>Recent Applications</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>App Number</th>
+                    <th>Applicant</th>
+                    <th>Institution</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in recent_apps %}
+                <tr>
+                    <td>{{ app.application_number }}</td>
+                    <td>{{ app.applicant.user.get_full_name }}</td>
+                    <td>{{ app.institution.name }}</td>
+                    <td>KES {{ app.amount_requested|floatformat:0|intcomma }}</td>
+                    <td>{{ app.get_status_display }}</td>
+                    <td>{{ app.date_submitted|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'constituency_application_detail' app.id %}">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">No recent applications</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Application No.</th>
-                        <th>Applicant</th>
-                        <th>Institution</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for app in recent_apps %}
-                    <tr>
-                        <td>{{ app.application_number }}</td>
-                        <td>{{ app.applicant.user.get_full_name }}</td>
-                        <td>{{ app.institution.name|truncatewords:3 }}</td>
-                        <td>KES {{ app.amount_requested|floatformat:2|intcomma }}</td>
-                        <td>
-                            <span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span>
-                        </td>
-                        <td>{{ app.date_submitted|date:"M d, Y"|default:"N/A" }}</td>
-                        <td>
-                            <a href="{% url 'constituency_application_detail' app.id %}" class="btn btn-sm">
-                                View
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center">
-                            <div class="empty-state">
-                                <p>No applications found for this ward.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Export Options -->
+    <div>
+        <h3>Export Data</h3>
+        <div>
+            <button onclick="exportWardData()">Export Ward Data</button>
+            <button onclick="window.print()">Print Report</button>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+function exportWardData() {
+    // Implement export functionality
+    alert('Export functionality to be implemented');
+}
+</script>
+{% endblock %}
 {% endblock %}

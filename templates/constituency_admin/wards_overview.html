@@ -1,82 +1,116 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Wards Overview - {{ constituency.name }}{% endblock %}
+{% block title %}Wards Overview - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Wards</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>Wards Overview</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>Ward-wise Overview</h1>
+    <div>
+        <div>
+            <h1>Wards Overview</h1>
             <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
         </div>
     </div>
 
-    <!-- Wards Grid -->
-    <div class="wards-grid">
-        {% for ward_info in ward_data %}
-        <div class="ward-card">
-            <div class="ward-header">
-                <h3>{{ ward_info.ward.name }} Ward</h3>
-                {% if ward_info.ward.current_mca %}
-                <p class="mca-info">MCA: {{ ward_info.ward.current_mca }}</p>
-                {% endif %}
-            </div>
-
-            <div class="ward-stats">
-                <div class="stat-item">
-                    <label>Total Applications</label>
-                    <div class="stat-value">{{ ward_info.total_applications }}</div>
-                </div>
-
-                <div class="stat-item">
-                    <label>Approved</label>
-                    <div class="stat-value success">{{ ward_info.approved }}</div>
-                </div>
-
-                <div class="stat-item">
-                    <label>Pending</label>
-                    <div class="stat-value warning">{{ ward_info.pending }}</div>
-                </div>
-
-                <div class="stat-item">
-                    <label>Rejected</label>
-                    <div class="stat-value danger">{{ ward_info.rejected }}</div>
-                </div>
-            </div>
-
-            <div class="ward-financial">
-                <div class="financial-item">
-                    <label>Total Requested</label>
-                    <p>KES {{ ward_info.total_requested|floatformat:2|intcomma }}</p>
-                </div>
-
-                <div class="financial-item">
-                    <label>Total Allocated</label>
-                    <p>KES {{ ward_info.total_allocated|floatformat:2|intcomma }}</p>
-                </div>
-
-                <div class="financial-item">
-                    <label>Beneficiaries</label>
-                    <p>{{ ward_info.beneficiaries }} students</p>
-                </div>
-            </div>
-
-            <div class="ward-actions">
-                <a href="{% url 'constituency_ward_detail' ward_info.ward.id %}" class="btn btn-primary btn-block">
-                    View Ward Details
-                </a>
+    <!-- Summary Cards -->
+    <div>
+        <div>
+            <div>
+                <h3>Total Wards</h3>
+                <p>{{ total_wards }}</p>
             </div>
         </div>
-        {% endfor %}
+        <div>
+            <div>
+                <h3>Total Applications</h3>
+                <p>{{ total_applications }}</p>
+            </div>
+        </div>
+        <div>
+            <div>
+                <h3>Total Beneficiaries</h3>
+                <p>{{ total_beneficiaries }}</p>
+            </div>
+        </div>
+        <div>
+            <div>
+                <h3>Total Allocated</h3>
+                <p>KES {{ total_allocated|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wards Table -->
+    <div>
+        <h2>Ward Statistics</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ward Name</th>
+                    <th>Total Applications</th>
+                    <th>Approved</th>
+                    <th>Pending</th>
+                    <th>Under Review</th>
+                    <th>Rejected</th>
+                    <th>Disbursed</th>
+                    <th>Approval Rate</th>
+                    <th>Amount Requested</th>
+                    <th>Amount Allocated</th>
+                    <th>Amount Disbursed</th>
+                    <th>Beneficiaries</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ward in ward_data %}
+                <tr>
+                    <td>{{ ward.ward.name }}</td>
+                    <td>{{ ward.total_applications }}</td>
+                    <td>{{ ward.approved }}</td>
+                    <td>{{ ward.pending }}</td>
+                    <td>{{ ward.under_review }}</td>
+                    <td>{{ ward.rejected }}</td>
+                    <td>{{ ward.disbursed }}</td>
+                    <td>{{ ward.approval_rate }}%</td>
+                    <td>KES {{ ward.total_requested|floatformat:0|intcomma }}</td>
+                    <td>KES {{ ward.total_allocated|floatformat:0|intcomma }}</td>
+                    <td>KES {{ ward.total_disbursed|floatformat:0|intcomma }}</td>
+                    <td>{{ ward.beneficiaries }}</td>
+                    <td>
+                        <a href="{% url 'constituency_ward_detail' ward.ward.id %}">View Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="13">No wards data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Export Options -->
+    <div>
+        <h3>Export Data</h3>
+        <div>
+            <button>Export to Excel</button>
+            <button>Export to PDF</button>
+            <button onclick="window.print()">Print Report</button>
+        </div>
     </div>
 </div>
 {% endblock %}

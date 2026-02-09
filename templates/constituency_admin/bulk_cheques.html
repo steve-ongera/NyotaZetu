@@ -1,202 +1,175 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Bulk Cheques - {{ constituency.name }}{% endblock %}
+{% block title %}Bulk Cheques - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Bulk Cheques</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>Bulk Cheques</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
+    <div>
+        <div>
             <h1>Bulk Cheque Management</h1>
             <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
         </div>
-        <div class="header-actions">
-            <a href="{% url 'constituency_create_bulk_cheque' %}" class="btn btn-primary">
-                <i class="icon-plus"></i> Create Bulk Cheque
-            </a>
+        <div>
+            <a href="{% url 'constituency_create_bulk_cheque' %}">Create New Bulk Cheque</a>
         </div>
     </div>
 
-    <!-- Bulk Cheques List -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Bulk Cheques</h2>
-            <p>{{ bulk_cheques.count }} bulk cheque{{ bulk_cheques.count|pluralize }}</p>
+    <!-- Summary Statistics -->
+    <div>
+        <h2>Summary</h2>
+        <div>
+            <div>
+                <div>
+                    <h3>Total Bulk Cheques</h3>
+                    <p>{{ summary.total_cheques }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Collected</h3>
+                    <p>{{ summary.collected }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Pending Collection</h3>
+                    <p>{{ summary.pending }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Amount</h3>
+                    <p>KES {{ summary.total_amount|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <h3>Total Students</h3>
+                    <p>{{ summary.total_students }}</p>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Cheque Number</th>
-                        <th>Institution</th>
-                        <th>Students</th>
-                        <th>Total Amount</th>
-                        <th>Cheque Holder</th>
-                        <th>Status</th>
-                        <th>Created Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cheque in bulk_cheques %}
-                    <tr>
-                        <td>
-                            <strong>{{ cheque.cheque_number }}</strong>
-                        </td>
-                        <td>{{ cheque.institution.name|truncatewords:3 }}</td>
-                        <td>{{ cheque.student_count }}</td>
-                        <td>KES {{ cheque.total_amount|floatformat:2|intcomma }}</td>
-                        <td>
-                            <div>{{ cheque.cheque_holder_name }}</div>
-                            <small>{{ cheque.cheque_holder_position }}</small>
-                        </td>
-                        <td>
-                            {% if cheque.is_collected %}
-                            <span class="badge badge-success">Collected</span>
-                            {% else %}
-                            <span class="badge badge-warning">Pending Collection</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ cheque.created_date|date:"M d, Y" }}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="#" class="btn btn-sm btn-primary">
-                                    View Details
-                                </a>
-                                {% if not cheque.is_collected %}
-                                <button class="btn btn-sm btn-success" 
-                                        onclick="markCollected('{{ cheque.id }}')">
-                                    Mark Collected
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center">
-                            <div class="empty-state">
-                                <i class="icon-cheque"></i>
-                                <h3>No Bulk Cheques</h3>
-                                <p>No bulk cheques have been created yet.</p>
-                                <a href="{% url 'constituency_create_bulk_cheque' %}" class="btn btn-primary">
-                                    Create Your First Bulk Cheque
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
+    <!-- Filters -->
+    <div>
+        <h3>Filters</h3>
+        <form method="get">
+            <div>
+                <label>Institution:</label>
+                <select name="institution">
+                    <option value="">All Institutions</option>
+                    {% for institution in institutions %}
+                    <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
+                        {{ institution.name }}
+                    </option>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </select>
+            </div>
+            <div>
+                <label>Status:</label>
+                <select name="status">
+                    <option value="">All Status</option>
+                    <option value="collected" {% if selected_status == 'collected' %}selected{% endif %}>Collected</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                </select>
+            </div>
+            <div>
+                <label>Search:</label>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by cheque number or institution">
+            </div>
+            <button type="submit">Apply Filters</button>
+            <a href="{% url 'constituency_bulk_cheques' %}">Reset</a>
+        </form>
     </div>
 
-    <!-- Instructions -->
-    <div class="content-section">
-        <h2>Bulk Cheque Instructions</h2>
-        <div class="instructions-content">
-            <h3>What are Bulk Cheques?</h3>
-            <p>
-                Bulk cheques consolidate payments for multiple students attending the same institution into 
-                a single cheque. This reduces administrative overhead and processing costs.
-            </p>
+    <!-- Bulk Cheques Table -->
+    <div>
+        <h2>Bulk Cheques List</h2>
+        {% if bulk_cheques %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Cheque Number</th>
+                    <th>Institution</th>
+                    <th>Cheque Holder</th>
+                    <th>Students</th>
+                    <th>Amount</th>
+                    <th>Created Date</th>
+                    <th>Status</th>
+                    <th>Collected Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cheque in bulk_cheques %}
+                <tr>
+                    <td>{{ cheque.cheque_number }}</td>
+                    <td>{{ cheque.institution.name }}</td>
+                    <td>{{ cheque.cheque_holder_name }}</td>
+                    <td>{{ cheque.student_count }}</td>
+                    <td>KES {{ cheque.total_amount|floatformat:0|intcomma }}</td>
+                    <td>{{ cheque.created_date|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if cheque.is_collected %}
+                        <span>Collected</span>
+                        {% else %}
+                        <span>Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if cheque.collection_date %}
+                        {{ cheque.collection_date|date:"d/m/Y" }}
+                        {% else %}
+                        Not collected
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="#">View Details</a>
+                        {% if not cheque.is_collected %}
+                        <a href="#">Mark as Collected</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No bulk cheques found.</p>
+        {% endif %}
+    </div>
 
-            <h3>Creating a Bulk Cheque</h3>
-            <ol>
-                <li>Click the "Create Bulk Cheque" button above</li>
-                <li>Select the institution for which you want to create a bulk cheque</li>
-                <li>Select the students whose allocations should be included</li>
-                <li>Enter cheque details (number, holder information)</li>
-                <li>Review and confirm the total amount</li>
-                <li>Submit to create the bulk cheque</li>
-            </ol>
-
-            <h3>Cheque Collection</h3>
-            <ul>
-                <li>The designated cheque holder must present valid identification</li>
-                <li>Verify the cheque holder's identity before releasing the cheque</li>
-                <li>Record the collector's ID number when marking as collected</li>
-                <li>All collection activities are logged for audit purposes</li>
-            </ul>
-
-            <h3>Important Notes</h3>
-            <ul>
-                <li>Only approved and allocated applications can be included in bulk cheques</li>
-                <li>Each student will receive a notification when included in a bulk cheque</li>
-                <li>Bulk cheques must be collected within 90 days of creation</li>
-                <li>Ensure all bank details are correct before creating the cheque</li>
-            </ul>
+    <!-- Export Options -->
+    <div>
+        <h3>Export Data</h3>
+        <div>
+            <button onclick="exportBulkCheques()">Export Bulk Cheques</button>
+            <button onclick="window.print()">Print Report</button>
         </div>
     </div>
 </div>
 
+{% block extra_js %}
 <script>
-function markCollected(chequeId) {
-    if (confirm('Mark this bulk cheque as collected?')) {
-        // In real implementation, this would be an AJAX call
-        window.location.href = '/constituency/bulk-cheques/' + chequeId + '/mark-collected/';
-    }
+function exportBulkCheques() {
+    // Implement export functionality
+    alert('Export functionality to be implemented');
 }
 </script>
-
-<style>
-.empty-state {
-    padding: 60px 20px;
-    text-align: center;
-}
-
-.empty-state i {
-    font-size: 64px;
-    color: #ccc;
-    margin-bottom: 20px;
-}
-
-.empty-state h3 {
-    margin: 0 0 10px 0;
-    color: #333;
-}
-
-.empty-state p {
-    color: #666;
-    margin-bottom: 20px;
-}
-
-.instructions-content {
-    line-height: 1.8;
-}
-
-.instructions-content h3 {
-    margin-top: 25px;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.instructions-content ol,
-.instructions-content ul {
-    margin-left: 20px;
-    margin-bottom: 20px;
-}
-
-.instructions-content li {
-    margin-bottom: 8px;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.action-buttons .btn {
-    white-space: nowrap;
-}
-</style>
+{% endblock %}
 {% endblock %}

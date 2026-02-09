@@ -1,397 +1,204 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}Create Bulk Cheque - {{ constituency.name }}{% endblock %}
+{% block title %}Create Bulk Cheque - {{ constituency.name }} Constituency{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <a href="{% url 'constituency_bulk_cheques' %}">Bulk Cheques</a>
-        <span class="separator">/</span>
-        <span class="current">Create Bulk Cheque</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_bulk_cheques' %}">Bulk Cheques</a>
+            </li>
+            <li>Create Bulk Cheque</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <h1>Create Bulk Cheque</h1>
-        <p>Consolidate multiple student allocations into a single cheque</p>
+    <div>
+        <div>
+            <h1>Create Bulk Cheque</h1>
+            <p>{{ constituency.name }} Constituency - {{ current_fiscal_year.name }}</p>
+            <p>Pending allocations: {{ pending_allocations_count }}</p>
+        </div>
+        <div>
+            <a href="{% url 'constituency_bulk_cheques' %}">Back to Bulk Cheques</a>
+        </div>
     </div>
 
-    <form method="post" id="bulk-cheque-form">
-        {% csrf_token %}
-        
-        <div class="content-grid">
-            <!-- Main Form -->
-            <div class="main-content">
-                <!-- Step 1: Select Institution -->
-                <div class="content-section">
-                    <h2>Step 1: Select Institution</h2>
-                    <div class="form-group">
-                        <label for="institution">Institution</label>
-                        <select name="institution" id="institution" class="form-control" required>
-                            <option value="">Select institution</option>
-                            {% for inst in institutions %}
-                            <option value="{{ inst.id }}">{{ inst.name }} ({{ inst.get_institution_type_display }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Step 2: Select Students -->
-                <div class="content-section" id="students-section" style="display: none;">
-                    <h2>Step 2: Select Students</h2>
-                    <p>Select students whose allocations should be included in this bulk cheque</p>
-                    
-                    <div class="students-list" id="students-list">
-                        <!-- Students will be loaded here via JavaScript -->
-                    </div>
-                </div>
-
-                <!-- Step 3: Cheque Details -->
-                <div class="content-section" id="cheque-details-section" style="display: none;">
-                    <h2>Step 3: Cheque Details</h2>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="cheque_number">Cheque Number</label>
-                            <input type="text" name="cheque_number" id="cheque_number" 
-                                   class="form-control" required 
-                                   placeholder="Enter cheque number">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cheque_holder_name">Cheque Holder Name</label>
-                            <input type="text" name="cheque_holder_name" id="cheque_holder_name" 
-                                   class="form-control" required 
-                                   placeholder="Full name of person collecting">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cheque_holder_id">Cheque Holder ID Number</label>
-                            <input type="text" name="cheque_holder_id" id="cheque_holder_id" 
-                                   class="form-control" required 
-                                   placeholder="ID number">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cheque_holder_phone">Cheque Holder Phone</label>
-                            <input type="tel" name="cheque_holder_phone" id="cheque_holder_phone" 
-                                   class="form-control" required 
-                                   placeholder="+254XXXXXXXXX">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cheque_holder_position">Position/Title</label>
-                            <input type="text" name="cheque_holder_position" id="cheque_holder_position" 
-                                   class="form-control" 
-                                   value="Principal"
-                                   placeholder="e.g., Principal, Bursar">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cheque_holder_email">Email (Optional)</label>
-                            <input type="email" name="cheque_holder_email" id="cheque_holder_email" 
-                                   class="form-control" 
-                                   placeholder="email@example.com">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="form-actions" id="form-actions" style="display: none;">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="icon-check"></i> Create Bulk Cheque
-                    </button>
-                    <a href="{% url 'constituency_bulk_cheques' %}" class="btn btn-secondary">
-                        Cancel
-                    </a>
-                </div>
+    <!-- Institution Selection -->
+    <div>
+        <h2>Select Institution</h2>
+        <div>
+            {% for inst_name, inst_data in allocations_by_institution.items %}
+            <div>
+                <h3>{{ inst_name }}</h3>
+                <p>Pending allocations: {{ inst_data.count }}</p>
+                <p>Total amount: KES {{ inst_data.total_amount|floatformat:0|intcomma }}</p>
+                <button onclick="selectInstitution({{ inst_data.institution.id }})">Create Cheque for this Institution</button>
             </div>
-
-            <!-- Sidebar Summary -->
-            <div class="sidebar">
-                <div class="sidebar-section">
-                    <h3>Summary</h3>
-                    <div class="summary-list">
-                        <div class="summary-item">
-                            <label>Institution</label>
-                            <p id="summary-institution">Not selected</p>
-                        </div>
-                        <div class="summary-item">
-                            <label>Students Selected</label>
-                            <p id="summary-students">0</p>
-                        </div>
-                        <div class="summary-item">
-                            <label>Total Amount</label>
-                            <p id="summary-amount" class="amount-highlight">KES 0.00</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sidebar-section">
-                    <h3>Instructions</h3>
-                    <ol class="instructions-list">
-                        <li>Select the institution</li>
-                        <li>Choose students to include</li>
-                        <li>Enter cheque details</li>
-                        <li>Review and submit</li>
-                    </ol>
-                </div>
-
-                <div class="sidebar-section alert-warning">
-                    <h3>Important</h3>
-                    <ul>
-                        <li>Verify all details before submission</li>
-                        <li>Cheque holder must match institution records</li>
-                        <li>All selected students will be notified</li>
-                    </ul>
-                </div>
-            </div>
+            {% empty %}
+            <p>No institutions with pending allocations found.</p>
+            {% endfor %}
         </div>
-    </form>
+    </div>
+
+    <!-- Bulk Cheque Form -->
+    <div id="chequeForm" style="display: none;">
+        <h2>Bulk Cheque Details</h2>
+        <form method="post" id="bulkChequeForm">
+            {% csrf_token %}
+            <input type="hidden" name="institution" id="selectedInstitution">
+            
+            <div>
+                <label>Cheque Number *</label>
+                <input type="text" name="cheque_number" required placeholder="Enter cheque number">
+            </div>
+
+            <div>
+                <h3>Cheque Holder Information</h3>
+                <div>
+                    <label>Holder Name *</label>
+                    <input type="text" name="cheque_holder_name" required placeholder="Enter cheque holder name">
+                </div>
+                <div>
+                    <label>ID Number *</label>
+                    <input type="text" name="cheque_holder_id" required placeholder="Enter ID number">
+                </div>
+                <div>
+                    <label>Phone Number *</label>
+                    <input type="tel" name="cheque_holder_phone" required placeholder="Enter phone number">
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input type="email" name="cheque_holder_email" placeholder="Enter email address">
+                </div>
+                <div>
+                    <label>Position *</label>
+                    <input type="text" name="cheque_holder_position" value="Principal" required>
+                </div>
+            </div>
+
+            <div>
+                <h3>Select Allocations</h3>
+                <div id="allocationsList">
+                    <!-- Allocations will be loaded here -->
+                </div>
+                <div>
+                    <p>Total selected: <span id="selectedCount">0</span> allocations</p>
+                    <p>Total amount: KES <span id="totalAmount">0</span></p>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit">Create Bulk Cheque</button>
+                <button type="button" onclick="cancelCreation()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Instructions -->
+    <div>
+        <h3>Instructions</h3>
+        <ol>
+            <li>Select an institution from the list above</li>
+            <li>Enter cheque details and holder information</li>
+            <li>Select the allocations to include in the bulk cheque</li>
+            <li>Review and submit the form</li>
+        </ol>
+    </div>
 </div>
 
+{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const institutionSelect = document.getElementById('institution');
-    const studentsSection = document.getElementById('students-section');
-    const studentsList = document.getElementById('students-list');
-    const chequeDetailsSection = document.getElementById('cheque-details-section');
-    const formActions = document.getElementById('form-actions');
-    const summaryInstitution = document.getElementById('summary-institution');
-    const summaryStudents = document.getElementById('summary-students');
-    const summaryAmount = document.getElementById('summary-amount');
+let institutionAllocations = {};
 
-    let selectedStudents = new Set();
-    let studentData = [];
+// Initialize allocations data
+{% for inst_name, inst_data in allocations_by_institution.items %}
+institutionAllocations[{{ inst_data.institution.id }}] = {
+    allocations: [
+        {% for allocation in inst_data.allocations %}
+        {
+            id: {{ allocation.id }},
+            appNumber: "{{ allocation.application.application_number }}",
+            applicant: "{{ allocation.application.applicant.user.get_full_name }}",
+            amount: {{ allocation.amount_allocated }},
+            ward: "{{ allocation.application.applicant.ward.name }}"
+        },
+        {% endfor %}
+    ]
+};
+{% endfor %}
 
-    // When institution is selected, load students
-    institutionSelect.addEventListener('change', function() {
-        if (this.value) {
-            loadStudents(this.value);
-            const selectedText = this.options[this.selectedIndex].text;
-            summaryInstitution.textContent = selectedText;
-        } else {
-            studentsSection.style.display = 'none';
-            chequeDetailsSection.style.display = 'none';
-            formActions.style.display = 'none';
-        }
-    });
-
-    function loadStudents(institutionId) {
-        // In real implementation, this would be an AJAX call
-        // For now, showing example structure
-        studentsList.innerHTML = `
-            <div class="loading">Loading students...</div>
+function selectInstitution(institutionId) {
+    document.getElementById('selectedInstitution').value = institutionId;
+    document.getElementById('chequeForm').style.display = 'block';
+    
+    // Load allocations for this institution
+    const allocationsContainer = document.getElementById('allocationsList');
+    const allocations = institutionAllocations[institutionId].allocations;
+    
+    let html = '<table>';
+    html += '<thead><tr><th><input type="checkbox" id="selectAll" onchange="toggleAllAllocations(this)"></th><th>App Number</th><th>Applicant</th><th>Ward</th><th>Amount</th></tr></thead>';
+    html += '<tbody>';
+    
+    allocations.forEach((alloc, index) => {
+        html += `
+            <tr>
+                <td><input type="checkbox" name="allocation_ids" value="${alloc.id}" onchange="updateTotals()"></td>
+                <td>${alloc.appNumber}</td>
+                <td>${alloc.applicant}</td>
+                <td>${alloc.ward}</td>
+                <td>KES ${alloc.amount.toLocaleString()}</td>
+            </tr>
         `;
-        
-        // Simulate AJAX call
-        setTimeout(() => {
-            // Example data - in real app, this comes from server
-            studentData = {% if pending_allocations %}
-                {{ pending_allocations|safe }}
-            {% else %}
-                []
-            {% endif %};
-            
-            renderStudents(studentData);
-            studentsSection.style.display = 'block';
-        }, 500);
-    }
-
-    function renderStudents(students) {
-        if (students.length === 0) {
-            studentsList.innerHTML = `
-                <div class="empty-state">
-                    <p>No pending allocations found for this institution.</p>
-                </div>
-            `;
-            return;
-        }
-
-        let html = `
-            <div class="select-all-container">
-                <input type="checkbox" id="select-all" class="student-checkbox">
-                <label for="select-all"><strong>Select All</strong></label>
-            </div>
-            <div class="students-table">
-        `;
-
-        students.forEach(student => {
-            html += `
-                <div class="student-row">
-                    <input type="checkbox" name="allocation_ids" value="${student.id}" 
-                           class="student-checkbox" id="student-${student.id}"
-                           data-amount="${student.amount}">
-                    <label for="student-${student.id}">
-                        <div class="student-info">
-                            <div class="student-name">${student.name}</div>
-                            <div class="student-details">
-                                ${student.admission_number} | Year ${student.year}
-                            </div>
-                        </div>
-                        <div class="student-amount">
-                            KES ${student.amount.toLocaleString()}
-                        </div>
-                    </label>
-                </div>
-            `;
-        });
-
-        html += '</div>';
-        studentsList.innerHTML = html;
-
-        // Add event listeners
-        document.getElementById('select-all').addEventListener('change', function() {
-            document.querySelectorAll('.student-checkbox:not(#select-all)').forEach(cb => {
-                cb.checked = this.checked;
-            });
-            updateSelection();
-        });
-
-        document.querySelectorAll('.student-checkbox:not(#select-all)').forEach(cb => {
-            cb.addEventListener('change', updateSelection);
-        });
-    }
-
-    function updateSelection() {
-        const checkboxes = document.querySelectorAll('.student-checkbox:not(#select-all):checked');
-        const count = checkboxes.length;
-        
-        let total = 0;
-        checkboxes.forEach(cb => {
-            total += parseFloat(cb.dataset.amount || 0);
-        });
-
-        summaryStudents.textContent = count;
-        summaryAmount.textContent = 'KES ' + total.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-
-        if (count > 0) {
-            chequeDetailsSection.style.display = 'block';
-            formActions.style.display = 'block';
-        } else {
-            chequeDetailsSection.style.display = 'none';
-            formActions.style.display = 'none';
-        }
-    }
-
-    // Form validation
-    document.getElementById('bulk-cheque-form').addEventListener('submit', function(e) {
-        const selectedCount = document.querySelectorAll('.student-checkbox:not(#select-all):checked').length;
-        
-        if (selectedCount === 0) {
-            e.preventDefault();
-            alert('Please select at least one student.');
-            return false;
-        }
-
-        const confirmMsg = `Create bulk cheque for ${selectedCount} student(s) with total amount of ${summaryAmount.textContent}?`;
-        if (!confirm(confirmMsg)) {
-            e.preventDefault();
-            return false;
-        }
     });
-});
+    
+    html += '</tbody></table>';
+    allocationsContainer.innerHTML = html;
+    
+    // Scroll to form
+    document.getElementById('chequeForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleAllAllocations(checkbox) {
+    const allocationCheckboxes = document.querySelectorAll('input[name="allocation_ids"]');
+    allocationCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateTotals();
+}
+
+function updateTotals() {
+    const allocationCheckboxes = document.querySelectorAll('input[name="allocation_ids"]:checked');
+    const selectedCount = allocationCheckboxes.length;
+    
+    let totalAmount = 0;
+    allocationCheckboxes.forEach(cb => {
+        const row = cb.closest('tr');
+        const amountCell = row.cells[4].textContent;
+        const amount = parseFloat(amountCell.replace('KES ', '').replace(/,/g, ''));
+        totalAmount += amount;
+    });
+    
+    document.getElementById('selectedCount').textContent = selectedCount;
+    document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
+}
+
+function cancelCreation() {
+    document.getElementById('chequeForm').style.display = 'none';
+    document.getElementById('selectedInstitution').value = '';
+    document.getElementById('allocationsList').innerHTML = '';
+    document.getElementById('selectedCount').textContent = '0';
+    document.getElementById('totalAmount').textContent = '0';
+}
 </script>
-
-<style>
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-}
-
-.students-list {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 15px;
-}
-
-.select-all-container {
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.student-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    transition: all 0.2s;
-}
-
-.student-row:hover {
-    background: #f8f9fa;
-    border-color: #0066cc;
-}
-
-.student-row label {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    margin: 0;
-}
-
-.student-info {
-    flex: 1;
-}
-
-.student-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-.student-details {
-    font-size: 13px;
-    color: #666;
-}
-
-.student-amount {
-    font-weight: bold;
-    color: #0066cc;
-    font-size: 15px;
-}
-
-.student-checkbox {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.loading {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-}
-
-.instructions-list {
-    margin: 0;
-    padding-left: 20px;
-    line-height: 2;
-}
-
-.amount-highlight {
-    color: #0066cc;
-    font-size: 18px;
-    font-weight: bold;
-}
-</style>
+{% endblock %}
 {% endblock %}

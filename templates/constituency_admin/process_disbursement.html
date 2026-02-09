@@ -4,153 +4,141 @@
 {% block title %}Process Disbursement - {{ allocation.application.application_number }}{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div>
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <a href="{% url 'constituency_disbursements' %}">Disbursements</a>
-        <span class="separator">/</span>
-        <span class="current">Process Disbursement</span>
+    <nav>
+        <ol>
+            <li>
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_dashboard' %}">Constituency Admin</a>
+            </li>
+            <li>
+                <a href="{% url 'constituency_disbursements' %}">Disbursements</a>
+            </li>
+            <li>Process Disbursement</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
-        <h1>Process Disbursement</h1>
-        <p>Application: {{ allocation.application.application_number }}</p>
+    <div>
+        <div>
+            <h1>Process Disbursement</h1>
+            <p>Application: {{ allocation.application.application_number }}</p>
+        </div>
+        <div>
+            <a href="{% url 'constituency_disbursements' %}">Back to Disbursements</a>
+        </div>
     </div>
 
-    <div class="content-grid">
-        <!-- Main Form -->
-        <div class="main-content">
-            <div class="content-section">
-                <h2>Disbursement Details</h2>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="form-group">
-                        <label for="payment_method">Payment Method</label>
-                        <select name="payment_method" id="payment_method" class="form-control" required>
-                            <option value="">Select payment method</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="mpesa">M-Pesa</option>
-                            <option value="bulk_cheque">Bulk Cheque</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reference_number">Reference/Transaction Number</label>
-                        <input type="text" name="reference_number" id="reference_number" 
-                               class="form-control" required placeholder="Enter reference number">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cheque_number">Cheque Number (if applicable)</label>
-                        <input type="text" name="cheque_number" id="cheque_number" 
-                               class="form-control" placeholder="Enter cheque number">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="disbursement_date">Disbursement Date</label>
-                        <input type="date" name="disbursement_date" id="disbursement_date" 
-                               class="form-control" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="remarks">Remarks/Notes</label>
-                        <textarea name="remarks" id="remarks" class="form-control" 
-                                  rows="4" placeholder="Any additional remarks"></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="icon-check"></i> Process Disbursement
-                        </button>
-                        <a href="{% url 'constituency_disbursements' %}" class="btn btn-secondary">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
+    <!-- Application Summary -->
+    <div>
+        <h2>Application Details</h2>
+        <div>
+            <div>
+                <p><strong>Applicant:</strong> {{ allocation.application.applicant.user.get_full_name }}</p>
+                <p><strong>Ward:</strong> {{ allocation.application.applicant.ward.name }}</p>
+                <p><strong>ID Number:</strong> {{ allocation.application.applicant.id_number }}</p>
+            </div>
+            <div>
+                <p><strong>Institution:</strong> {{ allocation.application.institution.name }}</p>
+                <p><strong>Amount Allocated:</strong> KES {{ allocation.amount_allocated|floatformat:0|intcomma }}</p>
+                <p><strong>Allocation Date:</strong> {{ allocation.allocation_date|date:"d/m/Y" }}</p>
             </div>
         </div>
+    </div>
 
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <!-- Allocation Summary -->
-            <div class="sidebar-section">
-                <h3>Allocation Summary</h3>
-                <div class="summary-list">
-                    <div class="summary-item">
-                        <label>Student</label>
-                        <p>{{ allocation.application.applicant.user.get_full_name }}</p>
-                    </div>
-                    <div class="summary-item">
-                        <label>ID Number</label>
-                        <p>{{ allocation.application.applicant.id_number }}</p>
-                    </div>
-                    <div class="summary-item">
-                        <label>Institution</label>
-                        <p>{{ allocation.application.institution.name }}</p>
-                    </div>
-                    <div class="summary-item">
-                        <label>Amount Allocated</label>
-                        <p class="amount-highlight">KES {{ allocation.amount_allocated|floatformat:2|intcomma }}</p>
-                    </div>
-                    <div class="summary-item">
-                        <label>Allocation Date</label>
-                        <p>{{ allocation.allocation_date|date:"M d, Y" }}</p>
-                    </div>
-                    <div class="summary-item">
-                        <label>Approved By</label>
-                        <p>{{ allocation.approved_by.get_full_name }}</p>
-                    </div>
+    <!-- Disbursement Form -->
+    <div>
+        <h2>Disbursement Information</h2>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div>
+                <label>Payment Method *</label>
+                <select name="payment_method" required>
+                    {% for method in payment_methods %}
+                    <option value="{{ method.0 }}">{{ method.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="cheque_fields">
+                <div>
+                    <label>Cheque Number *</label>
+                    <input type="text" name="cheque_number" placeholder="Enter cheque number">
                 </div>
             </div>
 
-            <!-- Institution Details -->
-            <div class="sidebar-section">
-                <h3>Institution Details</h3>
-                <div class="summary-list">
-                    {% if allocation.application.institution.bank_name %}
-                    <div class="summary-item">
-                        <label>Bank</label>
-                        <p>{{ allocation.application.institution.bank_name }}</p>
-                    </div>
-                    {% endif %}
-                    {% if allocation.application.institution.bank_branch %}
-                    <div class="summary-item">
-                        <label>Branch</label>
-                        <p>{{ allocation.application.institution.bank_branch }}</p>
-                    </div>
-                    {% endif %}
-                    {% if allocation.application.institution.account_number %}
-                    <div class="summary-item">
-                        <label>Account Number</label>
-                        <p>{{ allocation.application.institution.account_number }}</p>
-                    </div>
-                    {% endif %}
-                    {% if allocation.application.institution.phone_number %}
-                    <div class="summary-item">
-                        <label>Phone</label>
-                        <p>{{ allocation.application.institution.phone_number }}</p>
-                    </div>
-                    {% endif %}
+            <div id="reference_fields">
+                <div>
+                    <label>Reference Number *</label>
+                    <input type="text" name="reference_number" placeholder="Enter reference/transaction number">
                 </div>
             </div>
 
-            <!-- Warnings -->
-            <div class="sidebar-section alert-warning">
-                <h3>Important Notes</h3>
-                <ul>
-                    <li>Verify all payment details before processing</li>
-                    <li>Ensure reference number is unique</li>
-                    <li>Confirm institution bank details are correct</li>
-                    <li>Process will be logged for audit purposes</li>
-                </ul>
+            <div>
+                <label>Disbursement Date *</label>
+                <input type="date" name="disbursement_date" value="{{ today }}" required>
             </div>
-        </div>
+
+            <div>
+                <label>Remarks</label>
+                <textarea name="remarks" rows="3" placeholder="Enter any remarks or notes"></textarea>
+            </div>
+
+            <div>
+                <button type="submit">Process Disbursement</button>
+                <a href="{% url 'constituency_disbursements' %}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Verification -->
+    <div>
+        <h3>Verification</h3>
+        <p>Please verify the following information before processing:</p>
+        <ul>
+            <li>Applicant name matches identification</li>
+            <li>Allocation amount is correct</li>
+            <li>Payment details are accurate</li>
+            <li>Institution details are correct</li>
+        </ul>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethod = document.querySelector('select[name="payment_method"]');
+    const chequeFields = document.getElementById('cheque_fields');
+    const referenceFields = document.getElementById('reference_fields');
+    
+    function updatePaymentFields() {
+        const method = paymentMethod.value;
+        
+        if (method === 'cheque') {
+            chequeFields.style.display = 'block';
+            referenceFields.style.display = 'none';
+            chequeFields.querySelector('input').required = true;
+            referenceFields.querySelector('input').required = false;
+        } else if (method === 'bank_transfer' || method === 'mpesa') {
+            chequeFields.style.display = 'none';
+            referenceFields.style.display = 'block';
+            chequeFields.querySelector('input').required = false;
+            referenceFields.querySelector('input').required = true;
+        } else {
+            chequeFields.style.display = 'none';
+            referenceFields.style.display = 'none';
+            chequeFields.querySelector('input').required = false;
+            referenceFields.querySelector('input').required = false;
+        }
+    }
+    
+    paymentMethod.addEventListener('change', updatePaymentFields);
+    updatePaymentFields(); // Initial call
+});
+</script>
+{% endblock %}
 {% endblock %}
