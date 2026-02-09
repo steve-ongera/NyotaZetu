@@ -468,7 +468,7 @@
                 </div>
                 <div class="stat-value">
                     {% for item in gender_dist %}
-                        {% if forloop.first %}{{ item.count|default:0 }}{% endif %}
+                        {% if item.gender == 'Male' %}{{ item.count|default:0 }}{% endif %}
                     {% empty %}0{% endfor %}
                 </div>
                 <div class="stat-label">Male Applicants</div>
@@ -480,7 +480,7 @@
                 </div>
                 <div class="stat-value">
                     {% for item in gender_dist %}
-                        {% if forloop.last %}{{ item.count|default:0 }}{% endif %}
+                        {% if item.gender == 'Female' %}{{ item.count|default:0 }}{% endif %}
                     {% empty %}0{% endfor %}
                 </div>
                 <div class="stat-label">Female Applicants</div>
@@ -523,7 +523,7 @@
                     <i class="bi bi-wallet2"></i> Total Requested
                 </div>
                 <div class="info-card-value">
-                    KSh {% for item in gender_dist %}{{ item.total_requested|floatformat:0|intcomma }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                    KSh {{ summary.total_requested|floatformat:0|intcomma|default:0 }}
                 </div>
                 <div class="info-card-description">
                     Amount requested by all applicants
@@ -535,7 +535,7 @@
                     <i class="bi bi-cash-coin"></i> Total Allocated
                 </div>
                 <div class="info-card-value">
-                    KSh {% for item in gender_dist %}{{ item.total_allocated|floatformat:0|intcomma }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                    KSh {{ summary.total_allocated|floatformat:0|intcomma|default:0 }}
                 </div>
                 <div class="info-card-description">
                     Amount allocated to beneficiaries
@@ -547,7 +547,7 @@
                     <i class="bi bi-graph-up"></i> Average Amount
                 </div>
                 <div class="info-card-value">
-                    KSh {% for item in gender_dist %}{% if forloop.first %}{{ item.avg_amount|floatformat:0|intcomma }}{% endif %}{% endfor %}
+                    KSh {{ financial_stats.avg_amount_requested|floatformat:0|intcomma|default:0 }}
                 </div>
                 <div class="info-card-description">
                     Average amount requested per applicant
@@ -566,18 +566,12 @@
                 {% for item in gender_dist %}
                 <div class="progress-bar-wrapper">
                     <div class="progress-label">
-                        <span class="progress-name">
-                            {% if item.applicant__gender == 'M' %}
-                                Male
-                            {% else %}
-                                Female
-                            {% endif %}
-                        </span>
+                        <span class="progress-name">{{ item.gender_display }}</span>
                         <span class="progress-value">{{ item.count }} (KSh {{ item.total_requested|floatformat:0|intcomma }})</span>
                     </div>
                     <div class="progress">
-                        <div class="progress-fill {% if item.applicant__gender == 'M' %}success{% else %}info{% endif %}" 
-                             style="width: {% widthratio item.count total_applications 100 %}%">
+                        <div class="progress-fill {% if item.gender == 'Male' %}success{% else %}info{% endif %}" 
+                             style="width: {% if total_applications > 0 %}{% widthratio item.count total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -598,7 +592,7 @@
                     </div>
                     <div class="progress">
                         <div class="progress-fill warning" 
-                             style="width: {% widthratio orphan_stats.single_orphans total_applications 100 %}%">
+                             style="width: {% if total_applications > 0 %}{% widthratio orphan_stats.single_orphans total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -610,7 +604,7 @@
                     </div>
                     <div class="progress">
                         <div class="progress-fill danger" 
-                             style="width: {% widthratio orphan_stats.total_orphans_count total_applications 100 %}%">
+                             style="width: {% if total_applications > 0 %}{% widthratio orphan_stats.total_orphans_count total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -622,7 +616,7 @@
                     </div>
                     <div class="progress">
                         <div class="progress-fill" 
-                             style="width: {% widthratio special_needs_stats.total_special_needs total_applications 100 %}%">
+                             style="width: {% if total_applications > 0 %}{% widthratio special_needs_stats.total_special_needs total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -634,7 +628,7 @@
                     </div>
                     <div class="progress">
                         <div class="progress-fill success" 
-                             style="width: {% widthratio disabled_stats.total_disabled total_applications 100 %}%">
+                             style="width: {% if total_applications > 0 %}{% widthratio disabled_stats.total_disabled total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -666,7 +660,7 @@
                     </div>
                     <div class="progress">
                         <div class="progress-fill {% cycle 'success' 'info' 'warning' 'danger' %}" 
-                             style="width: {% widthratio count total_applications 100 %}%">
+                             style="width: {% if total_applications > 0 %}{% widthratio count total_applications 100 %}{% else %}0{% endif %}%">
                         </div>
                     </div>
                 </div>
@@ -700,24 +694,30 @@
                 <tbody>
                     {% for ward in ward_dist %}
                     <tr>
-                        <td style="font-weight: 600; color: #1E293B;">{{ ward.applicant__ward__name }}</td>
+                        <td style="font-weight: 600; color: #1E293B;">{{ ward.ward_name }}</td>
                         <td>{{ ward.count }}</td>
                         <td>
                             <span class="badge badge-success">{{ ward.approved }}</span>
                         </td>
                         <td>
-                            <span class="badge badge-danger">{{ total_applications|add:ward.approved|add:"-"|add:ward.count }}</span>
+                            {% with rejected=ward.count|add:ward.approved|add:"-"|add:ward.count %}
+                                <span class="badge badge-danger">{{ rejected|default:0 }}</span>
+                            {% endwith %}
                         </td>
                         <td>
-                            {% widthratio ward.approved ward.count 100 %}%
+                            {% if ward.count > 0 %}
+                                {% widthratio ward.approved ward.count 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
                         </td>
                         <td>{{ ward.male }}</td>
                         <td>{{ ward.female }}</td>
                         <td>{{ ward.orphans }}</td>
                         <td>{{ ward.special_needs }}</td>
-                        <td>KSh {{ ward.total_requested|floatformat:0|intcomma }}</td>
+                        <td>KSh {{ ward.total_requested|floatformat:0|intcomma|default:0 }}</td>
                         <td style="font-weight: 600; color: #27ae60;">
-                            KSh {{ ward.total_allocated|floatformat:0|intcomma }}
+                            KSh {{ ward.total_allocated|floatformat:0|intcomma|default:0 }}
                         </td>
                     </tr>
                     {% empty %}
@@ -790,7 +790,7 @@
                         </td>
                         <td>{{ inst.count }}</td>
                         <td style="font-weight: 600; color: #27ae60;">
-                            KSh {{ inst.total_allocated|floatformat:0|intcomma }}
+                            KSh {{ inst.total_allocated|floatformat:0|intcomma|default:0 }}
                         </td>
                     </tr>
                     {% empty %}
@@ -832,15 +832,15 @@
                 <tbody>
                     {% for cat in category_dist %}
                     <tr>
-                        <td style="font-weight: 600; color: #1E293B;">{{ cat.bursary_category__name }}</td>
+                        <td style="font-weight: 600; color: #1E293B;">{{ cat.category_name }}</td>
                         <td>
-                            <span class="badge badge-info">{{ cat.bursary_category__category_type|title }}</span>
+                            <span class="badge badge-info">{{ cat.category_type }}</span>
                         </td>
                         <td>{{ cat.count }}</td>
                         <td style="font-weight: 600; color: #27ae60;">
-                            KSh {{ cat.total_allocated|floatformat:0|intcomma }}
+                            KSh {{ cat.total_allocated|floatformat:0|intcomma|default:0 }}
                         </td>
-                        <td>KSh {{ cat.avg_allocation|floatformat:0|intcomma }}</td>
+                        <td>KSh {{ cat.avg_allocation|floatformat:0|intcomma|default:0 }}</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -896,7 +896,7 @@
                             {% endif %}
                         </td>
                         <td style="font-weight: 600; color: #27ae60;">
-                            KSh {{ trend.total_amount|floatformat:0|intcomma }}
+                            KSh {{ trend.total_amount|floatformat:0|intcomma|default:0 }}
                         </td>
                     </tr>
                     {% empty %}
@@ -925,8 +925,40 @@
 {% block extra_js %}
 <script>
     function exportData() {
-        // Implement export functionality
-        alert('Export functionality to be implemented');
+        // Create a CSV export
+        const tables = document.querySelectorAll('.analytics-table');
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        tables.forEach((table, index) => {
+            const rows = table.querySelectorAll('tr');
+            const tableData = [];
+            
+            rows.forEach(row => {
+                const rowData = [];
+                const cells = row.querySelectorAll('th, td');
+                
+                cells.forEach(cell => {
+                    // Remove badge content and get text
+                    let text = cell.textContent.trim();
+                    // Remove multiple spaces and newlines
+                    text = text.replace(/\s+/g, ' ').replace(/\n/g, ' ');
+                    rowData.push(`"${text}"`);
+                });
+                
+                tableData.push(rowData.join(','));
+            });
+            
+            csvContent += tableData.join('\n') + '\n\n';
+        });
+        
+        // Create download link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "bursary_analytics.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     
     // Auto-scroll to section on page load if hash exists
