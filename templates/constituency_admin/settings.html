@@ -1,70 +1,589 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load humanize %}
+{% load math_filters %}
 
-{% block title %}Settings - {{ constituency.name }}{% endblock %}
+{% block title %}Settings - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        transform: translateY(-1px);
+    }
+
+    .btn-link {
+        background: transparent;
+        color: #3498db;
+        text-decoration: underline;
+        padding: 0;
+        font-weight: 500;
+    }
+
+    .btn-link:hover {
+        color: #2980b9;
+        background: transparent;
+        transform: none;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #374151;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+    }
+
+    .info-item label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748B;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-item p {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .info-note {
+        margin-top: 20px;
+        padding: 16px;
+        background: #FFF3CD;
+        border: 1px solid #FFEAA7;
+        border-radius: 6px;
+        border-left: 4px solid #F39C12;
+    }
+
+    .info-note p {
+        margin: 0;
+        font-size: 14px;
+        color: #856404;
+    }
+
+    .info-note strong {
+        font-weight: 600;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .settings-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .settings-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .settings-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .settings-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .settings-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .system-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #F1F5F9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+    }
+
+    .stat-card.stat-primary { color: #3498db; }
+    .stat-card.stat-success { color: #27ae60; }
+    .stat-card.stat-warning { color: #f39c12; }
+    .stat-card.stat-info { color: #9b59b6; }
+
+    .stat-icon {
+        font-size: 24px;
+        opacity: 0.2;
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    @media print {
+        .btn,
+        .system-actions,
+        form {
+            display: none;
+        }
+        
+        .section-container {
+            box-shadow: none;
+            border: none;
+            page-break-inside: avoid;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .form-actions,
+        .system-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .settings-table {
+            font-size: 13px;
+        }
+
+        .settings-table thead th,
+        .settings-table tbody td {
+            padding: 10px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Settings</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Settings</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
     <div class="page-header">
-        <h1>Constituency Settings</h1>
-        <p>Manage {{ constituency.name }} Constituency Information</p>
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-gear"></i>
+                Constituency Settings
+            </h1>
+            <p class="page-subtitle">
+                Manage {{ constituency.name }} Constituency Information
+            </p>
+        </div>
     </div>
 
-    <!-- Settings Form -->
-    <div class="content-section">
-        <h2>CDF Office Information</h2>
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-value">{{ constituency.wards.count }}</div>
+            <div class="stat-label">Total Wards</div>
+        </div>
+        
+        <div class="stat-card stat-success">
+            <div class="stat-icon">
+                <i class="bi bi-person"></i>
+            </div>
+            <div class="stat-value">
+                {% if constituency.current_mp %}
+                    <span style="font-size: 16px; font-weight: 500;">MP</span>
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div class="stat-label">Current MP</div>
+            {% if constituency.current_mp %}
+                <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                    {{ constituency.current_mp|truncatechars:20 }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card stat-warning">
+            <div class="stat-icon">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="stat-value">
+                {% if constituency.annual_cdf_allocation > 0 %}
+                    {{ constituency.cdf_bursary_allocation|floatformat:0|intcomma|div:constituency.annual_cdf_allocation|mul:100|floatformat:0 }}%
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div class="stat-label">Bursary Budget</div>
+            <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                {{ constituency.cdf_bursary_allocation|floatformat:0|intcomma }}
+            </div>
+        </div>
+        
+        <div class="stat-card stat-info">
+            <div class="stat-icon">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-value">{{ constituency.county.name|truncatechars:12 }}</div>
+            <div class="stat-label">County</div>
+            <div style="font-size: 14px; color: #334155; margin-top: 4px;">
+                {{ constituency.code }}
+            </div>
+        </div>
+    </div>
+
+    <!-- CDF Office Information Form -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-building"></i>
+            CDF Office Information
+        </h2>
         
         <form method="post">
             {% csrf_token %}
             
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="current_mp">Current Member of Parliament</label>
+                    <label class="form-label" for="current_mp">
+                        <i class="bi bi-person-badge"></i> Current Member of Parliament
+                    </label>
                     <input type="text" name="current_mp" id="current_mp" class="form-control" 
-                           value="{{ constituency.current_mp }}" placeholder="Enter MP name">
+                           value="{{ constituency.current_mp|default:'' }}" placeholder="Enter MP name">
                 </div>
 
                 <div class="form-group">
-                    <label for="cdf_office_email">CDF Office Email</label>
+                    <label class="form-label" for="cdf_office_email">
+                        <i class="bi bi-envelope"></i> CDF Office Email
+                    </label>
                     <input type="email" name="cdf_office_email" id="cdf_office_email" class="form-control" 
-                           value="{{ constituency.cdf_office_email }}" placeholder="cdf@example.com">
+                           value="{{ constituency.cdf_office_email|default:'' }}" placeholder="cdf@example.com">
                 </div>
 
                 <div class="form-group">
-                    <label for="cdf_office_phone">CDF Office Phone</label>
+                    <label class="form-label" for="cdf_office_phone">
+                        <i class="bi bi-telephone"></i> CDF Office Phone
+                    </label>
                     <input type="tel" name="cdf_office_phone" id="cdf_office_phone" class="form-control" 
-                           value="{{ constituency.cdf_office_phone }}" placeholder="+254XXXXXXXXX">
+                           value="{{ constituency.cdf_office_phone|default:'' }}" placeholder="+254XXXXXXXXX">
                 </div>
 
                 <div class="form-group full-width">
-                    <label for="cdf_office_location">CDF Office Location/Address</label>
+                    <label class="form-label" for="cdf_office_location">
+                        <i class="bi bi-geo-alt"></i> CDF Office Location/Address
+                    </label>
                     <textarea name="cdf_office_location" id="cdf_office_location" class="form-control" 
-                              rows="3" placeholder="Enter office location">{{ constituency.cdf_office_location }}</textarea>
+                              rows="3" placeholder="Enter office location">{{ constituency.cdf_office_location|default:'' }}</textarea>
                 </div>
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
-                    <i class="icon-save"></i> Save Changes
+                    <i class="bi bi-save"></i> Save Changes
                 </button>
                 <a href="{% url 'constituency_dashboard' %}" class="btn btn-secondary">
-                    Cancel
+                    <i class="bi bi-x-circle"></i> Cancel
                 </a>
             </div>
         </form>
     </div>
 
-    <!-- Constituency Information (Read-only) -->
-    <div class="content-section">
-        <h2>Constituency Information</h2>
+    <!-- Constituency Information -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-info-circle"></i>
+            Constituency Information
+        </h2>
+        
         <div class="info-grid">
             <div class="info-item">
                 <label>Constituency Name</label>
@@ -110,18 +629,22 @@
         </div>
     </div>
 
-    <!-- CDF Budget Information (Read-only) -->
-    <div class="content-section">
-        <h2>CDF Budget Information</h2>
+    <!-- CDF Budget Information -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-cash-stack"></i>
+            CDF Budget Information
+        </h2>
+        
         <div class="info-grid">
             <div class="info-item">
                 <label>Annual CDF Allocation</label>
-                <p>KES {{ constituency.annual_cdf_allocation|floatformat:2|intcomma }}</p>
+                <p>KES {{ constituency.annual_cdf_allocation|floatformat:2|intcomma|default:"0.00" }}</p>
             </div>
 
             <div class="info-item">
                 <label>CDF Bursary Allocation</label>
-                <p>KES {{ constituency.cdf_bursary_allocation|floatformat:2|intcomma }}</p>
+                <p>KES {{ constituency.cdf_bursary_allocation|floatformat:2|intcomma|default:"0.00" }}</p>
             </div>
 
             <div class="info-item">
@@ -134,6 +657,11 @@
                     {% endif %}
                 </p>
             </div>
+
+            <div class="info-item">
+                <label>Budget Year</label>
+                <p>{{ current_fiscal_year.name }}</p>
+            </div>
         </div>
 
         <div class="info-note">
@@ -142,16 +670,19 @@
     </div>
 
     <!-- Ward List -->
-    <div class="content-section">
+    <div class="section-container">
         <div class="section-header">
-            <h2>Wards in {{ constituency.name }}</h2>
-            <a href="{% url 'constituency_wards_overview' %}" class="btn btn-link">
-                View Ward Details
+            <h2 class="section-title" style="border: none; margin: 0; padding: 0;">
+                <i class="bi bi-map"></i>
+                Wards in {{ constituency.name }}
+            </h2>
+            <a href="{% url 'constituency_wards_overview' %}" class="btn btn-primary">
+                <i class="bi bi-eye"></i> View Ward Details
             </a>
         </div>
 
-        <div class="table-container">
-            <table class="data-table">
+        <div class="table-responsive">
+            <table class="settings-table">
                 <thead>
                     <tr>
                         <th>Ward Name</th>
@@ -163,7 +694,7 @@
                 <tbody>
                     {% for ward in constituency.wards.all %}
                     <tr>
-                        <td>{{ ward.name }}</td>
+                        <td style="font-weight: 600; color: #1E293B;">{{ ward.name }}</td>
                         <td>{{ ward.current_mca|default:"N/A" }}</td>
                         <td>{{ ward.population|intcomma|default:"N/A" }}</td>
                         <td>
@@ -174,6 +705,15 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px;">
+                            <div style="color: #64748B; font-size: 14px;">
+                                <i class="bi bi-inbox" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                                No wards found for this constituency
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -181,8 +721,12 @@
     </div>
 
     <!-- System Information -->
-    <div class="content-section">
-        <h2>System Information</h2>
+    <div class="section-container">
+        <h2 class="section-title">
+            <i class="bi bi-person-circle"></i>
+            System Information
+        </h2>
+        
         <div class="info-grid">
             <div class="info-item">
                 <label>Your Role</label>
@@ -196,53 +740,93 @@
 
             <div class="info-item">
                 <label>Account Phone</label>
-                <p>{{ request.user.phone_number }}</p>
+                <p>{{ request.user.phone_number|default:"N/A" }}</p>
             </div>
 
             <div class="info-item">
                 <label>Last Login</label>
-                <p>{{ request.user.last_login|date:"M d, Y H:i" }}</p>
+                <p>{{ request.user.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Account Created</label>
+                <p>{{ request.user.date_joined|date:"M d, Y" }}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Account Status</label>
+                <p>
+                    {% if request.user.is_active %}
+                    <span class="badge badge-success">Active</span>
+                    {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </p>
             </div>
         </div>
 
         <div class="system-actions">
             <a href="#" class="btn btn-secondary">
-                <i class="icon-password"></i> Change Password
+                <i class="bi bi-key"></i> Change Password
             </a>
             <a href="#" class="btn btn-secondary">
-                <i class="icon-help"></i> Help & Support
+                <i class="bi bi-shield-check"></i> Privacy Settings
+            </a>
+            <a href="#" class="btn btn-secondary">
+                <i class="bi bi-question-circle"></i> Help & Support
+            </a>
+            <a href="{% url 'logout_view' %}" class="btn btn-secondary" style="color: #e74c3c;">
+                <i class="bi bi-box-arrow-right"></i> Logout
             </a>
         </div>
     </div>
 </div>
 
-<style>
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-}
-
-.form-group.full-width {
-    grid-column: span 2;
-}
-
-.info-note {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-left: 4px solid #0066cc;
-}
-
-.info-note p {
-    margin: 0;
-    color: #666;
-}
-
-.system-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 15px;
-}
-</style>
+{% block extra_js %}
+<script>
+    // Form submission handling
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Change button state
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        submitBtn.disabled = true;
+        
+        // Revert after 3 seconds if still on page (form submission might have failed)
+        setTimeout(() => {
+            if (submitBtn.disabled) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }, 3000);
+    });
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('cdf_office_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.startsWith('254')) {
+                value = '+' + value;
+            } else if (value.startsWith('0')) {
+                value = '+254' + value.substring(1);
+            }
+            e.target.value = value;
+        });
+    }
+    
+    // Auto-save feature (optional)
+    let saveTimeout;
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                // Could implement auto-save here
+                console.log('Field changed:', this.name, this.value);
+            }, 2000);
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}
