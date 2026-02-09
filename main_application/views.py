@@ -18028,443 +18028,37 @@ def constituency_dashboard(request):
     return render(request, 'constituency_admin/dashboard.html', context)
 
 
-"""
-Constituency Analytics View
-File: views.py (constituency admin section)
-"""
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Count, Sum, Q, Avg, F, FloatField
-from django.db.models.functions import TruncMonth, TruncDate
-from django.utils import timezone
-from datetime import timedelta
-import json
-from decimal import Decimal
-
-from main_application.models import (
-    Application, Allocation, Constituency, Ward, 
-    FiscalYear, BursaryCategory, Institution, Applicant
-)
-
-
-def get_user_constituency(user):
-    """Get constituency for constituency admin user"""
-    # Only check user_type, not the truthiness of assigned_constituency
-    if user.user_type == 'constituency_admin':
-        return user.assigned_constituency
-    return None
-
-
-# ALTERNATIVE: More robust version that handles edge cases
-def get_user_constituency_robust(user):
-    """
-    Get constituency for constituency admin user
-    More robust version that handles various edge cases
-    """
-    # Method 1: Direct check (original)
-    if user.user_type == 'constituency_admin' and user.assigned_constituency:
-        return user.assigned_constituency
-    
-    # Method 2: Try to get via related query (if Method 1 fails)
-    try:
-        if user.user_type == 'constituency_admin':
-            # Try to get constituency from database explicitly
-            from main_application.models import Constituency
-            constituency = Constituency.objects.filter(
-                admin_users=user
-            ).first()
-            if constituency:
-                return constituency
-    except Exception as e:
-        print(f"Error getting constituency: {e}")
-    
-    return None
-
 
 @login_required
-def constituency_dashboard(request):
-    """
-    Main constituency dashboard with comprehensive analytics and visualizations
-    """
-    # DEBUGGING: Print user information
-    print(f"\n{'='*60}")
-    print(f"DEBUG CONSTITUENCY DASHBOARD")
-    print(f"{'='*60}")
-    print(f"User: {request.user.username}")
-    print(f"User ID: {request.user.id}")
-    print(f"User Type: {request.user.user_type}")
-    print(f"User Type (raw): {repr(request.user.user_type)}")
-    print(f"Assigned Constituency: {request.user.assigned_constituency}")
-    print(f"Assigned Constituency ID: {request.user.assigned_constituency.id if request.user.assigned_constituency else 'None'}")
-    
-    # Get user's constituency
-    constituency = get_user_constituency(request.user)
-    
-    print(f"Returned Constituency: {constituency}")
-    print(f"{'='*60}\n")
-    
-    if not constituency:
-        # Add debug message for user
-        messages.error(
-            request, 
-            f"No constituency assigned to user {request.user.username}. "
-            f"User type: {request.user.user_type}. "
-            f"Please contact administrator."
-        )
-        # Redirect or show error if user doesn't have assigned constituency
-        return render(request, 'errors/no_constituency.html', {
-            'user': request.user,
-            'user_type': request.user.user_type,
-            'assigned_constituency': request.user.assigned_constituency,
-        })
-    
-    # Get current fiscal year
-    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
-    
-    if not current_fiscal_year:
-        return render(request, 'constituency_admin/no_fiscal_year.html', {
-            'constituency': constituency
-        })
-    
-    # ========================================================================
-    # BASE QUERY - CDF Applications for this constituency
-    # ========================================================================
-    applications = Application.objects.filter(
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both'],
-        fiscal_year=current_fiscal_year
-    ).select_related(
-        'applicant__user',
-        'applicant__ward',
-        'institution',
-        'bursary_category',
-        'fiscal_year'
-    )
-    
-    # ========================================================================
-    # KEY STATISTICS
-    # ========================================================================
-    total_applications = applications.count()
-    pending_applications = applications.filter(status='submitted').count()
-    under_review_applications = applications.filter(status='under_review').count()
-    approved_applications = applications.filter(status='approved').count()
-    rejected_applications = applications.filter(status='rejected').count()
-    disbursed_applications = applications.filter(status='disbursed').count()
-    
-    # Approval rate
-    approval_rate = round((approved_applications / total_applications * 100) if total_applications > 0 else 0, 1)
-    
-    # Total applicants (unique students)
-    total_applicants = applications.values('applicant').distinct().count()
-    
-    # Financial statistics
-    total_requested = applications.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0
-    total_allocated = Allocation.objects.filter(
-        application__in=applications
-    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-    
-    total_disbursed = Allocation.objects.filter(
-        application__in=applications,
-        is_disbursed=True
-    ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-    
-    # Get CDF budget for this constituency
-    cdf_budget = constituency.cdf_bursary_allocation or 0
-    budget_allocated = total_allocated
-    budget_remaining = cdf_budget - budget_allocated
-    budget_utilization_percentage = round((budget_allocated / cdf_budget * 100) if cdf_budget > 0 else 0, 1)
-    
-    # ========================================================================
-    # 1. APPLICATIONS BY STATUS CHART (Donut Chart)
-    # ========================================================================
-    status_counts = applications.values('status').annotate(count=Count('id'))
-    
-    status_labels = []
-    status_data = []
-    status_colors = {
-        'draft': '#94A3B8',
-        'submitted': '#F59E0B',
-        'under_review': '#3498db',
-        'approved': '#10B981',
-        'rejected': '#EF4444',
-        'disbursed': '#8B5CF6',
-        'pending_documents': '#F59E0B'
-    }
-    colors = []
-    
-    for item in status_counts:
-        status = item['status']
-        status_labels.append(dict(Application.APPLICATION_STATUS).get(status, status))
-        status_data.append(item['count'])
-        colors.append(status_colors.get(status, '#64748B'))
-    
-    status_chart_data = json.dumps({
-        'labels': status_labels,
-        'data': status_data,
-        'colors': colors
-    })
-    
-    # ========================================================================
-    # 2. APPLICATIONS BY WARD CHART (Bar Chart)
-    # ========================================================================
-    ward_stats = applications.values('applicant__ward__name').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    ward_chart_data = json.dumps({
-        'labels': [item['applicant__ward__name'] or 'Not Assigned' for item in ward_stats],
-        'data': [item['count'] for item in ward_stats]
-    })
-    
-    # ========================================================================
-    # 3. MONTHLY APPLICATIONS TREND (Line Chart)
-    # ========================================================================
-    six_months_ago = timezone.now() - timedelta(days=180)
-    monthly_apps = applications.filter(
-        date_submitted__gte=six_months_ago
-    ).annotate(
-        month=TruncMonth('date_submitted')
-    ).values('month').annotate(
-        count=Count('id')
-    ).order_by('month')
-    
-    monthly_chart_data = json.dumps({
-        'labels': [item['month'].strftime('%B %Y') if item['month'] else 'N/A' for item in monthly_apps],
-        'data': [item['count'] for item in monthly_apps]
-    })
-    
-    # ========================================================================
-    # 4. FINANCIAL TIMELINE - Allocations vs Disbursements (Line Chart)
-    # ========================================================================
-    financial_monthly = applications.filter(
-        date_submitted__gte=six_months_ago,
-        allocation__isnull=False
-    ).annotate(
-        month=TruncMonth('date_submitted')
-    ).values('month').annotate(
-        allocations=Sum('allocation__amount_allocated'),
-        disbursements=Sum(
-            'allocation__amount_allocated',
-            filter=Q(allocation__is_disbursed=True)
-        )
-    ).order_by('month')
-    
-    financial_timeline_data = json.dumps({
-        'labels': [item['month'].strftime('%B %Y') if item['month'] else 'N/A' for item in financial_monthly],
-        'allocations': [float(item['allocations'] or 0) for item in financial_monthly],
-        'disbursements': [float(item['disbursements'] or 0) for item in financial_monthly]
-    })
-    
-    # ========================================================================
-    # 5. APPLICATIONS BY CATEGORY (Pie Chart)
-    # ========================================================================
-    category_stats = applications.values('bursary_category__name').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    category_chart_data = json.dumps({
-        'labels': [item['bursary_category__name'] or 'Uncategorized' for item in category_stats],
-        'data': [item['count'] for item in category_stats]
-    })
-    
-    # ========================================================================
-    # 6. APPLICATIONS BY INSTITUTION TYPE (Bar Chart)
-    # ========================================================================
-    institution_type_stats = applications.values('institution__institution_type').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    institution_type_chart_data = json.dumps({
-        'labels': [dict(Institution.INSTITUTION_TYPES).get(item['institution__institution_type'], 'Unknown') for item in institution_type_stats],
-        'data': [item['count'] for item in institution_type_stats]
-    })
-    
-    # ========================================================================
-    # 7. GENDER DISTRIBUTION (Donut Chart)
-    # ========================================================================
-    gender_stats = applications.values('applicant__gender').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    gender_labels = []
-    gender_data = []
-    gender_colors = []
-    
-    for item in gender_stats:
-        gender = item['applicant__gender']
-        gender_labels.append(dict(Applicant.GENDER_CHOICES).get(gender, 'Unknown'))
-        gender_data.append(item['count'])
-        gender_colors.append('#3498db' if gender == 'M' else '#EC4899')
-    
-    gender_chart_data = json.dumps({
-        'labels': gender_labels,
-        'data': gender_data,
-        'colors': gender_colors
-    })
-    
-    # ========================================================================
-    # 8. TOP 10 INSTITUTIONS (Horizontal Bar Chart)
-    # ========================================================================
-    top_institutions = applications.values('institution__name').annotate(
-        count=Count('id')
-    ).order_by('-count')[:10]
-    
-    top_institutions_chart_data = json.dumps({
-        'labels': [item['institution__name'] or 'Unknown' for item in top_institutions],
-        'data': [item['count'] for item in top_institutions]
-    })
-    
-    # ========================================================================
-    # 9. WARD ALLOCATION UTILIZATION (Grouped Bar Chart)
-    # ========================================================================
-    ward_allocations = []
-    ward_allocation_labels = []
-    allocated_amounts = []
-    spent_amounts = []
-    
-    for ward in constituency.wards.filter(is_active=True):
-        ward_apps = applications.filter(applicant__ward=ward)
-        allocated = Allocation.objects.filter(
-            application__in=ward_apps
-        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-        
-        spent = Allocation.objects.filter(
-            application__in=ward_apps,
-            is_disbursed=True
-        ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
-        
-        ward_allocation_labels.append(ward.name)
-        allocated_amounts.append(float(allocated))
-        spent_amounts.append(float(spent))
-    
-    ward_allocation_chart_data = json.dumps({
-        'labels': ward_allocation_labels,
-        'allocated': allocated_amounts,
-        'spent': spent_amounts
-    })
-    
-    # ========================================================================
-    # 10. DAILY APPLICATIONS TREND (Last 30 Days - Area Chart)
-    # ========================================================================
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-    daily_apps = applications.filter(
-        date_submitted__gte=thirty_days_ago
-    ).annotate(
-        day=TruncDate('date_submitted')
-    ).values('day').annotate(
-        count=Count('id')
-    ).order_by('day')
-    
-    daily_chart_data = json.dumps({
-        'labels': [item['day'].strftime('%b %d') if item['day'] else 'N/A' for item in daily_apps],
-        'data': [item['count'] for item in daily_apps]
-    })
-    
-    # ========================================================================
-    # RECENT APPLICATIONS TABLE
-    # ========================================================================
-    recent_applications = applications.order_by('-date_submitted')[:10]
-    
-    # ========================================================================
-    # ALERTS GENERATION
-    # ========================================================================
-    alerts = []
-    
-    # Low budget alert
-    if budget_utilization_percentage > 90:
-        alerts.append({
-            'type': 'danger',
-            'message': f'Budget utilization is at {budget_utilization_percentage}%. Only KES {budget_remaining:,.0f} remaining.'
-        })
-    elif budget_utilization_percentage > 75:
-        alerts.append({
-            'type': 'warning',
-            'message': f'Budget utilization is at {budget_utilization_percentage}%. Please monitor spending.'
-        })
-    
-    # Pending applications alert
-    if pending_applications > 50:
-        alerts.append({
-            'type': 'warning',
-            'message': f'You have {pending_applications} applications pending review.'
-        })
-    
-    # No active fiscal year
-    if not current_fiscal_year.is_active:
-        alerts.append({
-            'type': 'info',
-            'message': 'The current fiscal year is not active. Applications may be limited.'
-        })
-    
-    # ========================================================================
-    # CONTEXT DATA
-    # ========================================================================
-    context = {
-        # Basic info
-        'constituency': constituency,
-        'current_fiscal_year': current_fiscal_year,
-        'active_fiscal_year': current_fiscal_year,
-        
-        # Statistics
-        'total_applications': total_applications,
-        'pending_applications': pending_applications,
-        'under_review_applications': under_review_applications,
-        'approved_applications': approved_applications,
-        'rejected_applications': rejected_applications,
-        'disbursed_applications': disbursed_applications,
-        'approval_rate': approval_rate,
-        'total_applicants': total_applicants,
-        
-        # Financial
-        'total_requested': total_requested,
-        'total_allocated': total_allocated,
-        'total_disbursed': total_disbursed,
-        'cdf_budget': cdf_budget,
-        'budget_allocated': budget_allocated,
-        'budget_remaining': budget_remaining,
-        'budget_utilization_percentage': budget_utilization_percentage,
-        
-        # Chart data (JSON strings for JavaScript)
-        'status_chart_data': status_chart_data,
-        'ward_chart_data': ward_chart_data,
-        'monthly_chart_data': monthly_chart_data,
-        'financial_timeline_data': financial_timeline_data,
-        'category_chart_data': category_chart_data,
-        'institution_type_chart_data': institution_type_chart_data,
-        'gender_chart_data': gender_chart_data,
-        'top_institutions_chart_data': top_institutions_chart_data,
-        'ward_allocation_chart_data': ward_allocation_chart_data,
-        'daily_chart_data': daily_chart_data,
-        
-        # Recent data
-        'recent_applications': recent_applications,
-        
-        # Alerts
-        'alerts': alerts,
-    }
-    
-    return render(request, 'constituency_admin/dashboard.html', context)
-
-
-@login_required
+@user_passes_test(is_constituency_admin)
 def constituency_analytics(request):
     """
     Advanced analytics and insights for CDF bursary program
     Detailed breakdowns and analysis
     """
-    constituency = get_user_constituency(request.user)
+    # Get constituency from the user's assignment (same as dashboard)
+    constituency = request.user.assigned_constituency
     
     if not constituency:
-        messages.error(
-            request, 
-            f"No constituency assigned. User type: {request.user.user_type}"
-        )
-        return render(request, 'errors/no_constituency.html', {
-            'user': request.user,
-        })
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
     
+    # Get active fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    
+    if not current_fiscal_year:
+        messages.warning(request, "No active fiscal year found.")
+        context = {
+            'constituency': constituency,
+            'error': True,
+            'error_message': "No active fiscal year"
+        }
+        return render(request, 'constituency_admin/analytics.html', context)
     
     # Get applications
     applications = Application.objects.filter(
@@ -18613,6 +18207,33 @@ def constituency_analytics(request):
         'ward_success_rate': ward_success_rate,
         'age_groups': age_groups,
     }
+    
+    # Create audit log with correct parameter order
+    # Based on AuditLog model: user, action, table_affected, record_id, description, ip_address, user_agent
+    try:
+        # Get client IP address
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = request.META.get('REMOTE_ADDR', '127.0.0.1')
+        
+        # Get user agent
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        # Create audit log
+        AuditLog.objects.create(
+            user=request.user,
+            action='view',
+            table_affected='Analytics',
+            record_id=None,
+            description=f"Viewed constituency analytics for {constituency.name}",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+    except Exception as e:
+        # Log the error but don't fail the request
+        print(f"Failed to create audit log: {e}")
     
     return render(request, 'constituency_admin/analytics.html', context)
 
@@ -19611,26 +19232,6 @@ def constituency_send_notifications(request):
 
 
 # ============= HELPER FUNCTIONS =============
-
-def get_user_constituency(user):
-    """
-    Get the constituency assigned to the user
-    """
-    try:
-        # Check if user has an applicant profile
-        if hasattr(user, 'applicant_profile'):
-            applicant = user.applicant_profile
-            # Return the constituency from the applicant's profile
-            return applicant.constituency
-        
-        # For admin users or users without applicant profile
-        # You might want to handle this differently based on your requirements
-        return None
-        
-    except Exception as e:
-        # Log the error if you have logging set up
-        # logger.error(f"Error getting constituency for user {user.id}: {str(e)}")
-        return None
 
 
 """
