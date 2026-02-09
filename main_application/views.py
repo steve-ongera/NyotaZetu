@@ -18501,36 +18501,6 @@ def constituency_analytics(request):
     return render(request, 'constituency_admin/analytics.html', context)
 
 # ============= APPLICATION MANAGEMENT =============
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db import transaction
-from django.db.models import Q
-from decimal import Decimal
-
-def get_user_constituency(user):
-    """
-    Helper function to get constituency for any user type
-    """
-    # Direct constituency assignment
-    if user.assigned_constituency:
-        return user.assigned_constituency
-    
-    # Get from assigned area
-    assigned_area = user.get_assigned_area()
-    if isinstance(assigned_area, Constituency):
-        return assigned_area
-    
-    # Check if assigned to a ward
-    if user.assigned_ward and user.assigned_ward.constituency:
-        return user.assigned_ward.constituency
-    
-    # Check if assigned to a county
-    if user.assigned_county:
-        # Return first constituency in county (for county admins)
-        constituency = user.assigned_county.constituencies.first()
-        if constituency:
-            return constituency
-    
-    return None
 
 @login_required
 @user_passes_test(is_constituency_admin)
@@ -18540,11 +18510,16 @@ def constituency_applications_list(request):
     With advanced filtering and search
     """
     # Get constituency for user
-    constituency = get_user_constituency(request.user)
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
-        messages.error(request, "No constituency assigned to your account.")
-        return render(request, 'constituency_admin/no_assignment.html')
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
     
     # Get active fiscal year for constituency's county
     current_fiscal_year = FiscalYear.objects.filter(
@@ -18683,11 +18658,16 @@ def constituency_application_detail(request, application_id):
     Detailed view of a single CDF application
     """
     # Get constituency for user
-    constituency = get_user_constituency(request.user)
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
-        messages.error(request, "No constituency assigned to your account.")
-        return render(request, 'constituency_admin/no_assignment.html')
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
     
     try:
         # Get application with proper filtering
@@ -18812,11 +18792,16 @@ def constituency_review_application(request, application_id):
         return redirect('constituency_applications_list')
     
     # Get constituency for user
-    constituency = get_user_constituency(request.user)
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
-        messages.error(request, "No constituency assigned to your account.")
-        return redirect('constituency_applications_list')
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
     
     try:
         application = Application.objects.get(
@@ -18960,11 +18945,17 @@ def constituency_bulk_approve(request):
             messages.error(request, "Invalid amount format.")
             return redirect('constituency_applications_list')
     
-    constituency = get_user_constituency(request.user)
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
-        messages.error(request, "No constituency assigned to your account.")
-        return redirect('constituency_applications_list')
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
+    
     
     try:
         with transaction.atomic():

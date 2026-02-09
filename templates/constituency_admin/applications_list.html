@@ -1,257 +1,483 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
 
-{% block title %}CDF Applications - {{ constituency.name }}{% endblock %}
+{% block title %}CDF Applications - {{ constituency.name }} - Nyota Zetu Bursary System{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-        <a href="{% url 'constituency_dashboard' %}">Dashboard</a>
-        <span class="separator">/</span>
-        <span class="current">Applications</span>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'constituency_dashboard' %}">
+                    Constituency Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">CDF Applications</li>
+        </ol>
     </nav>
 
     <!-- Page Header -->
     <div class="page-header">
-        <div class="header-content">
-            <h1>CDF Bursary Applications</h1>
-            <p>Total: {{ total_count|intcomma }} applications</p>
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-folder2-open"></i>
+                CDF Bursary Applications
+            </h1>
+            <p class="page-subtitle">
+                {{ constituency.name }} Constituency • {{ total_count }} applications
+            </p>
         </div>
-        <div class="header-actions">
-            <a href="{% url 'constituency_bulk_approve' %}" class="btn btn-primary">
-                <i class="icon-approve"></i> Bulk Approve
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                <i class="bi bi-check-all"></i> Bulk Approve
+            </button>
+            <a href="{% url 'constituency_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
             </a>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <h3>Filter Applications</h3>
-        <form method="get" class="filter-form">
-            <div class="filter-grid">
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select name="status" id="status" class="form-control">
-                        <option value="">All Statuses</option>
-                        <option value="submitted" {% if request.GET.status == 'submitted' %}selected{% endif %}>Submitted</option>
-                        <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>Under Review</option>
-                        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
-                        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
-                        <option value="disbursed" {% if request.GET.status == 'disbursed' %}selected{% endif %}>Disbursed</option>
-                    </select>
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if not selected_status %}selected{% endif %}>All Status</option>
+                            {% for status_code, status_info in status_counts.items %}
+                            <option value="{{ status_code }}" 
+                                    {% if selected_status == status_code %}selected{% endif %}>
+                                {{ status_info.name }} ({{ status_info.count }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Ward</label>
+                        <select name="ward" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if not selected_ward %}selected{% endif %}>All Wards</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward.id }}" 
+                                    {% if selected_ward == ward.id|stringformat:'s' %}selected{% endif %}>
+                                {{ ward.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Institution Type</label>
+                        <select name="institution_type" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if not selected_institution_type %}selected{% endif %}>All Types</option>
+                            <option value="highschool" {% if selected_institution_type == 'highschool' %}selected{% endif %}>High School</option>
+                            <option value="college" {% if selected_institution_type == 'college' %}selected{% endif %}>College</option>
+                            <option value="university" {% if selected_institution_type == 'university' %}selected{% endif %}>University</option>
+                            <option value="technical_institute" {% if selected_institution_type == 'technical_institute' %}selected{% endif %}>Technical Institute</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Fiscal Year</label>
+                        <select name="fiscal_year" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if not selected_fiscal_year %}selected{% endif %}>All Years</option>
+                            {% for year in fiscal_years %}
+                            <option value="{{ year.id }}" 
+                                    {% if selected_fiscal_year == year.id|stringformat:'s' %}selected{% endif %}>
+                                {{ year.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if not selected_category %}selected{% endif %}>All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" 
+                                    {% if selected_category == cat.id|stringformat:'s' %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Sort By</label>
+                        <select name="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="-date_submitted" {% if sort_by == '-date_submitted' %}selected{% endif %}>Newest First</option>
+                            <option value="date_submitted" {% if sort_by == 'date_submitted' %}selected{% endif %}>Oldest First</option>
+                            <option value="application_number" {% if sort_by == 'application_number' %}selected{% endif %}>App Number (A-Z)</option>
+                            <option value="-amount_requested" {% if sort_by == '-amount_requested' %}selected{% endif %}>Amount (High-Low)</option>
+                            <option value="amount_requested" {% if sort_by == 'amount_requested' %}selected{% endif %}>Amount (Low-High)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <label class="form-label">Search</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   name="search" 
+                                   class="form-control" 
+                                   placeholder="Search by name, app number, ID, or institution..."
+                                   value="{{ search_query|default:'' }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            {% if search_query %}
+                            <a href="{% url 'constituency_applications_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x"></i> Clear
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="ward">Ward</label>
-                    <select name="ward" id="ward" class="form-control">
-                        <option value="">All Wards</option>
-                        {% for ward in wards %}
-                        <option value="{{ ward.id }}" {% if request.GET.ward == ward.id|stringformat:"s" %}selected{% endif %}>
-                            {{ ward.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="institution_type">Institution Type</label>
-                    <select name="institution_type" id="institution_type" class="form-control">
-                        <option value="">All Types</option>
-                        <option value="highschool" {% if request.GET.institution_type == 'highschool' %}selected{% endif %}>High School</option>
-                        <option value="college" {% if request.GET.institution_type == 'college' %}selected{% endif %}>College</option>
-                        <option value="university" {% if request.GET.institution_type == 'university' %}selected{% endif %}>University</option>
-                        <option value="technical_institute" {% if request.GET.institution_type == 'technical_institute' %}selected{% endif %}>Technical Institute</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="fiscal_year">Fiscal Year</label>
-                    <select name="fiscal_year" id="fiscal_year" class="form-control">
-                        <option value="">All Years</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
-                            {{ fy.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="category">Category</label>
-                    <select name="category" id="category" class="form-control">
-                        <option value="">All Categories</option>
-                        {% for cat in categories %}
-                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
-                            {{ cat.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="search">Search</label>
-                    <input type="text" name="search" id="search" class="form-control" 
-                           placeholder="Application No., Name, ID..." 
-                           value="{{ request.GET.search }}">
-                </div>
-            </div>
-
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
-                <a href="{% url 'constituency_applications_list' %}" class="btn btn-secondary">Reset</a>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <!-- Applications Table -->
-    <div class="content-section">
-        <div class="section-header">
-            <h2>Applications List</h2>
-            <div class="sort-options">
-                <label>Sort by:</label>
-                <select name="sort" id="sort" onchange="window.location.href='?sort=' + this.value + '{{ request.GET.urlencode }}'">
-                    <option value="-date_submitted" {% if request.GET.sort == '-date_submitted' %}selected{% endif %}>Latest First</option>
-                    <option value="date_submitted" {% if request.GET.sort == 'date_submitted' %}selected{% endif %}>Oldest First</option>
-                    <option value="amount_requested" {% if request.GET.sort == 'amount_requested' %}selected{% endif %}>Amount: Low to High</option>
-                    <option value="-amount_requested" {% if request.GET.sort == '-amount_requested' %}selected{% endif %}>Amount: High to Low</option>
-                </select>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    Applications List
+                    <small class="text-muted ms-2">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_count }}</small>
+                </h5>
+                
+                <!-- Bulk Actions -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAll()">
+                        <i class="bi bi-check-square"></i> Select All
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="deselectAll()">
+                        <i class="bi bi-square"></i> Deselect All
+                    </button>
+                </div>
             </div>
         </div>
-
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>
-                            <input type="checkbox" id="select-all">
-                        </th>
-                        <th>Application No.</th>
-                        <th>Applicant</th>
-                        <th>ID Number</th>
-                        <th>Ward</th>
-                        <th>Institution</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for app in page_obj %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="application_ids" value="{{ app.id }}" class="app-checkbox">
-                        </td>
-                        <td>{{ app.application_number }}</td>
-                        <td>{{ app.applicant.user.get_full_name }}</td>
-                        <td>{{ app.applicant.id_number }}</td>
-                        <td>{{ app.applicant.ward.name|default:"N/A" }}</td>
-                        <td>{{ app.institution.name|truncatewords:3 }}</td>
-                        <td>KES {{ app.amount_requested|floatformat:2|intcomma }}</td>
-                        <td>
-                            <span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span>
-                        </td>
-                        <td>{{ app.date_submitted|date:"M d, Y"|default:"N/A" }}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="{% url 'constituency_application_detail' app.id %}" class="btn btn-sm btn-primary">
-                                    View
-                                </a>
-                                {% if app.status == 'submitted' or app.status == 'under_review' %}
-                                <a href="{% url 'constituency_review_application' app.id %}" class="btn btn-sm btn-success">
-                                    Review
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="10" class="text-center">
-                            <div class="empty-state">
-                                <p>No applications found matching your criteria.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        
+        <div class="card-body">
+            {% if page_obj %}
+            <form method="post" action="{% url 'constituency_bulk_approve' %}" id="bulkActionsForm">
+                {% csrf_token %}
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleAll(this)">
+                                </th>
+                                <th>App Number</th>
+                                <th>Applicant</th>
+                                <th>Ward</th>
+                                <th>Institution</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in page_obj %}
+                            <tr>
+                                <td>
+                                    {% if application.status in 'submitted,under_review' %}
+                                    <input type="checkbox" 
+                                           name="application_ids" 
+                                           value="{{ application.id }}"
+                                           class="application-checkbox">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ application.application_number }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ application.bursary_category.name }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ application.applicant.user.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ application.applicant.id_number }}</small>
+                                </td>
+                                <td>
+                                    {{ application.applicant.ward.name|default:"N/A" }}
+                                </td>
+                                <td>
+                                    {{ application.institution.name }}
+                                    <br>
+                                    <small class="text-muted">{{ application.institution.get_institution_type_display }}</small>
+                                </td>
+                                <td>
+                                    <strong>KSh {{ application.amount_requested|floatformat:0|intcomma }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if application.allocation %}
+                                        <span class="text-success">
+                                            Allocated: KSh {{ application.allocation.amount_allocated|floatformat:0|intcomma }}
+                                        </span>
+                                        {% else %}
+                                        Not allocated
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if application.status == 'approved' %}
+                                    <span class="badge bg-success">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'rejected' %}
+                                    <span class="badge bg-danger">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'submitted' %}
+                                    <span class="badge bg-primary">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'under_review' %}
+                                    <span class="badge bg-warning">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'disbursed' %}
+                                    <span class="badge bg-info">{{ application.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ application.get_status_display }}</span>
+                                    {% endif %}
+                                    
+                                    <!-- Special indicators -->
+                                    {% if application.is_orphan %}
+                                    <br><small class="text-danger"><i class="bi bi-heart"></i> Orphan</small>
+                                    {% endif %}
+                                    {% if application.applicant.special_needs %}
+                                    <br><small class="text-info"><i class="bi bi-universal-access"></i> Special Needs</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ application.date_submitted|date:"d/m/Y" }}
+                                    <br>
+                                    <small class="text-muted">{{ application.date_submitted|timesince }} ago</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'constituency_application_detail' application.id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        {% if application.status in 'submitted,under_review' %}
+                                        <a href="{% url 'constituency_application_detail' application.id %}#review" 
+                                           class="btn btn-outline-success">
+                                            <i class="bi bi-pencil"></i> Review
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Bulk Action Controls -->
+                <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-light rounded">
+                    <div>
+                        <span id="selectedCount">0</span> selected
+                    </div>
+                    <div>
+                        <div class="input-group input-group-sm" style="width: 300px;">
+                            <span class="input-group-text">Amount</span>
+                            <input type="number" 
+                                   name="default_amount" 
+                                   class="form-control" 
+                                   placeholder="Default allocation amount"
+                                   min="0" 
+                                   step="100">
+                            <button type="submit" 
+                                    class="btn btn-success"
+                                    onclick="return confirm('Are you sure you want to approve selected applications?')">
+                                <i class="bi bi-check-all"></i> Approve Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="mt-3">No applications found</h4>
+                <p class="text-muted">
+                    {% if search_query or selected_status != 'all' or selected_ward != 'all' %}
+                    Try adjusting your filters or search criteria
+                    {% else %}
+                    No CDF applications have been submitted yet
+                    {% endif %}
+                </p>
+                {% if search_query or selected_status != 'all' or selected_ward != 'all' %}
+                <a href="{% url 'constituency_applications_list' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise"></i> Reset Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-
+        
         <!-- Pagination -->
         {% if page_obj.has_other_pages %}
-        <div class="pagination-container">
-            <div class="pagination-info">
-                Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }} results
-            </div>
-            <ul class="pagination">
-                {% if page_obj.has_previous %}
-                <li>
-                    <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
-                </li>
-                <li>
-                    <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
-                </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="active"><span>{{ num }}</span></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li>
-                        <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+        <div class="card-footer">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in current_filters.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in current_filters.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
                     </li>
                     {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li>
-                    <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
-                </li>
-                <li>
-                    <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
-                </li>
-                {% endif %}
-            </ul>
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in current_filters.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in current_filters.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in current_filters.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
         {% endif %}
     </div>
-
-    <!-- Bulk Actions -->
-    <div class="bulk-actions" id="bulk-actions" style="display: none;">
-        <form method="post" action="{% url 'constituency_bulk_approve' %}">
-            {% csrf_token %}
-            <div class="bulk-actions-content">
-                <p><span id="selected-count">0</span> application(s) selected</p>
-                <input type="number" name="default_amount" placeholder="Default Amount (optional)" class="form-control">
-                <button type="submit" class="btn btn-success">Approve Selected</button>
-            </div>
-        </form>
-    </div>
 </div>
 
+<!-- Bulk Approve Modal -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'constituency_bulk_approve' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Approve Applications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Default Allocation Amount</label>
+                        <input type="number" 
+                               name="default_amount" 
+                               class="form-control" 
+                               placeholder="Enter amount for all selected applications"
+                               min="0" 
+                               step="100"
+                               required>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        This will approve all selected applications with the specified amount.
+                        Make sure you have selected the correct applications.
+                    </div>
+                    
+                    <div id="bulkApplicationsList" class="mt-3">
+                        <!-- Selected applications will be listed here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="confirmBulkApprove">
+                        Confirm Bulk Approval
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.app-checkbox');
-    const bulkActions = document.getElementById('bulk-actions');
-    const selectedCount = document.getElementById('selected-count');
-
-    selectAll.addEventListener('change', function() {
-        checkboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkActions();
-    });
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateBulkActions);
-    });
-
-    function updateBulkActions() {
-        const checked = document.querySelectorAll('.app-checkbox:checked').length;
-        selectedCount.textContent = checked;
-        bulkActions.style.display = checked > 0 ? 'block' : 'none';
+    // Checkbox management
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('.application-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = source.checked;
+        });
+        updateSelectedCount();
     }
-});
+    
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.application-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        document.getElementById('selectAllCheckbox').checked = true;
+        updateSelectedCount();
+    }
+    
+    function deselectAll() {
+        const checkboxes = document.querySelectorAll('.application-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.getElementById('selectAllCheckbox').checked = false;
+        updateSelectedCount();
+    }
+    
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.application-checkbox:checked');
+        document.getElementById('selectedCount').textContent = selected.length;
+        
+        // Update bulk modal
+        const modalList = document.getElementById('bulkApplicationsList');
+        modalList.innerHTML = '';
+        
+        if (selected.length > 0) {
+            let html = '<strong>Selected Applications (' + selected.length + '):</strong><ul class="mt-2">';
+            selected.forEach((checkbox, index) => {
+                if (index < 5) { // Show first 5 only
+                    const row = checkbox.closest('tr');
+                    const appNumber = row.cells[1].querySelector('strong').textContent;
+                    const applicant = row.cells[2].querySelector('strong').textContent;
+                    html += `<li>${appNumber} - ${applicant}</li>`;
+                }
+            });
+            if (selected.length > 5) {
+                html += `<li>... and ${selected.length - 5} more</li>`;
+            }
+            html += '</ul>';
+            modalList.innerHTML = html;
+        }
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.application-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCount);
+        });
+        updateSelectedCount();
+    });
 </script>
 {% endblock %}
