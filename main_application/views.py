@@ -17523,82 +17523,54 @@ from .utils import create_audit_log, send_sms_notification, send_email_notificat
 
 
 # ============= DASHBOARD & OVERVIEW =============
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, Count, Q, Avg
+from django.db.models import Sum, Count, Q, Avg, F, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import timedelta, datetime
 from decimal import Decimal
 import json
-from .models import *
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# ... existing helper functions ...
 
 def is_constituency_admin(user):
     """Check if user is a constituency administrator"""
     return user.user_type == 'constituency_admin'
 
-def create_audit_log(user, action, table, record_id, description, request):
-    """Helper function to create audit logs"""
-    try:
-        AuditLog.objects.create(
-            user=user,
-            action=action,
-            table_affected=table,
-            record_id=record_id,
-            description=description,
-            ip_address=get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
-    except:
-        pass
-
-def get_client_ip(request):
-    """Get client IP address"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.db.models import Sum, Count, Q, Avg
-from django.utils import timezone
-from datetime import timedelta, datetime
-from decimal import Decimal
-import json
-from .models import *
-
-def is_constituency_admin(user):
-    """Check if user is a constituency administrator"""
-    return user.user_type == 'constituency_admin'
-
-def create_audit_log(user, action, table, record_id, description, request):
-    """Helper function to create audit logs"""
-    try:
-        AuditLog.objects.create(
-            user=user,
-            action=action,
-            table_affected=table,
-            record_id=record_id,
-            description=description,
-            ip_address=get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
-    except:
-        pass
-
-def get_client_ip(request):
-    """Get client IP address"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+def get_constituency_for_user(user):
+    """
+    Get constituency for user - handles all assignment types
+    """
+    if not user.is_authenticated:
+        return None
+    
+    # Direct assignment
+    if user.assigned_constituency:
+        return user.assigned_constituency
+    
+    # Get from assigned area
+    assigned_area = user.get_assigned_area()
+    if isinstance(assigned_area, Constituency):
+        return assigned_area
+    
+    # Check if assigned to a ward that's in a constituency
+    if user.assigned_ward and user.assigned_ward.constituency:
+        return user.assigned_ward.constituency
+    
+    # Check if assigned to a county and get first constituency
+    if user.assigned_county:
+        constituency = user.assigned_county.constituencies.first()
+        if constituency:
+            return constituency
+    
+    return None
 
 @login_required
 @user_passes_test(is_constituency_admin)
@@ -17607,36 +17579,66 @@ def constituency_dashboard(request):
     Main dashboard for constituency admin
     Shows CDF bursary overview and key metrics with multiple charts
     """
-    # Get constituency from the user's assignment
-    constituency = request.user.assigned_constituency
+    # Get constituency using the helper function
+    constituency = get_constituency_for_user(request.user)
     
     if not constituency:
-        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
-        context = {
+        messages.error(request, 
+            "You are not assigned to any constituency. Please contact the system administrator.")
+        return render(request, 'constituency_admin/no_assignment.html', {
             'error': True,
             'error_message': "No constituency assigned",
             'user': request.user
-        }
-        return render(request, 'constituency_admin/no_assignment.html', context)
+        })
+    
+    # Log for debugging
+    logger.info(f"Constituency dashboard accessed by {request.user.username} for {constituency.name}")
     
     # Get active fiscal year
-    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
     
     if not current_fiscal_year:
-        messages.warning(request, "No active fiscal year found.")
+        messages.warning(request, "No active fiscal year found for your county.")
         context = {
             'constituency': constituency,
             'error': True,
-            'error_message': "No active fiscal year"
+            'error_message': "No active fiscal year",
+            'county': constituency.county
         }
         return render(request, 'constituency_admin/dashboard.html', context)
     
     # ==================== CDF APPLICATIONS STATISTICS ====================
-    cdf_applications = Application.objects.filter(
-        applicant__constituency=constituency,
-        bursary_source__in=['cdf', 'both'],
+    # First, get all applications for debugging
+    all_applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
         fiscal_year=current_fiscal_year
-    )
+    ).distinct()
+    
+    # Log for debugging
+    logger.debug(f"Total applications in constituency: {all_applications.count()}")
+    
+    # Now get CDF applications with better filtering
+    cdf_applications = all_applications.filter(
+        Q(bursary_source__iexact='cdf') |
+        Q(bursary_source__iexact='both') |
+        Q(bursary_source__icontains='cdf')
+    ).distinct()
+    
+    # Log for debugging
+    logger.debug(f"CDF applications: {cdf_applications.count()}")
+    logger.debug(f"Bursary sources found: {list(all_applications.values_list('bursary_source', flat=True).distinct())}")
+    
+    # If no CDF applications, show all applications for debugging
+    show_all_as_fallback = cdf_applications.count() == 0
+    
+    if show_all_as_fallback:
+        messages.info(request, 
+            f"No CDF applications found. Showing all {all_applications.count()} applications for constituency.")
+        cdf_applications = all_applications
     
     # Basic Statistics
     total_applications = cdf_applications.count()
@@ -17648,8 +17650,9 @@ def constituency_dashboard(request):
     
     # Calculate approval rate
     approval_rate = 0
-    if total_applications > 0:
-        approval_rate = round((approved_applications / total_applications) * 100, 1)
+    reviewed_applications = approved_applications + rejected_applications
+    if reviewed_applications > 0:
+        approval_rate = round((approved_applications / reviewed_applications) * 100, 1)
     
     stats = {
         'total_applications': total_applications,
@@ -17658,35 +17661,42 @@ def constituency_dashboard(request):
         'approved': approved_applications,
         'rejected': rejected_applications,
         'disbursed': disbursed_applications,
+        'approval_rate': approval_rate,
+        'show_all_as_fallback': show_all_as_fallback,
     }
     
     # ==================== FINANCIAL OVERVIEW ====================
+    # Use Coalesce to handle NULL values
     total_requested = cdf_applications.aggregate(
-        total=Sum('amount_requested')
-    )['total'] or Decimal('0')
+        total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+    )['total']
+    
+    # Get allocations for these applications
+    application_ids = cdf_applications.values_list('id', flat=True)
     
     total_allocated = Allocation.objects.filter(
-        application__in=cdf_applications
-    ).aggregate(total=Sum('amount_allocated'))['total'] or Decimal('0')
+        application_id__in=application_ids
+    ).aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
     
-    # Get allocations for CDF applications
-    cdf_allocations = Allocation.objects.filter(
-        application__in=cdf_applications
-    )
-    
+    # Get disbursements
     total_disbursed = Disbursement.objects.filter(
-        allocation__in=cdf_allocations,
+        allocation__application_id__in=application_ids,
         status='completed'
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    ).aggregate(
+        total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField())
+    )['total']
     
     # Budget details
     cdf_budget = constituency.cdf_bursary_allocation or Decimal('0')
     budget_allocated = total_allocated
     budget_utilized = total_disbursed
-    budget_remaining = cdf_budget - total_allocated
+    budget_remaining = max(cdf_budget - total_allocated, Decimal('0'))
+    
     budget_utilization_percentage = 0
     if cdf_budget > 0:
-        budget_utilization_percentage = round((float(total_allocated) / float(cdf_budget)) * 100, 1)
+        budget_utilization_percentage = min(round((float(total_allocated) / float(cdf_budget)) * 100, 1), 100)
     
     # ==================== APPLICANT STATISTICS ====================
     total_applicants = Applicant.objects.filter(
@@ -17695,16 +17705,19 @@ def constituency_dashboard(request):
     
     # Applications needing review
     applications_needing_review = cdf_applications.filter(
-        status='submitted'
+        Q(status='submitted') | Q(status='under_review')
     ).count()
     
     # Allocations pending disbursement
     allocations_pending_disbursement = Allocation.objects.filter(
-        application__in=cdf_applications,
-        is_disbursed=False
+        application_id__in=application_ids,
+        is_disbursed=False,
+        status='approved'
     ).count()
     
-    # ==================== CHART 1: APPLICATIONS BY STATUS (Donut Chart) ====================
+    # ==================== CHART DATA PREPARATION ====================
+    
+    # Chart 1: APPLICATIONS BY STATUS
     status_chart_data = {
         'labels': ['Submitted', 'Under Review', 'Approved', 'Rejected', 'Disbursed'],
         'data': [
@@ -17717,22 +17730,24 @@ def constituency_dashboard(request):
         'colors': ['#F59E0B', '#3498db', '#10B981', '#EF4444', '#8B5CF6']
     }
     
-    # ==================== CHART 2: APPLICATIONS BY WARD (Bar Chart) ====================
+    # Chart 2: APPLICATIONS BY WARD
     ward_data = []
     ward_labels = []
     
-    for ward in constituency.wards.all().order_by('name'):
+    wards = constituency.wards.filter(is_active=True).order_by('name')
+    for ward in wards:
         ward_apps = cdf_applications.filter(applicant__ward=ward)
-        ward_labels.append(ward.name)
-        ward_data.append(ward_apps.count())
+        ward_count = ward_apps.count()
+        if ward_count > 0 or True:  # Show all wards even if 0
+            ward_labels.append(ward.name)
+            ward_data.append(ward_count)
     
     ward_chart_data = {
         'labels': ward_labels,
         'data': ward_data
     }
     
-    # ==================== CHART 3: MONTHLY APPLICATIONS TREND (Line Chart) ====================
-    # Get last 6 months of data
+    # Chart 3: MONTHLY APPLICATIONS TREND
     today = timezone.now()
     months_data = []
     months_labels = []
@@ -17741,7 +17756,6 @@ def constituency_dashboard(request):
         month_date = today - timedelta(days=30*i)
         month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        # Calculate next month start
         if month_start.month == 12:
             month_end = month_start.replace(year=month_start.year + 1, month=1)
         else:
@@ -17760,8 +17774,7 @@ def constituency_dashboard(request):
         'data': months_data
     }
     
-    # ==================== CHART 4: FINANCIAL TIMELINE (Line Chart) ====================
-    # Allocations vs Disbursements over last 6 months
+    # Chart 4: FINANCIAL TIMELINE
     financial_labels = []
     allocations_timeline = []
     disbursements_timeline = []
@@ -17777,21 +17790,28 @@ def constituency_dashboard(request):
         
         # Allocations in this month
         month_allocations = Allocation.objects.filter(
-            application__in=cdf_applications,
+            application_id__in=application_ids,
             allocation_date__gte=month_start.date(),
             allocation_date__lt=month_end.date()
-        ).aggregate(total=Sum('amount_allocated'))['total'] or 0
+        ).aggregate(
+            total=Coalesce(
+                Sum('amount_allocated'),
+                Value(0),
+                output_field=DecimalField()
+            )
+        )
+        ['total'] or 0
         
         # Disbursements in this month
         month_disbursements = Disbursement.objects.filter(
-            allocation__application__in=cdf_applications,
+            allocation__application_id__in=application_ids,
             disbursement_date__gte=month_start.date(),
             disbursement_date__lt=month_end.date(),
             status='completed'
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(total=Coalesce(Sum('amount'), Value(0), output_field=DecimalField()))['total'] or 0
         
         financial_labels.append(month_start.strftime('%b %Y'))
-        allocations_timeline.append(float(month_allocations))
+        allocations_timeline.append(float(month_allocations['total'] or 0))
         disbursements_timeline.append(float(month_disbursements))
     
     financial_timeline_data = {
@@ -17800,7 +17820,7 @@ def constituency_dashboard(request):
         'disbursements': disbursements_timeline
     }
     
-    # ==================== CHART 5: APPLICATIONS BY CATEGORY (Pie Chart) ====================
+    # Chart 5: APPLICATIONS BY CATEGORY
     category_labels = []
     category_data = []
     
@@ -17820,7 +17840,7 @@ def constituency_dashboard(request):
         'data': category_data
     }
     
-    # ==================== CHART 6: INSTITUTION TYPE DISTRIBUTION (Bar Chart) ====================
+    # Chart 6: INSTITUTION TYPE DISTRIBUTION
     institution_type_labels = []
     institution_type_data = []
     
@@ -17845,7 +17865,7 @@ def constituency_dashboard(request):
         'data': institution_type_data
     }
     
-    # ==================== CHART 7: GENDER DISTRIBUTION (Donut Chart) ====================
+    # Chart 7: GENDER DISTRIBUTION
     male_count = cdf_applications.filter(applicant__gender='M').count()
     female_count = cdf_applications.filter(applicant__gender='F').count()
     
@@ -17855,14 +17875,14 @@ def constituency_dashboard(request):
         'colors': ['#3498db', '#EC4899']
     }
     
-    # ==================== CHART 8: TOP INSTITUTIONS (Horizontal Bar Chart) ====================
+    # Chart 8: TOP INSTITUTIONS
     top_institutions = cdf_applications.values(
         'institution__name'
     ).annotate(
         count=Count('id')
     ).order_by('-count')[:10]
     
-    top_institutions_labels = [item['institution__name'] for item in top_institutions]
+    top_institutions_labels = [item['institution__name'] or 'Unknown' for item in top_institutions]
     top_institutions_data = [item['count'] for item in top_institutions]
     
     top_institutions_chart_data = {
@@ -17870,7 +17890,7 @@ def constituency_dashboard(request):
         'data': top_institutions_data
     }
     
-    # ==================== CHART 9: WARD ALLOCATION UTILIZATION (Grouped Bar Chart) ====================
+    # Chart 9: WARD ALLOCATION UTILIZATION
     ward_allocation_labels = []
     ward_allocated = []
     ward_spent = []
@@ -17882,8 +17902,15 @@ def constituency_dashboard(request):
     
     for ward_alloc in ward_allocations:
         ward_allocation_labels.append(ward_alloc.ward.name)
-        ward_allocated.append(float(ward_alloc.allocated_amount))
-        ward_spent.append(float(ward_alloc.spent_amount))
+        ward_allocated.append(float(ward_alloc.allocated_amount or 0))
+        ward_spent.append(float(ward_alloc.spent_amount or 0))
+    
+    # If no ward allocations, create dummy data
+    if not ward_allocation_labels:
+        for ward in wards:
+            ward_allocation_labels.append(ward.name)
+            ward_allocated.append(0)
+            ward_spent.append(0)
     
     ward_allocation_chart_data = {
         'labels': ward_allocation_labels,
@@ -17891,7 +17918,7 @@ def constituency_dashboard(request):
         'spent': ward_spent
     }
     
-    # ==================== CHART 10: DAILY APPLICATIONS (Last 30 Days) ====================
+    # Chart 10: DAILY APPLICATIONS (Last 30 Days)
     daily_labels = []
     daily_data = []
     
@@ -17915,13 +17942,21 @@ def constituency_dashboard(request):
     
     # ==================== WARD-WISE BREAKDOWN ====================
     ward_stats = []
-    for ward in constituency.wards.all():
+    for ward in wards:
         ward_apps = cdf_applications.filter(applicant__ward=ward)
+        ward_requested = ward_apps.aggregate(
+            total=Coalesce(Sum('amount_requested'), Value(0), output_field=DecimalField())
+        )['total']
+        
         ward_stats.append({
             'ward': ward,
             'applications': ward_apps.count(),
             'approved': ward_apps.filter(status='approved').count(),
-            'amount_requested': ward_apps.aggregate(Sum('amount_requested'))['amount_requested__sum'] or 0,
+            'amount_requested': ward_requested,
+            'allocation': WardAllocation.objects.filter(
+                ward=ward,
+                fiscal_year=current_fiscal_year
+            ).first()
         })
     
     # ==================== RECENT APPLICATIONS ====================
@@ -17945,14 +17980,16 @@ def constituency_dashboard(request):
     if old_pending > 0:
         alerts.append({
             'type': 'warning',
-            'message': f'{old_pending} applications pending review for over 7 days'
+            'message': f'{old_pending} applications pending review for over 7 days',
+            'icon': 'clock'
         })
     
     # Check budget exhaustion
     if budget_utilization_percentage > 90:
         alerts.append({
             'type': 'danger',
-            'message': f'CDF budget {budget_utilization_percentage}% utilized - nearly exhausted'
+            'message': f'CDF budget {budget_utilization_percentage}% utilized - nearly exhausted',
+            'icon': 'exclamation-triangle'
         })
     
     # Check for applications without reviews
@@ -17963,7 +18000,16 @@ def constituency_dashboard(request):
     if no_reviews > 0:
         alerts.append({
             'type': 'info',
-            'message': f'{no_reviews} applications under review but not yet reviewed'
+            'message': f'{no_reviews} applications under review but not yet reviewed',
+            'icon': 'clipboard-check'
+        })
+    
+    # Data quality warnings
+    if show_all_as_fallback:
+        alerts.append({
+            'type': 'info',
+            'message': 'Showing all applications (no CDF applications found)',
+            'icon': 'info-circle'
         })
     
     # ==================== CONTEXT ====================
@@ -17997,6 +18043,7 @@ def constituency_dashboard(request):
         
         # Ward Statistics
         'ward_stats': ward_stats,
+        'wards': wards,
         
         # Recent Data
         'recent_applications': recent_applications,
@@ -18004,6 +18051,10 @@ def constituency_dashboard(request):
         
         # Alerts
         'alerts': alerts,
+        'has_alerts': len(alerts) > 0,
+        
+        # Data quality flag
+        'show_all_as_fallback': show_all_as_fallback,
         
         # Chart Data (JSON serialized for JavaScript)
         'status_chart_data': json.dumps(status_chart_data),
