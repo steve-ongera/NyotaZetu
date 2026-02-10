@@ -18500,6 +18500,586 @@ def constituency_analytics(request):
     
     return render(request, 'constituency_admin/analytics.html', context)
 
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q, Sum, Count, Case, When, DecimalField, Value
+from django.db.models.functions import Coalesce
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from datetime import datetime, timedelta
+from decimal import Decimal
+from main_application.models import (
+    Application, Allocation, FiscalYear, DisbursementRound,
+    Constituency, Ward, BursaryCategory
+)
+import json
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+def constituency_bursary_management(request):
+    """
+    Main bursary management dashboard for constituency admin
+    Manage quarters, allocations, and applications
+    """
+    # Get constituency for user
+    constituency = get_constituency_for_user(request.user)
+    
+    if not constituency:
+        messages.error(request, "You are not assigned to any constituency. Please contact the system administrator.")
+        context = {
+            'error': True,
+            'error_message': "No constituency assigned",
+            'user': request.user
+        }
+        return render(request, 'constituency_admin/no_assignment.html', context)
+    
+    # Get active fiscal year
+    current_fiscal_year = FiscalYear.objects.filter(
+        is_active=True,
+        county=constituency.county
+    ).first()
+    
+    if not current_fiscal_year:
+        messages.warning(request, "No active fiscal year found.")
+        context = {
+            'constituency': constituency,
+            'error': True,
+            'error_message': 'No active fiscal year'
+        }
+        return render(request, 'constituency_admin/bursary_management.html', context)
+    
+    # Get all disbursement rounds for this fiscal year
+    disbursement_rounds = DisbursementRound.objects.filter(
+        fiscal_year=current_fiscal_year
+    ).order_by('round_number')
+    
+    # Calculate constituency budget summary
+    total_cdf_allocation = constituency.cdf_bursary_allocation
+    
+    # Get all CDF applications for this constituency
+    all_applications = Application.objects.filter(
+        Q(applicant__constituency=constituency) |
+        Q(applicant__ward__constituency=constituency),
+        fiscal_year=current_fiscal_year,
+        bursary_source__in=['cdf', 'both']
+    ).distinct()
+    
+    # Get allocations for this constituency
+    allocations = Allocation.objects.filter(
+        application__in=all_applications
+    )
+    
+    # Calculate budget utilization
+    total_allocated = allocations.aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
+    
+    total_disbursed = allocations.filter(is_disbursed=True).aggregate(
+        total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+    )['total']
+    
+    budget_balance = total_cdf_allocation - total_allocated
+    pending_disbursement = total_allocated - total_disbursed
+    
+    # Calculate utilization percentages
+    if total_cdf_allocation > 0:
+        utilization_percentage = round((total_allocated / total_cdf_allocation) * 100, 1)
+        disbursement_percentage = round((total_disbursed / total_cdf_allocation) * 100, 1)
+    else:
+        utilization_percentage = 0
+        disbursement_percentage = 0
+    
+    # Get round statistics
+    round_stats = []
+    for round_obj in disbursement_rounds:
+        round_applications = all_applications.filter(disbursement_round=round_obj)
+        round_allocations = allocations.filter(application__disbursement_round=round_obj)
+        
+        round_stat = {
+            'round': round_obj,
+            'total_applications': round_applications.count(),
+            'approved': round_applications.filter(status='approved').count(),
+            'pending': round_applications.filter(status__in=['submitted', 'under_review']).count(),
+            'allocated': round_allocations.aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+            'disbursed': round_allocations.filter(is_disbursed=True).aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+        }
+        round_stats.append(round_stat)
+    
+    # Get ward-wise distribution
+    wards = Ward.objects.filter(constituency=constituency, is_active=True)
+    ward_stats = []
+    for ward in wards:
+        ward_applications = all_applications.filter(applicant__ward=ward)
+        ward_allocations = allocations.filter(application__applicant__ward=ward)
+        
+        ward_stat = {
+            'ward': ward,
+            'applications': ward_applications.count(),
+            'allocated': ward_allocations.aggregate(
+                total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+            )['total'],
+            'beneficiaries': ward_allocations.count(),
+        }
+        ward_stats.append(ward_stat)
+    
+    # Overall statistics
+    summary_stats = {
+        'total_allocation': total_cdf_allocation,
+        'total_allocated': total_allocated,
+        'total_disbursed': total_disbursed,
+        'budget_balance': budget_balance,
+        'pending_disbursement': pending_disbursement,
+        'utilization_percentage': utilization_percentage,
+        'disbursement_percentage': disbursement_percentage,
+        'total_applications': all_applications.count(),
+        'approved_applications': all_applications.filter(status='approved').count(),
+        'pending_applications': all_applications.filter(status__in=['submitted', 'under_review']).count(),
+        'total_beneficiaries': allocations.count(),
+    }
+    
+    context = {
+        'constituency': constituency,
+        'current_fiscal_year': current_fiscal_year,
+        'disbursement_rounds': disbursement_rounds,
+        'round_stats': round_stats,
+        'ward_stats': ward_stats,
+        'summary_stats': summary_stats,
+    }
+    
+    return render(request, 'constituency_admin/bursary_management.html', context)
+
+
+# ============= AJAX API ENDPOINTS =============
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["POST"])
+def api_create_disbursement_round(request):
+    """
+    API: Create a new disbursement round
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        
+        fiscal_year_id = data.get('fiscal_year_id')
+        round_number = data.get('round_number')
+        round_name = data.get('round_name')
+        application_start = data.get('application_start_date')
+        application_end = data.get('application_end_date')
+        review_deadline = data.get('review_deadline')
+        disbursement_date = data.get('disbursement_date')
+        allocated_amount = data.get('allocated_amount')
+        
+        # Validate required fields
+        if not all([fiscal_year_id, round_number, round_name, application_start, 
+                   application_end, review_deadline, disbursement_date, allocated_amount]):
+            return JsonResponse({
+                'success': False, 
+                'error': 'All fields are required'
+            }, status=400)
+        
+        # Get fiscal year
+        fiscal_year = FiscalYear.objects.get(id=fiscal_year_id, county=constituency.county)
+        
+        # Check if round number already exists
+        if DisbursementRound.objects.filter(fiscal_year=fiscal_year, round_number=round_number).exists():
+            return JsonResponse({
+                'success': False, 
+                'error': f'Round {round_number} already exists for this fiscal year'
+            }, status=400)
+        
+        # Create disbursement round
+        disbursement_round = DisbursementRound.objects.create(
+            fiscal_year=fiscal_year,
+            round_number=round_number,
+            name=round_name,
+            application_start_date=application_start,
+            application_end_date=application_end,
+            review_deadline=review_deadline,
+            disbursement_date=disbursement_date,
+            allocated_amount=Decimal(allocated_amount),
+            is_open=False
+        )
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'create', 'DisbursementRound', disbursement_round.id,
+            f"Created disbursement round: {round_name}",
+            request
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Disbursement round "{round_name}" created successfully',
+            'round': {
+                'id': disbursement_round.id,
+                'name': disbursement_round.name,
+                'round_number': disbursement_round.round_number,
+                'is_open': disbursement_round.is_open,
+            }
+        })
+        
+    except FiscalYear.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Fiscal year not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["POST"])
+def api_update_disbursement_round(request, round_id):
+    """
+    API: Update an existing disbursement round
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Get disbursement round
+        disbursement_round = DisbursementRound.objects.get(
+            id=round_id,
+            fiscal_year__county=constituency.county
+        )
+        
+        # Update fields
+        if 'round_name' in data:
+            disbursement_round.name = data['round_name']
+        if 'application_start_date' in data:
+            disbursement_round.application_start_date = data['application_start_date']
+        if 'application_end_date' in data:
+            disbursement_round.application_end_date = data['application_end_date']
+        if 'review_deadline' in data:
+            disbursement_round.review_deadline = data['review_deadline']
+        if 'disbursement_date' in data:
+            disbursement_round.disbursement_date = data['disbursement_date']
+        if 'allocated_amount' in data:
+            disbursement_round.allocated_amount = Decimal(data['allocated_amount'])
+        
+        disbursement_round.save()
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'update', 'DisbursementRound', disbursement_round.id,
+            f"Updated disbursement round: {disbursement_round.name}",
+            request
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Disbursement round updated successfully'
+        })
+        
+    except DisbursementRound.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disbursement round not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["POST"])
+def api_toggle_round_status(request, round_id):
+    """
+    API: Open or close a disbursement round for applications
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        disbursement_round = DisbursementRound.objects.get(
+            id=round_id,
+            fiscal_year__county=constituency.county
+        )
+        
+        # Toggle status
+        disbursement_round.is_open = not disbursement_round.is_open
+        disbursement_round.save()
+        
+        status_text = "opened" if disbursement_round.is_open else "closed"
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'update', 'DisbursementRound', disbursement_round.id,
+            f"{status_text.capitalize()} disbursement round: {disbursement_round.name}",
+            request
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Round {status_text} successfully',
+            'is_open': disbursement_round.is_open
+        })
+        
+    except DisbursementRound.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disbursement round not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["GET"])
+def api_get_round_details(request, round_id):
+    """
+    API: Get detailed information about a disbursement round
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        disbursement_round = DisbursementRound.objects.get(
+            id=round_id,
+            fiscal_year__county=constituency.county
+        )
+        
+        # Get applications for this round
+        applications = Application.objects.filter(
+            Q(applicant__constituency=constituency) |
+            Q(applicant__ward__constituency=constituency),
+            disbursement_round=disbursement_round,
+            bursary_source__in=['cdf', 'both']
+        ).distinct()
+        
+        # Get allocations
+        allocations = Allocation.objects.filter(application__disbursement_round=disbursement_round)
+        
+        # Calculate statistics
+        total_allocated = allocations.aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        total_disbursed = allocations.filter(is_disbursed=True).aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        round_data = {
+            'id': disbursement_round.id,
+            'name': disbursement_round.name,
+            'round_number': disbursement_round.round_number,
+            'application_start_date': disbursement_round.application_start_date.strftime('%Y-%m-%d'),
+            'application_end_date': disbursement_round.application_end_date.strftime('%Y-%m-%d'),
+            'review_deadline': disbursement_round.review_deadline.strftime('%Y-%m-%d'),
+            'disbursement_date': disbursement_round.disbursement_date.strftime('%Y-%m-%d'),
+            'allocated_amount': str(disbursement_round.allocated_amount),
+            'disbursed_amount': str(disbursement_round.disbursed_amount),
+            'is_open': disbursement_round.is_open,
+            'is_completed': disbursement_round.is_completed,
+            'statistics': {
+                'total_applications': applications.count(),
+                'approved': applications.filter(status='approved').count(),
+                'pending': applications.filter(status__in=['submitted', 'under_review']).count(),
+                'rejected': applications.filter(status='rejected').count(),
+                'total_allocated': str(total_allocated),
+                'total_disbursed': str(total_disbursed),
+                'beneficiaries': allocations.count(),
+            }
+        }
+        
+        return JsonResponse({'success': True, 'round': round_data})
+        
+    except DisbursementRound.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disbursement round not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["POST"])
+def api_update_constituency_allocation(request):
+    """
+    API: Update constituency CDF bursary allocation
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        
+        annual_cdf_allocation = data.get('annual_cdf_allocation')
+        cdf_bursary_allocation = data.get('cdf_bursary_allocation')
+        
+        if not annual_cdf_allocation or not cdf_bursary_allocation:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Both annual CDF allocation and bursary allocation are required'
+            }, status=400)
+        
+        # Update constituency allocations
+        old_annual = constituency.annual_cdf_allocation
+        old_bursary = constituency.cdf_bursary_allocation
+        
+        constituency.annual_cdf_allocation = Decimal(annual_cdf_allocation)
+        constituency.cdf_bursary_allocation = Decimal(cdf_bursary_allocation)
+        constituency.save()
+        
+        # Create audit log
+        create_audit_log(
+            request.user, 'update', 'Constituency', constituency.id,
+            f"Updated CDF allocations - Annual: {old_annual} -> {annual_cdf_allocation}, "
+            f"Bursary: {old_bursary} -> {cdf_bursary_allocation}",
+            request
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Constituency allocation updated successfully',
+            'annual_cdf_allocation': str(constituency.annual_cdf_allocation),
+            'cdf_bursary_allocation': str(constituency.cdf_bursary_allocation)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["DELETE"])
+def api_delete_disbursement_round(request, round_id):
+    """
+    API: Delete a disbursement round (only if no applications)
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        disbursement_round = DisbursementRound.objects.get(
+            id=round_id,
+            fiscal_year__county=constituency.county
+        )
+        
+        # Check if round has applications
+        has_applications = Application.objects.filter(
+            disbursement_round=disbursement_round
+        ).exists()
+        
+        if has_applications:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Cannot delete round with existing applications'
+            }, status=400)
+        
+        round_name = disbursement_round.name
+        
+        # Create audit log before deleting
+        create_audit_log(
+            request.user, 'delete', 'DisbursementRound', round_id,
+            f"Deleted disbursement round: {round_name}",
+            request
+        )
+        
+        disbursement_round.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Round "{round_name}" deleted successfully'
+        })
+        
+    except DisbursementRound.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disbursement round not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@user_passes_test(is_constituency_admin)
+@require_http_methods(["GET"])
+def api_get_budget_summary(request):
+    """
+    API: Get real-time budget summary for the constituency
+    """
+    constituency = get_constituency_for_user(request.user)
+    if not constituency:
+        return JsonResponse({'success': False, 'error': 'No constituency assigned'}, status=403)
+    
+    try:
+        fiscal_year_id = request.GET.get('fiscal_year_id')
+        
+        if fiscal_year_id:
+            fiscal_year = FiscalYear.objects.get(id=fiscal_year_id, county=constituency.county)
+        else:
+            fiscal_year = FiscalYear.objects.filter(
+                is_active=True,
+                county=constituency.county
+            ).first()
+        
+        if not fiscal_year:
+            return JsonResponse({'success': False, 'error': 'No fiscal year found'}, status=404)
+        
+        # Get all CDF applications
+        applications = Application.objects.filter(
+            Q(applicant__constituency=constituency) |
+            Q(applicant__ward__constituency=constituency),
+            fiscal_year=fiscal_year,
+            bursary_source__in=['cdf', 'both']
+        ).distinct()
+        
+        # Get allocations
+        allocations = Allocation.objects.filter(application__in=applications)
+        
+        # Calculate totals
+        total_allocated = allocations.aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        total_disbursed = allocations.filter(is_disbursed=True).aggregate(
+            total=Coalesce(Sum('amount_allocated'), Value(0), output_field=DecimalField())
+        )['total']
+        
+        budget_balance = constituency.cdf_bursary_allocation - total_allocated
+        pending_disbursement = total_allocated - total_disbursed
+        
+        # Calculate percentages
+        if constituency.cdf_bursary_allocation > 0:
+            utilization_percentage = round(
+                (total_allocated / constituency.cdf_bursary_allocation) * 100, 2
+            )
+            disbursement_percentage = round(
+                (total_disbursed / constituency.cdf_bursary_allocation) * 100, 2
+            )
+        else:
+            utilization_percentage = 0
+            disbursement_percentage = 0
+        
+        summary = {
+            'total_budget': str(constituency.cdf_bursary_allocation),
+            'total_allocated': str(total_allocated),
+            'total_disbursed': str(total_disbursed),
+            'budget_balance': str(budget_balance),
+            'pending_disbursement': str(pending_disbursement),
+            'utilization_percentage': utilization_percentage,
+            'disbursement_percentage': disbursement_percentage,
+            'total_applications': applications.count(),
+            'total_beneficiaries': allocations.count(),
+        }
+        
+        return JsonResponse({'success': True, 'summary': summary})
+        
+    except FiscalYear.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Fiscal year not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
 # ============= APPLICATION MANAGEMENT =============
 
 @login_required

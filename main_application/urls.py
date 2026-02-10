@@ -418,5 +418,56 @@ urlpatterns = [
     path('ward/disbursements/', views.ward_admin_disbursements_view, name='ward_admin_disbursements'),
     path('ward/notifications/', views.ward_admin_notifications_view, name='ward_admin_notifications'),
     path('ward/profile/',  views.ward_admin_profile_view, name='ward_admin_profile'),
+    
+    # Bursary Management Dashboard
+    path(
+        'constituency/bursary-management/',
+        views.constituency_bursary_management,
+        name='constituency_bursary_management'
+    ),
+    
+    # API Endpoints for Disbursement Rounds
+    path(
+        'api/constituency/disbursement-round/create/',
+        views.api_create_disbursement_round,
+        name='api_create_disbursement_round'
+    ),
+    
+    path(
+        'api/constituency/disbursement-round/<int:round_id>/update/',
+        views.api_update_disbursement_round,
+        name='api_update_disbursement_round'
+    ),
+    
+    path(
+        'api/constituency/disbursement-round/<int:round_id>/toggle-status/',
+        views.api_toggle_round_status,
+        name='api_toggle_round_status'
+    ),
+    
+    path(
+        'api/constituency/disbursement-round/<int:round_id>/details/',
+        views.api_get_round_details,
+        name='api_get_round_details'
+    ),
+    
+    path(
+        'api/constituency/disbursement-round/<int:round_id>/delete/',
+        views.api_delete_disbursement_round,
+        name='api_delete_disbursement_round'
+    ),
+    
+    # API Endpoints for Budget Management
+    path(
+        'api/constituency/allocation/update/',
+        views.api_update_constituency_allocation,
+        name='api_update_constituency_allocation'
+    ),
+    
+    path(
+        'api/constituency/budget/summary/',
+        views.api_get_budget_summary,
+        name='api_get_budget_summary'
+    ),
      
 ]
