@@ -1,7 +1,463 @@
 {% extends 'admin_base.html' %}
 {% load humanize %}
+{% load math_filters %}
 
 {% block title %}Application {{ application.application_number }} - Nyota Zetu Bursary System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline-secondary {
+        background: transparent;
+        color: #64748B;
+        border: 1px solid #CBD5E1;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #F1F5F9;
+        color: #334155;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .btn-group-sm .btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #374151;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .input-group {
+        display: flex;
+        gap: 0;
+    }
+
+    .input-group .form-control {
+        border-radius: 6px 0 0 6px;
+    }
+
+    .input-group-text {
+        padding: 10px 12px;
+        background: #F8FAFC;
+        border: 1px solid #D1D5DB;
+        border-right: none;
+        font-size: 14px;
+        color: #64748B;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-primary {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .badge-secondary {
+        background: #F1F5F9;
+        color: #475569;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 16px;
+        border-left: 4px solid;
+    }
+
+    .alert-info {
+        background: #EFF6FF;
+        border-color: #3B82F6;
+        color: #1E40AF;
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        border-color: #10B981;
+        color: #065F46;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border-color: #F59E0B;
+        color: #92400E;
+    }
+
+    .alert-secondary {
+        background: #F1F5F9;
+        border-color: #94A3B8;
+        color: #475569;
+    }
+
+    .text-muted {
+        color: #64748B !important;
+    }
+
+    .text-success {
+        color: #065F46 !important;
+    }
+
+    .text-danger {
+        color: #DC2626 !important;
+    }
+
+    .text-warning {
+        color: #D97706 !important;
+    }
+
+    .text-info {
+        color: #1E40AF !important;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .settings-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .settings-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .settings-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .settings-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .settings-table.table-sm td {
+        padding: 12px 16px;
+    }
+
+    .table-warning {
+        background: #FEF3C7;
+    }
+
+    .table-primary {
+        background: #DBEAFE;
+    }
+
+    .progress {
+        height: 10px;
+        background: #E2E8F0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: #3498db;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .list-group {
+        border-radius: 6px;
+        border: 1px solid #E2E8F0;
+        overflow: hidden;
+    }
+
+    .list-group-item {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        background: white;
+        transition: background-color 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        background: #F8FAFC;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 16px;
+    }
+
+    .info-item label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748B;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-item p {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .profile-img-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .profile-img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #E2E8F0;
+    }
+
+    .profile-placeholder {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #CBD5E1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        border: 3px solid #E2E8F0;
+    }
+
+    .profile-placeholder i {
+        font-size: 36px;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -30,171 +486,208 @@
     </nav>
 
     <!-- Application Header -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h1 class="h3 mb-1">{{ application.application_number }}</h1>
-                    <p class="text-muted mb-0">
-                        CDF Bursary Application • {{ constituency.name }} Constituency
-                    </p>
-                </div>
-                <div class="text-end">
-                    <div class="mb-2">
-                        {% if application.status == 'approved' %}
-                        <span class="badge bg-success fs-6">{{ application.get_status_display }}</span>
-                        {% elif application.status == 'rejected' %}
-                        <span class="badge bg-danger fs-6">{{ application.get_status_display }}</span>
-                        {% elif application.status == 'submitted' %}
-                        <span class="badge bg-primary fs-6">{{ application.get_status_display }}</span>
-                        {% elif application.status == 'under_review' %}
-                        <span class="badge bg-warning fs-6">{{ application.get_status_display }}</span>
-                        {% elif application.status == 'disbursed' %}
-                        <span class="badge bg-info fs-6">{{ application.get_status_display }}</span>
-                        {% else %}
-                        <span class="badge bg-secondary fs-6">{{ application.get_status_display }}</span>
-                        {% endif %}
-                    </div>
-                    <a href="{% url 'constituency_applications_list' %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left"></i> Back to List
-                    </a>
-                </div>
+    <div class="section-container">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+            <div>
+                <h1 class="page-title" style="margin: 0; font-size: 18px;">
+                    {{ application.application_number }}
+                </h1>
+                <p class="page-subtitle">
+                    CDF Bursary Application • {{ constituency.name }} Constituency
+                </p>
             </div>
-            
-            <!-- Progress bar -->
-            <div class="mt-3">
-                <div class="d-flex justify-content-between mb-1">
-                    <small>Application Completeness</small>
-                    <small>{{ completeness_score|floatformat:0 }}%</small>
+            <div style="text-align: right;">
+                <div style="margin-bottom: 8px;">
+                    {% if application.status == 'approved' %}
+                    <span class="badge badge-success">{{ application.get_status_display }}</span>
+                    {% elif application.status == 'rejected' %}
+                    <span class="badge badge-danger">{{ application.get_status_display }}</span>
+                    {% elif application.status == 'submitted' %}
+                    <span class="badge badge-primary">{{ application.get_status_display }}</span>
+                    {% elif application.status == 'under_review' %}
+                    <span class="badge badge-warning">{{ application.get_status_display }}</span>
+                    {% elif application.status == 'disbursed' %}
+                    <span class="badge badge-info">{{ application.get_status_display }}</span>
+                    {% else %}
+                    <span class="badge badge-secondary">{{ application.get_status_display }}</span>
+                    {% endif %}
                 </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar" role="progressbar" 
-                         style="width: {{ completeness_score }}%;" 
-                         aria-valuenow="{{ completeness_score }}" 
-                         aria-valuemin="0" 
-                         aria-valuemax="100">
-                    </div>
+                <a href="{% url 'constituency_applications_list' %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+        
+        <!-- Progress bar -->
+        <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <small style="font-size: 12px; color: #64748B;">Application Completeness</small>
+                <small style="font-size: 12px; color: #64748B; font-weight: 600;">{{ completeness_score|floatformat:0 }}%</small>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ completeness_score }}%;" 
+                     aria-valuenow="{{ completeness_score }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
         <!-- Left Column: Applicant Info -->
-        <div class="col-md-4">
+        <div>
             <!-- Applicant Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-person-circle"></i> Applicant Information
-                    </h5>
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-person-circle"></i> Applicant Information
+                </h2>
+                
+                <div class="profile-img-container">
+                    {% if application.applicant.profile_picture %}
+                    <img src="{{ application.applicant.profile_picture.url }}" 
+                         alt="{{ application.applicant.user.get_full_name }}"
+                         class="profile-img">
+                    {% else %}
+                    <div class="profile-placeholder">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    {% endif %}
+                    <h4 style="margin: 16px 0 4px 0; color: #1E293B;">{{ application.applicant.user.get_full_name }}</h4>
+                    <p class="text-muted" style="margin: 0;">{{ application.applicant.id_number }}</p>
                 </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        {% if application.applicant.profile_picture %}
-                        <img src="{{ application.applicant.profile_picture.url }}" 
-                             alt="{{ application.applicant.user.get_full_name }}"
-                             class="rounded-circle" width="100" height="100">
-                        {% else %}
-                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center" 
-                             style="width: 100px; height: 100px;">
-                            <i class="bi bi-person fs-1 text-white"></i>
-                        </div>
-                        {% endif %}
-                        <h4 class="mt-3 mb-0">{{ application.applicant.user.get_full_name }}</h4>
-                        <p class="text-muted">{{ application.applicant.id_number }}</p>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Gender</label>
+                        <p>{{ application.applicant.get_gender_display }}</p>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-6">
-                            <strong>Gender:</strong><br>
-                            {{ application.applicant.get_gender_display }}
-                        </div>
-                        <div class="col-6">
-                            <strong>Date of Birth:</strong><br>
-                            {{ application.applicant.date_of_birth|date:"d/m/Y" }}
-                        </div>
+                    <div class="info-item">
+                        <label>Date of Birth</label>
+                        <p>{{ application.applicant.date_of_birth|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                    Contact Information
+                </h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Phone</label>
+                        <p style="margin: 0; color: #334155; font-size: 14px;">
+                            <i class="bi bi-telephone" style="margin-right: 8px;"></i>
+                            {{ application.applicant.user.phone_number|default:"Not provided" }}
+                        </p>
                     </div>
                     
-                    <hr>
+                    <div>
+                        <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Email</label>
+                        <p style="margin: 0; color: #334155; font-size: 14px;">
+                            <i class="bi bi-envelope" style="margin-right: 8px;"></i>
+                            {{ application.applicant.user.email|default:"Not provided" }}
+                        </p>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                    Location
+                </h3>
+                
+                <div style="display: grid; gap: 8px; margin-bottom: 20px;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Ward</label>
+                        <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.applicant.ward.name|default:"N/A" }}</p>
+                    </div>
                     
-                    <h6 class="mb-2">Contact Information</h6>
-                    <p class="mb-1">
-                        <i class="bi bi-telephone"></i> 
-                        {{ application.applicant.user.phone_number|default:"Not provided" }}
-                    </p>
-                    <p class="mb-1">
-                        <i class="bi bi-envelope"></i> 
-                        {{ application.applicant.user.email|default:"Not provided" }}
-                    </p>
+                    <div>
+                        <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Constituency</label>
+                        <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.applicant.constituency.name|default:"N/A" }}</p>
+                    </div>
                     
-                    <hr>
-                    
-                    <h6 class="mb-2">Location</h6>
-                    <p class="mb-1">
-                        <strong>Ward:</strong> {{ application.applicant.ward.name|default:"N/A" }}
-                    </p>
-                    <p class="mb-1">
-                        <strong>Constituency:</strong> {{ application.applicant.constituency.name|default:"N/A" }}
-                    </p>
-                    <p class="mb-1">
-                        <strong>Address:</strong> {{ application.applicant.physical_address|default:"Not provided" }}
-                    </p>
-                    
-                    <!-- Special Circumstances -->
-                    {% if application.applicant.special_needs or application.is_orphan or application.is_disabled %}
-                    <hr>
-                    <h6 class="mb-2">Special Circumstances</h6>
-                    <ul class="list-unstyled mb-0">
-                        {% if application.is_orphan %}
-                        <li><i class="bi bi-heart text-danger"></i> Orphan</li>
-                        {% endif %}
-                        {% if application.is_total_orphan %}
-                        <li><i class="bi bi-heartbreak text-danger"></i> Total Orphan</li>
-                        {% endif %}
-                        {% if application.applicant.special_needs %}
-                        <li><i class="bi bi-universal-access text-info"></i> Special Needs</li>
-                        {% endif %}
-                        {% if application.is_disabled %}
-                        <li><i class="bi bi-person-wheelchair text-warning"></i> Disabled</li>
-                        {% endif %}
-                    </ul>
+                    <div>
+                        <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Address</label>
+                        <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.applicant.physical_address|default:"Not provided" }}</p>
+                    </div>
+                </div>
+                
+                <!-- Special Circumstances -->
+                {% if application.applicant.special_needs or application.is_orphan or application.is_disabled %}
+                <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                    Special Circumstances
+                </h3>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    {% if application.is_orphan %}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="bi bi-heart" style="color: #DC2626;"></i>
+                        <span style="font-size: 13px; color: #334155;">Orphan</span>
+                    </div>
+                    {% endif %}
+                    {% if application.is_total_orphan %}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="bi bi-heartbreak" style="color: #DC2626;"></i>
+                        <span style="font-size: 13px; color: #334155;">Total Orphan</span>
+                    </div>
+                    {% endif %}
+                    {% if application.applicant.special_needs %}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="bi bi-universal-access" style="color: #1E40AF;"></i>
+                        <span style="font-size: 13px; color: #334155;">Special Needs</span>
+                    </div>
+                    {% endif %}
+                    {% if application.is_disabled %}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="bi bi-person-wheelchair" style="color: #D97706;"></i>
+                        <span style="font-size: 13px; color: #334155;">Disabled</span>
+                    </div>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
 
             <!-- Guardians Card -->
             {% if guardians %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-people"></i> Parents/Guardians
-                    </h5>
-                </div>
-                <div class="card-body">
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-people"></i> Parents/Guardians
+                </h2>
+                
+                <div style="display: grid; gap: 16px;">
                     {% for guardian in guardians %}
-                    <div class="mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
-                        <h6 class="mb-1">{{ guardian.name }}</h6>
-                        <p class="mb-1 text-muted">
-                            {{ guardian.get_relationship_display }}
+                    <div style="padding: 12px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <h3 style="margin: 0; font-size: 14px; color: #1E293B;">{{ guardian.name }}</h3>
                             {% if guardian.is_primary_contact %}
-                            <span class="badge bg-primary ms-2">Primary</span>
+                            <span class="badge badge-primary" style="font-size: 11px;">Primary</span>
                             {% endif %}
-                        </p>
-                        <p class="mb-1"><small>
-                            <i class="bi bi-telephone"></i> {{ guardian.phone_number|default:"N/A" }}
-                        </small></p>
-                        <p class="mb-1"><small>
-                            <i class="bi bi-briefcase"></i> {{ guardian.get_employment_status_display }}
-                            {% if guardian.occupation %}
-                            - {{ guardian.occupation }}
+                        </div>
+                        
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 12px; color: #64748B;">{{ guardian.get_relationship_display }}</span>
+                        </div>
+                        
+                        <div style="display: grid; gap: 4px; font-size: 13px; color: #334155;">
+                            <div>
+                                <i class="bi bi-telephone" style="margin-right: 6px;"></i>
+                                {{ guardian.phone_number|default:"N/A" }}
+                            </div>
+                            <div>
+                                <i class="bi bi-briefcase" style="margin-right: 6px;"></i>
+                                {{ guardian.get_employment_status_display }}
+                                {% if guardian.occupation %}
+                                - {{ guardian.occupation }}
+                                {% endif %}
+                            </div>
+                            {% if guardian.monthly_income %}
+                            <div>
+                                <i class="bi bi-cash" style="margin-right: 6px;"></i>
+                                KSh {{ guardian.monthly_income|floatformat:0|intcomma }}/month
+                            </div>
                             {% endif %}
-                        </small></p>
-                        {% if guardian.monthly_income %}
-                        <p class="mb-0"><small>
-                            <i class="bi bi-cash"></i> KSh {{ guardian.monthly_income|floatformat:0|intcomma }}/month
-                        </small></p>
-                        {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -203,25 +696,28 @@
 
             <!-- Siblings Card -->
             {% if siblings %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-people-fill"></i> Siblings
-                    </h5>
-                </div>
-                <div class="card-body">
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-people-fill"></i> Siblings
+                </h2>
+                
+                <div style="display: grid; gap: 12px;">
                     {% for sibling in siblings %}
-                    <div class="mb-2">
-                        <strong>{{ sibling.name }}</strong> (Age: {{ sibling.age }})
-                        <p class="mb-0 text-muted">
+                    <div style="padding: 12px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                            <strong style="font-size: 14px; color: #1E293B;">{{ sibling.name }}</strong>
+                            <span style="font-size: 12px; color: #64748B;">Age: {{ sibling.age }}</span>
+                        </div>
+                        
+                        <div style="font-size: 13px; color: #334155; margin-bottom: 4px;">
                             {{ sibling.education_level }}
                             {% if sibling.school_name %}• {{ sibling.school_name }}{% endif %}
-                            {% if not sibling.is_in_school %}
-                            <span class="badge bg-secondary ms-2">Not in School</span>
-                            {% endif %}
-                        </p>
+                        </div>
+                        
+                        {% if not sibling.is_in_school %}
+                        <span class="badge badge-secondary" style="font-size: 11px;">Not in School</span>
+                        {% endif %}
                     </div>
-                    {% if not forloop.last %}<hr>{% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -229,46 +725,68 @@
         </div>
 
         <!-- Right Column: Application Details -->
-        <div class="col-md-8">
+        <div>
             <!-- Academic Information Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-mortarboard"></i> Academic Information
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Institution Details</h6>
-                            <p class="mb-1">
-                                <strong>Name:</strong> {{ application.institution.name }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Type:</strong> {{ application.institution.get_institution_type_display }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>County:</strong> {{ application.institution.county.name|default:"N/A" }}
-                            </p>
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-mortarboard"></i> Academic Information
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                    <div>
+                        <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                            Institution Details
+                        </h3>
+                        
+                        <div style="display: grid; gap: 8px;">
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Name</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.institution.name }}</p>
+                            </div>
+                            
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Type</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.institution.get_institution_type_display }}</p>
+                            </div>
+                            
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">County</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.institution.county.name|default:"N/A" }}</p>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Academic Details</h6>
-                            <p class="mb-1">
-                                <strong>Admission No:</strong> {{ application.admission_number|default:"N/A" }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Year of Study:</strong> {{ application.year_of_study }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Course:</strong> {{ application.course_name|default:"Not specified" }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Expected Completion:</strong> {{ application.expected_completion_date|date:"d/m/Y" }}
-                            </p>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                            Academic Details
+                        </h3>
+                        
+                        <div style="display: grid; gap: 8px;">
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Admission No</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.admission_number|default:"N/A" }}</p>
+                            </div>
+                            
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Year of Study</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.year_of_study }}</p>
+                            </div>
+                            
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Course</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.course_name|default:"Not specified" }}</p>
+                            </div>
+                            
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Expected Completion</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.expected_completion_date|date:"d/m/Y" }}</p>
+                            </div>
+                            
                             {% if application.previous_academic_year_average %}
-                            <p class="mb-1">
-                                <strong>Previous Year Average:</strong> {{ application.previous_academic_year_average }}%
-                            </p>
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Previous Year Average</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">{{ application.previous_academic_year_average }}%</p>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -276,193 +794,221 @@
             </div>
 
             <!-- Financial Information Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-cash-stack"></i> Financial Information
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Fees Breakdown</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td>Total Fees Payable:</td>
-                                            <td class="text-end">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Fees Paid:</td>
-                                            <td class="text-end">KSh {{ application.fees_paid|floatformat:0|intcomma }}</td>
-                                        </tr>
-                                        <tr class="table-warning">
-                                            <td><strong>Fees Balance:</strong></td>
-                                            <td class="text-end"><strong>KSh {{ application.fees_balance|floatformat:0|intcomma }}</strong></td>
-                                        </tr>
-                                        <tr class="table-primary">
-                                            <td><strong>Amount Requested:</strong></td>
-                                            <td class="text-end"><strong>KSh {{ application.amount_requested|floatformat:0|intcomma }}</strong></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-cash-stack"></i> Financial Information
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                    <div>
+                        <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                            Fees Breakdown
+                        </h3>
+                        
+                        <div class="table-responsive">
+                            <table class="settings-table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Total Fees Payable:</td>
+                                        <td style="text-align: right; font-weight: 600;">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fees Paid:</td>
+                                        <td style="text-align: right; font-weight: 600;">KSh {{ application.fees_paid|floatformat:0|intcomma }}</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <td><strong>Fees Balance:</strong></td>
+                                        <td style="text-align: right; font-weight: 700; color: #92400E;">KSh {{ application.fees_balance|floatformat:0|intcomma }}</td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td><strong>Amount Requested:</strong></td>
+                                        <td style="text-align: right; font-weight: 700; color: #1E40AF;">KSh {{ application.amount_requested|floatformat:0|intcomma }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Household Information</h6>
-                            <p class="mb-1">
-                                <strong>Siblings in School:</strong> 
-                                {{ application.number_of_siblings_in_school }} of {{ application.number_of_siblings }}
-                            </p>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                            Household Information
+                        </h3>
+                        
+                        <div style="display: grid; gap: 8px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Siblings in School</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">
+                                    {{ application.number_of_siblings_in_school }} of {{ application.number_of_siblings }}
+                                </p>
+                            </div>
+                            
                             {% if application.household_monthly_income %}
-                            <p class="mb-1">
-                                <strong>Household Monthly Income:</strong> 
-                                KSh {{ application.household_monthly_income|floatformat:0|intcomma }}
-                            </p>
-                            {% endif %}
-                            
-                            {% if application.other_bursaries %}
-                            <div class="alert alert-warning mt-3">
-                                <h6><i class="bi bi-info-circle"></i> Other Bursaries</h6>
-                                <p class="mb-0">
-                                    Receives KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }}
-                                    {% if application.other_bursaries_source %}
-                                    from {{ application.other_bursaries_source }}
-                                    {% endif %}
+                            <div>
+                                <label style="font-size: 12px; color: #64748B; margin-bottom: 4px; display: block;">Household Monthly Income</label>
+                                <p style="margin: 0; color: #334155; font-size: 14px;">
+                                    KSh {{ application.household_monthly_income|floatformat:0|intcomma }}
                                 </p>
-                            </div>
-                            {% endif %}
-                            
-                            {% if allocation %}
-                            <div class="alert alert-success mt-3">
-                                <h6><i class="bi bi-check-circle"></i> Allocation Details</h6>
-                                <p class="mb-1">
-                                    <strong>Amount Allocated:</strong> 
-                                    KSh {{ allocation.amount_allocated|floatformat:0|intcomma }}
-                                </p>
-                                <p class="mb-1">
-                                    <strong>Approved By:</strong> 
-                                    {{ allocation.approved_by.get_full_name|default:"System" }}
-                                </p>
-                                <p class="mb-1">
-                                    <strong>Date:</strong> {{ allocation.allocation_date|date:"d/m/Y" }}
-                                </p>
-                                {% if allocation.is_disbursed %}
-                                <p class="mb-0 text-success">
-                                    <i class="bi bi-check-lg"></i> Disbursed on {{ allocation.disbursement_date|date:"d/m/Y" }}
-                                </p>
-                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
+                        
+                        {% if application.other_bursaries %}
+                        <div class="alert alert-warning">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <i class="bi bi-info-circle" style="font-size: 16px;"></i>
+                                <div>
+                                    <strong>Other Bursaries</strong>
+                                    <p style="margin: 4px 0 0 0;">
+                                        Receives KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }}
+                                        {% if application.other_bursaries_source %}
+                                        from {{ application.other_bursaries_source }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if allocation %}
+                        <div class="alert alert-success">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <i class="bi bi-check-circle" style="font-size: 16px;"></i>
+                                <div>
+                                    <strong>Allocation Details</strong>
+                                    <div style="margin-top: 4px;">
+                                        <p style="margin: 4px 0;"><strong>Amount Allocated:</strong> 
+                                        KSh {{ allocation.amount_allocated|floatformat:0|intcomma }}</p>
+                                        <p style="margin: 4px 0;"><strong>Approved By:</strong> 
+                                        {{ allocation.approved_by.get_full_name|default:"System" }}</p>
+                                        <p style="margin: 4px 0;"><strong>Date:</strong> {{ allocation.allocation_date|date:"d/m/Y" }}</p>
+                                        {% if allocation.is_disbursed %}
+                                        <p style="margin: 4px 0; color: #065F46;">
+                                            <i class="bi bi-check-lg"></i> Disbursed on {{ allocation.disbursement_date|date:"d/m/Y" }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
             <!-- Documents Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-files"></i> Required Documents
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for doc_status in document_status %}
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex align-items-center">
-                                {% if doc_status.present %}
-                                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
-                                {% else %}
-                                <i class="bi bi-x-circle-fill text-danger fs-4 me-3"></i>
-                                {% endif %}
-                                <div>
-                                    <strong>{{ doc_status.name }}</strong>
-                                    {% if doc_status.doc %}
-                                    <br>
-                                    <small>
-                                        <a href="{{ doc_status.doc.file.url }}" target="_blank">
-                                            View Document
-                                        </a>
-                                        {% if doc_status.doc.is_verified %}
-                                        <span class="badge bg-success ms-2">Verified</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-2">Not Verified</span>
-                                        {% endif %}
-                                    </small>
+            <div class="section-container">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-files"></i> Required Documents
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                    {% for doc_status in document_status %}
+                    <div style="padding: 12px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            {% if doc_status.present %}
+                            <i class="bi bi-check-circle-fill" style="font-size: 20px; color: #10B981;"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle-fill" style="font-size: 20px; color: #DC2626;"></i>
+                            {% endif %}
+                            
+                            <div>
+                                <strong style="font-size: 14px; color: #1E293B;">{{ doc_status.name }}</strong>
+                                {% if doc_status.doc %}
+                                <div style="margin-top: 4px;">
+                                    <a href="{{ doc_status.doc.file.url }}" target="_blank" 
+                                       style="font-size: 12px; color: #3498db; text-decoration: none;">
+                                        View Document
+                                    </a>
+                                    {% if doc_status.doc.is_verified %}
+                                    <span class="badge badge-success" style="margin-left: 8px; font-size: 10px;">Verified</span>
                                     {% else %}
-                                    <br><small class="text-muted">Not uploaded</small>
+                                    <span class="badge badge-warning" style="margin-left: 8px; font-size: 10px;">Not Verified</span>
                                     {% endif %}
                                 </div>
+                                {% else %}
+                                <div style="margin-top: 4px;">
+                                    <span style="font-size: 12px; color: #64748B;">Not uploaded</span>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                    
-                    {% if documents %}
-                    <hr>
-                    <h6>All Uploaded Documents</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Document Type</th>
-                                    <th>File</th>
-                                    <th>Uploaded</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in documents %}
-                                <tr>
-                                    <td>{{ doc.get_document_type_display }}</td>
-                                    <td>
-                                        <a href="{{ doc.file.url }}" target="_blank">
-                                            <i class="bi bi-download"></i> Download
-                                        </a>
-                                    </td>
-                                    <td>{{ doc.uploaded_at|date:"d/m/Y" }}</td>
-                                    <td>
-                                        {% if doc.is_verified %}
-                                        <span class="badge bg-success">Verified</span>
-                                        {% else %}
-                                        <span class="badge bg-warning">Pending</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
+                
+                {% if documents %}
+                <h3 style="font-size: 14px; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                    All Uploaded Documents
+                </h3>
+                
+                <div class="table-responsive">
+                    <table class="settings-table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Document Type</th>
+                                <th>File</th>
+                                <th>Uploaded</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>{{ doc.get_document_type_display }}</td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" target="_blank" 
+                                       style="color: #3498db; text-decoration: none; font-size: 13px;">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                </td>
+                                <td>{{ doc.uploaded_at|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if doc.is_verified %}
+                                    <span class="badge badge-success">Verified</span>
+                                    {% else %}
+                                    <span class="badge badge-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Review Section -->
-            <div class="card mb-4" id="review">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-clipboard-check"></i> Application Review
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if user_review %}
-                    <!-- User has already reviewed -->
-                    <div class="alert alert-info">
-                        <h6><i class="bi bi-info-circle"></i> Your Review</h6>
-                        <p class="mb-2"><strong>Recommendation:</strong> {{ user_review.get_recommendation_display }}</p>
-                        <p class="mb-2"><strong>Comments:</strong> {{ user_review.comments }}</p>
-                        {% if user_review.recommended_amount %}
-                        <p class="mb-2"><strong>Recommended Amount:</strong> KSh {{ user_review.recommended_amount|floatformat:0|intcomma }}</p>
-                        {% endif %}
-                        <p class="mb-0"><small>Reviewed on {{ user_review.review_date|date:"d/m/Y H:i" }}</small></p>
+            <div class="section-container" id="review">
+                <h2 class="section-title" style="font-size: 16px;">
+                    <i class="bi bi-clipboard-check"></i> Application Review
+                </h2>
+                
+                {% if user_review %}
+                <!-- User has already reviewed -->
+                <div class="alert alert-info">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <i class="bi bi-info-circle" style="font-size: 16px;"></i>
+                        <div>
+                            <strong>Your Review</strong>
+                            <div style="margin-top: 4px;">
+                                <p style="margin: 4px 0;"><strong>Recommendation:</strong> {{ user_review.get_recommendation_display }}</p>
+                                <p style="margin: 4px 0;"><strong>Comments:</strong> {{ user_review.comments }}</p>
+                                {% if user_review.recommended_amount %}
+                                <p style="margin: 4px 0;"><strong>Recommended Amount:</strong> KSh {{ user_review.recommended_amount|floatformat:0|intcomma }}</p>
+                                {% endif %}
+                                <p style="margin: 4px 0; font-size: 12px; color: #64748B;">
+                                    Reviewed on {{ user_review.review_date|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    {% elif is_reviewable %}
-                    <!-- Review Form -->
-                    <form method="post" action="{% url 'constituency_review_application' application.id %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
+                </div>
+                {% elif is_reviewable %}
+                <!-- Review Form -->
+                <form method="post" action="{% url 'constituency_review_application' application.id %}">
+                    {% csrf_token %}
+                    <div class="form-grid">
+                        <div class="form-group">
                             <label class="form-label">Recommendation *</label>
                             <select name="recommendation" class="form-select" required>
                                 <option value="">Select recommendation...</option>
@@ -473,104 +1019,117 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group full-width">
                             <label class="form-label">Comments *</label>
                             <textarea name="comments" class="form-control" rows="4" 
                                       placeholder="Enter your review comments..." required></textarea>
                         </div>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Recommended Amount</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">KSh</span>
-                                    <input type="number" 
-                                           name="recommended_amount" 
-                                           class="form-control" 
-                                           placeholder="Amount to allocate"
-                                           min="0" 
-                                           step="100">
-                                </div>
+                        <div class="form-group">
+                            <label class="form-label">Recommended Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">KSh</span>
+                                <input type="number" 
+                                       name="recommended_amount" 
+                                       class="form-control" 
+                                       placeholder="Amount to allocate"
+                                       min="0" 
+                                       step="100">
                             </div>
                         </div>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Need Score (0-10)</label>
-                                <input type="number" 
-                                       name="need_score" 
-                                       class="form-control" 
-                                       min="0" 
-                                       max="10"
-                                       placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Merit Score (0-10)</label>
-                                <input type="number" 
-                                       name="merit_score" 
-                                       class="form-control" 
-                                       min="0" 
-                                       max="10"
-                                       placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Vulnerability Score (0-10)</label>
-                                <input type="number" 
-                                       name="vulnerability_score" 
-                                       class="form-control" 
-                                       min="0" 
-                                       max="10"
-                                       placeholder="0">
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Need Score (0-10)</label>
+                            <input type="number" 
+                                   name="need_score" 
+                                   class="form-control" 
+                                   min="0" 
+                                   max="10"
+                                   placeholder="0">
                         </div>
                         
-                        <div class="alert alert-warning">
+                        <div class="form-group">
+                            <label class="form-label">Merit Score (0-10)</label>
+                            <input type="number" 
+                                   name="merit_score" 
+                                   class="form-control" 
+                                   min="0" 
+                                   max="10"
+                                   placeholder="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Vulnerability Score (0-10)</label>
+                            <input type="number" 
+                                   name="vulnerability_score" 
+                                   class="form-control" 
+                                   min="0" 
+                                   max="10"
+                                   placeholder="0">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <i class="bi bi-exclamation-triangle"></i>
-                            Once submitted, this review cannot be edited.
+                            <div>
+                                <strong>Important</strong>
+                                <p style="margin: 4px 0;">Once submitted, this review cannot be edited.</p>
+                            </div>
                         </div>
-                        
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Submit Review
                         </button>
-                        <a href="{% url 'constituency_applications_list' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'constituency_applications_list' %}" class="btn btn-secondary">
                             Cancel
                         </a>
-                    </form>
-                    {% else %}
-                    <!-- Not reviewable -->
-                    <div class="alert alert-secondary">
-                        <i class="bi bi-info-circle"></i>
-                        {% if application.status not in 'submitted,under_review' %}
-                        This application is not currently under review.
-                        {% elif request.user.user_type != 'constituency_admin' %}
-                        You don't have permission to review applications.
-                        {% else %}
-                        You cannot review this application at this time.
-                        {% endif %}
                     </div>
-                    {% endif %}
-                    
-                    <!-- Previous Reviews -->
-                    {% if reviews %}
-                    <hr>
-                    <h6>Review History</h6>
-                    <div class="list-group">
-                        {% for review in reviews %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">
-                                    {{ review.get_review_level_display }}
-                                    <span class="badge 
-                                        {% if review.recommendation == 'approve' %}bg-success
-                                        {% elif review.recommendation == 'reject' %}bg-danger
-                                        {% else %}bg-warning{% endif %}">
-                                        {{ review.get_recommendation_display }}
-                                    </span>
-                                </h6>
-                                <small>{{ review.review_date|date:"d/m/Y H:i" }}</small>
+                </form>
+                {% else %}
+                <!-- Not reviewable -->
+                <div class="alert alert-secondary">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <i class="bi bi-info-circle"></i>
+                        <div>
+                            {% if application.status not in 'submitted,under_review' %}
+                            This application is not currently under review.
+                            {% elif request.user.user_type != 'constituency_admin' %}
+                            You don't have permission to review applications.
+                            {% else %}
+                            You cannot review this application at this time.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Previous Reviews -->
+                {% if reviews %}
+                <h3 style="font-size: 14px; color: #334155; margin: 24px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #F1F5F9;">
+                    Review History
+                </h3>
+                
+                <div class="list-group">
+                    {% for review in reviews %}
+                    <div class="list-group-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <strong style="font-size: 13px; color: #1E293B;">{{ review.get_review_level_display }}</strong>
+                                <span class="badge 
+                                    {% if review.recommendation == 'approve' %}badge-success
+                                    {% elif review.recommendation == 'reject' %}badge-danger
+                                    {% else %}badge-warning{% endif %}">
+                                    {{ review.get_recommendation_display }}
+                                </span>
                             </div>
-                            <p class="mb-1">{{ review.comments }}</p>
-                            <small>
+                            <small style="font-size: 11px; color: #64748B;">{{ review.review_date|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <p style="margin: 0 0 8px 0; font-size: 13px; color: #334155;">{{ review.comments }}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <small style="font-size: 11px; color: #64748B;">
                                 <strong>Reviewer:</strong> {{ review.reviewer.get_full_name }}
                                 {% if review.recommended_amount %}
                                 • <strong>Amount:</strong> KSh {{ review.recommended_amount|floatformat:0|intcomma }}
@@ -579,23 +1138,23 @@
                             
                             <!-- Scores -->
                             {% if review.need_score or review.merit_score or review.vulnerability_score %}
-                            <div class="mt-2">
+                            <div>
                                 {% if review.need_score %}
-                                <span class="badge bg-info me-2">Need: {{ review.need_score }}/10</span>
+                                <span class="badge badge-info" style="margin-right: 4px; font-size: 10px;">Need: {{ review.need_score }}/10</span>
                                 {% endif %}
                                 {% if review.merit_score %}
-                                <span class="badge bg-success me-2">Merit: {{ review.merit_score }}/10</span>
+                                <span class="badge badge-success" style="margin-right: 4px; font-size: 10px;">Merit: {{ review.merit_score }}/10</span>
                                 {% endif %}
                                 {% if review.vulnerability_score %}
-                                <span class="badge bg-warning">Vulnerability: {{ review.vulnerability_score }}/10</span>
+                                <span class="badge badge-warning" style="font-size: 10px;">Vulnerability: {{ review.vulnerability_score }}/10</span>
                                 {% endif %}
                             </div>
                             {% endif %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
