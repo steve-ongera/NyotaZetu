@@ -961,6 +961,860 @@ class BeneficiaryTestimonialAdmin(admin.ModelAdmin):
     feature_testimonials.short_description = 'Feature selected testimonials'
 
 
+
+
+# admin.py - Add these to your existing admin.py file
+# Django Admin configuration for Enhanced Bulk Cheque Models
+
+from django.contrib import admin
+from django.utils.html import format_html
+from django.urls import reverse
+from django.db.models import Count, Sum
+from .models import (
+    ChequeDeliveryTracking,
+    InstitutionPaymentReceipt,
+    StudentDisbursementConfirmation,
+    DeliveryAgent,
+    ChequeCollectionRegister
+)
+
+
+# ============= CHEQUE DELIVERY TRACKING ADMIN =============
+
+@admin.register(ChequeDeliveryTracking)
+class ChequeDeliveryTrackingAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'bulk_cheque_link',
+        'status_badge',
+        'location',
+        'timestamp',
+        'recorded_by',
+    ]
+    list_filter = [
+        'status',
+        'timestamp',
+        'recorded_by',
+    ]
+    search_fields = [
+        'bulk_cheque__cheque_number',
+        'location',
+        'notes',
+    ]
+    readonly_fields = [
+        'timestamp',
+        'bulk_cheque',
+        'recorded_by',
+    ]
+    fieldsets = (
+        ('Tracking Information', {
+            'fields': (
+                'bulk_cheque',
+                'status',
+                'timestamp',
+            )
+        }),
+        ('Location Details', {
+            'fields': (
+                'location',
+                'latitude',
+                'longitude',
+            )
+        }),
+        ('Additional Information', {
+            'fields': (
+                'notes',
+                'recorded_by',
+            )
+        }),
+    )
+    date_hierarchy = 'timestamp'
+    ordering = ['-timestamp']
+    
+    def bulk_cheque_link(self, obj):
+        """Link to the bulk cheque"""
+        url = reverse('admin:main_application_bulkcheque_change', args=[obj.bulk_cheque.id])
+        return format_html('<a href="{}">{}</a>', url, obj.bulk_cheque.cheque_number)
+    bulk_cheque_link.short_description = 'Bulk Cheque'
+    
+    def status_badge(self, obj):
+        """Display status with color coding"""
+        colors = {
+            'created': '#6c757d',
+            'awaiting_collection': '#ffc107',
+            'collected': '#17a2b8',
+            'in_transit': '#007bff',
+            'out_for_delivery': '#fd7e14',
+            'delivered': '#28a745',
+            'receipt_uploaded': '#20c997',
+            'confirmed': '#28a745',
+            'issue_reported': '#dc3545',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+    
+    def has_add_permission(self, request):
+        """Only allow adding through the application"""
+        return False
+
+
+# ============= INSTITUTION PAYMENT RECEIPT ADMIN =============
+
+@admin.register(InstitutionPaymentReceipt)
+class InstitutionPaymentReceiptAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'receipt_number',
+        'bulk_cheque_link',
+        'receipt_type',
+        'receipt_date',
+        'issued_by_name',
+        'verification_badge',
+        'uploaded_at',
+    ]
+    list_filter = [
+        'receipt_type',
+        'is_verified',
+        'receipt_date',
+        'uploaded_at',
+    ]
+    search_fields = [
+        'receipt_number',
+        'bulk_cheque__cheque_number',
+        'bulk_cheque__institution__name',
+        'issued_by_name',
+        'issued_by_position',
+    ]
+    readonly_fields = [
+        'uploaded_at',
+        'uploaded_by',
+        'verified_date',
+    ]
+    fieldsets = (
+        ('Receipt Information', {
+            'fields': (
+                'bulk_cheque',
+                'receipt_type',
+                'receipt_number',
+                'receipt_date',
+                'receipt_file',
+            )
+        }),
+        ('Issued By', {
+            'fields': (
+                'issued_by_name',
+                'issued_by_position',
+                'issuer_phone',
+                'issuer_email',
+            )
+        }),
+        ('Verification', {
+            'fields': (
+                'is_verified',
+                'verified_by',
+                'verified_date',
+            )
+        }),
+        ('Additional Information', {
+            'fields': (
+                'notes',
+                'uploaded_at',
+                'uploaded_by',
+            )
+        }),
+    )
+    date_hierarchy = 'uploaded_at'
+    ordering = ['-uploaded_at']
+    actions = ['mark_as_verified', 'mark_as_unverified']
+    
+    def bulk_cheque_link(self, obj):
+        """Link to the bulk cheque"""
+        url = reverse('admin:main_application_bulkcheque_change', args=[obj.bulk_cheque.id])
+        return format_html(
+            '<a href="{}">{} - {}</a>',
+            url,
+            obj.bulk_cheque.cheque_number,
+            obj.bulk_cheque.institution.name
+        )
+    bulk_cheque_link.short_description = 'Bulk Cheque'
+    
+    def verification_badge(self, obj):
+        """Display verification status with badge"""
+        if obj.is_verified:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; padding: 3px 10px; border-radius: 3px;">✓ Verified</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #ffc107; color: black; padding: 3px 10px; border-radius: 3px;">⏳ Pending</span>'
+            )
+    verification_badge.short_description = 'Verification'
+    
+    def mark_as_verified(self, request, queryset):
+        """Mark selected receipts as verified"""
+        from django.utils import timezone
+        updated = queryset.update(
+            is_verified=True,
+            verified_by=request.user,
+            verified_date=timezone.now()
+        )
+        self.message_user(request, f'{updated} receipt(s) marked as verified.')
+    mark_as_verified.short_description = 'Mark selected as verified'
+    
+    def mark_as_unverified(self, request, queryset):
+        """Mark selected receipts as unverified"""
+        updated = queryset.update(
+            is_verified=False,
+            verified_by=None,
+            verified_date=None
+        )
+        self.message_user(request, f'{updated} receipt(s) marked as unverified.')
+    mark_as_unverified.short_description = 'Mark selected as unverified'
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set uploaded_by"""
+        if not change:  # New object
+            obj.uploaded_by = request.user
+        if obj.is_verified and not obj.verified_by:
+            obj.verified_by = request.user
+            from django.utils import timezone
+            obj.verified_date = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+# ============= STUDENT DISBURSEMENT CONFIRMATION ADMIN =============
+
+@admin.register(StudentDisbursementConfirmation)
+class StudentDisbursementConfirmationAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'student_name',
+        'bulk_cheque_link',
+        'amount_allocated',
+        'amount_received',
+        'status_badge',
+        'institution_confirmed_badge',
+        'discrepancy_flag',
+    ]
+    list_filter = [
+        'status',
+        'institution_confirmed',
+        'student_confirmed',
+        'has_discrepancy',
+        'discrepancy_resolved',
+        'institution_confirmation_date',
+    ]
+    search_fields = [
+        'bulk_cheque_allocation__allocation__application__application_number',
+        'bulk_cheque_allocation__allocation__application__applicant__user__first_name',
+        'bulk_cheque_allocation__allocation__application__applicant__user__last_name',
+        'bulk_cheque_allocation__bulk_cheque__cheque_number',
+        'institution_confirmed_by',
+    ]
+    readonly_fields = [
+        'created_at',
+        'updated_at',
+        'student_name',
+        'application_number',
+    ]
+    fieldsets = (
+        ('Student Information', {
+            'fields': (
+                'bulk_cheque_allocation',
+                'student_name',
+                'application_number',
+            )
+        }),
+        ('Institution Confirmation', {
+            'fields': (
+                'institution_confirmed',
+                'institution_confirmation_date',
+                'institution_confirmed_by',
+            )
+        }),
+        ('Student Confirmation (Optional)', {
+            'fields': (
+                'student_confirmed',
+                'student_confirmation_date',
+            )
+        }),
+        ('Amount Details', {
+            'fields': (
+                'amount_allocated',
+                'amount_received',
+            )
+        }),
+        ('Status', {
+            'fields': (
+                'status',
+            )
+        }),
+        ('Discrepancy Management', {
+            'fields': (
+                'has_discrepancy',
+                'discrepancy_description',
+                'discrepancy_resolved',
+                'resolution_notes',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Additional Information', {
+            'fields': (
+                'notes',
+                'created_at',
+                'updated_at',
+            )
+        }),
+    )
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    actions = ['mark_institution_confirmed', 'mark_discrepancy_resolved']
+    
+    def student_name(self, obj):
+        """Display student full name"""
+        return obj.bulk_cheque_allocation.allocation.application.applicant.user.get_full_name()
+    student_name.short_description = 'Student Name'
+    
+    def application_number(self, obj):
+        """Display application number"""
+        return obj.bulk_cheque_allocation.allocation.application.application_number
+    application_number.short_description = 'Application #'
+    
+    def bulk_cheque_link(self, obj):
+        """Link to the bulk cheque"""
+        bulk_cheque = obj.bulk_cheque_allocation.bulk_cheque
+        url = reverse('admin:main_application_bulkcheque_change', args=[bulk_cheque.id])
+        return format_html('<a href="{}">{}</a>', url, bulk_cheque.cheque_number)
+    bulk_cheque_link.short_description = 'Bulk Cheque'
+    
+    def status_badge(self, obj):
+        """Display status with color coding"""
+        colors = {
+            'pending': '#ffc107',
+            'confirmed_by_institution': '#28a745',
+            'confirmed_by_student': '#20c997',
+            'discrepancy': '#dc3545',
+            'resolved': '#17a2b8',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+    
+    def institution_confirmed_badge(self, obj):
+        """Show institution confirmation status"""
+        if obj.institution_confirmed:
+            return format_html('<span style="color: green;">✓</span>')
+        else:
+            return format_html('<span style="color: red;">✗</span>')
+    institution_confirmed_badge.short_description = 'Inst. Confirmed'
+    
+    def discrepancy_flag(self, obj):
+        """Flag discrepancies"""
+        if obj.has_discrepancy:
+            if obj.discrepancy_resolved:
+                return format_html('<span style="color: orange;">⚠ Resolved</span>')
+            else:
+                return format_html('<span style="color: red;">⚠ Active</span>')
+        return '-'
+    discrepancy_flag.short_description = 'Discrepancy'
+    
+    def mark_institution_confirmed(self, request, queryset):
+        """Mark selected confirmations as confirmed by institution"""
+        from django.utils import timezone
+        updated = queryset.update(
+            institution_confirmed=True,
+            institution_confirmation_date=timezone.now().date(),
+            status='confirmed_by_institution'
+        )
+        self.message_user(request, f'{updated} confirmation(s) marked as confirmed by institution.')
+    mark_institution_confirmed.short_description = 'Mark as confirmed by institution'
+    
+    def mark_discrepancy_resolved(self, request, queryset):
+        """Mark discrepancies as resolved"""
+        updated = queryset.filter(has_discrepancy=True).update(
+            discrepancy_resolved=True,
+            status='resolved'
+        )
+        self.message_user(request, f'{updated} discrepancy(ies) marked as resolved.')
+    mark_discrepancy_resolved.short_description = 'Mark discrepancies as resolved'
+
+
+# ============= DELIVERY AGENT ADMIN =============
+
+@admin.register(DeliveryAgent)
+class DeliveryAgentAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'name',
+        'agent_type',
+        'primary_contact_phone',
+        'total_deliveries',
+        'success_rate_display',
+        'average_delivery_time_hours',
+        'active_badge',
+    ]
+    list_filter = [
+        'agent_type',
+        'is_active',
+        'created_at',
+    ]
+    search_fields = [
+        'name',
+        'primary_contact_name',
+        'primary_contact_phone',
+        'primary_contact_email',
+        'service_area',
+    ]
+    readonly_fields = [
+        'created_at',
+        'total_deliveries',
+        'successful_deliveries',
+        'failed_deliveries',
+        'success_rate_display',
+    ]
+    fieldsets = (
+        ('Basic Information', {
+            'fields': (
+                'name',
+                'agent_type',
+                'is_active',
+            )
+        }),
+        ('Contact Information', {
+            'fields': (
+                'primary_contact_name',
+                'primary_contact_phone',
+                'primary_contact_email',
+                'office_address',
+            )
+        }),
+        ('Contract Details', {
+            'fields': (
+                'contract_number',
+                'contract_start_date',
+                'contract_end_date',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Service Information', {
+            'fields': (
+                'service_area',
+            )
+        }),
+        ('Performance Metrics', {
+            'fields': (
+                'total_deliveries',
+                'successful_deliveries',
+                'failed_deliveries',
+                'average_delivery_time_hours',
+                'success_rate_display',
+            )
+        }),
+        ('Additional Information', {
+            'fields': (
+                'notes',
+                'created_at',
+            )
+        }),
+    )
+    date_hierarchy = 'created_at'
+    ordering = ['name']
+    actions = ['mark_as_active', 'mark_as_inactive']
+    
+    def success_rate_display(self, obj):
+        """Display success rate with color coding"""
+        rate = obj.success_rate()
+        if rate >= 95:
+            color = '#28a745'  # Green
+        elif rate >= 80:
+            color = '#ffc107'  # Yellow
+        else:
+            color = '#dc3545'  # Red
+        
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{:.2f}%</span>',
+            color,
+            rate
+        )
+    success_rate_display.short_description = 'Success Rate'
+    
+    def active_badge(self, obj):
+        """Display active status badge"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; padding: 3px 10px; border-radius: 3px;">Active</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #dc3545; color: white; padding: 3px 10px; border-radius: 3px;">Inactive</span>'
+            )
+    active_badge.short_description = 'Status'
+    
+    def mark_as_active(self, request, queryset):
+        """Mark selected agents as active"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} agent(s) marked as active.')
+    mark_as_active.short_description = 'Mark as active'
+    
+    def mark_as_inactive(self, request, queryset):
+        """Mark selected agents as inactive"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} agent(s) marked as inactive.')
+    mark_as_inactive.short_description = 'Mark as inactive'
+
+
+# ============= CHEQUE COLLECTION REGISTER ADMIN =============
+
+@admin.register(ChequeCollectionRegister)
+class ChequeCollectionRegisterAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'bulk_cheque_link',
+        'collection_date',
+        'collector_name',
+        'collector_company',
+        'vehicle_registration',
+        'released_by',
+        'signature_status',
+    ]
+    list_filter = [
+        'collection_date',
+        'collector_company',
+        'released_by',
+    ]
+    search_fields = [
+        'bulk_cheque__cheque_number',
+        'collector_name',
+        'collector_id_number',
+        'collector_phone',
+        'collector_company',
+        'vehicle_registration',
+        'driver_name',
+    ]
+    readonly_fields = [
+        'collection_date',
+        'released_by',
+    ]
+    fieldsets = (
+        ('Bulk Cheque Information', {
+            'fields': (
+                'bulk_cheque',
+                'collection_date',
+            )
+        }),
+        ('Collector Details', {
+            'fields': (
+                'collector_name',
+                'collector_id_number',
+                'collector_phone',
+                'collector_company',
+            )
+        }),
+        ('Vehicle Details', {
+            'fields': (
+                'vehicle_registration',
+                'driver_name',
+                'driver_id',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Signatures', {
+            'fields': (
+                'collector_signature',
+                'witness_name',
+                'witness_signature',
+            )
+        }),
+        ('CDF Office', {
+            'fields': (
+                'released_by',
+            )
+        }),
+        ('Additional Information', {
+            'fields': (
+                'notes',
+            )
+        }),
+    )
+    date_hierarchy = 'collection_date'
+    ordering = ['-collection_date']
+    
+    def bulk_cheque_link(self, obj):
+        """Link to the bulk cheque"""
+        url = reverse('admin:main_application_bulkcheque_change', args=[obj.bulk_cheque.id])
+        return format_html(
+            '<a href="{}">{}</a>',
+            url,
+            obj.bulk_cheque.cheque_number
+        )
+    bulk_cheque_link.short_description = 'Bulk Cheque'
+    
+    def signature_status(self, obj):
+        """Show if signature is uploaded"""
+        if obj.collector_signature:
+            return format_html('<span style="color: green;">✓ Uploaded</span>')
+        else:
+            return format_html('<span style="color: red;">✗ Missing</span>')
+    signature_status.short_description = 'Signature'
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set released_by"""
+        if not change:  # New object
+            obj.released_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def has_delete_permission(self, request, obj=None):
+        """Prevent deletion of collection records"""
+        return False
+
+
+# ============= ENHANCED BULK CHEQUE ADMIN (Update existing) =============
+# Add this to enhance your existing BulkCheque admin
+
+from .models import BulkCheque
+
+# Inline for Delivery Tracking
+class ChequeDeliveryTrackingInline(admin.TabularInline):
+    model = ChequeDeliveryTracking
+    extra = 0
+    readonly_fields = ['timestamp', 'recorded_by']
+    fields = ['status', 'location', 'timestamp', 'notes', 'recorded_by']
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+# Inline for Payment Receipts
+class InstitutionPaymentReceiptInline(admin.TabularInline):
+    model = InstitutionPaymentReceipt
+    extra = 0
+    readonly_fields = ['uploaded_at', 'uploaded_by', 'verified_date']
+    fields = ['receipt_type', 'receipt_number', 'receipt_date', 'is_verified', 'uploaded_at']
+    show_change_link = True
+
+
+# Inline for Collection Register
+class ChequeCollectionRegisterInline(admin.StackedInline):
+    model = ChequeCollectionRegister
+    extra = 0
+    readonly_fields = ['collection_date', 'released_by']
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        # Only allow one collection record per cheque
+        if obj and obj.collection_register_entries.exists():
+            return False
+        return True
+
+
+# Update your existing BulkCheque admin or create new one:
+@admin.register(BulkCheque)
+class EnhancedBulkChequeAdmin(admin.ModelAdmin):
+    list_display = [
+        'cheque_number',
+        'institution',
+        'total_amount',
+        'student_count',
+        'status_badge',
+        'delivery_agent',
+        'collection_badge',
+        'delivery_badge',
+        'receipt_badge',
+        'created_date',
+    ]
+    list_filter = [
+        'status',
+        'delivery_agent',
+        'is_collected',
+        'is_delivered',
+        'is_receipt_confirmed',
+        'all_students_confirmed',
+        'fiscal_year',
+        'created_date',
+    ]
+    search_fields = [
+        'cheque_number',
+        'institution__name',
+        'cheque_holder_name',
+        'collector_name',
+    ]
+    readonly_fields = [
+        'created_date',
+        'created_by',
+        'assigned_date',
+        'assigned_by',
+        'completed_date',
+    ]
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': (
+                'cheque_number',
+                'institution',
+                'fiscal_year',
+                'disbursement_round',
+                'total_amount',
+                'student_count',
+                'status',
+            )
+        }),
+        ('Cheque Holder (Institution)', {
+            'fields': (
+                'cheque_holder_name',
+                'cheque_holder_id',
+                'cheque_holder_phone',
+                'cheque_holder_email',
+                'cheque_holder_position',
+            )
+        }),
+        ('Delivery Agent', {
+            'fields': (
+                'delivery_agent',
+                'delivery_agent_contact',
+            )
+        }),
+        ('Collection Status', {
+            'fields': (
+                'is_ready_for_collection',
+                'ready_for_collection_date',
+                'is_collected',
+                'collection_date',
+                'collector_name',
+                'collector_id_number',
+                'collector_phone',
+                'collector_company',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Delivery Status', {
+            'fields': (
+                'is_in_transit',
+                'transit_start_date',
+                'expected_delivery_date',
+                'is_delivered',
+                'delivery_date',
+                'delivered_to_name',
+                'delivered_to_position',
+                'delivery_confirmation_signature',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Receipt Confirmation', {
+            'fields': (
+                'is_receipt_confirmed',
+                'receipt_confirmation_date',
+                'institution_receipt_number',
+                'receipt_confirmed_by_name',
+                'receipt_confirmed_by_position',
+                'all_students_confirmed',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Dates & Audit', {
+            'fields': (
+                'created_date',
+                'created_by',
+                'assigned_date',
+                'assigned_by',
+                'completed_date',
+            )
+        }),
+        ('Notes', {
+            'fields': (
+                'notes',
+                'delivery_notes',
+                'institution_notes',
+            ),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    inlines = [
+        ChequeDeliveryTrackingInline,
+        ChequeCollectionRegisterInline,
+        InstitutionPaymentReceiptInline,
+    ]
+    
+    date_hierarchy = 'created_date'
+    ordering = ['-created_date']
+    actions = ['mark_ready_for_collection', 'mark_as_completed']
+    
+    def status_badge(self, obj):
+        """Display status with color"""
+        colors = {
+            'created': '#6c757d',
+            'ready_for_collection': '#ffc107',
+            'collected': '#17a2b8',
+            'in_transit': '#007bff',
+            'delivered': '#28a745',
+            'receipt_pending': '#fd7e14',
+            'completed': '#28a745',
+            'cancelled': '#dc3545',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+    
+    def collection_badge(self, obj):
+        if obj.is_collected:
+            return format_html('<span style="color: green;">✓</span>')
+        return format_html('<span style="color: red;">✗</span>')
+    collection_badge.short_description = 'Collected'
+    
+    def delivery_badge(self, obj):
+        if obj.is_delivered:
+            return format_html('<span style="color: green;">✓</span>')
+        return format_html('<span style="color: red;">✗</span>')
+    delivery_badge.short_description = 'Delivered'
+    
+    def receipt_badge(self, obj):
+        if obj.is_receipt_confirmed:
+            return format_html('<span style="color: green;">✓</span>')
+        return format_html('<span style="color: red;">✗</span>')
+    receipt_badge.short_description = 'Receipt'
+    
+    def mark_ready_for_collection(self, request, queryset):
+        """Mark selected cheques as ready for collection"""
+        from django.utils import timezone
+        updated = 0
+        for cheque in queryset:
+            if not cheque.is_ready_for_collection:
+                cheque.mark_ready_for_collection()
+                updated += 1
+        self.message_user(request, f'{updated} cheque(s) marked as ready for collection.')
+    mark_ready_for_collection.short_description = 'Mark as ready for collection'
+    
+    def mark_as_completed(self, request, queryset):
+        """Mark selected cheques as completed"""
+        updated = 0
+        for cheque in queryset:
+            if cheque.is_receipt_confirmed and not cheque.all_students_confirmed:
+                cheque.complete_disbursement()
+                updated += 1
+        self.message_user(request, f'{updated} cheque(s) marked as completed.')
+    mark_as_completed.short_description = 'Mark as completed'
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set created_by"""
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        
+        
 # ============= ADMIN SITE CUSTOMIZATION =============
 
 # Customize admin site header and title
