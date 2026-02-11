@@ -606,41 +606,41 @@ class BulkChequeAllocationInline(admin.TabularInline):
     fields = ['allocation', 'is_notified', 'notification_sent_date']
 
 
-@admin.register(BulkCheque)
-class BulkChequeAdmin(admin.ModelAdmin):
-    list_display = ['cheque_number', 'institution', 'fiscal_year', 'total_amount', 
-                   'student_count', 'is_collected', 'created_date']
-    list_filter = ['is_collected', 'fiscal_year', 'created_date']
-    search_fields = ['cheque_number', 'institution__name', 'cheque_holder_name']
-    readonly_fields = ['created_date', 'assigned_date', 'collection_date']
-    inlines = [BulkChequeAllocationInline]
-    date_hierarchy = 'created_date'
+# @admin.register(BulkCheque)
+# class BulkChequeAdmin(admin.ModelAdmin):
+#     list_display = ['cheque_number', 'institution', 'fiscal_year', 'total_amount', 
+#                    'student_count', 'is_collected', 'created_date']
+#     list_filter = ['is_collected', 'fiscal_year', 'created_date']
+#     search_fields = ['cheque_number', 'institution__name', 'cheque_holder_name']
+#     readonly_fields = ['created_date', 'assigned_date', 'collection_date']
+#     inlines = [BulkChequeAllocationInline]
+#     date_hierarchy = 'created_date'
     
-    fieldsets = (
-        ('Cheque Details', {
-            'fields': ('cheque_number', 'institution', 'fiscal_year', 'disbursement_round', 
-                      'total_amount', 'student_count')
-        }),
-        ('Cheque Holder', {
-            'fields': ('cheque_holder_name', 'cheque_holder_id', 'cheque_holder_phone', 
-                      'cheque_holder_email', 'cheque_holder_position')
-        }),
-        ('Status & Dates', {
-            'fields': ('created_date', 'assigned_date', 'is_collected', 'collection_date', 
-                      'collector_id_number')
-        }),
-        ('System Info', {
-            'fields': ('created_by', 'assigned_by', 'notes')
-        }),
-    )
+#     fieldsets = (
+#         ('Cheque Details', {
+#             'fields': ('cheque_number', 'institution', 'fiscal_year', 'disbursement_round', 
+#                       'total_amount', 'student_count')
+#         }),
+#         ('Cheque Holder', {
+#             'fields': ('cheque_holder_name', 'cheque_holder_id', 'cheque_holder_phone', 
+#                       'cheque_holder_email', 'cheque_holder_position')
+#         }),
+#         ('Status & Dates', {
+#             'fields': ('created_date', 'assigned_date', 'is_collected', 'collection_date', 
+#                       'collector_id_number')
+#         }),
+#         ('System Info', {
+#             'fields': ('created_by', 'assigned_by', 'notes')
+#         }),
+#     )
     
-    actions = ['mark_as_collected']
+#     actions = ['mark_as_collected']
     
-    def mark_as_collected(self, request, queryset):
-        from django.utils import timezone
-        updated = queryset.update(is_collected=True, collection_date=timezone.now())
-        self.message_user(request, f'{updated} bulk cheque(s) marked as collected.')
-    mark_as_collected.short_description = 'Mark as collected'
+#     def mark_as_collected(self, request, queryset):
+#         from django.utils import timezone
+#         updated = queryset.update(is_collected=True, collection_date=timezone.now())
+#         self.message_user(request, f'{updated} bulk cheque(s) marked as collected.')
+#     mark_as_collected.short_description = 'Mark as collected'
 
 
 @admin.register(BulkChequeAllocation)
@@ -1815,7 +1815,7 @@ class EnhancedBulkChequeAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         
         
-# ============= ADMIN SITE CUSTOMIZATION =============
+# ============= ADMIN SITE CUSTOMIZATION ============= 
 
 # Customize admin site header and title
 admin.site.site_header = "Kenya Bursary Management System"
