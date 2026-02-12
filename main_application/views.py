@@ -9090,12 +9090,22 @@ def calculate_priority_score(application):
 def student_application_create(request):
     """
     Create new bursary application with enhanced validation and error handling
+    Students can only apply for categories in their constituency/ward
     """
     try:
         applicant = request.user.applicant_profile
     except Applicant.DoesNotExist:
         messages.error(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
+    
+    # Validate applicant has constituency and ward
+    if not applicant.constituency:
+        messages.error(request, 'Your profile is missing constituency information. Please update your profile.')
+        return redirect('student_profile_update')
+    
+    if not applicant.ward:
+        messages.error(request, 'Your profile is missing ward information. Please update your profile.')
+        return redirect('student_profile_update')
     
     # Check for active fiscal year
     current_fiscal_year = FiscalYear.objects.filter(
@@ -9157,6 +9167,49 @@ def student_application_create(request):
                 application = form.save(commit=False)
                 application.applicant = applicant
                 application.fiscal_year = current_fiscal_year
+                
+                # ============= VALIDATE CATEGORY ELIGIBILITY =============
+                selected_category = application.bursary_category
+                
+                # Check if category is open
+                if not selected_category.is_currently_open():
+                    messages.error(
+                        request,
+                        f'The category "{selected_category.name}" is currently closed for applications.'
+                    )
+                    return redirect('student_application_create')
+                
+                # Check if category can accept more applications
+                if not selected_category.can_accept_more_applications():
+                    messages.error(
+                        request,
+                        f'The category "{selected_category.name}" has reached its capacity. '
+                        'Please select a different category or contact the bursary office.'
+                    )
+                    return redirect('student_application_create')
+                
+                # Check scope restrictions
+                if selected_category.scope == 'constituency':
+                    if selected_category.constituency != applicant.constituency:
+                        messages.error(
+                            request,
+                            f'The category "{selected_category.name}" is only available to applicants from '
+                            f'{selected_category.constituency.name} Constituency. '
+                            f'You are registered in {applicant.constituency.name} Constituency.'
+                        )
+                        return redirect('student_application_create')
+                
+                elif selected_category.scope == 'ward':
+                    if selected_category.ward != applicant.ward:
+                        messages.error(
+                            request,
+                            f'The category "{selected_category.name}" is only available to applicants from '
+                            f'{selected_category.ward.name} Ward. '
+                            f'You are registered in {applicant.ward.name} Ward.'
+                        )
+                        return redirect('student_application_create')
+                
+                # =========================================================
                 
                 # Assign to current disbursement round if available
                 if current_round:
@@ -9229,11 +9282,31 @@ def student_application_create(request):
     else:
         form = ApplicationForm(fiscal_year=current_fiscal_year)
     
-    # Get available categories for the current fiscal year
+    # ============= GET CATEGORIES SPECIFIC TO USER'S CONSTITUENCY/WARD =============
+    # Get categories available to this applicant
+    from django.db.models import Q
+    
     categories = BursaryCategory.objects.filter(
         fiscal_year=current_fiscal_year,
-        is_active=True
-    ).order_by('category_type', 'name')
+        is_active=True,
+        is_open=True
+    ).filter(
+        Q(scope='county') |  # County-wide categories
+        Q(scope='constituency', constituency=applicant.constituency) |  # Their constituency
+        Q(scope='ward', ward=applicant.ward)  # Their ward
+    ).select_related('constituency', 'ward').order_by('constituency', 'ward', 'category_type', 'name')
+    
+    # Filter out categories that are full or outside application window
+    available_categories = []
+    closed_categories = []
+    
+    for category in categories:
+        if category.can_accept_more_applications():
+            available_categories.append(category)
+        else:
+            closed_categories.append(category)
+    
+    # ==============================================================================
     
     # Get active institutions ordered by type and name
     institutions = Institution.objects.filter(
@@ -9242,12 +9315,15 @@ def student_application_create(request):
     
     context = {
         'form': form,
-        'categories': categories,
+        'categories': available_categories,
+        'closed_categories': closed_categories,
         'institutions': institutions,
         'current_fiscal_year': current_fiscal_year,
         'current_round': current_round,
         'ward_allocation': ward_allocation,
         'applicant': applicant,
+        'applicant_constituency': applicant.constituency,
+        'applicant_ward': applicant.ward,
     }
     
     return render(request, 'students/application_form.html', context)
