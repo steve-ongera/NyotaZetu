@@ -23554,6 +23554,300 @@ def pending_applications(request):
     return render(request, 'reviewer/pending_applications.html', context)
 
 
+import csv
+import json
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Sum, Count, Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.contrib import messages
+
+from .models import (
+    Application, Applicant, Allocation, BursaryCategory,
+    FiscalYear, Institution, Review, Village, Ward,
+)
+from .decorators import reviewer_required
+from .utils import create_audit_log  # adjust import path as needed
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VIEW 1: All Ward Applications List  (with filtering + export)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+@reviewer_required
+def ward_applications_list(request):
+    """
+    All applications for the reviewer's assigned ward across every status,
+    with rich filtering (status, category, village, institution) and
+    CSV / JSON export.
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward. Please contact the administrator.")
+        return redirect('reviewer_dashboard')
+
+    current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
+
+    # ── Base queryset ────────────────────────────────────────────────────────
+    applications = Application.objects.filter(
+        applicant__ward=assigned_ward,
+        fiscal_year=current_fiscal_year,
+    ).select_related(
+        'applicant__user',
+        'applicant__ward',
+        'applicant__village',
+        'applicant__sublocation',
+        'institution',
+        'bursary_category',
+        'fiscal_year',
+    ).prefetch_related('documents', 'reviews', 'allocation')
+
+    # ── Filters ──────────────────────────────────────────────────────────────
+    status_filter       = request.GET.get('status', '')
+    category_filter     = request.GET.get('category', '')
+    institution_filter  = request.GET.get('institution', '')
+    village_filter      = request.GET.get('village', '')
+    search_query        = request.GET.get('q', '').strip()
+    sort_by             = request.GET.get('sort', '-date_submitted')
+
+    if status_filter:
+        applications = applications.filter(status=status_filter)
+
+    if category_filter:
+        applications = applications.filter(bursary_category_id=category_filter)
+
+    if institution_filter:
+        applications = applications.filter(institution_id=institution_filter)
+
+    if village_filter:
+        applications = applications.filter(applicant__village_id=village_filter)
+
+    if search_query:
+        applications = applications.filter(
+            Q(application_number__icontains=search_query) |
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__id_number__icontains=search_query)
+        )
+
+    # Validate sort field to avoid injection
+    VALID_SORTS = {
+        '-date_submitted', 'date_submitted',
+        '-amount_requested', 'amount_requested',
+        'applicant__user__last_name', '-applicant__user__last_name',
+        'status', '-status',
+    }
+    if sort_by not in VALID_SORTS:
+        sort_by = '-date_submitted'
+
+    applications = applications.order_by(sort_by)
+
+    # ── Aggregate stats ──────────────────────────────────────────────────────
+    stats = applications.aggregate(
+        total=Count('id'),
+        total_requested=Sum('amount_requested'),
+        approved_count=Count('id', filter=Q(status='approved')),
+        disbursed_count=Count('id', filter=Q(status='disbursed')),
+        rejected_count=Count('id', filter=Q(status='rejected')),
+        pending_count=Count('id', filter=Q(status__in=['submitted', 'under_review'])),
+    )
+
+    # ── Export ───────────────────────────────────────────────────────────────
+    export_format = request.GET.get('export', '')
+    if export_format in ('csv', 'json'):
+        return _export_applications(request, applications, assigned_ward, export_format)
+
+    # ── Pagination ───────────────────────────────────────────────────────────
+    paginator = Paginator(applications, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # ── Filter option lists ──────────────────────────────────────────────────
+    categories = BursaryCategory.objects.filter(
+        fiscal_year=current_fiscal_year, is_active=True
+    ).order_by('name')
+
+    institutions = Institution.objects.filter(
+        is_active=True,
+        application__applicant__ward=assigned_ward,
+        application__fiscal_year=current_fiscal_year,
+    ).distinct().order_by('name')
+
+    villages = Village.objects.filter(
+        sublocation__location__ward=assigned_ward
+    ).order_by('name')
+
+    STATUS_CHOICES = Application.APPLICATION_STATUS
+
+    create_audit_log(
+        user=user,
+        action='view',
+        table_affected='Application',
+        record_id=str(assigned_ward.pk),
+        description=f'Reviewer viewed all ward applications for {assigned_ward.name}',
+        ip_address=request.META.get('REMOTE_ADDR', ''),
+    )
+
+    context = {
+        'page_obj': page_obj,
+        'assigned_ward': assigned_ward,
+        'current_fiscal_year': current_fiscal_year,
+        'stats': stats,
+        # filter options
+        'categories': categories,
+        'institutions': institutions,
+        'villages': villages,
+        'status_choices': STATUS_CHOICES,
+        # current filter values (preserved in GET params)
+        'selected_status': status_filter,
+        'selected_category': category_filter,
+        'selected_institution': institution_filter,
+        'selected_village': village_filter,
+        'search_query': search_query,
+        'sort_by': sort_by,
+    }
+    return render(request, 'reviewer/ward_applications_list.html', context)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VIEW 2: Application Detail View
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+@reviewer_required
+def ward_application_detail(request, application_id):
+    """
+    Full detail view for a single application in the reviewer's ward.
+    Shows: applicant info, guardian(s), siblings, documents, review history,
+    allocation / disbursement info.
+    """
+    user = request.user
+    assigned_ward = user.assigned_ward
+
+    if not assigned_ward:
+        messages.error(request, "You are not assigned to any ward.")
+        return redirect('reviewer_dashboard')
+
+    # Ensure application belongs to reviewer's ward
+    application = get_object_or_404(
+        Application.objects.select_related(
+            'applicant__user',
+            'applicant__ward',
+            'applicant__constituency',
+            'applicant__county',
+            'applicant__location',
+            'applicant__sublocation',
+            'applicant__village',
+            'institution',
+            'bursary_category',
+            'fiscal_year',
+            'disbursement_round',
+        ).prefetch_related(
+            'documents',
+            'reviews__reviewer',
+            'applicant__guardians',
+            'applicant__siblings',
+        ),
+        id=application_id,
+        applicant__ward=assigned_ward,
+    )
+
+    # Allocation / disbursement (may not exist yet)
+    allocation = getattr(application, 'allocation', None)
+
+    # Reviews ordered oldest → newest for timeline display
+    reviews = application.reviews.order_by('review_date')
+
+    # My ward-level review (if any)
+    my_review = application.reviews.filter(
+        reviewer=user, review_level='ward'
+    ).first()
+
+    # Related applications by same applicant (other years / rounds)
+    related_applications = Application.objects.filter(
+        applicant=application.applicant
+    ).exclude(pk=application.pk).select_related('fiscal_year').order_by('-date_submitted')[:5]
+
+    create_audit_log(
+        user=user,
+        action='view',
+        table_affected='Application',
+        record_id=str(application.pk),
+        description=f'Reviewer viewed application {application.application_number}',
+        ip_address=request.META.get('REMOTE_ADDR', ''),
+    )
+
+    context = {
+        'application': application,
+        'applicant': application.applicant,
+        'allocation': allocation,
+        'reviews': reviews,
+        'my_review': my_review,
+        'related_applications': related_applications,
+        'assigned_ward': assigned_ward,
+    }
+    return render(request, 'reviewer/ward_application_detail.html', context)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EXPORT HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _export_applications(request, applications, ward, fmt):
+    """
+    Export a queryset of applications as CSV or JSON.
+    Respects whatever filters are already applied to the queryset.
+    """
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M')
+    filename_base = f"ward_{ward.name.replace(' ', '_')}_applications_{timestamp}"
+
+    rows = []
+    for app in applications.select_related(
+        'applicant__user', 'applicant__village',
+        'institution', 'bursary_category', 'allocation'
+    ):
+        alloc = getattr(app, 'allocation', None)
+        rows.append({
+            'application_number':   app.application_number,
+            'full_name':            app.applicant.user.get_full_name(),
+            'id_number':            app.applicant.id_number,
+            'village':              str(app.applicant.village) if app.applicant.village else '',
+            'ward':                 str(app.applicant.ward) if app.applicant.ward else '',
+            'institution':          app.institution.name,
+            'institution_type':     app.institution.get_institution_type_display(),
+            'bursary_category':     app.bursary_category.name if app.bursary_category else '',
+            'year_of_study':        app.year_of_study,
+            'status':               app.get_status_display(),
+            'amount_requested':     str(app.amount_requested),
+            'amount_allocated':     str(alloc.approved_amount) if alloc and alloc.approved_amount else '',
+            'is_disbursed':         'Yes' if (alloc and alloc.is_disbursed) else 'No',
+            'disbursement_date':    str(alloc.disbursement_date) if alloc and alloc.disbursement_date else '',
+            'date_submitted':       app.date_submitted.strftime('%Y-%m-%d %H:%M') if app.date_submitted else '',
+            'is_orphan':            'Yes' if app.is_orphan else 'No',
+            'is_disabled':          'Yes' if app.is_disabled else 'No',
+        })
+
+    if fmt == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{filename_base}.csv"'
+        if rows:
+            writer = csv.DictWriter(response, fieldnames=rows[0].keys())
+            writer.writeheader()
+            writer.writerows(rows)
+        return response
+
+    # JSON
+    response = HttpResponse(
+        json.dumps(rows, ensure_ascii=False, indent=2),
+        content_type='application/json'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename_base}.json"'
+    return response
+
 @login_required
 @reviewer_required
 def reviewed_applications(request):

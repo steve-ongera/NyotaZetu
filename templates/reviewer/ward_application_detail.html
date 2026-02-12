@@ -1,0 +1,622 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}{{ application.application_number }} — Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --ink:    #1a2332;
+  --muted:  #5a6a7e;
+  --light:  #f0f4f8;
+  --border: #dde3eb;
+  --teal:   #0d9488;
+  --teal2:  #0f766e;
+  --amber:  #d97706;
+  --green:  #16a34a;
+  --red:    #dc2626;
+  --blue:   #2563eb;
+  --violet: #7c3aed;
+}
+
+body { font-family: 'Georgia', serif; color: var(--ink); }
+
+/* breadcrumb */
+.bc { display:flex; flex-wrap:wrap; gap:0; list-style:none; padding:0; margin:0 0 20px; font-size:13px; }
+.bc li { color:var(--muted); }
+.bc li+li::before { content:" › "; padding:0 6px; color:#b0bec5; }
+.bc a { color:var(--teal); text-decoration:none; }
+.bc a:hover { text-decoration:underline; }
+
+/* header band */
+.app-header {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 60%, #14b8a6 100%);
+  border-radius: 10px; padding: 28px 30px; margin-bottom: 24px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 16px; color: #fff;
+}
+.app-header h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.3px; }
+.app-header p  { font-size: 13px; opacity: .85; margin: 0; }
+.app-header .hd-badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.hd-badge {
+  display:inline-block; padding:5px 12px; border-radius:4px;
+  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+  border: 1px solid rgba(255,255,255,.35); color:#fff; background: rgba(255,255,255,.15);
+}
+.hd-badge.green  { background:rgba(22,163,74,.9); border-color:transparent; }
+.hd-badge.amber  { background:rgba(217,119,6,.9); border-color:transparent; }
+.hd-badge.red    { background:rgba(220,38,38,.9); border-color:transparent; }
+.hd-badge.violet { background:rgba(124,58,237,.9); border-color:transparent; }
+.hd-badge.blue   { background:rgba(37,99,235,.9); border-color:transparent; }
+
+.hd-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+
+/* btn */
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 18px; border-radius:6px; font-size:13px; font-weight:600;
+  text-decoration:none; cursor:pointer; border:none; transition:all .2s;
+}
+.btn-white  { background:#fff; color:var(--teal); }
+.btn-white:hover { background:#f0fdf4; color:var(--teal2); }
+.btn-outline { background:#fff; color:var(--ink); border:1px solid var(--border); }
+.btn-outline:hover { border-color:var(--teal); color:var(--teal); }
+.btn-sm { padding:7px 13px; font-size:12px; }
+
+/* two-column layout */
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.detail-grid.single { grid-template-columns:1fr; }
+@media(max-width:900px) { .detail-grid { grid-template-columns:1fr; } }
+
+/* section card */
+.dcard {
+  background:#fff; border:1px solid var(--border); border-radius:8px;
+  overflow:hidden; margin-bottom:20px;
+}
+.dcard-hd {
+  display:flex; align-items:center; gap:8px;
+  padding:13px 18px; background:var(--light); border-bottom:1px solid var(--border);
+  font-size:13px; font-weight:700; color:var(--ink); text-transform:uppercase; letter-spacing:.4px;
+}
+.dcard-hd i { color:var(--teal); font-size:16px; }
+.dcard-body { padding:18px; }
+
+/* key-value grid */
+.kv-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px 24px; }
+.kv { display:flex; flex-direction:column; gap:3px; }
+.kv-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.kv-value { font-size:13.5px; color:var(--ink); font-weight:500; }
+.kv-value.mono { font-family:monospace; font-size:13px; }
+.kv-value.big  { font-size:18px; font-weight:700; }
+.kv-value.green { color:var(--green); }
+.kv-value.red   { color:var(--red); }
+.kv-value.blue  { color:var(--blue); }
+.kv-value.amber { color:var(--amber); }
+
+/* status badges */
+.badge {
+  display:inline-block; padding:4px 10px; border-radius:4px;
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+}
+.b-submitted      { background:#fef3c7; color:#92400e; }
+.b-under_review   { background:#dbeafe; color:#1e40af; }
+.b-approved       { background:#d1fae5; color:#065f46; }
+.b-rejected       { background:#fee2e2; color:#991b1b; }
+.b-disbursed      { background:#ede9fe; color:#4c1d95; }
+.b-pending_documents { background:#ffedd5; color:#9a3412; }
+.b-draft          { background:#f1f5f9; color:#475569; }
+
+/* divider */
+.divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+
+/* document list */
+.doc-list { display:flex; flex-direction:column; gap:8px; }
+.doc-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border:1px solid var(--border); border-radius:6px;
+  background:#fafcfd; transition:background .2s;
+}
+.doc-item:hover { background:#f0fdf4; border-color:var(--teal); }
+.doc-icon { font-size:20px; color:var(--teal); flex-shrink:0; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { font-size:13px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.doc-verified { font-size:11px; color:var(--green); font-weight:700; }
+.doc-link { color:var(--teal); font-size:13px; text-decoration:none; flex-shrink:0; }
+.doc-link:hover { text-decoration:underline; }
+
+/* review timeline */
+.timeline { position:relative; padding-left:28px; }
+.timeline::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--border); }
+.tl-item { position:relative; margin-bottom:20px; }
+.tl-dot {
+  position:absolute; left:-24px; top:4px;
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid #fff; box-shadow:0 0 0 2px var(--border);
+  background:var(--muted);
+}
+.tl-dot.approve { background:var(--green); box-shadow:0 0 0 2px var(--green); }
+.tl-dot.reject  { background:var(--red);   box-shadow:0 0 0 2px var(--red);   }
+.tl-dot.forward { background:var(--blue);  box-shadow:0 0 0 2px var(--blue);  }
+.tl-dot.more_info{ background:var(--amber); box-shadow:0 0 0 2px var(--amber); }
+.tl-date { font-size:11px; color:var(--muted); margin-bottom:4px; }
+.tl-content {
+  background:var(--light); border:1px solid var(--border); border-radius:6px;
+  padding:12px 14px;
+}
+.tl-reviewer { font-size:12px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+.tl-level { font-size:11px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.3px; }
+.tl-comment { font-size:13px; color:var(--ink); line-height:1.5; margin-bottom:8px; }
+.tl-scores { display:flex; gap:12px; flex-wrap:wrap; }
+.tl-score-chip { font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; background:#fff; border:1px solid var(--border); color:var(--muted); }
+
+/* guardian card */
+.guardian-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.guardian-card {
+  border:1px solid var(--border); border-radius:6px; padding:14px; background:var(--light);
+}
+.guardian-name { font-size:14px; font-weight:700; color:var(--ink); }
+.guardian-rel  { font-size:11px; color:var(--teal); font-weight:700; text-transform:uppercase; margin:2px 0 8px; }
+
+/* allocation highlight */
+.alloc-highlight {
+  background: linear-gradient(135deg,#f0fdf4,#dcfce7);
+  border:1px solid #86efac; border-radius:8px; padding:20px;
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px;
+}
+.alloc-highlight.disbursed {
+  background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+  border-color:#a78bfa;
+}
+
+/* related apps table */
+.rel-table { width:100%; border-collapse:collapse; font-size:13px; }
+.rel-table td { padding:9px 12px; border-bottom:1px solid var(--border); }
+.rel-table tr:last-child td { border-bottom:none; }
+.rel-table a { color:var(--teal); text-decoration:none; font-weight:600; }
+.rel-table a:hover { text-decoration:underline; }
+
+/* empty micro */
+.empty-micro { text-align:center; padding:30px 16px; color:var(--muted); font-size:13px; }
+.empty-micro i { font-size:28px; display:block; margin-bottom:8px; color:#cbd5e1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+
+  <!-- Breadcrumb -->
+  <ol class="bc">
+    <li><a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+    <li><a href="{% url 'ward_applications_list' %}">Ward Applications</a></li>
+    <li>{{ application.application_number }}</li>
+  </ol>
+
+  <!-- ── Header band ──────────────────────────────────────────────────────── -->
+  <div class="app-header">
+    <div>
+      <h1>{{ application.application_number }}</h1>
+      <p>{{ application.applicant.user.get_full_name }} &bull; {{ application.institution.name }}</p>
+      <div class="hd-badges">
+        <span class="badge b-{{ application.status }}">{{ application.get_status_display }}</span>
+        {% if application.is_orphan %}    <span class="hd-badge amber">Orphan</span>{% endif %}
+        {% if application.is_total_orphan %}<span class="hd-badge red">Total Orphan</span>{% endif %}
+        {% if application.is_disabled %}  <span class="hd-badge blue">PWD</span>{% endif %}
+        {% if application.has_chronic_illness %}<span class="hd-badge violet">Chronic Illness</span>{% endif %}
+      </div>
+    </div>
+    <div class="hd-actions">
+      <a href="{% url 'ward_applications_list' %}" class="btn btn-white btn-sm">
+        <i class="bi bi-arrow-left"></i> Back
+      </a>
+      {% if my_review %}
+      <a href="{% url 'submit_review' application.pk %}" class="btn btn-white btn-sm">
+        <i class="bi bi-pencil"></i> Edit Review
+      </a>
+      {% else %}
+      <a href="{% url 'submit_review' application.pk %}" class="btn btn-white btn-sm">
+        <i class="bi bi-clipboard-check"></i> Review
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 1 — Allocation summary (if exists)
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  {% if allocation %}
+  <div class="dcard" style="margin-bottom:20px;">
+    <div class="dcard-hd"><i class="bi bi-cash-coin"></i> Allocation & Disbursement</div>
+    <div class="dcard-body">
+      <div class="alloc-highlight {% if allocation.is_disbursed %}disbursed{% endif %}">
+        <div class="kv">
+          <span class="kv-label">Amount Requested</span>
+          <span class="kv-value big">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="kv">
+          <span class="kv-label">Amount Allocated</span>
+          <span class="kv-value big green">KSh {{ allocation.approved_amount|default:allocation.amount_allocated|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="kv">
+          <span class="kv-label">Payment Method</span>
+          <span class="kv-value">{{ allocation.get_payment_method_display }}</span>
+        </div>
+        <div class="kv">
+          <span class="kv-label">Status</span>
+          <span class="kv-value">{{ allocation.get_status_display }}</span>
+        </div>
+        {% if allocation.cheque_number %}
+        <div class="kv">
+          <span class="kv-label">Cheque No.</span>
+          <span class="kv-value mono">{{ allocation.cheque_number }}</span>
+        </div>
+        {% endif %}
+        <div class="kv">
+          <span class="kv-label">Disbursed</span>
+          <span class="kv-value {% if allocation.is_disbursed %}green{% endif %}">
+            {% if allocation.is_disbursed %}✓ Yes — {{ allocation.disbursement_date|date:"d M Y" }}
+            {% else %}Not yet{% endif %}
+          </span>
+        </div>
+        {% if allocation.is_received_by_institution %}
+        <div class="kv">
+          <span class="kv-label">Institution Receipt</span>
+          <span class="kv-value green">✓ Confirmed {{ allocation.institution_confirmation_date|date:"d M Y" }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 2 — Two-column: Applicant  +  Academic / Financial
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  <div class="detail-grid">
+
+    <!-- Applicant details -->
+    <div class="dcard">
+      <div class="dcard-hd"><i class="bi bi-person-circle"></i> Applicant Details</div>
+      <div class="dcard-body">
+        <div class="kv-grid">
+          <div class="kv">
+            <span class="kv-label">Full Name</span>
+            <span class="kv-value">{{ applicant.user.get_full_name }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">ID Number</span>
+            <span class="kv-value mono">{{ applicant.id_number }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Gender</span>
+            <span class="kv-value">{{ applicant.get_gender_display }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Date of Birth</span>
+            <span class="kv-value">{{ applicant.date_of_birth|date:"d M Y" }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Phone</span>
+            <span class="kv-value mono">{{ applicant.user.phone_number|default:"—" }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Email</span>
+            <span class="kv-value">{{ applicant.user.email|default:"—" }}</span>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="kv-grid">
+          <div class="kv">
+            <span class="kv-label">County</span>
+            <span class="kv-value">{{ applicant.county }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Constituency</span>
+            <span class="kv-value">{{ applicant.constituency }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Ward</span>
+            <span class="kv-value">{{ applicant.ward }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Location</span>
+            <span class="kv-value">{{ applicant.location|default:"—" }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Sub-Location</span>
+            <span class="kv-value">{{ applicant.sublocation|default:"—" }}</span>
+          </div>
+          <div class="kv">
+            <span class="kv-label">Village</span>
+            <span class="kv-value">{{ applicant.village|default:"—" }}</span>
+          </div>
+        </div>
+
+        {% if applicant.special_needs %}
+        <hr class="divider">
+        <div class="kv">
+          <span class="kv-label">Special Needs</span>
+          <span class="kv-value">{{ applicant.special_needs_description|default:"Yes (no description)" }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Academic + Financial -->
+    <div>
+      <div class="dcard">
+        <div class="dcard-hd"><i class="bi bi-mortarboard"></i> Academic Information</div>
+        <div class="dcard-body">
+          <div class="kv-grid">
+            <div class="kv">
+              <span class="kv-label">Institution</span>
+              <span class="kv-value">{{ application.institution.name }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Type</span>
+              <span class="kv-value">{{ application.institution.get_institution_type_display }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Admission No.</span>
+              <span class="kv-value mono">{{ application.admission_number }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Year of Study</span>
+              <span class="kv-value">{{ application.year_of_study }}</span>
+            </div>
+            {% if application.course_name %}
+            <div class="kv">
+              <span class="kv-label">Course</span>
+              <span class="kv-value">{{ application.course_name }}</span>
+            </div>
+            {% endif %}
+            <div class="kv">
+              <span class="kv-label">Expected Completion</span>
+              <span class="kv-value">{{ application.expected_completion_date|date:"M Y" }}</span>
+            </div>
+            {% if application.previous_academic_year_average %}
+            <div class="kv">
+              <span class="kv-label">Previous Average</span>
+              <span class="kv-value">{{ application.previous_academic_year_average }}%</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="dcard" style="margin-top:0;">
+        <div class="dcard-hd"><i class="bi bi-wallet2"></i> Financial Information</div>
+        <div class="dcard-body">
+          <div class="kv-grid">
+            <div class="kv">
+              <span class="kv-label">Total Fees</span>
+              <span class="kv-value big">KSh {{ application.total_fees_payable|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Fees Paid</span>
+              <span class="kv-value green">KSh {{ application.fees_paid|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Balance</span>
+              <span class="kv-value red">KSh {{ application.fees_balance|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Amount Requested</span>
+              <span class="kv-value amber">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+            </div>
+            {% if application.other_bursaries %}
+            <div class="kv">
+              <span class="kv-label">Other Bursaries</span>
+              <span class="kv-value">KSh {{ application.other_bursaries_amount|floatformat:0|intcomma }} — {{ application.other_bursaries_source }}</span>
+            </div>
+            {% endif %}
+          </div>
+          <hr class="divider">
+          <div class="kv-grid">
+            <div class="kv">
+              <span class="kv-label">Household Income</span>
+              <span class="kv-value">{% if application.household_monthly_income %}KSh {{ application.household_monthly_income|floatformat:0|intcomma }}/mo{% else %}Not provided{% endif %}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Siblings</span>
+              <span class="kv-value">{{ application.number_of_siblings }} total, {{ application.number_of_siblings_in_school }} in school</span>
+            </div>
+          </div>
+          {% if application.has_received_previous_allocation %}
+          <hr class="divider">
+          <div class="kv-grid">
+            <div class="kv">
+              <span class="kv-label">Previous Allocation Year</span>
+              <span class="kv-value">{{ application.previous_allocation_year }}</span>
+            </div>
+            <div class="kv">
+              <span class="kv-label">Previous Amount</span>
+              <span class="kv-value">KSh {{ application.previous_allocation_amount|floatformat:0|intcomma }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 3 — Guardians
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  <div class="dcard">
+    <div class="dcard-hd"><i class="bi bi-people"></i> Parent / Guardian Information</div>
+    <div class="dcard-body">
+      {% if applicant.guardians.all %}
+      <div class="guardian-grid">
+        {% for g in applicant.guardians.all %}
+        <div class="guardian-card">
+          <div class="guardian-name">{{ g.name }} {% if g.is_primary_contact %}<i class="bi bi-star-fill" style="color:var(--amber);font-size:11px;"></i>{% endif %}</div>
+          <div class="guardian-rel">{{ g.get_relationship_display }}</div>
+          <div class="kv-grid" style="gap:8px 16px;">
+            <div class="kv"><span class="kv-label">Phone</span><span class="kv-value mono" style="font-size:12px;">{{ g.phone_number }}</span></div>
+            <div class="kv"><span class="kv-label">Employment</span><span class="kv-value" style="font-size:12px;">{{ g.get_employment_status_display }}</span></div>
+            {% if g.monthly_income %}<div class="kv"><span class="kv-label">Monthly Income</span><span class="kv-value" style="font-size:12px;">KSh {{ g.monthly_income|floatformat:0|intcomma }}</span></div>{% endif %}
+            {% if g.employer %}<div class="kv"><span class="kv-label">Employer</span><span class="kv-value" style="font-size:12px;">{{ g.employer }}</span></div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-micro"><i class="bi bi-people"></i> No guardian information recorded.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 4 — Documents + Siblings (side by side)
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  <div class="detail-grid">
+
+    <!-- Documents -->
+    <div class="dcard">
+      <div class="dcard-hd"><i class="bi bi-paperclip"></i> Supporting Documents ({{ application.documents.count }})</div>
+      <div class="dcard-body">
+        {% if application.documents.all %}
+        <div class="doc-list">
+          {% for doc in application.documents.all %}
+          <div class="doc-item">
+            <span class="doc-icon">
+              {% if doc.document_type in 'id_card,parent_id' %}<i class="bi bi-card-text"></i>
+              {% elif doc.document_type == 'fee_structure' or doc.document_type == 'fee_statement' %}<i class="bi bi-receipt"></i>
+              {% elif doc.document_type == 'academic_results' %}<i class="bi bi-trophy"></i>
+              {% elif doc.document_type == 'death_certificate' %}<i class="bi bi-file-earmark-x"></i>
+              {% elif doc.document_type == 'medical_report' or doc.document_type == 'disability_certificate' %}<i class="bi bi-heart-pulse"></i>
+              {% else %}<i class="bi bi-file-earmark"></i>{% endif %}
+            </span>
+            <div class="doc-info">
+              <div class="doc-name">{{ doc.get_document_type_display }}</div>
+              <div class="doc-meta">
+                Uploaded {{ doc.uploaded_at|date:"d M Y" }}
+                {% if doc.is_verified %}<span class="doc-verified"> &bull; ✓ Verified</span>{% endif %}
+              </div>
+            </div>
+            <a href="{{ doc.file.url }}" target="_blank" class="doc-link" title="View document">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-micro"><i class="bi bi-folder2-open"></i> No documents uploaded.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Siblings -->
+    <div class="dcard">
+      <div class="dcard-hd"><i class="bi bi-diagram-3"></i> Sibling Information</div>
+      <div class="dcard-body">
+        {% if applicant.siblings.all %}
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);">Name</th>
+              <th style="text-align:left;padding:6px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);">Age</th>
+              <th style="text-align:left;padding:6px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);">Level</th>
+              <th style="text-align:left;padding:6px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);">School</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sib in applicant.siblings.all %}
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid var(--light);">{{ sib.name }}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--light);">{{ sib.age }}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--light);">{{ sib.education_level }}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--light);">{{ sib.school_name|default:"—" }}{% if not sib.is_in_school %} <span style="color:var(--red);font-size:11px;">(not enrolled)</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-micro"><i class="bi bi-diagram-3"></i> No sibling information recorded.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ROW 5 — Review Timeline + Related Applications
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  <div class="detail-grid">
+
+    <!-- Review Timeline -->
+    <div class="dcard">
+      <div class="dcard-hd"><i class="bi bi-clock-history"></i> Review History ({{ reviews.count }})</div>
+      <div class="dcard-body">
+        {% if reviews %}
+        <div class="timeline">
+          {% for rev in reviews %}
+          <div class="tl-item">
+            <div class="tl-dot {{ rev.recommendation }}"></div>
+            <div class="tl-date">{{ rev.review_date|date:"d M Y, g:i A" }} &bull; {{ rev.get_review_level_display }}</div>
+            <div class="tl-content">
+              <div class="tl-reviewer">
+                <i class="bi bi-person-check"></i> {{ rev.reviewer.get_full_name|default:rev.reviewer.username }}
+                <span class="badge {% if rev.recommendation == 'approve' %}b-approved{% elif rev.recommendation == 'reject' %}b-rejected{% else %}b-under_review{% endif %}" style="font-size:10px;margin-left:6px;">
+                  {{ rev.get_recommendation_display }}
+                </span>
+              </div>
+              {% if rev.recommended_amount %}
+              <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:6px;">
+                Recommended: KSh {{ rev.recommended_amount|floatformat:0|intcomma }}
+              </div>
+              {% endif %}
+              <div class="tl-comment">{{ rev.comments }}</div>
+              {% if rev.need_score or rev.merit_score or rev.vulnerability_score %}
+              <div class="tl-scores">
+                {% if rev.need_score is not None %}<span class="tl-score-chip">Need: {{ rev.need_score }}/10</span>{% endif %}
+                {% if rev.merit_score is not None %}<span class="tl-score-chip">Merit: {{ rev.merit_score }}/10</span>{% endif %}
+                {% if rev.vulnerability_score is not None %}<span class="tl-score-chip">Vulnerability: {{ rev.vulnerability_score }}/10</span>{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-micro"><i class="bi bi-clock"></i> No reviews yet.</div>
+        {% endif %}
+
+        <!-- CTA if not yet reviewed by me -->
+        {% if not my_review %}
+        <div style="margin-top:16px;">
+          <a href="{% url 'submit_review' application.pk %}" class="btn btn-outline" style="width:100%;justify-content:center;">
+            <i class="bi bi-clipboard-check"></i> Submit Your Ward Review
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Related applications -->
+    <div class="dcard">
+      <div class="dcard-hd"><i class="bi bi-link-45deg"></i> Other Applications by Same Applicant</div>
+      <div class="dcard-body">
+        {% if related_applications %}
+        <table class="rel-table">
+          {% for rel in related_applications %}
+          <tr>
+            <td><a href="{% url 'ward_application_detail' rel.pk %}">{{ rel.application_number }}</a></td>
+            <td><span class="badge b-{{ rel.status }}">{{ rel.get_status_display }}</span></td>
+            <td style="color:var(--muted);font-size:12px;">{{ rel.fiscal_year.name }}</td>
+            <td style="font-size:12px;">KSh {{ rel.amount_requested|floatformat:0|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% else %}
+        <div class="empty-micro"><i class="bi bi-link"></i> No other applications.</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

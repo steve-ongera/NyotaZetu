@@ -1,0 +1,446 @@
+{% extends 'admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Ward Applications — {{ assigned_ward.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Design: clean government dashboard, slate + teal accent ── */
+:root {
+  --ink:    #1a2332;
+  --muted:  #5a6a7e;
+  --light:  #f0f4f8;
+  --border: #dde3eb;
+  --teal:   #0d9488;
+  --teal2:  #0f766e;
+  --amber:  #d97706;
+  --green:  #16a34a;
+  --red:    #dc2626;
+  --blue:   #2563eb;
+  --violet: #7c3aed;
+}
+
+body { font-family: 'Georgia', 'Times New Roman', serif; }
+
+/* breadcrumb */
+.bc { display:flex; flex-wrap:wrap; gap:4px 0; list-style:none; padding:0; margin:0 0 20px; font-size:13px; }
+.bc li { color:var(--muted); }
+.bc li+li::before { content:" › "; padding:0 6px; color:#b0bec5; }
+.bc a { color:var(--teal); text-decoration:none; }
+.bc a:hover { text-decoration:underline; }
+
+/* page header */
+.ph { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:24px; }
+.ph-left h1 { font-size:21px; font-weight:700; color:var(--ink); margin:0 0 4px; letter-spacing:-.3px; }
+.ph-left p  { font-size:13px; color:var(--muted); margin:0; }
+.ph-actions { display:flex; gap:10px; flex-wrap:wrap; }
+
+/* btn */
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 18px; border-radius:6px; font-size:13px; font-weight:600;
+  text-decoration:none; cursor:pointer; border:none; transition:all .2s;
+}
+.btn-primary { background:var(--teal);  color:#fff; }
+.btn-primary:hover { background:var(--teal2); color:#fff; transform:translateY(-1px); }
+.btn-outline { background:#fff; color:var(--ink); border:1px solid var(--border); }
+.btn-outline:hover { border-color:var(--teal); color:var(--teal); }
+.btn-sm { padding:7px 13px; font-size:12px; }
+
+/* stat strip */
+.stat-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:24px; }
+.stat-tile {
+  background:#fff; border:1px solid var(--border); border-radius:8px;
+  padding:16px 18px; position:relative; overflow:hidden;
+  transition:box-shadow .2s;
+}
+.stat-tile:hover { box-shadow:0 4px 14px rgba(0,0,0,.08); }
+.stat-tile::after {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:var(--accent, var(--teal));
+}
+.stat-tile.total  { --accent: var(--teal);  }
+.stat-tile.pend   { --accent: var(--amber); }
+.stat-tile.appr   { --accent: var(--green); }
+.stat-tile.disb   { --accent: var(--blue);  }
+.stat-tile.rej    { --accent: var(--red);   }
+.stat-tile.req    { --accent: var(--violet);}
+.stat-num { font-size:26px; font-weight:700; color:var(--ink); }
+.stat-lbl { font-size:11.5px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
+
+/* filter bar */
+.filter-bar {
+  background:#fff; border:1px solid var(--border); border-radius:8px;
+  padding:18px 20px; margin-bottom:20px;
+}
+.filter-bar form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+.filter-group { display:flex; flex-direction:column; gap:5px; min-width:160px; flex:1; }
+.filter-group label { font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.filter-group input,
+.filter-group select {
+  padding:9px 12px; border:1px solid var(--border); border-radius:6px;
+  font-size:13px; color:var(--ink); background:#fff; transition:border-color .2s;
+}
+.filter-group input:focus,
+.filter-group select:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(13,148,136,.1); }
+.filter-actions { display:flex; gap:8px; align-items:flex-end; padding-bottom:0; }
+
+/* export strip */
+.export-strip {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.export-strip span { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+.export-link {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; border:1px solid var(--border); border-radius:6px;
+  font-size:12px; font-weight:600; color:var(--ink); text-decoration:none;
+  background:#fff; transition:all .2s;
+}
+.export-link:hover { border-color:var(--teal); color:var(--teal); }
+.export-link.csv-btn:hover { border-color:#16a34a; color:#16a34a; }
+.export-link.json-btn:hover { border-color:#d97706; color:#d97706; }
+
+/* table */
+.card { background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.card-hd {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+.card-hd-title { font-size:14px; font-weight:700; color:var(--ink); }
+.count-badge {
+  background:var(--teal); color:#fff;
+  border-radius:20px; padding:2px 10px; font-size:12px; font-weight:700;
+}
+table.tbl { width:100%; border-collapse:collapse; }
+.tbl thead th {
+  background:var(--light); padding:11px 14px;
+  text-align:left; font-size:11px; font-weight:700;
+  color:var(--muted); text-transform:uppercase; letter-spacing:.5px;
+  border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.tbl thead th a { color:var(--muted); text-decoration:none; }
+.tbl thead th a:hover { color:var(--teal); }
+.tbl tbody td { padding:13px 14px; border-bottom:1px solid var(--light); font-size:13px; color:var(--ink); vertical-align:middle; }
+.tbl tbody tr:hover { background:#fafcfd; }
+.tbl tbody tr:last-child td { border-bottom:none; }
+
+.app-no    { font-weight:700; font-size:12px; color:var(--ink); font-family:monospace; }
+.name-blk  { font-weight:600; color:var(--ink); }
+.sub-text  { font-size:12px; color:var(--muted); margin-top:2px; }
+.amt-main  { font-weight:700; color:var(--ink); }
+.amt-alloc { font-size:12px; color:var(--green); margin-top:2px; }
+
+/* status badges */
+.badge {
+  display:inline-block; padding:4px 10px; border-radius:4px;
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+}
+.b-submitted      { background:#fef3c7; color:#92400e; }
+.b-under_review   { background:#dbeafe; color:#1e40af; }
+.b-approved       { background:#d1fae5; color:#065f46; }
+.b-rejected       { background:#fee2e2; color:#991b1b; }
+.b-disbursed      { background:#ede9fe; color:#4c1d95; }
+.b-pending_documents { background:#ffedd5; color:#9a3412; }
+.b-draft          { background:#f1f5f9; color:#475569; }
+
+.icon-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:6px;
+  border:1px solid var(--border); background:#fff; color:var(--muted);
+  text-decoration:none; transition:all .2s;
+}
+.icon-btn:hover { border-color:var(--teal); color:var(--teal); transform:translateY(-1px); }
+
+/* pagination */
+.pag-wrap { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:12px; }
+.pag-info { font-size:13px; color:var(--muted); }
+.pag { display:flex; gap:5px; list-style:none; padding:0; margin:0; }
+.pag li a, .pag li span {
+  display:flex; align-items:center; justify-content:center;
+  min-width:34px; height:34px; padding:0 10px;
+  border:1px solid var(--border); border-radius:6px;
+  font-size:13px; color:var(--muted); text-decoration:none; background:#fff;
+  transition:all .2s;
+}
+.pag li a:hover { border-color:var(--teal); color:var(--teal); }
+.pag li.active span { background:var(--teal); border-color:var(--teal); color:#fff; }
+.pag li.disabled span { opacity:.45; pointer-events:none; }
+
+/* empty */
+.empty { text-align:center; padding:60px 20px; }
+.empty i { font-size:44px; color:#cbd5e1; display:block; margin-bottom:14px; }
+.empty h3 { font-size:17px; color:var(--muted); margin:0 0 6px; }
+.empty p { font-size:13px; color:#94a3b8; }
+
+@media(max-width:768px) {
+  .stat-strip { grid-template-columns:repeat(2,1fr); }
+  .ph { flex-direction:column; }
+  .filter-bar form { flex-direction:column; }
+  .filter-group { min-width:100%; }
+  .tbl thead { display:none; }
+  .tbl tbody td { display:block; padding:8px 14px; }
+  .tbl tbody td::before { content:attr(data-label); font-weight:700; font-size:11px; color:var(--muted); display:block; }
+  .tbl tbody tr { border-bottom:2px solid var(--border); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+
+  <!-- Breadcrumb -->
+  <ol class="bc">
+    <li><a href="{% url 'reviewer_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+    <li>Ward Applications</li>
+  </ol>
+
+  <!-- Page header -->
+  <div class="ph">
+    <div class="ph-left">
+      <h1><i class="bi bi-collection" style="color:var(--teal);"></i> {{ assigned_ward.name }} — All Applications</h1>
+      <p>{{ current_fiscal_year.name }} &bull; Every application in your ward regardless of status</p>
+    </div>
+    <div class="ph-actions">
+      <a href="{% url 'reviewer_dashboard' %}" class="btn btn-outline btn-sm">
+        <i class="bi bi-arrow-left"></i> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="stat-strip">
+    <div class="stat-tile total">
+      <div class="stat-num">{{ stats.total|default:0 }}</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-tile pend">
+      <div class="stat-num">{{ stats.pending_count|default:0 }}</div>
+      <div class="stat-lbl">Pending</div>
+    </div>
+    <div class="stat-tile appr">
+      <div class="stat-num">{{ stats.approved_count|default:0 }}</div>
+      <div class="stat-lbl">Approved</div>
+    </div>
+    <div class="stat-tile disb">
+      <div class="stat-num">{{ stats.disbursed_count|default:0 }}</div>
+      <div class="stat-lbl">Disbursed</div>
+    </div>
+    <div class="stat-tile rej">
+      <div class="stat-num">{{ stats.rejected_count|default:0 }}</div>
+      <div class="stat-lbl">Rejected</div>
+    </div>
+    <div class="stat-tile req">
+      <div class="stat-num">KSh {{ stats.total_requested|default:0|floatformat:0|intcomma }}</div>
+      <div class="stat-lbl">Total Requested</div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <form method="get" id="filterForm">
+      <div class="filter-group">
+        <label><i class="bi bi-search"></i> Search</label>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Name, ID, App #…">
+      </div>
+
+      <div class="filter-group">
+        <label>Status</label>
+        <select name="status">
+          <option value="">All Statuses</option>
+          {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Category</label>
+        <select name="category">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.pk }}" {% if selected_category == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Institution</label>
+        <select name="institution">
+          <option value="">All Institutions</option>
+          {% for inst in institutions %}
+          <option value="{{ inst.pk }}" {% if selected_institution == inst.pk|stringformat:"s" %}selected{% endif %}>{{ inst.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Village</label>
+        <select name="village">
+          <option value="">All Villages</option>
+          {% for v in villages %}
+          <option value="{{ v.pk }}" {% if selected_village == v.pk|stringformat:"s" %}selected{% endif %}>{{ v.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Sort</label>
+        <select name="sort">
+          <option value="-date_submitted"   {% if sort_by == '-date_submitted' %}selected{% endif %}>Newest first</option>
+          <option value="date_submitted"    {% if sort_by == 'date_submitted' %}selected{% endif %}>Oldest first</option>
+          <option value="-amount_requested" {% if sort_by == '-amount_requested' %}selected{% endif %}>Amount ↓</option>
+          <option value="amount_requested"  {% if sort_by == 'amount_requested' %}selected{% endif %}>Amount ↑</option>
+          <option value="applicant__user__last_name" {% if sort_by == 'applicant__user__last_name' %}selected{% endif %}>Name A→Z</option>
+          <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status</option>
+        </select>
+      </div>
+
+      <!-- hidden preserved fields -->
+      <input type="hidden" name="page" value="1">
+
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filter</button>
+        <a href="{% url 'ward_applications_list' %}" class="btn btn-outline btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Export strip — carries current filters -->
+  <div class="export-strip">
+    <span><i class="bi bi-download"></i> Export current results:</span>
+    <a href="?{{ request.GET.urlencode }}&export=csv"
+       class="export-link csv-btn"
+       title="Download as CSV">
+      <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+    </a>
+    <a href="?{{ request.GET.urlencode }}&export=json"
+       class="export-link json-btn"
+       title="Download as JSON">
+      <i class="bi bi-file-earmark-code"></i> JSON
+    </a>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-hd-title"><i class="bi bi-table"></i> Applications</span>
+      <span class="count-badge">{{ page_obj.paginator.count }}</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th><a href="?{{ request.GET.urlencode }}&sort=-date_submitted">App #</a></th>
+            <th><a href="?{{ request.GET.urlencode }}&sort=applicant__user__last_name">Applicant</a></th>
+            <th>Village</th>
+            <th>Institution</th>
+            <th>Category</th>
+            <th><a href="?{{ request.GET.urlencode }}&sort=-amount_requested">Requested</a></th>
+            <th>Allocated</th>
+            <th><a href="?{{ request.GET.urlencode }}&sort=status">Status</a></th>
+            <th>Submitted</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in page_obj %}
+          {% with alloc=app.allocation %}
+          <tr>
+            <td data-label="App #">
+              <span class="app-no">{{ app.application_number }}</span>
+            </td>
+            <td data-label="Applicant">
+              <div class="name-blk">{{ app.applicant.user.get_full_name }}</div>
+              <div class="sub-text">{{ app.applicant.id_number }}</div>
+            </td>
+            <td data-label="Village">
+              <div class="sub-text">{{ app.applicant.village|default:"—" }}</div>
+            </td>
+            <td data-label="Institution">
+              <div class="name-blk" style="font-size:12px;">{{ app.institution.name }}</div>
+              <div class="sub-text">{{ app.institution.get_institution_type_display }}</div>
+            </td>
+            <td data-label="Category">
+              <span style="font-size:12px;">{{ app.bursary_category.name|default:"—" }}</span>
+            </td>
+            <td data-label="Requested">
+              <span class="amt-main">KSh {{ app.amount_requested|floatformat:0|intcomma }}</span>
+            </td>
+            <td data-label="Allocated">
+              {% if alloc and alloc.approved_amount %}
+                <span class="amt-alloc">KSh {{ alloc.approved_amount|floatformat:0|intcomma }}</span>
+                {% if alloc.is_disbursed %}<div style="font-size:11px;color:#16a34a;font-weight:700;">✓ Disbursed</div>{% endif %}
+              {% else %}
+                <span style="color:#94a3b8;font-size:12px;">—</span>
+              {% endif %}
+            </td>
+            <td data-label="Status">
+              <span class="badge b-{{ app.status }}">{{ app.get_status_display }}</span>
+            </td>
+            <td data-label="Submitted">
+              <div style="font-size:12px;white-space:nowrap;">
+                {{ app.date_submitted|date:"d M Y"|default:"Draft" }}
+              </div>
+            </td>
+            <td>
+              <a href="{% url 'ward_application_detail' app.pk %}" class="icon-btn" title="View Detail">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="10">
+            <div class="empty">
+              <i class="bi bi-inbox"></i>
+              <h3>No Applications Found</h3>
+              <p>Try adjusting your filters.</p>
+            </div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pag-wrap">
+      <span class="pag-info">
+        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+      </span>
+      <ul class="pag">
+        <li class="{% if not page_obj.has_previous %}disabled{% endif %}">
+          <a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i></a>
+        </li>
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="active"><span>{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li><a href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        <li class="{% if not page_obj.has_next %}disabled{% endif %}">
+          <a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-right"></i></a>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </div><!-- /card -->
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Remove export= param from URL before re-exporting so params don't stack
+document.querySelectorAll('.export-link').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    var url = new URL(link.href, window.location.origin);
+    url.searchParams.delete('page');
+    link.href = url.toString();
+  });
+});
+</script>
+{% endblock %}
