@@ -23385,12 +23385,35 @@ def reviewer_dashboard(request):
     weekly_reviews = my_reviews.filter(
         review_date__gte=week_ago
     ).count()
-    
-    # Average review time (if tracked)
-    avg_review_time = my_reviews.aggregate(
-        avg_time=Avg(F('review_date') - F('application__date_submitted'))
-    )
-    
+
+    # ── Chart 1: Applications by Status (for doughnut chart) ──────────────────
+    status_chart_data = {
+        'labels': ['Submitted', 'Under Review', 'Approved', 'Rejected', 'Disbursed'],
+        'values': [
+            ward_applications.filter(status='submitted').count(),
+            ward_applications.filter(status='under_review').count(),
+            ward_applications.filter(status='approved').count(),
+            ward_applications.filter(status='rejected').count(),
+            ward_applications.filter(status='disbursed').count(),
+        ]
+    }
+
+    # ── Chart 2: Daily review activity for the last 14 days (line chart) ──────
+    from datetime import date, timedelta as td
+    import json as _json
+    daily_labels = []
+    daily_counts = []
+    for i in range(13, -1, -1):
+        day = (timezone.now() - td(days=i)).date()
+        daily_labels.append(day.strftime('%b %d'))
+        daily_counts.append(
+            my_reviews.filter(review_date__date=day).count()
+        )
+
+    # ── Chart 3: Category distribution of ward applications (bar chart) ───────
+    cat_labels = [c['bursary_category__name'] or 'Uncategorised' for c in category_breakdown]
+    cat_values = [c['count'] for c in category_breakdown]
+
     # Pending urgent reviews (applications near deadline)
     if current_fiscal_year.application_deadline:
         days_to_deadline = (current_fiscal_year.application_deadline - timezone.now().date()).days
@@ -23426,19 +23449,26 @@ def reviewer_dashboard(request):
         'weekly_reviews': weekly_reviews,
         'urgent_reviews': urgent_reviews,
         'days_to_deadline': days_to_deadline,
+        # Chart data (safe JSON strings for the template)
+        'status_chart_labels': _json.dumps(status_chart_data['labels']),
+        'status_chart_values': _json.dumps(status_chart_data['values']),
+        'daily_chart_labels': _json.dumps(daily_labels),
+        'daily_chart_values': _json.dumps(daily_counts),
+        'cat_chart_labels': _json.dumps(cat_labels),
+        'cat_chart_values': _json.dumps(cat_values),
     }
     
-    # Create audit log
+    # ── FIX: pass record_id as required by create_audit_log ──────────────────
     create_audit_log(
         user=user,
         action='view',
         table_affected='Dashboard',
+        record_id=str(assigned_ward.pk),          # ← was missing
         description=f'Reviewer accessed dashboard for {assigned_ward.name}',
         ip_address=request.META.get('REMOTE_ADDR')
     )
     
     return render(request, 'reviewer/dashboard.html', context)
-
 
 # ============= APPLICATION MANAGEMENT =============
 @login_required
