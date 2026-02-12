@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <style>
+    /* Keep all existing styles from the original template */
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -75,28 +76,6 @@
         margin: 0;
     }
 
-    .export-btn {
-        padding: 10px 20px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .export-btn:hover {
-        background: #2980b9;
-        transform: translateY(-1px);
-        color: white;
-    }
-
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -158,44 +137,292 @@
         font-weight: 500;
     }
 
-    .filter-section {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 24px;
-    }
-
-    .filter-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
         margin-bottom: 16px;
-        cursor: pointer;
     }
 
-    .filter-title {
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-item label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 2px;
+    }
+
+    .info-item span {
+        font-size: 14px;
+        color: #334155;
+        font-weight: 500;
+    }
+
+    .alert {
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+        border: 1px solid transparent;
+    }
+
+    .alert-info {
+        background-color: #DBEAFE;
+        border-color: #3B82F6;
+        color: #1E40AF;
+    }
+
+    .alert-warning {
+        background-color: #FEF3C7;
+        border-color: #F59E0B;
+        color: #92400E;
+    }
+
+    .alert-danger {
+        background-color: #FEE2E2;
+        border-color: #FCA5A5;
+        color: #991B1B;
+    }
+
+    .alert-success {
+        background-color: #D1FAE5;
+        border-color: #6EE7B7;
+        color: #065F46;
+    }
+
+    .alert i {
+        margin-right: 8px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-submitted {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-under-review {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .status-approved {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .status-disbursed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+
+    .applications-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .applications-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .applications-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applications-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applications-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .table-title {
         font-size: 15px;
         font-weight: 600;
         color: #1E293B;
         display: flex;
         align-items: center;
         gap: 8px;
+        margin-bottom: 16px;
     }
 
-    .filter-toggle {
+    .applicant-email {
+        font-size: 13px;
         color: #64748B;
-        transition: transform 0.3s ease;
     }
 
-    .filter-toggle.rotated {
-        transform: rotate(180deg);
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #E2E8F0;
+        background: white;
+        color: #64748B;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .action-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+        transform: translateY(-1px);
+    }
+
+    .review-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .review-body {
+        margin-bottom: 12px;
+    }
+
+    .review-body p {
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    .review-scores {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .review-scores span {
+        font-size: 13px;
+        font-weight: 500;
+        padding: 4px 8px;
+        background: #E2E8F0;
+        border-radius: 4px;
+    }
+
+    .review-footer {
+        font-size: 13px;
+        color: #64748B;
+        border-top: 1px solid #E2E8F0;
+        padding-top: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-group textarea,
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+    }
+
+    .form-group textarea:focus,
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
     }
 
     .filter-content {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 16px;
+        margin-bottom: 16px;
     }
 
     .filter-group {
@@ -250,6 +477,14 @@
         transform: translateY(-1px);
     }
 
+    .filter-btn.btn-danger {
+        background: #e74c3c;
+    }
+
+    .filter-btn.btn-danger:hover {
+        background: #c0392b;
+    }
+
     .clear-btn {
         padding: 10px 20px;
         background: white;
@@ -269,459 +504,6 @@
         border-color: #CBD5E1;
     }
 
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .table-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 0;
-    }
-
-    .per-page-select {
-        padding: 8px 12px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 13px;
-        background: white;
-        color: #64748B;
-    }
-
-    .applications-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .applications-table thead th {
-        background: #F8FAFC;
-        padding: 12px 16px;
-        text-align: left;
-        font-size: 12px;
-        font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #E2E8F0;
-        white-space: nowrap;
-    }
-
-    .applications-table tbody td {
-        padding: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        font-size: 14px;
-        color: #334155;
-    }
-
-    .applications-table tbody tr {
-        transition: background-color 0.2s ease;
-    }
-
-    .applications-table tbody tr:hover {
-        background-color: #F8FAFC;
-    }
-
-    .app-number {
-        font-weight: 600;
-        color: #1E293B;
-    }
-
-    .applicant-name {
-        font-weight: 500;
-        color: #1E293B;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .applicant-email {
-        font-size: 13px;
-        color: #64748B;
-    }
-
-    .institution-name {
-        font-weight: 500;
-        color: #1E293B;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .institution-county {
-        font-size: 13px;
-        color: #64748B;
-    }
-
-    .amount-requested {
-        font-weight: 600;
-        color: #1E293B;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .amount-allocated {
-        font-size: 13px;
-        color: #27ae60;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .status-submitted {
-        background: #FEF3C7;
-        color: #92400E;
-    }
-
-    .status-under-review {
-        background: #DBEAFE;
-        color: #1E40AF;
-    }
-
-    .status-approved {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .status-rejected {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .status-disbursed {
-        background: #E0E7FF;
-        color: #3730A3;
-    }
-
-    .date-main {
-        font-weight: 500;
-        color: #1E293B;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .date-time {
-        font-size: 13px;
-        color: #64748B;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 8px;
-    }
-
-    .action-btn {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #E2E8F0;
-        background: white;
-        color: #64748B;
-        text-decoration: none;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-
-    .action-btn:hover {
-        border-color: #3498db;
-        color: #3498db;
-        background: rgba(52, 152, 219, 0.05);
-        transform: translateY(-1px);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-icon {
-        font-size: 48px;
-        color: #CBD5E1;
-        margin-bottom: 16px;
-    }
-
-    .empty-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #64748B;
-        margin-bottom: 8px;
-    }
-
-    .empty-text {
-        font-size: 14px;
-        color: #94A3B8;
-        margin-bottom: 20px;
-    }
-
-    .pagination-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #F1F5F9;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    .pagination-info {
-        color: #64748B;
-        font-size: 14px;
-    }
-
-    .pagination {
-        display: flex;
-        gap: 5px;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .page-item {
-        display: inline-block;
-    }
-
-    .page-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 36px;
-        height: 36px;
-        padding: 0 12px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        color: #64748B;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        background: white;
-    }
-
-    .page-link:hover {
-        background: #F8FAFC;
-        border-color: #3498db;
-        color: #3498db;
-    }
-
-    .page-item.active .page-link {
-        background: #3498db;
-        border-color: #3498db;
-        color: white;
-    }
-
-    .page-item.disabled .page-link {
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
-    }
-
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal.show {
-        display: flex;
-    }
-
-    .modal-dialog {
-        background: white;
-        border-radius: 8px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    .modal-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: #64748B;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-    }
-
-    .modal-body {
-        padding: 24px;
-    }
-
-    .modal-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-    }
-
-    /* Custom styles for application details page */
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .info-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .info-item label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #64748B;
-        margin-bottom: 2px;
-    }
-
-    .info-item span {
-        font-size: 14px;
-        color: #334155;
-        font-weight: 500;
-    }
-
-    .alert {
-        padding: 16px;
-        border-radius: 6px;
-        margin-bottom: 16px;
-        border: 1px solid transparent;
-    }
-
-    .alert-info {
-        background-color: #DBEAFE;
-        border-color: #3B82F6;
-        color: #1E40AF;
-    }
-
-    .alert-warning {
-        background-color: #FEF3C7;
-        border-color: #F59E0B;
-        color: #92400E;
-    }
-
-    .alert i {
-        margin-right: 8px;
-    }
-
-    .review-card {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 16px;
-    }
-
-    .review-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #E2E8F0;
-    }
-
-    .review-body {
-        margin-bottom: 12px;
-    }
-
-    .review-body p {
-        margin-bottom: 8px;
-        line-height: 1.5;
-    }
-
-    .review-scores {
-        display: flex;
-        gap: 16px;
-        margin-top: 12px;
-    }
-
-    .review-scores span {
-        font-size: 13px;
-        font-weight: 500;
-        padding: 4px 8px;
-        background: #E2E8F0;
-        border-radius: 4px;
-    }
-
-    .review-footer {
-        font-size: 13px;
-        color: #64748B;
-        border-top: 1px solid #E2E8F0;
-        padding-top: 12px;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-group label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        color: #334155;
-        margin-bottom: 8px;
-    }
-
-    .form-group textarea {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 14px;
-        font-family: inherit;
-        resize: vertical;
-        transition: all 0.3s ease;
-    }
-
-    .form-group textarea:focus {
-        outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
     .mt-3 {
         margin-top: 12px;
     }
@@ -730,34 +512,360 @@
         margin-top: 16px;
     }
 
+    /* ============= DOCUMENT MODAL CSS ============= */
+    .doc-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .doc-modal.show {
+        display: flex;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .doc-modal-dialog {
+        width: 95%;
+        max-width: 1200px;
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .doc-modal-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .doc-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        border-bottom: 1px solid #E2E8F0;
+        background: #F8FAFC;
+    }
+
+    .doc-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .doc-modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .doc-type-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .doc-type-badge.pdf {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .doc-type-badge.image {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .doc-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .doc-action-btn {
+        padding: 8px 12px;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+
+    .doc-action-btn:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .doc-close-btn {
+        padding: 8px;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        transition: all 0.2s ease;
+    }
+
+    .doc-close-btn:hover {
+        background: #FEE2E2;
+        border-color: #FCA5A5;
+        color: #DC2626;
+    }
+
+    .doc-info-bar {
+        display: flex;
+        gap: 24px;
+        padding: 12px 24px;
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+
+    .doc-info-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #64748B;
+    }
+
+    .doc-modal-body {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        background: #F1F5F9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .doc-loading {
+        text-align: center;
+        color: #64748B;
+    }
+
+    .doc-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #E2E8F0;
+        border-top-color: #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .doc-viewer-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        padding: 20px;
+    }
+
+    .doc-image-viewer {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
+
+    .doc-image-viewer img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s ease;
+    }
+
+    .doc-pdf-viewer {
+        width: 100%;
+        height: 100%;
+    }
+
+    .doc-pdf-viewer iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 8px;
+    }
+
+    .doc-unsupported {
+        text-align: center;
+        padding: 40px;
+    }
+
+    .doc-unsupported i {
+        font-size: 64px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .doc-error {
+        text-align: center;
+        padding: 40px;
+    }
+
+    .doc-error i {
+        font-size: 64px;
+        color: #FCA5A5;
+        margin-bottom: 16px;
+    }
+
+    .doc-verification-panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 350px;
+        background: white;
+        border-left: 1px solid #E2E8F0;
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
+    .verification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
+        background: #F8FAFC;
+    }
+
+    .verification-header h6 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .verification-close {
+        background: none;
+        border: none;
+        color: #64748B;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 16px;
+    }
+
+    #verificationForm {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .verification-actions {
+        display: flex;
+        gap: 10px;
+        padding-top: 16px;
+        border-top: 1px solid #E2E8F0;
+    }
+
+    .status-verified {
+        color: #065F46;
+        background: #D1FAE5;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-unverified {
+        color: #92400E;
+        background: #FEF3C7;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
     @media (max-width: 768px) {
+        .doc-modal-dialog {
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .doc-verification-panel {
+            width: 100%;
+        }
+        
+        .doc-action-btn span {
+            display: none;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
         }
 
         .filter-content {
-            grid-template-columns: 1fr;
-        }
-
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .applications-table {
-            font-size: 13px;
-        }
-
-        .applications-table thead th,
-        .applications-table tbody td {
-            padding: 10px;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        .info-grid {
             grid-template-columns: 1fr;
         }
 
@@ -810,6 +918,31 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Document Completeness Alert -->
+        {% if not all_documents_uploaded %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Missing Documents:</strong> This application is missing {{ missing_documents|length }} required document(s):
+            {% for doc_type in missing_documents %}
+                {% if doc_type == 'id_card' %}National ID Card{% endif %}
+                {% if doc_type == 'admission_letter' %}Admission Letter{% endif %}
+                {% if doc_type == 'fee_structure' %}Fee Structure{% endif %}
+                {% if doc_type == 'fee_statement' %}Fee Statement{% endif %}
+                {% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% elif not all_documents_verified %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Pending Verification:</strong> {{ unverified_documents }} document(s) need to be verified before approval.
+        </div>
+        {% else %}
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle"></i>
+            <strong>Documents Complete:</strong> All required documents have been uploaded and verified.
+        </div>
+        {% endif %}
 
         <!-- Applicant Information -->
         <div class="section-container">
@@ -1202,9 +1335,9 @@
                             </td>
                             <td>
                                 <div class="action-buttons">
-                                    <a href="{{ document.file.url }}" target="_blank" class="action-btn" title="View Document">
+                                    <button class="action-btn" onclick="openDocumentModal({{ document.id }}, {{ application.id }})" title="View Document">
                                         <i class="bi bi-eye"></i>
-                                    </a>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1314,6 +1447,12 @@
                         <small class="applicant-email">Maximum: KSh {{ application.bursary_category.max_amount_per_applicant|floatformat:0|intcomma }}</small>
                     </div>
 
+                    <div class="filter-group" id="rejectionReasonField" style="display: none;">
+                        <label for="rejection_reason">Rejection Reason * <span style="color: #e74c3c;">(Required for rejection)</span></label>
+                        <textarea class="filter-input" id="rejection_reason" name="rejection_reason" rows="4" placeholder="Provide a detailed reason for rejection..."></textarea>
+                        <small class="applicant-email">This will be sent to the applicant via email</small>
+                    </div>
+
                     <div class="filter-group">
                         <label for="need_score">Financial Need Score (0-10)</label>
                         <input type="number" class="filter-input" id="need_score" name="need_score" 
@@ -1346,44 +1485,426 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Document Viewer Modal -->
+<div id="documentViewerModal" class="doc-modal">
+    <div class="doc-modal-dialog">
+        <div class="doc-modal-content">
+            <!-- Header -->
+            <div class="doc-modal-header">
+                <div class="doc-header-left">
+                    <h5 class="doc-modal-title">
+                        <i class="bi bi-file-earmark"></i>
+                        <span id="docTitleText">Document Viewer</span>
+                    </h5>
+                    <span class="doc-type-badge" id="docTypeBadge"></span>
+                </div>
+                <div class="doc-header-actions">
+                    <button type="button" class="doc-action-btn" id="verifyDocBtn" title="Verify Document">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Verify</span>
+                    </button>
+                    <button type="button" class="doc-action-btn" id="downloadDocBtn" title="Download">
+                        <i class="bi bi-download"></i>
+                    </button>
+                    <button type="button" class="doc-action-btn" id="rotateDocBtn" title="Rotate">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button type="button" class="doc-action-btn" id="zoomInBtn" title="Zoom In">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button type="button" class="doc-action-btn" id="zoomOutBtn" title="Zoom Out">
+                        <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <button type="button" class="doc-close-btn" onclick="closeDocumentModal()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Document Info Bar -->
+            <div class="doc-info-bar">
+                <div class="doc-info-item">
+                    <i class="bi bi-calendar"></i>
+                    <span id="docUploadDate">Upload Date</span>
+                </div>
+                <div class="doc-info-item">
+                    <i class="bi bi-file-earmark"></i>
+                    <span id="docFileSize">File Size</span>
+                </div>
+                <div class="doc-info-item">
+                    <span id="docVerificationStatus"></span>
+                </div>
+            </div>
+
+            <!-- Body - Document Viewer -->
+            <div class="doc-modal-body">
+                <div class="doc-loading" id="docLoading">
+                    <div class="doc-spinner"></div>
+                    <p>Loading document...</p>
+                </div>
+                
+                <div class="doc-viewer-container" id="docViewerContainer" style="display: none;">
+                    <!-- For Images -->
+                    <div class="doc-image-viewer" id="docImageViewer" style="display: none;">
+                        <img id="docImage" src="" alt="Document">
+                    </div>
+                    
+                    <!-- For PDFs -->
+                    <div class="doc-pdf-viewer" id="docPdfViewer" style="display: none;">
+                        <iframe id="docPdfFrame" src="" frameborder="0"></iframe>
+                    </div>
+
+                    <!-- For Unsupported Types -->
+                    <div class="doc-unsupported" id="docUnsupported" style="display: none;">
+                        <i class="bi bi-file-earmark-x"></i>
+                        <p>This file type cannot be previewed</p>
+                        <button class="filter-btn" onclick="downloadCurrentDocument()">
+                            <i class="bi bi-download"></i> Download to View
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div class="doc-error" id="docError" style="display: none;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p id="docErrorMessage">Failed to load document</p>
+                    <button class="filter-btn" onclick="retryLoadDocument()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Verification Panel -->
+            <div class="doc-verification-panel" id="verificationPanel" style="display: none;">
+                <div class="verification-header">
+                    <h6><i class="bi bi-shield-check"></i> Document Verification</h6>
+                    <button type="button" class="verification-close" onclick="closeVerificationPanel()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <form id="verificationForm">
+                    <div class="form-group">
+                        <label>Verification Status</label>
+                        <select class="filter-select" id="verificationStatus" required>
+                            <option value="">-- Select Status --</option>
+                            <option value="verified">Verified - Document is Authentic</option>
+                            <option value="rejected">Rejected - Document is Invalid</option>
+                            <option value="needs_review">Needs Further Review</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Verification Comments</label>
+                        <textarea class="filter-input" id="verificationComments" rows="3" placeholder="Enter verification notes..."></textarea>
+                    </div>
+                    <div class="verification-actions">
+                        <button type="button" class="clear-btn" onclick="closeVerificationPanel()">Cancel</button>
+                        <button type="submit" class="filter-btn">
+                            <i class="bi bi-check-circle"></i> Submit Verification
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const recommendationSelect = document.getElementById('recommendation');
-        const amountField = document.getElementById('amountField');
-        
-        if (recommendationSelect) {
-            recommendationSelect.addEventListener('change', function() {
-                if (this.value === 'approve') {
-                    amountField.style.display = 'block';
-                    document.getElementById('recommended_amount').required = true;
-                } else {
-                    amountField.style.display = 'none';
-                    document.getElementById('recommended_amount').required = false;
-                }
-            });
+// Global variables
+let currentDocument = null;
+let currentRotation = 0;
+let currentZoom = 1;
 
-            // Trigger on page load if approve is already selected
-            if (recommendationSelect.value === 'approve') {
-                amountField.style.display = 'block';
+// ============= DOCUMENT MODAL FUNCTIONS =============
+
+// Open document modal
+function openDocumentModal(documentId, applicationId) {
+    const modal = document.getElementById('documentViewerModal');
+    const loading = document.getElementById('docLoading');
+    const viewerContainer = document.getElementById('docViewerContainer');
+    const errorContainer = document.getElementById('docError');
+    
+    currentRotation = 0;
+    currentZoom = 1;
+    
+    modal.classList.add('show');
+    loading.style.display = 'block';
+    viewerContainer.style.display = 'none';
+    errorContainer.style.display = 'none';
+    
+    fetchDocumentData(documentId, applicationId);
+}
+
+// Fetch document data
+function fetchDocumentData(documentId, applicationId) {
+    fetch(`/reviewer/application/${applicationId}/document/${documentId}/proxy/`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load document');
+            return response.json();
+        })
+        .then(data => {
+            currentDocument = data;
+            displayDocument(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showDocumentError(error.message);
+        });
+}
+
+// Display document
+function displayDocument(data) {
+    const loading = document.getElementById('docLoading');
+    const viewerContainer = document.getElementById('docViewerContainer');
+    const titleText = document.getElementById('docTitleText');
+    const typeBadge = document.getElementById('docTypeBadge');
+    const uploadDate = document.getElementById('docUploadDate');
+    const fileSize = document.getElementById('docFileSize');
+    const verificationStatus = document.getElementById('docVerificationStatus');
+    
+    loading.style.display = 'none';
+    viewerContainer.style.display = 'flex';
+    
+    titleText.textContent = data.document_type;
+    
+    const fileExt = data.file_url.split('.').pop().toLowerCase();
+    if (fileExt === 'pdf') {
+        typeBadge.textContent = 'PDF';
+        typeBadge.className = 'doc-type-badge pdf';
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+        typeBadge.textContent = 'Image';
+        typeBadge.className = 'doc-type-badge image';
+    } else {
+        typeBadge.textContent = fileExt.toUpperCase();
+        typeBadge.className = 'doc-type-badge';
+    }
+    
+    uploadDate.textContent = `Uploaded: ${formatDate(data.uploaded_at)}`;
+    fileSize.textContent = data.file_size || 'Size: Unknown';
+    
+    if (data.is_verified) {
+        verificationStatus.innerHTML = '<span class="status-verified"><i class="bi bi-check-circle"></i> Verified</span>';
+    } else {
+        verificationStatus.innerHTML = '<span class="status-unverified"><i class="bi bi-clock"></i> Unverified</span>';
+    }
+    
+    const imageViewer = document.getElementById('docImageViewer');
+    const pdfViewer = document.getElementById('docPdfViewer');
+    const unsupported = document.getElementById('docUnsupported');
+    
+    imageViewer.style.display = 'none';
+    pdfViewer.style.display = 'none';
+    unsupported.style.display = 'none';
+    
+    if (fileExt === 'pdf') {
+        pdfViewer.style.display = 'block';
+        document.getElementById('docPdfFrame').src = data.file_url;
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt)) {
+        imageViewer.style.display = 'flex';
+        const docImage = document.getElementById('docImage');
+        docImage.src = data.file_url;
+        docImage.style.transform = 'rotate(0deg) scale(1)';
+    } else {
+        unsupported.style.display = 'block';
+    }
+}
+
+// Show error
+function showDocumentError(message) {
+    document.getElementById('docLoading').style.display = 'none';
+    document.getElementById('docViewerContainer').style.display = 'none';
+    document.getElementById('docError').style.display = 'block';
+    document.getElementById('docErrorMessage').textContent = message;
+}
+
+// Close modal
+function closeDocumentModal() {
+    document.getElementById('documentViewerModal').classList.remove('show');
+    document.getElementById('docPdfFrame').src = '';
+    closeVerificationPanel();
+}
+
+// Rotate document
+function rotateDocument() {
+    const docImage = document.getElementById('docImage');
+    if (!docImage || docImage.parentElement.style.display === 'none') return;
+    
+    currentRotation = (currentRotation + 90) % 360;
+    docImage.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom})`;
+}
+
+// Zoom functions
+function zoomIn() {
+    const docImage = document.getElementById('docImage');
+    if (!docImage || docImage.parentElement.style.display === 'none') return;
+    
+    currentZoom = Math.min(currentZoom + 0.25, 3);
+    docImage.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom})`;
+}
+
+function zoomOut() {
+    const docImage = document.getElementById('docImage');
+    if (!docImage || docImage.parentElement.style.display === 'none') return;
+    
+    currentZoom = Math.max(currentZoom - 0.25, 0.5);
+    docImage.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom})`;
+}
+
+// Download document
+function downloadCurrentDocument() {
+    if (!currentDocument) return;
+    
+    const link = document.createElement('a');
+    link.href = currentDocument.file_url;
+    link.download = currentDocument.document_type || 'document';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Retry loading
+function retryLoadDocument() {
+    if (!currentDocument) return;
+    
+    document.getElementById('docError').style.display = 'none';
+    document.getElementById('docLoading').style.display = 'block';
+    
+    fetchDocumentData(currentDocument.document_id, currentDocument.application_id);
+}
+
+// Verification panel
+function openVerificationPanel() {
+    document.getElementById('verificationPanel').style.display = 'flex';
+}
+
+function closeVerificationPanel() {
+    document.getElementById('verificationPanel').style.display = 'none';
+}
+
+// Submit verification
+function submitVerification(event) {
+    event.preventDefault();
+    
+    if (!currentDocument) return;
+    
+    const status = document.getElementById('verificationStatus').value;
+    const comments = document.getElementById('verificationComments').value;
+    
+    if (!status) {
+        alert('Please select a verification status');
+        return;
+    }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/reviewer/document/${currentDocument.document_id}/verify/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            document_id: currentDocument.document_id,
+            application_id: currentDocument.application_id,
+            verification_status: status,
+            comments: comments
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Document verification submitted successfully!');
+            closeVerificationPanel();
+            
+            const verificationStatus = document.getElementById('docVerificationStatus');
+            if (status === 'verified') {
+                verificationStatus.innerHTML = '<span class="status-verified"><i class="bi bi-check-circle"></i> Verified</span>';
+            } else if (status === 'rejected') {
+                verificationStatus.innerHTML = '<span class="status-unverified"><i class="bi bi-x-circle"></i> Rejected</span>';
             }
+            
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('Failed: ' + (data.error || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to submit verification');
     });
+}
 
-    // Modal functions (kept for consistency)
-    function closeModal() {
-        document.getElementById('exportModal')?.classList.remove('show');
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// ============= REVIEW FORM FUNCTIONS =============
+
+document.addEventListener('DOMContentLoaded', function() {
+    const recommendationSelect = document.getElementById('recommendation');
+    const amountField = document.getElementById('amountField');
+    const rejectionReasonField = document.getElementById('rejectionReasonField');
+    const rejectionReasonTextarea = document.getElementById('rejection_reason');
+    
+    if (recommendationSelect) {
+        recommendationSelect.addEventListener('change', function() {
+            // Handle amount field
+            if (this.value === 'approve') {
+                amountField.style.display = 'block';
+                document.getElementById('recommended_amount').required = true;
+            } else {
+                amountField.style.display = 'none';
+                document.getElementById('recommended_amount').required = false;
+            }
+
+            // Handle rejection reason field
+            if (this.value === 'reject') {
+                rejectionReasonField.style.display = 'block';
+                rejectionReasonTextarea.required = true;
+            } else {
+                rejectionReasonField.style.display = 'none';
+                rejectionReasonTextarea.required = false;
+            }
+        });
+
+        // Trigger on page load if options are already selected
+        if (recommendationSelect.value === 'approve') {
+            amountField.style.display = 'block';
+        }
+        if (recommendationSelect.value === 'reject') {
+            rejectionReasonField.style.display = 'block';
+        }
     }
 
-    // Close modal on Escape key
+    // Event listeners for document modal
+    document.getElementById('verifyDocBtn')?.addEventListener('click', openVerificationPanel);
+    document.getElementById('downloadDocBtn')?.addEventListener('click', downloadCurrentDocument);
+    document.getElementById('rotateDocBtn')?.addEventListener('click', rotateDocument);
+    document.getElementById('zoomInBtn')?.addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn')?.addEventListener('click', zoomOut);
+    document.getElementById('verificationForm')?.addEventListener('submit', submitVerification);
+    
+    // Close on escape
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                modal.classList.remove('show');
-            });
-        }
+        if (e.key === 'Escape') closeDocumentModal();
     });
+    
+    // Close on background click
+    document.getElementById('documentViewerModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeDocumentModal();
+    });
+});
 </script>
 {% endblock %}

@@ -359,6 +359,18 @@ urlpatterns = [
     path('reviewer/applications/<int:application_id>/', views.reviewer_application_detail, name='reviewer_application_detail'),
     path('reviewer/applications/<int:application_id>/review/', views.submit_review, name='submit_review'),
     
+    # Document proxy API - Get document data for modal viewer
+    path('reviewer/application/<int:application_id>/document/<int:document_id>/proxy/', views.reviewer_document_proxy, name='reviewer_document_proxy'),
+
+    # Document verification API
+    path('reviewer/document/<int:document_id>/verify/', views.reviewer_verify_document, name='reviewer_verify_document'),
+
+    # Serve document securely
+    path('reviewer/application/<int:application_id>/document/<int:document_id>/serve/', views.reviewer_serve_document, name='reviewer_serve_document'),
+
+    # Check document completeness
+    path('reviewer/application/<int:application_id>/check-documents/', views.check_document_completeness, name='check_document_completeness'),
+        
     # ============= BULK OPERATIONS =============
     path('reviewer/applications/bulk-review/', views.bulk_review_view, name='bulk_review'), 
     

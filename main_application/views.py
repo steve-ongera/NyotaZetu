@@ -23605,12 +23605,25 @@ def reviewed_applications(request):
     
     return render(request, 'reviewer/reviewed_applications.html', context)
 
+#modify this now to include automation apis and apis 
+from django.http import JsonResponse, HttpResponse, FileResponse
+from django.views.decorators.http import require_http_methods
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+import json
+import os
+from pathlib import Path
+from decimal import Decimal
+
+# ============= EXISTING REVIEWER APPLICATION DETAIL VIEW - ENHANCED =============
 
 @login_required
 @reviewer_required
 def reviewer_application_detail(request, application_id):
     """
-    Detailed view of a single application for review
+    Enhanced detailed view of a single application for review with document verification
     """
     user = request.user
     assigned_ward = user.assigned_ward
@@ -23652,6 +23665,16 @@ def reviewer_application_detail(request, application_id):
     # Get documents grouped by type
     documents = application.documents.all()
     
+    # ============= NEW: CHECK DOCUMENT COMPLETENESS =============
+    required_document_types = ['id_card', 'admission_letter', 'fee_structure', 'fee_statement']
+    uploaded_document_types = [doc.document_type for doc in documents]
+    missing_documents = [doc_type for doc_type in required_document_types if doc_type not in uploaded_document_types]
+    all_documents_uploaded = len(missing_documents) == 0
+    
+    # Check document verification status
+    unverified_documents = documents.filter(is_verified=False).count()
+    all_documents_verified = unverified_documents == 0 and documents.exists()
+    
     # Get guardians information
     guardians = application.applicant.guardians.all()
     
@@ -23687,6 +23710,11 @@ def reviewer_application_detail(request, application_id):
         'per_capita_income': per_capita_income,
         'vulnerability_indicators': vulnerability_indicators,
         'vulnerability_score': vulnerability_score,
+        # NEW: Document verification status
+        'all_documents_uploaded': all_documents_uploaded,
+        'missing_documents': missing_documents,
+        'unverified_documents': unverified_documents,
+        'all_documents_verified': all_documents_verified,
     }
     
     # Create audit log
@@ -23701,15 +23729,332 @@ def reviewer_application_detail(request, application_id):
     
     return render(request, 'reviewer/application_detail.html', context)
 
+@login_required
+@reviewer_required
+@require_http_methods(["GET"])
+def reviewer_document_proxy(request, application_id, document_id):
+    """
+    API endpoint to fetch document data for the modal viewer
+    Returns JSON with document information
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(
+            Document,
+            id=document_id,
+            application_id=application_id
+        )
+        
+        # Check permissions - reviewer should only see documents from their ward
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return JsonResponse({
+                'error': 'No ward assigned to your account'
+            }, status=403)
+        
+        if document.application.applicant.ward != ward:
+            return JsonResponse({
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Get file info
+        file_path = document.file.path if document.file else None
+        file_size = None
+        
+        if file_path and os.path.exists(file_path):
+            file_size_bytes = os.path.getsize(file_path)
+            # Convert to human-readable format
+            if file_size_bytes < 1024:
+                file_size = f"{file_size_bytes} B"
+            elif file_size_bytes < 1024 * 1024:
+                file_size = f"{file_size_bytes / 1024:.1f} KB"
+            else:
+                file_size = f"{file_size_bytes / (1024 * 1024):.1f} MB"
+        
+        # Prepare response data
+        data = {
+            'document_id': document.id,
+            'application_id': document.application.id,
+            'document_type': document.get_document_type_display(),
+            'file_url': request.build_absolute_uri(document.file.url) if document.file else None,
+            'uploaded_at': document.uploaded_at.isoformat(),
+            'is_verified': document.is_verified,
+            'verified_by': document.verified_by.get_full_name() if document.verified_by else None,
+            'file_size': file_size,
+            'description': document.description or '',
+            'file_extension': Path(document.file.name).suffix if document.file else None
+        }
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+
+# ============= NEW: VERIFY DOCUMENT API =============
+
+@login_required
+@reviewer_required
+@require_http_methods(["POST"])
+def reviewer_verify_document(request, document_id):
+    """
+    API endpoint to verify/reject a document
+    Accepts JSON with verification status and comments
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(Document, id=document_id)
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return JsonResponse({
+                'success': False,
+                'error': 'No ward assigned to your account'
+            }, status=403)
+        
+        if document.application.applicant.ward != ward:
+            return JsonResponse({
+                'success': False,
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Parse request data
+        data = json.loads(request.body)
+        verification_status = data.get('verification_status')
+        comments = data.get('comments', '')
+        
+        # Validate status
+        if verification_status not in ['verified', 'rejected', 'needs_review']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid verification status'
+            }, status=400)
+        
+        # Update document
+        if verification_status == 'verified':
+            document.is_verified = True
+            document.verified_by = user
+        elif verification_status == 'rejected':
+            document.is_verified = False
+            document.verified_by = user
+        else:  # needs_review
+            document.is_verified = False
+            document.verified_by = None
+        
+        # Update description with verification comments if provided
+        if comments:
+            if document.description:
+                document.description += f"\n\nVerification Note ({user.get_full_name()}): {comments}"
+            else:
+                document.description = f"Verification Note ({user.get_full_name()}): {comments}"
+        
+        document.save()
+        
+        # Create audit log
+        AuditLog.objects.create(
+            user=user,
+            action='approve' if verification_status == 'verified' else 'reject',
+            table_affected='Document',
+            record_id=str(document.id),
+            description=f'Document verification: {verification_status} - {document.get_document_type_display()}',
+            ip_address=request.META.get('REMOTE_ADDR', ''),
+            new_values={
+                'verification_status': verification_status,
+                'comments': comments,
+                'document_type': document.document_type,
+                'application_number': document.application.application_number
+            }
+        )
+        
+        # Create notification for applicant
+        Notification.objects.create(
+            user=document.application.applicant.user,
+            notification_type='document_request',
+            title=f'Document {verification_status.title()}',
+            message=f'Your {document.get_document_type_display()} has been {verification_status} by the reviewer.',
+            related_application=document.application
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Document {verification_status} successfully',
+            'document_id': document.id,
+            'is_verified': document.is_verified
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ============= NEW: SERVE DOCUMENT API =============
+
+@login_required
+@reviewer_required
+def reviewer_serve_document(request, application_id, document_id):
+    """
+    Serve document file securely
+    Checks permissions before serving
+    """
+    try:
+        # Get the document
+        document = get_object_or_404(
+            Document,
+            id=document_id,
+            application_id=application_id
+        )
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if not ward:
+            return HttpResponse('No ward assigned', status=403)
+        
+        if document.application.applicant.ward != ward:
+            return HttpResponse('Permission denied', status=403)
+        
+        # Log document view
+        AuditLog.objects.create(
+            user=user,
+            action='view',
+            table_affected='Document',
+            record_id=str(document.id),
+            description=f'Viewed document: {document.get_document_type_display()} for application {document.application.application_number}',
+            ip_address=request.META.get('REMOTE_ADDR', '')
+        )
+        
+        # Serve the file
+        file_path = document.file.path
+        
+        if os.path.exists(file_path):
+            # Determine content type
+            file_ext = Path(file_path).suffix.lower()
+            content_types = {
+                '.pdf': 'application/pdf',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }
+            content_type = content_types.get(file_ext, 'application/octet-stream')
+            
+            # Open and return file
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            
+            # Set content disposition for download if not PDF or image
+            if file_ext not in ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                response['Content-Disposition'] = f'attachment; filename="{document.get_document_type_display()}{file_ext}"'
+            
+            return response
+        else:
+            return HttpResponse('File not found', status=404)
+            
+    except Exception as e:
+        return HttpResponse(f'Error: {str(e)}', status=500)
+
+
+# ============= NEW: CHECK DOCUMENT COMPLETENESS API =============
+
+@login_required
+@reviewer_required
+@require_http_methods(["GET"])
+def check_document_completeness(request, application_id):
+    """
+    Check if all required documents are uploaded and verified
+    """
+    try:
+        application = get_object_or_404(Application, id=application_id)
+        
+        # Check permissions
+        user = request.user
+        ward = user.assigned_ward
+        
+        if application.applicant.ward != ward:
+            return JsonResponse({
+                'error': 'Permission denied'
+            }, status=403)
+        
+        # Required documents
+        required_documents = {
+            'id_card': 'National ID Card',
+            'admission_letter': 'Admission Letter',
+            'fee_structure': 'Fee Structure',
+            'fee_statement': 'Fee Statement/Balance'
+        }
+        
+        # Get uploaded documents
+        uploaded_docs = application.documents.all()
+        uploaded_types = {doc.document_type: doc for doc in uploaded_docs}
+        
+        # Check completeness
+        document_status = []
+        all_uploaded = True
+        all_verified = True
+        
+        for doc_type, doc_name in required_documents.items():
+            if doc_type in uploaded_types:
+                doc = uploaded_types[doc_type]
+                document_status.append({
+                    'type': doc_type,
+                    'name': doc_name,
+                    'uploaded': True,
+                    'verified': doc.is_verified,
+                    'document_id': doc.id
+                })
+                if not doc.is_verified:
+                    all_verified = False
+            else:
+                document_status.append({
+                    'type': doc_type,
+                    'name': doc_name,
+                    'uploaded': False,
+                    'verified': False,
+                    'document_id': None
+                })
+                all_uploaded = False
+                all_verified = False
+        
+        return JsonResponse({
+            'success': True,
+            'all_uploaded': all_uploaded,
+            'all_verified': all_verified,
+            'documents': document_status,
+            'total_required': len(required_documents),
+            'total_uploaded': len([d for d in document_status if d['uploaded']]),
+            'total_verified': len([d for d in document_status if d['verified']])
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
 
 @login_required
 @reviewer_required
 def submit_review(request, application_id):
     """
-    Submit or update review for an application
+    Submit or update review for an application with rejection notification
     """
     if request.method != 'POST':
-        return redirect('application_detail', application_id=application_id)
+        return redirect('reviewer_application_detail', application_id=application_id)
     
     user = request.user
     assigned_ward = user.assigned_ward
@@ -23728,19 +24073,25 @@ def submit_review(request, application_id):
     need_score = request.POST.get('need_score')
     merit_score = request.POST.get('merit_score')
     vulnerability_score = request.POST.get('vulnerability_score')
+    rejection_reason = request.POST.get('rejection_reason', '').strip()  # NEW
     
     # Validation
     if not comments:
         messages.error(request, "Please provide review comments.")
-        return redirect('application_detail', application_id=application_id)
+        return redirect('reviewer_application_detail', application_id=application_id)
     
     if not recommendation:
         messages.error(request, "Please select a recommendation.")
-        return redirect('application_detail', application_id=application_id)
+        return redirect('reviewer_application_detail', application_id=application_id)
     
     if recommendation == 'approve' and not recommended_amount:
         messages.error(request, "Please specify recommended amount for approval.")
-        return redirect('application_detail', application_id=application_id)
+        return redirect('reviewer_application_detail', application_id=application_id)
+    
+    # NEW: Validate rejection reason
+    if recommendation == 'reject' and not rejection_reason:
+        messages.error(request, "Please provide a reason for rejection.")
+        return redirect('reviewer_application_detail', application_id=application_id)
     
     # Check if review already exists
     existing_review = Review.objects.filter(
@@ -23787,6 +24138,10 @@ def submit_review(request, application_id):
     
     application.save()
     
+    # ============= NEW: SEND EMAIL NOTIFICATION FOR REJECTION =============
+    if recommendation == 'reject':
+        send_rejection_email(application, rejection_reason, user)
+    
     # Send notification to applicant
     send_notification(
         user=application.applicant.user,
@@ -23806,7 +24161,102 @@ def submit_review(request, application_id):
         ip_address=request.META.get('REMOTE_ADDR')
     )
     
-    return redirect('application_detail', application_id=application_id)
+    return redirect('reviewer_application_detail', application_id=application_id)
+
+
+# ============= NEW: SEND REJECTION EMAIL FUNCTION =============
+
+def send_rejection_email(application, rejection_reason, reviewer):
+    """
+    Send email notification to applicant about application rejection
+    """
+    try:
+        applicant = application.applicant
+        applicant_email = applicant.user.email
+        
+        # Email subject
+        subject = f'Application {application.application_number} - Status Update'
+        
+        # Email context
+        context = {
+            'applicant_name': applicant.user.get_full_name(),
+            'application_number': application.application_number,
+            'fiscal_year': application.fiscal_year.name,
+            'rejection_reason': rejection_reason,
+            'reviewer_name': reviewer.get_full_name(),
+            'ward_name': reviewer.assigned_ward.name if reviewer.assigned_ward else 'Ward Committee',
+            'review_date': timezone.now().strftime('%B %d, %Y'),
+        }
+        
+        # Render HTML email
+        html_message = render_to_string('emails/application_rejection.html', context)
+        plain_message = strip_tags(html_message)
+        
+        # Send email
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[applicant_email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=applicant.user,
+            email_address=applicant_email,
+            subject=subject,
+            message=plain_message,
+            related_application=application,
+            status='sent'
+        )
+        
+        # Create notification
+        Notification.objects.create(
+            user=applicant.user,
+            notification_type='application_status',
+            title='Application Rejected',
+            message=f'Your application {application.application_number} has been rejected. Please check your email for details.',
+            related_application=application
+        )
+        
+    except Exception as e:
+        # Log error but don't raise exception
+        print(f"Error sending rejection email: {str(e)}")
+
+
+# ============= HELPER FUNCTION: CREATE AUDIT LOG =============
+
+def create_audit_log(user, action, table_affected, record_id, description, ip_address, old_values=None, new_values=None):
+    """
+    Helper function to create audit log entries
+    """
+    AuditLog.objects.create(
+        user=user,
+        action=action,
+        table_affected=table_affected,
+        record_id=record_id,
+        description=description,
+        ip_address=ip_address,
+        old_values=old_values,
+        new_values=new_values
+    )
+
+
+# ============= HELPER FUNCTION: SEND NOTIFICATION =============
+
+def send_notification(user, notification_type, title, message, related_application=None):
+    """
+    Helper function to create notifications
+    """
+    Notification.objects.create(
+        user=user,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        related_application=related_application
+    )
 
 
 # ============= MY REVIEWS =============
