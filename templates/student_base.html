@@ -1239,24 +1239,6 @@
 
         <!-- Content -->
         <div class="content">
-            {% if messages %}
-            <div class="mb-4">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'info' }}">
-                    {% if message.tags == 'error' %}
-                        <i class="fas fa-exclamation-triangle"></i>
-                    {% elif message.tags == 'success' %}
-                        <i class="fas fa-check-circle"></i>
-                    {% elif message.tags == 'warning' %}
-                        <i class="fas fa-exclamation-circle"></i>
-                    {% else %}
-                        <i class="fas fa-info-circle"></i>
-                    {% endif %}
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
             {% block content %}
             {% endblock %}

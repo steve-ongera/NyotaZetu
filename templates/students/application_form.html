@@ -441,6 +441,145 @@
         background: #94A3B8;
     }
 
+    /* Category styles */
+    .category-group {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #F8FAFC;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+    }
+    
+    .category-group-header {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .category-scope-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .scope-county {
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+    
+    .scope-constituency {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+    
+    .scope-ward {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+    
+    .category-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-open {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+    
+    .status-closed {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+    
+    .status-limited {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+    
+    .category-info-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .category-info-card:hover {
+        border-color: #3498db;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+    }
+    
+    .category-info-card.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .category-info-card.disabled:hover {
+        border-color: #E2E8F0;
+        box-shadow: none;
+    }
+    
+    .category-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+    
+    .category-details {
+        font-size: 12px;
+        color: #64748B;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .category-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .closed-categories-section {
+        margin-top: 24px;
+        padding: 16px;
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 8px;
+    }
+    
+    .location-info-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.1));
+        border: 1px solid rgba(52, 152, 219, 0.2);
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    .location-info-badge i {
+        color: #3498db;
+        font-size: 16px;
+    }
+
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
@@ -535,6 +674,16 @@
             </div>
         {% endif %}
 
+        <!-- Location Info Badge -->
+        <div class="location-info-badge">
+            <i class="bi bi-geo-alt-fill"></i>
+            <div>
+                <strong>Your Location:</strong> 
+                {{ applicant_constituency.name }} Constituency, {{ applicant_ward.name }} Ward
+                <span class="text-muted ms-2">(Categories are filtered based on your location)</span>
+            </div>
+        </div>
+
         <!-- Information Banner -->
         <div class="info-banner">
             <div class="info-icon">
@@ -609,20 +758,161 @@
                 Institution Information
             </h4>
 
+            <!-- Category Selection with Grouped Display -->
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="form-group">
-                        <label for="{{ form.bursary_category.id_for_label }}" class="form-label required-field">Bursary Category</label>
-                        {{ form.bursary_category }}
+                        <label for="{{ form.bursary_category.id_for_label }}" class="form-label required-field">
+                            Bursary Category
+                        </label>
+                        
+                        <!-- Available Categories -->
+                        {% if categories %}
+                            <div class="mb-3">
+                                <h6 class="text-success mb-3">
+                                    <i class="bi bi-check-circle"></i> Available Categories ({{ categories|length }})
+                                </h6>
+                                
+                                <!-- Group by scope -->
+                                {% regroup categories by scope as scope_groups %}
+                                {% for scope_group in scope_groups %}
+                                    <div class="category-group">
+                                        <div class="category-group-header">
+                                            {% if scope_group.grouper == 'county' %}
+                                                <span class="category-scope-badge scope-county">
+                                                    <i class="bi bi-globe"></i> County-Wide
+                                                </span>
+                                            {% elif scope_group.grouper == 'constituency' %}
+                                                <span class="category-scope-badge scope-constituency">
+                                                    <i class="bi bi-geo-alt"></i> {{ applicant_constituency.name }} Constituency
+                                                </span>
+                                            {% elif scope_group.grouper == 'ward' %}
+                                                <span class="category-scope-badge scope-ward">
+                                                    <i class="bi bi-pin-map"></i> {{ applicant_ward.name }} Ward
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% for category in scope_group.list %}
+                                            <div class="category-info-card">
+                                                <label class="d-flex align-items-start gap-3 mb-0">
+                                                    <input type="radio" 
+                                                           name="bursary_category" 
+                                                           value="{{ category.id }}"
+                                                           class="form-check-input mt-1"
+                                                           data-max-amount="{{ category.max_amount_per_applicant }}"
+                                                           data-min-amount="{{ category.min_amount_per_applicant }}"
+                                                           {% if form.bursary_category.value == category.id|stringformat:"s" %}checked{% endif %}
+                                                           required>
+                                                    <div class="flex-grow-1">
+                                                        <div class="category-name">
+                                                            {{ category.name }}
+                                                            <span class="category-status status-open">
+                                                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Open
+                                                            </span>
+                                                            {% if category.balance < category.allocation_amount|floatformat:0|slice:":1" %}
+                                                                <span class="category-status status-limited">
+                                                                    <i class="bi bi-exclamation-triangle"></i> Limited
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="category-details">
+                                                            <span class="category-detail-item">
+                                                                <i class="bi bi-currency-exchange"></i>
+                                                                KES {{ category.min_amount_per_applicant|floatformat:0 }} - {{ category.max_amount_per_applicant|floatformat:0 }}
+                                                            </span>
+                                                            <span class="category-detail-item">
+                                                                <i class="bi bi-wallet2"></i>
+                                                                Balance: KES {{ category.balance|floatformat:0 }}
+                                                            </span>
+                                                            {% if category.target_beneficiaries %}
+                                                                <span class="category-detail-item">
+                                                                    <i class="bi bi-people"></i>
+                                                                    {{ category.current_beneficiaries|default:0 }}/{{ category.target_beneficiaries }} beneficiaries
+                                                                </span>
+                                                            {% endif %}
+                                                            {% if category.application_end_date %}
+                                                                <span class="category-detail-item">
+                                                                    <i class="bi bi-calendar"></i>
+                                                                    Closes: {{ category.application_end_date|date:"M j, Y" }}
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if category.description %}
+                                                            <div class="text-muted small mt-1">{{ category.description|truncatewords:20 }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                No categories are currently open for applications in your constituency/ward.
+                                Please check back later or contact the bursary office.
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Closed Categories -->
+                        {% if closed_categories %}
+                            <div class="closed-categories-section">
+                                <h6 class="text-danger mb-3">
+                                    <i class="bi bi-x-circle"></i> Closed Categories ({{ closed_categories|length }})
+                                </h6>
+                                <p class="small text-muted mb-3">These categories are not currently accepting applications</p>
+                                
+                                {% for category in closed_categories %}
+                                    <div class="category-info-card disabled">
+                                        <div class="category-name">
+                                            {{ category.name }}
+                                            <span class="category-status status-closed">
+                                                <i class="bi bi-x-circle"></i> Closed
+                                            </span>
+                                            {% if category.scope == 'constituency' %}
+                                                <span class="category-scope-badge scope-constituency">
+                                                    {{ category.constituency.name }}
+                                                </span>
+                                            {% elif category.scope == 'ward' %}
+                                                <span class="category-scope-badge scope-ward">
+                                                    {{ category.ward.name }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="category-details">
+                                            {% if category.balance <= 0 %}
+                                                <span class="text-danger">
+                                                    <i class="bi bi-exclamation-circle"></i> Budget Exhausted
+                                                </span>
+                                            {% elif category.target_beneficiaries and category.current_beneficiaries >= category.target_beneficiaries %}
+                                                <span class="text-danger">
+                                                    <i class="bi bi-people"></i> Capacity Reached
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="bi bi-clock"></i> Application Window Closed
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
                         {% if form.bursary_category.errors %}
                             <div class="invalid-feedback d-block">
                                 {% for error in form.bursary_category.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
-                        <span class="form-text">Select the category that matches your education level</span>
                     </div>
                 </div>
-                <div class="col-md-6">
+            </div>
+
+            <!-- Institution Field -->
+            <div class="row mt-4">
+                <div class="col-md-12">
                     <div class="form-group">
                         <label for="{{ form.institution.id_for_label }}" class="form-label required-field">Institution</label>
                         {{ form.institution }}
@@ -1219,7 +1509,19 @@ $(document).ready(function() {
     toggleField('#id_has_received_previous_allocation', '#previous-year-field, #previous-amount-field');
     toggleField('#id_has_chronic_illness', '#chronic-illness-description');
 
-    // Get category max amount via AJAX
+    // Update max amount display when category is selected
+    $('input[name="bursary_category"]').on('change', function() {
+        const maxAmount = $(this).data('max-amount');
+        const minAmount = $(this).data('min-amount');
+        
+        if (maxAmount && minAmount) {
+            $('#max-amount').text(parseFloat(maxAmount).toFixed(2));
+            $('#min-amount').text(parseFloat(minAmount).toFixed(2));
+            $('#max-amount-info').show();
+        }
+    });
+
+    // Get category max amount via AJAX (fallback if not using radio buttons)
     $('#id_bursary_category').change(function() {
         const categoryId = $(this).val();
         if (categoryId) {
@@ -1244,6 +1546,7 @@ $(document).ready(function() {
     });
 
     // Initialize category max amount
+    $('input[name="bursary_category"]:checked').trigger('change');
     $('#id_bursary_category').trigger('change');
 
     // Form validation
@@ -1303,6 +1606,13 @@ $(document).ready(function() {
         if (!searchValue || !selectedValue) {
             $('.searchable-input').addClass('is-invalid');
             isValid = false;
+        }
+
+        // Validate category selection (radio buttons)
+        const categorySelected = $('input[name="bursary_category"]:checked').length > 0;
+        if (!categorySelected) {
+            isValid = false;
+            $('.category-info-card').first().addClass('is-invalid');
         }
         
         return isValid;
