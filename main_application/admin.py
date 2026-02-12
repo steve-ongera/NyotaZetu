@@ -336,10 +336,134 @@ class WardAllocationAdmin(admin.ModelAdmin):
 
 @admin.register(BursaryCategory)
 class BursaryCategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category_type', 'fiscal_year', 'allocation_amount', 
-                   'max_amount_per_applicant', 'target_beneficiaries', 'is_active']
-    list_filter = ['category_type', 'fiscal_year', 'is_active']
-    search_fields = ['name']
+    
+    # ================= DISPLAY =================
+    list_display = [
+        'name',
+        'category_type',
+        'fiscal_year',
+        'scope',
+        'constituency',
+        'ward',
+        'allocation_amount',
+        'spent_amount',
+        'display_balance',
+        'current_beneficiaries',
+        'target_beneficiaries',
+        'display_status',
+        'is_active',
+    ]
+
+    # ================= FILTERS =================
+    list_filter = [
+        'category_type',
+        'fiscal_year',
+        'scope',
+        'constituency',
+        'ward',
+        'is_active',
+        'is_open',
+        'application_start_date',
+        'application_end_date',
+    ]
+
+    # ================= SEARCH =================
+    search_fields = [
+        'name',
+        'eligibility_criteria',
+        'required_documents',
+        'constituency__name',
+        'ward__name',
+    ]
+
+    # ================= ORDERING =================
+    ordering = ['-fiscal_year', 'category_type']
+
+    # ================= READONLY =================
+    readonly_fields = [
+        'spent_amount',
+        'current_beneficiaries',
+        'created_at',
+        'updated_at',
+        'display_balance', 
+    ]
+
+    # ================= FIELD GROUPING =================
+    fieldsets = (
+
+        ("Basic Information", {
+            'fields': (
+                'name',
+                'category_type',
+                'fiscal_year',
+                'description',
+                'is_active',
+            )
+        }),
+
+        ("Scope Configuration", {
+            'fields': (
+                'scope',
+                'constituency',
+                'ward',
+            )
+        }),
+
+        ("Budget Allocation", {
+            'fields': (
+                'allocation_amount',
+                'spent_amount',
+                'max_amount_per_applicant',
+                'min_amount_per_applicant',
+                'display_balance',
+            )
+        }),
+
+        ("Beneficiary Tracking", {
+            'fields': (
+                'current_beneficiaries',
+                'target_beneficiaries',
+            )
+        }),
+
+        ("Application Window", {
+            'fields': (
+                'application_start_date',
+                'application_end_date',
+                'is_open',
+            )
+        }),
+
+        ("Eligibility Requirements", {
+            'fields': (
+                'eligibility_criteria',
+                'required_documents',
+            )
+        }),
+
+        ("System Information", {
+            'fields': (
+                'created_at',
+                'updated_at',
+            )
+        }),
+    )
+
+    # ================= CUSTOM METHODS =================
+    def display_balance(self, obj):
+        balance = obj.balance()
+        if balance <= 0:
+            return format_html('<span style="color: red; font-weight: bold;">{}</span>', balance)
+        return format_html('<span style="color: green;">{}</span>', balance)
+
+    display_balance.short_description = "Remaining Balance"
+
+    def display_status(self, obj):
+        if obj.can_accept_more_applications():
+            return format_html('<span style="color: green; font-weight: bold;">Open</span>')
+        return format_html('<span style="color: red; font-weight: bold;">Closed</span>')
+
+    display_status.short_description = "Application Status"
 
 
 @admin.register(DisbursementRound)
