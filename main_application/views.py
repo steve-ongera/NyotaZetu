@@ -10255,7 +10255,6 @@ def _handle_delete(request, application, Document):
     messages.success(request, f'{doc_name} deleted successfully.')
     return redirect('student_application_documents', pk=application.pk)
 
-
 @login_required
 def student_application_submit(request, pk):
     """
@@ -10353,22 +10352,96 @@ def student_application_submit(request, pk):
                 ip_address=get_client_ip(request)
             )
             
-            # Send SMS notification if phone number is available
-            if request.user.applicant_profile.user.phone_number:
+            # ============= SEND EMAIL NOTIFICATION =============
+            if request.user.email:
                 try:
-                    sms_message = f"Dear {request.user.first_name}, your bursary application {application.application_number} has been submitted successfully. You will be notified of the review outcome. - Kiharu CDF"
+                    from django.core.mail import send_mail
+                    from django.conf import settings
                     
-                    # Log SMS (implement actual SMS sending based on your SMS provider)
+                    email_subject = f'Bursary Application Submitted - {application.application_number}'
+                    
+                    email_message = f"""Dear {request.user.first_name} {request.user.last_name},
+
+Your bursary application has been submitted successfully!
+
+Application Number: {application.application_number}
+Date Submitted: {timezone.now().strftime('%B %d, %Y at %I:%M %p')}
+Institution: {application.institution.name}
+Amount Requested: KES {application.amount_requested:,.2f}
+
+Your application is now under review. You will receive notifications about any updates or status changes.
+
+Thank you for applying.
+
+Best regards,
+Nyota Zetu Bursary Team
+{application.fiscal_year.county.name} County"""
+                    
+                    send_mail(
+                        subject=email_subject,
+                        message=email_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[request.user.email],
+                        fail_silently=True,
+                    )
+                    
+                    # Log email
+                    EmailLog.objects.create(
+                        recipient=request.user,
+                        email_address=request.user.email,
+                        subject=email_subject,
+                        message=email_message,
+                        related_application=application,
+                        status='sent'
+                    )
+                    
+                except Exception as e:
+                    # Log error but don't fail submission
+                    print(f"Email sending failed: {e}")
+                    EmailLog.objects.create(
+                        recipient=request.user,
+                        email_address=request.user.email,
+                        subject=f'Bursary Application Submitted - {application.application_number}',
+                        message=f"Failed to send: {str(e)}",
+                        related_application=application,
+                        status='failed'
+                    )
+            
+            # ============= SEND SMS NOTIFICATION =============
+            if request.user.phone_number:
+                try:
+                    sms_message = (
+                        f"Dear {request.user.first_name}, "
+                        f"your bursary application {application.application_number} "
+                        f"has been submitted successfully. "
+                        f"You will be notified of the review outcome. "
+                        f"- Nyota Zetu Bursary"
+                    )
+                    
+                    # Log SMS
                     SMSLog.objects.create(
                         recipient=request.user,
-                        phone_number=request.user.applicant_profile.user.phone_number,
+                        phone_number=request.user.phone_number,
                         message=sms_message,
                         related_application=application,
                         status='pending'
                     )
                     
                     # TODO: Implement actual SMS sending here
-                    # send_sms(request.user.applicant_profile.user.phone_number, sms_message)
+                    # Example for Africa's Talking API:
+                    # import africastalking
+                    # africastalking.initialize(settings.AFRICASTALKING_USERNAME, settings.AFRICASTALKING_API_KEY)
+                    # sms = africastalking.SMS
+                    # response = sms.send(sms_message, [request.user.phone_number])
+                    
+                    # Example for Twilio:
+                    # from twilio.rest import Client
+                    # client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+                    # message = client.messages.create(
+                    #     body=sms_message,
+                    #     from_=settings.TWILIO_PHONE_NUMBER,
+                    #     to=request.user.phone_number
+                    # )
                     
                 except Exception as e:
                     # Log SMS error but don't fail the submission
@@ -10377,7 +10450,7 @@ def student_application_submit(request, pk):
             messages.success(
                 request, 
                 f'Application {application.application_number} submitted successfully! '
-                'You will receive notifications about the review progress.'
+                'You will receive notifications about the review progress via email and SMS.'
             )
             return redirect('student_application_detail', pk=pk)
             
@@ -10398,7 +10471,6 @@ def student_application_submit(request, pk):
     }
     
     return render(request, 'students/application_submit_confirm.html', context)
-
 
 def get_client_ip(request):
     """
