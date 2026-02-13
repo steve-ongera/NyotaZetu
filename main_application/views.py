@@ -9964,76 +9964,297 @@ def student_application_edit(request, pk):
     
     return render(request, 'students/application_form.html', context)
 
+"""
+student_application_documents - Simplified view with integrated upload buttons
+"""
+
+import logging
+import os
+from datetime import datetime
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
+logger = logging.getLogger(__name__)
+
+# ─── Constants ────────────────────────────────────────────────────────────────
+REQUIRED_DOCUMENTS = ['id_card', 'admission_letter', 'fee_structure', 'fee_statement']
+
+ALLOWED_MIME_TYPES = {'application/pdf', 'image/jpeg', 'image/jpg', 'image/png'}
+
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+
+ACCEPTED_DOC_TYPES = {
+    'id_card', 'admission_letter', 'fee_structure', 'fee_statement',
+    'death_certificate', 'medical_report', 'disability_certificate',
+    'chiefs_letter', 'birth_certificate', 'academic_results',
+    'parent_id', 'school_leaving_cert', 'other',
+}
+
+
+# ─── Small helpers ────────────────────────────────────────────────────────────
+
+def _is_ajax(request):
+    """True for both jQuery $.ajax and fetch() with X-Requested-With header."""
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _json_error(message, status=400):
+    return JsonResponse({'success': False, 'message': message}, status=status)
+
+
+def _file_type_label(filename):
+    """Return 'image', 'pdf', or 'other' — used for preview rendering in JS."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+        return 'image'
+    if ext == '.pdf':
+        return 'pdf'
+    return 'other'
+
+
+def _format_date(dt):
+    """Format datetime safely for different platforms (Windows/Unix)"""
+    if not dt:
+        return ''
+    try:
+        # Use platform-independent formatting
+        return dt.strftime('%b %d, %Y')
+    except:
+        # Fallback to simple format
+        return dt.strftime('%Y-%m-%d')
+
+
+def _completion_stats(application, Document):
+    """
+    Return a dict with upload progress for the 4 required documents.
+    """
+    uploaded_types = list(
+        Document.objects.filter(
+            application=application,
+            document_type__in=REQUIRED_DOCUMENTS,
+        ).values_list('document_type', flat=True)
+    )
+    uploaded_set = set(uploaded_types)
+    missing      = [t for t in REQUIRED_DOCUMENTS if t not in uploaded_set]
+    pct          = (len(uploaded_set) / len(REQUIRED_DOCUMENTS)) * 100
+
+    return {
+        'uploaded_types'       : list(uploaded_set),
+        'missing_types'        : missing,
+        'completion_percentage': round(pct, 1),
+        'all_required_uploaded': len(missing) == 0,
+    }
+
+
+def _replace_existing(application, doc_type, Document):
+    """
+    If a document of doc_type already exists for this application,
+    delete its file from storage and remove the DB row.
+    """
+    if not doc_type:
+        return
+    existing = Document.objects.filter(
+        application=application,
+        document_type=doc_type,
+    ).first()
+    if existing:
+        try:
+            if existing.file:
+                existing.file.delete(save=False)
+        except Exception as exc:
+            logger.warning('Could not remove old document file: %s', exc)
+        existing.delete()
+
+
+# ─── Main view ────────────────────────────────────────────────────────────────
+
 @login_required
 def student_application_documents(request, pk):
     """
-    Upload and manage application documents
+    Upload and manage application supporting documents.
+    Simplified with integrated upload buttons in the checklist.
     """
+    from main_application.models import Applicant, Application, Document
+
+    # ── Guard: applicant profile ─────────────────────────────────────────────
     try:
         applicant = request.user.applicant_profile
     except Applicant.DoesNotExist:
+        if _is_ajax(request):
+            return _json_error('Applicant profile not found.', 403)
         return redirect('student_profile_create')
-    
+
     application = get_object_or_404(Application, pk=pk, applicant=applicant)
-    
-    # Define required document types
-    required_documents = ['id_card', 'admission_letter', 'fee_structure', 'fee_statement']
-    
+
+    # ── POST ─────────────────────────────────────────────────────────────────
     if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.application = application
-            document.save()
-            
-            # Check if all required documents are uploaded
-            uploaded_types = list(Document.objects.filter(
-                application=application, 
-                document_type__in=required_documents
-            ).values_list('document_type', flat=True))
-            
-            completion_percentage = (len(uploaded_types) / len(required_documents)) * 100
-            
-            response_data = {
-                'success': True,
-                'message': 'Document uploaded successfully!',
-                'uploaded_types': uploaded_types,
-                'completion_percentage': completion_percentage,
-                'all_required_uploaded': len(uploaded_types) == len(required_documents),
-                'document_type': document.document_type,
-                'document_name': document.get_document_type_display()
-            }
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse(response_data)
-            else:
-                messages.success(request, 'Document uploaded successfully!')
-                return redirect('student_application_documents', pk=pk)
-    else:
-        form = DocumentForm()
-    
-    documents = Document.objects.filter(application=application)
-    
-    # Get uploaded required document types
-    uploaded_required_docs = list(documents.filter(
-        document_type__in=required_documents
-    ).values_list('document_type', flat=True))
-    
-    # Calculate completion percentage
-    completion_percentage = (len(uploaded_required_docs) / len(required_documents)) * 100
-    all_required_uploaded = len(uploaded_required_docs) == len(required_documents)
-    
+
+        # DELETE action -------------------------------------------------------
+        if request.POST.get('action') == 'delete':
+            return _handle_delete(request, application, Document)
+
+        # AJAX upload (integrated button) -------------------------------------
+        if _is_ajax(request):
+            return _handle_ajax_upload(request, application, Document)
+
+        # Fallback: shouldn't happen with new design
+        return _json_error('Invalid request')
+
+    # ── GET ──────────────────────────────────────────────────────────────────
+    documents = Document.objects.filter(application=application).order_by('-uploaded_at')
+    stats     = _completion_stats(application, Document)
+
+    # Get document type choices for the template
+    doc_type_choices = Document.DOCUMENT_TYPES
+
     context = {
-        'application': application,
-        'documents': documents,
-        'form': form,
-        'required_documents': required_documents,
-        'uploaded_required_docs': uploaded_required_docs,
-        'completion_percentage': completion_percentage,
-        'all_required_uploaded': all_required_uploaded,
+        'application'           : application,
+        'documents'             : documents,
+        'required_documents'    : REQUIRED_DOCUMENTS,
+        'uploaded_required_docs': stats['uploaded_types'],
+        'completion_percentage' : stats['completion_percentage'],
+        'all_required_uploaded' : stats['all_required_uploaded'],
+        'doc_type_choices'      : doc_type_choices,
     }
-    
     return render(request, 'students/application_documents.html', context)
+
+
+# ─── Upload handler (AJAX) ───────────────────────────────────────────────────
+
+def _handle_ajax_upload(request, application, Document):
+    """
+    Validate and save a file uploaded by the integrated upload button.
+    """
+    # 1. File present?
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return _json_error('No file was received. Please select a file and try again.')
+
+    # 2. document_type valid?
+    document_type = request.POST.get('document_type', '').strip()
+    if not document_type:
+        return _json_error('Document type is required.')
+    if document_type not in ACCEPTED_DOC_TYPES:
+        return _json_error(f'Unknown document type: "{document_type}".')
+
+    # 3. MIME type valid?
+    if uploaded_file.content_type not in ALLOWED_MIME_TYPES:
+        return _json_error(
+            f'"{uploaded_file.name}" is not an accepted format. '
+            'Please upload a PDF, JPG, or PNG file.'
+        )
+
+    # 4. File size within limit?
+    if uploaded_file.size > MAX_UPLOAD_BYTES:
+        size_mb = uploaded_file.size / (1024 * 1024)
+        return _json_error(
+            f'"{uploaded_file.name}" is {size_mb:.1f} MB — the 5 MB limit was exceeded.'
+        )
+
+    # 5. Description (optional; fall back to human-readable type label)
+    description = request.POST.get('description', '').strip()
+    if not description:
+        type_labels = dict(Document.DOCUMENT_TYPES)
+        description = type_labels.get(document_type, document_type.replace('_', ' ').title())
+
+    # 6. Replace any existing document of the same type
+    _replace_existing(application, document_type, Document)
+
+    # 7. Save the new document
+    try:
+        ext      = os.path.splitext(uploaded_file.name)[1].lower()
+        filename = f'{application.application_number}_{document_type}{ext}'
+
+        doc = Document(
+            application   = application,
+            document_type = document_type,
+            description   = description,
+            is_verified   = False,
+        )
+        doc.file.save(filename, uploaded_file, save=False)
+        doc.save()
+
+    except Exception as exc:
+        logger.error(
+            'Error saving document for application %s: %s',
+            application.pk, exc, exc_info=True,
+        )
+        return _json_error(
+            'An error occurred while saving your document. Please try again.',
+            status=500,
+        )
+
+    # 8. Completion stats
+    stats = _completion_stats(application, Document)
+
+    # 9. Return rich JSON with FIXED date formatting
+    return JsonResponse({
+        'success'              : True,
+        'message'              : 'Document uploaded successfully!',
+        'uploaded_types'       : stats['uploaded_types'],
+        'completion_percentage': stats['completion_percentage'],
+        'all_required_uploaded': stats['all_required_uploaded'],
+        'document_type'        : doc.document_type,
+        'document_name'        : doc.get_document_type_display(),
+        'document_id'          : doc.pk,
+        'file_url'             : doc.file.url,
+        'file_type'            : _file_type_label(uploaded_file.name),
+        'uploaded_at'          : _format_date(doc.uploaded_at),  # FIXED: Safe formatting
+        'missing_types'        : stats['missing_types'],
+    })
+
+
+# ─── Delete handler ───────────────────────────────────────────────────────────
+
+def _handle_delete(request, application, Document):
+    """
+    Delete a document. Expects POST: action=delete, document_id=<pk>.
+    """
+    doc_id = request.POST.get('document_id')
+    if not doc_id:
+        if _is_ajax(request):
+            return _json_error('document_id is required.')
+        messages.error(request, 'No document specified.')
+        return redirect('student_application_documents', pk=application.pk)
+
+    doc = get_object_or_404(Document, pk=doc_id, application=application)
+
+    # Only allow deletion while still in draft
+    if application.status not in ('draft', 'pending_documents'):
+        if _is_ajax(request):
+            return _json_error(
+                'Cannot delete documents once the application has been submitted.',
+                403,
+            )
+        messages.error(request, 'Cannot delete documents once the application has been submitted.')
+        return redirect('student_application_documents', pk=application.pk)
+
+    doc_name = doc.get_document_type_display()
+    try:
+        if doc.file:
+            doc.file.delete(save=False)
+    except Exception as exc:
+        logger.warning('Could not remove file during delete: %s', exc)
+    doc.delete()
+
+    stats = _completion_stats(application, Document)
+
+    if _is_ajax(request):
+        return JsonResponse({
+            'success'              : True,
+            'message'              : f'{doc_name} deleted successfully.',
+            'uploaded_types'       : stats['uploaded_types'],
+            'completion_percentage': stats['completion_percentage'],
+            'all_required_uploaded': stats['all_required_uploaded'],
+            'missing_types'        : stats['missing_types'],
+        })
+
+    messages.success(request, f'{doc_name} deleted successfully.')
+    return redirect('student_application_documents', pk=application.pk)
+
 
 @login_required
 def student_application_submit(request, pk):
