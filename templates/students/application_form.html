@@ -6,924 +6,561 @@
 {% block extra_css %}
 <style>
     .breadcrumb {
-        padding: 0;
-        margin-bottom: 20px;
-        font-size: 14px;
-        list-style: none;
-        display: flex;
-        flex-wrap: wrap;
+        padding: 0; margin-bottom: 20px; font-size: 14px;
+        list-style: none; display: flex; flex-wrap: wrap;
     }
-
-    .breadcrumb-item {
-        color: #64748B;
-    }
-
-    .breadcrumb-item + .breadcrumb-item::before {
-        content: "/ ";
-        color: #94A3B8;
-        padding: 0 8px;
-    }
-
-    .breadcrumb-item.active {
-        color: #1E293B;
-        font-weight: 500;
-    }
-
-    .breadcrumb a {
-        color: #3498db;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    .breadcrumb a:hover {
-        color: #2980b9;
-    }
+    .breadcrumb-item { color: #64748B; }
+    .breadcrumb-item + .breadcrumb-item::before { content: "/ "; color: #94A3B8; padding: 0 8px; }
+    .breadcrumb-item.active { color: #1E293B; font-weight: 500; }
+    .breadcrumb a { color: #3498db; text-decoration: none; transition: color .3s; }
+    .breadcrumb a:hover { color: #2980b9; }
 
     .section-container {
-        background: white;
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
+        background: white; border-radius: 8px; padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 24px;
         border: 1px solid #E2E8F0;
     }
-
     .page-header {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-        flex-wrap: wrap;
-        gap: 16px;
+        margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #F1F5F9;
+        display: flex; justify-content: space-between; align-items: start;
+        flex-wrap: wrap; gap: 16px;
     }
-
-    .page-title {
-        font-size: 22px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .page-subtitle {
-        color: #64748B;
-        font-size: 14px;
-        margin: 0;
-    }
+    .page-title { font-size: 22px; font-weight: 600; color: #1E293B; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .page-subtitle { color: #64748B; font-size: 14px; margin: 0; }
 
     .info-banner {
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.1));
-        border-radius: 8px;
-        padding: 20px;
-        border: 1px solid rgba(52, 152, 219, 0.2);
-        margin-bottom: 24px;
-        display: flex;
-        gap: 16px;
+        background: linear-gradient(135deg, rgba(52,152,219,.05), rgba(52,152,219,.1));
+        border-radius: 8px; padding: 20px; border: 1px solid rgba(52,152,219,.2);
+        margin-bottom: 24px; display: flex; gap: 16px;
     }
-
     .info-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(52, 152, 219, 0.15);
-        color: #3498db;
-        font-size: 24px;
-        flex-shrink: 0;
+        width: 48px; height: 48px; border-radius: 8px; display: flex;
+        align-items: center; justify-content: center;
+        background: rgba(52,152,219,.15); color: #3498db; font-size: 24px; flex-shrink: 0;
     }
-
-    .info-content h6 {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 8px;
-    }
-
-    .info-content p {
-        font-size: 14px;
-        color: #64748B;
-        margin: 0;
-        line-height: 1.6;
-    }
+    .info-content h6 { font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 8px; }
+    .info-content p { font-size: 14px; color: #64748B; margin: 0; line-height: 1.6; }
 
     .warning-banner {
-        background: #f59f0ba5;
-        border-radius: 5px;
-        padding: 16px;
-        border: 2px solid #f59f0ba5;
-        margin-bottom: 24px;
-        display: flex;
-        gap: 12px;
-        align-items: center;
+        background: #fef9ec; border-radius: 6px; padding: 16px;
+        border: 2px solid #f59e0b; margin-bottom: 24px;
+        display: flex; gap: 12px; align-items: center;
     }
-
-    .warning-banner .info-icon {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-    }
+    .warning-banner .info-icon { background: rgba(245,158,11,.15); color: #f59e0b; width: 40px; height: 40px; font-size: 20px; }
 
     .form-section {
-        background: white;
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
-        border: 1px solid #E2E8F0;
-        transition: all 0.3s ease;
+        background: white; border-radius: 8px; padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 24px;
+        border: 1px solid #E2E8F0; transition: all .3s;
     }
-
-    .form-section:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
+    .form-section:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
 
     .page-section-header {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        font-size: 18px; font-weight: 600; color: #1E293B;
+        margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;
+        display: flex; align-items: center; gap: 10px;
     }
-
     .section-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        background: rgba(52, 152, 219, 0.1);
-        color: #3498db;
+        width: 36px; height: 36px; border-radius: 8px; display: inline-flex;
+        align-items: center; justify-content: center; font-size: 18px;
+        background: rgba(52,152,219,.1); color: #3498db;
     }
 
-    .form-group {
-        margin-bottom: 20px;
-    }
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-size: 14px; font-weight: 500; color: #1E293B; margin-bottom: 8px; display: block; }
+    .required-field::after { content: " *"; color: #EF4444; font-weight: 600; }
 
-    .form-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #1E293B;
-        margin-bottom: 8px;
-        display: block;
+    .form-control, .form-select {
+        width: 100%; padding: 10px 14px; font-size: 14px;
+        border: 1px solid #E2E8F0; border-radius: 6px; background: white;
+        color: #1E293B; transition: all .3s;
     }
-
-    .required-field::after {
-        content: " *";
-        color: #EF4444;
-        font-weight: 600;
+    .form-control:focus, .form-select:focus {
+        outline: none; border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52,152,219,.1);
     }
-
-    .form-control,
-    .form-select {
-        width: 100%;
-        padding: 10px 14px;
-        font-size: 14px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        background: white;
-        color: #1E293B;
-        transition: all 0.3s ease;
+    .form-control.is-invalid, .form-select.is-invalid {
+        border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,.1);
     }
-
-    .form-control:focus,
-    .form-select:focus {
-        outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
-    .form-control.is-invalid,
-    .form-select.is-invalid {
-        border-color: #EF4444;
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-    }
-
-    textarea.form-control {
-        min-height: 100px;
-        resize: vertical;
-    }
-
-    .form-text {
-        font-size: 12px;
-        color: #64748B;
-        margin-top: 6px;
-        display: block;
-    }
-
-    .invalid-feedback {
-        color: #EF4444;
-        font-size: 13px;
-        margin-top: 6px;
-        display: block;
-        font-weight: 500;
-    }
+    textarea.form-control { min-height: 100px; resize: vertical; }
+    .form-text { font-size: 12px; color: #64748B; margin-top: 6px; display: block; }
+    .invalid-feedback { color: #EF4444; font-size: 13px; margin-top: 6px; display: block; font-weight: 500; }
 
     .form-check {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px;
-        background: #F8FAFC;
-        border-radius: 6px;
-        border: 1px solid #E2E8F0;
-        transition: all 0.3s ease;
+        display: flex; align-items: center; gap: 10px; padding: 12px;
+        background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0; transition: all .3s;
     }
-
-    .form-check:hover {
-        background: #F1F5F9;
-    }
-
+    .form-check:hover { background: #F1F5F9; }
     .form-check-input {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #E2E8F0;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 0;
-        flex-shrink: 0;
+        width: 20px; height: 20px; border: 2px solid #E2E8F0; border-radius: 4px;
+        cursor: pointer; margin: 0; flex-shrink: 0;
     }
-
-    .form-check-input:checked {
-        background-color: #3498db;
-        border-color: #3498db;
-    }
-
-    .form-check-input:focus {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
-    .form-check-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #1E293B;
-        cursor: pointer;
-        margin: 0;
-    }
+    .form-check-input:checked { background-color: #3498db; border-color: #3498db; }
+    .form-check-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,.1); }
+    .form-check-label { font-size: 14px; font-weight: 500; color: #1E293B; cursor: pointer; margin: 0; }
 
     .calculated-field {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1));
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        border-radius: 6px;
-        padding: 10px 14px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #10B981;
-        min-height: 44px;
-        display: flex;
-        align-items: center;
+        background: linear-gradient(135deg, rgba(16,185,129,.05), rgba(16,185,129,.1));
+        border: 1px solid rgba(16,185,129,.2); border-radius: 6px; padding: 10px 14px;
+        font-size: 16px; font-weight: 600; color: #10B981; min-height: 44px;
+        display: flex; align-items: center;
     }
 
-    .max-amount-alert {
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.1));
-        border: 1px solid rgba(52, 152, 219, 0.2);
-        border-radius: 6px;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        color: #1E293B;
+    /* Amount requested notice */
+    .amount-notice {
+        background: linear-gradient(135deg, #fff7ed, #fff3e0);
+        border: 1px solid #fed7aa; border-radius: 8px; padding: 14px 16px;
+        margin-top: 10px; display: flex; gap: 10px; align-items: flex-start;
     }
+    .amount-notice i { color: #ea580c; font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .amount-notice-text { font-size: 13px; color: #7c2d12; }
+    .amount-notice-text strong { color: #c2410c; }
 
-    .max-amount-alert i {
-        color: #3498db;
-        font-size: 18px;
+    .max-amount-info-box {
+        background: linear-gradient(135deg, rgba(52,152,219,.05), rgba(52,152,219,.1));
+        border: 1px solid rgba(52,152,219,.2); border-radius: 6px; padding: 12px 16px;
+        display: flex; align-items: center; gap: 10px; font-size: 14px; color: #1E293B;
     }
+    .max-amount-info-box i { color: #3498db; font-size: 18px; }
 
-    .conditional-field {
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transition: all 0.3s ease;
-    }
-
-    .conditional-field.show {
-        max-height: 500px;
-        opacity: 1;
-    }
+    .conditional-field { max-height: 0; overflow: hidden; opacity: 0; transition: all .35s; }
+    .conditional-field.show { max-height: 2000px; opacity: 1; }
 
     .alert-custom {
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border: 1px solid;
+        border-radius: 8px; padding: 16px; margin-bottom: 24px;
+        display: flex; align-items: center; gap: 12px; border: 1px solid;
     }
-
-    .alert-success-custom {
-        background: rgba(16, 185, 129, 0.05);
-        border-color: rgba(16, 185, 129, 0.2);
-        color: #1E293B;
-    }
-
-    .alert-danger-custom {
-        background: rgba(239, 68, 68, 0.05);
-        border-color: rgba(239, 68, 68, 0.2);
-        color: #1E293B;
-    }
-
-    .alert-icon {
-        font-size: 24px;
-        flex-shrink: 0;
-    }
-
-    .alert-success-custom .alert-icon {
-        color: #10B981;
-    }
-
-    .alert-danger-custom .alert-icon {
-        color: #EF4444;
-    }
-
+    .alert-success-custom { background: rgba(16,185,129,.05); border-color: rgba(16,185,129,.2); color: #1E293B; }
+    .alert-danger-custom  { background: rgba(239,68,68,.05); border-color: rgba(239,68,68,.2); color: #1E293B; }
+    .alert-icon { font-size: 24px; flex-shrink: 0; }
+    .alert-success-custom .alert-icon { color: #10B981; }
+    .alert-danger-custom .alert-icon { color: #EF4444; }
     .alert-close {
-        margin-left: auto;
-        background: none;
-        border: none;
-        font-size: 20px;
-        color: #64748B;
-        cursor: pointer;
-        padding: 0;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: all 0.3s ease;
+        margin-left: auto; background: none; border: none; font-size: 20px;
+        color: #64748B; cursor: pointer; padding: 0; width: 24px; height: 24px;
+        display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all .3s;
+    }
+    .alert-close:hover { background: rgba(0,0,0,.05); }
+
+    /* ═══════════ FAMILY SITUATION ═══════════ */
+
+    /* Situation card — the checkbox row */
+    .situation-card {
+        border: 2px solid #E2E8F0; border-radius: 10px; padding: 16px;
+        margin-bottom: 14px; transition: all .3s; cursor: pointer; background: #F8FAFC;
+    }
+    .situation-card:hover { border-color: #93C5FD; background: #EFF6FF; }
+    .situation-card.active { border-color: #3498db; background: #EFF6FF; }
+    .situation-card.docs-ready { border-color: #22C55E; background: #F0FDF4; }
+
+    .situation-card-header {
+        display: flex; align-items: center; gap: 12px;
+    }
+    .situation-icon {
+        width: 42px; height: 42px; border-radius: 8px; display: flex;
+        align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .situation-icon.orphan-all { background: #FEE2E2; color: #EF4444; }
+    .situation-icon.orphan-one { background: #FEF3C7; color: #F59E0B; }
+    .situation-icon.disability { background: #DBEAFE; color: #3B82F6; }
+    .situation-icon.illness    { background: #F3E8FF; color: #9333EA; }
+
+    .situation-label { flex: 1; }
+    .situation-title { font-size: 14px; font-weight: 600; color: #1E293B; }
+    .situation-subtitle { font-size: 12px; color: #64748B; margin-top: 2px; }
+
+    .doc-status-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .doc-badge-pending  { background: #FEF3C7; color: #92400E; }
+    .doc-badge-uploaded { background: #DCFCE7; color: #166534; }
+    .doc-badge-required { background: #FEE2E2; color: #991B1B; }
+
+    /* Inline doc upload area (expands below card) */
+    .doc-upload-area {
+        max-height: 0; overflow: hidden; opacity: 0; transition: all .4s ease;
+    }
+    .doc-upload-area.open {
+        max-height: 800px; opacity: 1;
+    }
+    .doc-upload-inner {
+        border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 10px 10px;
+        padding: 20px; background: white; margin-top: -2px;
     }
 
-    .alert-close:hover {
-        background: rgba(0, 0, 0, 0.05);
+    .doc-requirement-list { list-style: none; padding: 0; margin: 0 0 16px; }
+    .doc-requirement-list li {
+        display: flex; align-items: flex-start; gap: 8px;
+        padding: 6px 0; font-size: 13px; color: #475569; border-bottom: 1px solid #F1F5F9;
+    }
+    .doc-requirement-list li:last-child { border-bottom: none; }
+    .doc-requirement-list li i { color: #3498db; flex-shrink: 0; margin-top: 2px; }
+
+    /* Drop zone */
+    .drop-zone {
+        border: 2px dashed #CBD5E1; border-radius: 8px; padding: 28px 20px;
+        text-align: center; cursor: pointer; transition: all .25s; background: #F8FAFC;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: #3498db; background: #EFF6FF; }
+    .drop-zone i { font-size: 32px; color: #94A3B8; margin-bottom: 8px; display: block; }
+    .drop-zone p { margin: 0; font-size: 14px; color: #64748B; }
+    .drop-zone strong { color: #3498db; }
+
+    /* Uploaded file chip */
+    .uploaded-file-chip {
+        display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+        background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; margin-top: 10px;
+    }
+    .uploaded-file-chip i { color: #22C55E; font-size: 20px; flex-shrink: 0; }
+    .uploaded-file-info { flex: 1; min-width: 0; }
+    .uploaded-file-info .fname { font-size: 13px; font-weight: 600; color: #166534; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .uploaded-file-info .fsize { font-size: 11px; color: #4ADE80; }
+    .remove-file-btn {
+        background: none; border: none; color: #EF4444; cursor: pointer;
+        font-size: 18px; line-height: 1; padding: 0; flex-shrink: 0;
+    }
+    .remove-file-btn:hover { color: #DC2626; }
+
+    /* Integrity oath section */
+    .integrity-box {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 2px solid #86efac; border-radius: 10px; padding: 20px; margin-top: 24px;
+    }
+    .integrity-box h5 {
+        font-size: 15px; font-weight: 700; color: #166534;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    }
+    .integrity-items { list-style: none; padding: 0; margin: 0 0 16px; }
+    .integrity-items li {
+        display: flex; align-items: flex-start; gap: 8px;
+        font-size: 13px; color: #166534; padding: 5px 0;
+    }
+    .integrity-items li i { flex-shrink: 0; margin-top: 2px; }
+    .oath-checkbox {
+        display: flex; align-items: flex-start; gap: 12px;
+        background: white; border: 1px solid #86efac; border-radius: 6px; padding: 12px 16px;
+    }
+    .oath-checkbox input { flex-shrink: 0; margin-top: 2px; width: 18px; height: 18px; cursor: pointer; }
+    .oath-checkbox label { font-size: 13px; color: #166534; font-weight: 500; cursor: pointer; line-height: 1.5; }
+
+    /* ═══════════ MODAL ═══════════ */
+    .doc-modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.55); z-index: 9000;
+        align-items: center; justify-content: center; padding: 20px;
+    }
+    .doc-modal-overlay.open { display: flex; }
+    .doc-modal {
+        background: white; border-radius: 12px; width: 100%;
+        max-width: 560px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 25px 80px rgba(0,0,0,.25); animation: modalIn .25s ease;
+    }
+    @keyframes modalIn {
+        from { transform: scale(.93) translateY(10px); opacity: 0; }
+        to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .doc-modal-header {
+        padding: 20px 24px 16px; border-bottom: 1px solid #F1F5F9;
+        display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: white; z-index: 1;
+    }
+    .doc-modal-icon {
+        width: 44px; height: 44px; border-radius: 10px; display: flex;
+        align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .doc-modal-header h4 { font-size: 17px; font-weight: 700; color: #1E293B; margin: 0; flex: 1; }
+    .doc-modal-close {
+        background: #F1F5F9; border: none; width: 32px; height: 32px;
+        border-radius: 50%; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; color: #64748B; font-size: 18px; transition: all .2s;
+    }
+    .doc-modal-close:hover { background: #E2E8F0; color: #1E293B; }
+    .doc-modal-body { padding: 20px 24px; }
+
+    /* Rules box inside modal */
+    .rules-box {
+        border-radius: 8px; padding: 16px; margin-bottom: 20px;
+    }
+    .rules-box.critical { background: #FEF2F2; border: 1px solid #FECACA; }
+    .rules-box.info     { background: #EFF6FF; border: 1px solid #BFDBFE; }
+    .rules-box h6 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+    .rules-box.critical h6 { color: #991B1B; }
+    .rules-box.info h6     { color: #1E40AF; }
+    .rules-list { list-style: none; padding: 0; margin: 0; }
+    .rules-list li {
+        display: flex; align-items: flex-start; gap: 8px;
+        font-size: 13px; padding: 4px 0;
+    }
+    .rules-box.critical .rules-list li { color: #7F1D1D; }
+    .rules-box.info     .rules-list li { color: #1E3A8A; }
+    .rules-list li i { flex-shrink: 0; margin-top: 2px; }
+
+    /* Modal file slots */
+    .file-slot { margin-bottom: 16px; }
+    .file-slot-label {
+        font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; display: block;
+    }
+    .file-slot-badge {
+        display: inline-block; font-size: 11px; font-weight: 600;
+        padding: 2px 8px; border-radius: 10px; margin-left: 6px;
+    }
+    .badge-mandatory { background: #FEE2E2; color: #991B1B; }
+    .badge-preferred { background: #DBEAFE; color: #1E40AF; }
+    .badge-optional  { background: #F1F5F9; color: #475569; }
+
+    .doc-modal-footer {
+        padding: 16px 24px 20px; border-top: 1px solid #F1F5F9;
+        display: flex; gap: 10px; justify-content: flex-end;
     }
 
-    .form-actions {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-top: 32px;
-        padding-top: 24px;
-        border-top: 1px solid #F1F5F9;
+    /* Warning inside modal about false declarations */
+    .false-declaration-warning {
+        background: #7F1D1D; color: white; border-radius: 8px; padding: 14px 16px;
+        margin-bottom: 20px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start;
     }
+    .false-declaration-warning i { flex-shrink: 0; margin-top: 1px; font-size: 16px; }
 
-    .searchable-select-wrapper {
-        position: relative;
-    }
+    /* Category display */
+    .category-group { margin-bottom: 20px; padding: 16px; background: #F8FAFC; border-radius: 8px; border: 1px solid #E2E8F0; }
+    .category-group-header { font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .category-scope-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .scope-county        { background: rgba(52,152,219,.1); color: #3498db; }
+    .scope-constituency  { background: rgba(16,185,129,.1); color: #10B981; }
+    .scope-ward          { background: rgba(245,158,11,.1); color: #f59e0b; }
+    .category-status     { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .status-open    { background: rgba(16,185,129,.1); color: #10B981; }
+    .status-closed  { background: rgba(239,68,68,.1); color: #EF4444; }
+    .status-limited { background: rgba(245,158,11,.1); color: #f59e0b; }
+    .category-info-card { background: white; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px; margin-bottom: 8px; transition: all .3s; }
+    .category-info-card:hover { border-color: #3498db; box-shadow: 0 2px 8px rgba(52,152,219,.1); }
+    .category-info-card.disabled { opacity: .6; cursor: not-allowed; }
+    .category-info-card.disabled:hover { border-color: #E2E8F0; box-shadow: none; }
+    .category-name { font-size: 14px; font-weight: 600; color: #1E293B; margin-bottom: 4px; }
+    .category-details { font-size: 12px; color: #64748B; display: flex; flex-wrap: wrap; gap: 12px; }
+    .category-detail-item { display: flex; align-items: center; gap: 4px; }
+    .closed-categories-section { margin-top: 20px; padding: 16px; background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.2); border-radius: 8px; }
+    .location-info-badge { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(135deg, rgba(52,152,219,.05), rgba(52,152,219,.1)); border: 1px solid rgba(52,152,219,.2); border-radius: 6px; font-size: 14px; margin-bottom: 16px; }
+    .location-info-badge i { color: #3498db; font-size: 16px; }
 
-    .searchable-input {
-        cursor: text;
-    }
-
+    /* Searchable select */
+    .searchable-select-wrapper { position: relative; }
     .searchable-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-radius: 0 0 6px 6px;
-        max-height: 300px;
-        overflow-y: auto;
-        z-index: 1050;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: absolute; top: 100%; left: 0; right: 0; background: white;
+        border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 6px 6px;
+        max-height: 300px; overflow-y: auto; z-index: 1050;
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
     }
+    .searchable-option { padding: 10px 14px; cursor: pointer; transition: background-color .2s; border-bottom: 1px solid #F1F5F9; font-size: 14px; color: #1E293B; }
+    .searchable-option:last-child { border-bottom: none; }
+    .searchable-option:hover, .searchable-option.bg-light { background-color: #F8FAFC; }
 
-    .searchable-option {
-        padding: 10px 14px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        border-bottom: 1px solid #F1F5F9;
-        font-size: 14px;
-        color: #1E293B;
-    }
+    .form-actions { display: flex; justify-content: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #F1F5F9; }
 
-    .searchable-option:last-child {
-        border-bottom: none;
-    }
+    @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+    .spinner { animation: spin 1s linear infinite; }
 
-    .searchable-option:hover,
-    .searchable-option.bg-light {
-        background-color: #F8FAFC;
-    }
-
-    .searchable-dropdown::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .searchable-dropdown::-webkit-scrollbar-track {
-        background: #F1F5F9;
-        border-radius: 3px;
-    }
-
-    .searchable-dropdown::-webkit-scrollbar-thumb {
-        background: #CBD5E1;
-        border-radius: 3px;
-    }
-
-    .searchable-dropdown::-webkit-scrollbar-thumb:hover {
-        background: #94A3B8;
-    }
-
-    /* Category styles */
-    .category-group {
-        margin-bottom: 24px;
-        padding: 16px;
-        background: #F8FAFC;
-        border-radius: 8px;
-        border: 1px solid #E2E8F0;
-    }
-    
-    .category-group-header {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .category-scope-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-    
-    .scope-county {
-        background: rgba(52, 152, 219, 0.1);
-        color: #3498db;
-    }
-    
-    .scope-constituency {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-    }
-    
-    .scope-ward {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-    }
-    
-    .category-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-    
-    .status-open {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-    }
-    
-    .status-closed {
-        background: rgba(239, 68, 68, 0.1);
-        color: #EF4444;
-    }
-    
-    .status-limited {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-    }
-    
-    .category-info-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 8px;
-        transition: all 0.3s ease;
-    }
-    
-    .category-info-card:hover {
-        border-color: #3498db;
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
-    }
-    
-    .category-info-card.disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-    
-    .category-info-card.disabled:hover {
-        border-color: #E2E8F0;
-        box-shadow: none;
-    }
-    
-    .category-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 4px;
-    }
-    
-    .category-details {
-        font-size: 12px;
-        color: #64748B;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-    
-    .category-detail-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-    
-    .closed-categories-section {
-        margin-top: 24px;
-        padding: 16px;
-        background: rgba(239, 68, 68, 0.05);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        border-radius: 8px;
-    }
-    
-    .location-info-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 16px;
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.1));
-        border: 1px solid rgba(52, 152, 219, 0.2);
-        border-radius: 6px;
-        font-size: 14px;
-        margin-bottom: 16px;
-    }
-    
-    .location-info-badge i {
-        color: #3498db;
-        font-size: 16px;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .spinner {
-        animation: spin 1s linear infinite;
-    }
-
-    @media (max-width: 768px) {
-        .page-header {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .form-section {
-            padding: 16px;
-        }
-
-        .form-actions {
-            flex-direction: column;
-        }
-
-        .form-actions .btn {
-            width: 100%;
-        }
+    @media(max-width:768px){
+        .page-header { flex-direction: column; align-items: stretch; }
+        .form-section { padding: 16px; }
+        .form-actions { flex-direction: column; }
+        .form-actions .btn { width: 100%; }
     }
 </style>
 {% endblock %}
+
 
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{% url 'student_dashboard' %}">
-                    <i class="bi bi-house-door"></i> Dashboard
-                </a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'student_application_list' %}">My Applications</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                {% if application %}Edit Application{% else %}New Application{% endif %}
-            </li>
+            <li class="breadcrumb-item"><a href="{% url 'student_dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'student_application_list' %}">My Applications</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% if application %}Edit Application{% else %}New Application{% endif %}</li>
         </ol>
     </nav>
 
     <div class="section-container">
-        <!-- Page Header -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
                     <i class="bi bi-file-earmark-plus"></i>
                     {% if application %}Edit Application{% else %}New Bursary Application{% endif %}
                 </h1>
-                <p class="page-subtitle">
-                    Complete the form below to apply for bursary funding - {{ current_fiscal_year.name }}
-                </p>
+                <p class="page-subtitle">Complete the form below — {{ current_fiscal_year.name }}</p>
             </div>
             <a href="{% url 'student_application_list' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-list-ul me-1"></i> My Applications
             </a>
         </div>
 
-        <!-- Messages -->
         {% if messages %}
             {% for message in messages %}
-                <div class="alert-custom alert-{% if message.tags == 'success' %}success{% else %}danger{% endif %}-custom">
-                    <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}-fill alert-icon"></i>
-                    <div style="flex: 1;">{{ message }}</div>
-                    <button type="button" class="alert-close" onclick="this.parentElement.remove()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
+            <div class="alert-custom alert-{% if message.tags == 'success' %}success{% else %}danger{% endif %}-custom">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}-fill alert-icon"></i>
+                <div style="flex:1">{{ message }}</div>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+            </div>
             {% endfor %}
         {% endif %}
 
-        <!-- Form Errors -->
         {% if form.non_field_errors %}
-            <div class="alert-custom alert-danger-custom">
-                <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
-                <div style="flex: 1;">
-                    {% for error in form.non_field_errors %}
-                        <div>{{ error }}</div>
-                    {% endfor %}
-                </div>
-                <button type="button" class="alert-close" onclick="this.parentElement.remove()">
-                    <i class="bi bi-x"></i>
-                </button>
-            </div>
+        <div class="alert-custom alert-danger-custom">
+            <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
+            <div style="flex:1">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+        </div>
         {% endif %}
 
-        <!-- Location Info Badge -->
         <div class="location-info-badge">
             <i class="bi bi-geo-alt-fill"></i>
             <div>
-                <strong>Your Location:</strong> 
-                {{ applicant_constituency.name }} Constituency, {{ applicant_ward.name }} Ward
-                <span class="text-muted ms-2">(Categories are filtered based on your location)</span>
+                <strong>Your Location:</strong> {{ applicant_constituency.name }} Constituency, {{ applicant_ward.name }} Ward
+                <span class="text-muted ms-2">(Categories are filtered to your location)</span>
             </div>
         </div>
 
-        <!-- Information Banner -->
         <div class="info-banner">
-            <div class="info-icon">
-                <i class="bi bi-info-circle"></i>
-            </div>
+            <div class="info-icon"><i class="bi bi-info-circle"></i></div>
             <div class="info-content">
-                <h6>Application Period - {{ current_fiscal_year.name }}</h6>
+                <h6>Application Period — {{ current_fiscal_year.name }}</h6>
                 <p>
                     <strong>Start Date:</strong> {{ current_fiscal_year.start_date|date:"M j, Y" }}<br>
-                    {% if current_fiscal_year.application_deadline %}
-                    <strong>Application Deadline:</strong> {{ current_fiscal_year.application_deadline|date:"M j, Y" }}<br>
-                    {% endif %}
-                    {% if current_round %}
-                    <strong>Current Round:</strong> {{ current_round.name }}<br>
-                    <strong>Round Deadline:</strong> {{ current_round.application_end_date|date:"M j, Y" }}
-                    {% endif %}
+                    {% if current_fiscal_year.application_deadline %}<strong>Deadline:</strong> {{ current_fiscal_year.application_deadline|date:"M j, Y" }}<br>{% endif %}
+                    {% if current_round %}<strong>Current Round:</strong> {{ current_round.name }} — Closes {{ current_round.application_end_date|date:"M j, Y" }}{% endif %}
                 </p>
             </div>
         </div>
 
-        <!-- Ward Allocation Warning -->
-        {% if ward_allocation %}
-            {% if ward_allocation.balance <= 0 %}
-            <div class="warning-banner">
-                <div class="info-icon">
-                    <i class="bi bi-exclamation-triangle"></i>
-                </div>
-                <div class="info-content">
-                    <strong>Ward Allocation Notice:</strong> 
-                    The allocation for {{ applicant.ward.name}} Ward has been exhausted. 
-                    Your application will be placed on a waiting list and will be considered if additional funds become available.
-                </div>
+        {% if ward_allocation and ward_allocation.balance <= 0 %}
+        <div class="warning-banner">
+            <div class="info-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <strong>Ward Allocation Notice:</strong> The {{ applicant.ward.name }} Ward allocation has been exhausted.
+                Your application will be placed on a waiting list.
             </div>
-            {% endif %}
+        </div>
         {% endif %}
     </div>
 
-    <form method="post" id="applicationForm" novalidate>
+
+    <form method="post" id="applicationForm" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
-        <!-- Bursary Source Selection -->
+        <!-- ═══════ 1. BURSARY SOURCE ═══════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-cash-stack"></i>
-                </span>
+                <span class="section-icon"><i class="bi bi-cash-stack"></i></span>
                 Bursary Source
             </h4>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="{{ form.bursary_source.id_for_label }}" class="form-label required-field">Select Bursary Fund</label>
-                        {{ form.bursary_source }}
-                        {% if form.bursary_source.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.bursary_source.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                        <span class="form-text">Choose whether you want to apply for County Bursary, NG-CDF Bursary, or both</span>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label for="{{ form.bursary_source.id_for_label }}" class="form-label required-field">Select Bursary Fund</label>
+                {{ form.bursary_source }}
+                {% if form.bursary_source.errors %}<div class="invalid-feedback d-block">{% for e in form.bursary_source.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                <span class="form-text">Choose whether you want to apply for County Bursary, NG-CDF Bursary, or both.</span>
             </div>
         </div>
 
-        <!-- Institution Information -->
+
+        <!-- ═══════ 2. INSTITUTION ═══════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-building"></i>
-                </span>
+                <span class="section-icon"><i class="bi bi-building"></i></span>
                 Institution Information
             </h4>
 
-            <!-- Category Selection with Grouped Display -->
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="{{ form.bursary_category.id_for_label }}" class="form-label required-field">
-                            Bursary Category
-                        </label>
-                        
-                        <!-- Available Categories -->
-                        {% if categories %}
-                            <div class="mb-3">
-                                <h6 class="text-success mb-3">
-                                    <i class="bi bi-check-circle"></i> Available Categories ({{ categories|length }})
-                                </h6>
-                                
-                                <!-- Group by scope -->
-                                {% regroup categories by scope as scope_groups %}
-                                {% for scope_group in scope_groups %}
-                                    <div class="category-group">
-                                        <div class="category-group-header">
-                                            {% if scope_group.grouper == 'county' %}
-                                                <span class="category-scope-badge scope-county">
-                                                    <i class="bi bi-globe"></i> County-Wide
-                                                </span>
-                                            {% elif scope_group.grouper == 'constituency' %}
-                                                <span class="category-scope-badge scope-constituency">
-                                                    <i class="bi bi-geo-alt"></i> {{ applicant_constituency.name }} Constituency
-                                                </span>
-                                            {% elif scope_group.grouper == 'ward' %}
-                                                <span class="category-scope-badge scope-ward">
-                                                    <i class="bi bi-pin-map"></i> {{ applicant_ward.name }} Ward
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        {% for category in scope_group.list %}
-                                            <div class="category-info-card">
-                                                <label class="d-flex align-items-start gap-3 mb-0">
-                                                    <input type="radio" 
-                                                           name="bursary_category" 
-                                                           value="{{ category.id }}"
-                                                           class="form-check-input mt-1"
-                                                           data-max-amount="{{ category.max_amount_per_applicant }}"
-                                                           data-min-amount="{{ category.min_amount_per_applicant }}"
-                                                           {% if form.bursary_category.value == category.id|stringformat:"s" %}checked{% endif %}
-                                                           required>
-                                                    <div class="flex-grow-1">
-                                                        <div class="category-name">
-                                                            {{ category.name }}
-                                                            <span class="category-status status-open">
-                                                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Open
-                                                            </span>
-                                                            {% if category.balance < category.allocation_amount|floatformat:0|slice:":1" %}
-                                                                <span class="category-status status-limited">
-                                                                    <i class="bi bi-exclamation-triangle"></i> Limited
-                                                                </span>
-                                                            {% endif %}
-                                                        </div>
-                                                        <div class="category-details">
-                                                            <span class="category-detail-item">
-                                                                <i class="bi bi-currency-exchange"></i>
-                                                                KES {{ category.min_amount_per_applicant|floatformat:0 }} - {{ category.max_amount_per_applicant|floatformat:0 }}
-                                                            </span>
-                                                            <span class="category-detail-item">
-                                                                <i class="bi bi-wallet2"></i>
-                                                                Balance: KES {{ category.balance|floatformat:0 }}
-                                                            </span>
-                                                            {% if category.target_beneficiaries %}
-                                                                <span class="category-detail-item">
-                                                                    <i class="bi bi-people"></i>
-                                                                    {{ category.current_beneficiaries|default:0 }}/{{ category.target_beneficiaries }} beneficiaries
-                                                                </span>
-                                                            {% endif %}
-                                                            {% if category.application_end_date %}
-                                                                <span class="category-detail-item">
-                                                                    <i class="bi bi-calendar"></i>
-                                                                    Closes: {{ category.application_end_date|date:"M j, Y" }}
-                                                                </span>
-                                                            {% endif %}
-                                                        </div>
-                                                        {% if category.description %}
-                                                            <div class="text-muted small mt-1">{{ category.description|truncatewords:20 }}</div>
-                                                        {% endif %}
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endfor %}
+            <!-- Category Selection -->
+            <div class="form-group">
+                <label class="form-label required-field">Bursary Category</label>
+                {% if categories %}
+                    <div class="mb-3">
+                        <h6 class="text-success mb-3"><i class="bi bi-check-circle"></i> Available Categories ({{ categories|length }})</h6>
+                        {% regroup categories by scope as scope_groups %}
+                        {% for scope_group in scope_groups %}
+                        <div class="category-group">
+                            <div class="category-group-header">
+                                {% if scope_group.grouper == 'county' %}
+                                    <span class="category-scope-badge scope-county"><i class="bi bi-globe"></i> County-Wide</span>
+                                {% elif scope_group.grouper == 'constituency' %}
+                                    <span class="category-scope-badge scope-constituency"><i class="bi bi-geo-alt"></i> {{ applicant_constituency.name }}</span>
+                                {% elif scope_group.grouper == 'ward' %}
+                                    <span class="category-scope-badge scope-ward"><i class="bi bi-pin-map"></i> {{ applicant_ward.name }} Ward</span>
+                                {% endif %}
                             </div>
-                        {% else %}
-                            <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle"></i>
-                                No categories are currently open for applications in your constituency/ward.
-                                Please check back later or contact the bursary office.
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Closed Categories -->
-                        {% if closed_categories %}
-                            <div class="closed-categories-section">
-                                <h6 class="text-danger mb-3">
-                                    <i class="bi bi-x-circle"></i> Closed Categories ({{ closed_categories|length }})
-                                </h6>
-                                <p class="small text-muted mb-3">These categories are not currently accepting applications</p>
-                                
-                                {% for category in closed_categories %}
-                                    <div class="category-info-card disabled">
+                            {% for category in scope_group.list %}
+                            <div class="category-info-card">
+                                <label class="d-flex align-items-start gap-3 mb-0">
+                                    <input type="radio" name="bursary_category" value="{{ category.id }}"
+                                        class="form-check-input mt-1"
+                                        data-max-amount="{{ category.max_amount_per_applicant }}"
+                                        data-min-amount="{{ category.min_amount_per_applicant }}"
+                                        {% if form.bursary_category.value == category.id|stringformat:"s" %}checked{% endif %}
+                                        required>
+                                    <div class="flex-grow-1">
                                         <div class="category-name">
                                             {{ category.name }}
-                                            <span class="category-status status-closed">
-                                                <i class="bi bi-x-circle"></i> Closed
-                                            </span>
-                                            {% if category.scope == 'constituency' %}
-                                                <span class="category-scope-badge scope-constituency">
-                                                    {{ category.constituency.name }}
-                                                </span>
-                                            {% elif category.scope == 'ward' %}
-                                                <span class="category-scope-badge scope-ward">
-                                                    {{ category.ward.name }}
-                                                </span>
-                                            {% endif %}
+                                            <span class="category-status status-open"><i class="bi bi-circle-fill" style="font-size:6px"></i> Open</span>
                                         </div>
                                         <div class="category-details">
-                                            {% if category.balance <= 0 %}
-                                                <span class="text-danger">
-                                                    <i class="bi bi-exclamation-circle"></i> Budget Exhausted
-                                                </span>
-                                            {% elif category.target_beneficiaries and category.current_beneficiaries >= category.target_beneficiaries %}
-                                                <span class="text-danger">
-                                                    <i class="bi bi-people"></i> Capacity Reached
-                                                </span>
-                                            {% else %}
-                                                <span class="text-muted">
-                                                    <i class="bi bi-clock"></i> Application Window Closed
-                                                </span>
+                                            <span class="category-detail-item">
+                                                <i class="bi bi-currency-exchange"></i>
+                                                Up to KES {{ category.max_amount_per_applicant|floatformat:0 }} max per student
+                                            </span>
+                                            {% if category.target_beneficiaries %}
+                                            <span class="category-detail-item">
+                                                <i class="bi bi-people"></i>
+                                                {{ category.current_beneficiaries|default:0 }}/{{ category.target_beneficiaries }} beneficiaries
+                                            </span>
+                                            {% endif %}
+                                            {% if category.application_end_date %}
+                                            <span class="category-detail-item">
+                                                <i class="bi bi-calendar"></i> Closes: {{ category.application_end_date|date:"M j, Y" }}
+                                            </span>
                                             {% endif %}
                                         </div>
+                                        {% if category.description %}
+                                        <div class="text-muted small mt-1">{{ category.description|truncatewords:20 }}</div>
+                                        {% endif %}
                                     </div>
-                                {% endfor %}
+                                </label>
                             </div>
-                        {% endif %}
-                        
-                        {% if form.bursary_category.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.bursary_category.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
                     </div>
+                {% else %}
+                    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> No categories open in your area. Contact the bursary office.</div>
+                {% endif %}
+
+                {% if closed_categories %}
+                <div class="closed-categories-section">
+                    <h6 class="text-danger mb-2"><i class="bi bi-x-circle"></i> Closed Categories ({{ closed_categories|length }})</h6>
+                    <p class="small text-muted mb-2">Not accepting applications</p>
+                    {% for category in closed_categories %}
+                    <div class="category-info-card disabled">
+                        <div class="category-name">{{ category.name }} <span class="category-status status-closed"><i class="bi bi-x-circle"></i> Closed</span></div>
+                        <div class="category-details">
+                            {% if category.balance <= 0 %}
+                            <span class="text-danger"><i class="bi bi-exclamation-circle"></i> Budget Exhausted</span>
+                            {% elif category.target_beneficiaries and category.current_beneficiaries >= category.target_beneficiaries %}
+                            <span class="text-danger"><i class="bi bi-people"></i> Capacity Reached</span>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-clock"></i> Application Window Closed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
+                {% endif %}
+                {% if form.bursary_category.errors %}<div class="invalid-feedback d-block">{% for e in form.bursary_category.errors %}{{ e }}{% endfor %}</div>{% endif %}
             </div>
 
-            <!-- Institution Field -->
-            <div class="row mt-4">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="{{ form.institution.id_for_label }}" class="form-label required-field">Institution</label>
-                        {{ form.institution }}
-                        {% if form.institution.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.institution.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                        <span class="form-text">Start typing to search for your institution</span>
-                    </div>
-                </div>
+            <!-- Institution field -->
+            <div class="form-group">
+                <label for="{{ form.institution.id_for_label }}" class="form-label required-field">Institution</label>
+                {{ form.institution }}
+                {% if form.institution.errors %}<div class="invalid-feedback d-block">{% for e in form.institution.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                <span class="form-text">Start typing to search your institution</span>
             </div>
 
             <div class="row">
@@ -931,22 +568,14 @@
                     <div class="form-group">
                         <label for="{{ form.admission_number.id_for_label }}" class="form-label required-field">Admission Number</label>
                         {{ form.admission_number }}
-                        {% if form.admission_number.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.admission_number.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                        {% if form.admission_number.errors %}<div class="invalid-feedback d-block">{% for e in form.admission_number.errors %}{{ e }}{% endfor %}</div>{% endif %}
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="{{ form.year_of_study.id_for_label }}" class="form-label required-field">Year of Study</label>
                         {{ form.year_of_study }}
-                        {% if form.year_of_study.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.year_of_study.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                        {% if form.year_of_study.errors %}<div class="invalid-feedback d-block">{% for e in form.year_of_study.errors %}{{ e }}{% endfor %}</div>{% endif %}
                     </div>
                 </div>
             </div>
@@ -956,49 +585,32 @@
                     <div class="form-group">
                         <label for="{{ form.course_name.id_for_label }}" class="form-label">Course Name</label>
                         {{ form.course_name }}
-                        {% if form.course_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.course_name.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                        <span class="form-text">Required for College/University/Technical students</span>
+                        <span class="form-text">Required for College / University / Technical students</span>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
                         <label for="{{ form.expected_completion_date.id_for_label }}" class="form-label required-field">Expected Completion</label>
                         {{ form.expected_completion_date }}
-                        {% if form.expected_completion_date.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.expected_completion_date.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                        {% if form.expected_completion_date.errors %}<div class="invalid-feedback d-block">{% for e in form.expected_completion_date.errors %}{{ e }}{% endfor %}</div>{% endif %}
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="{{ form.previous_academic_year_average.id_for_label }}" class="form-label">Previous Academic Average (%)</label>
-                        {{ form.previous_academic_year_average }}
-                        {% if form.previous_academic_year_average.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.previous_academic_year_average.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                        <span class="form-text">Enter your average score from the previous academic year (0-100)</span>
-                    </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="{{ form.previous_academic_year_average.id_for_label }}" class="form-label">Previous Academic Average (%)</label>
+                    {{ form.previous_academic_year_average }}
+                    <span class="form-text">Your average score from last academic year (0–100)</span>
                 </div>
             </div>
         </div>
 
-        <!-- Financial Information -->
+
+        <!-- ═══════ 3. FINANCIAL ═══════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-currency-exchange"></i>
-                </span>
+                <span class="section-icon"><i class="bi bi-currency-exchange"></i></span>
                 Financial Information
             </h4>
 
@@ -1007,27 +619,19 @@
                     <div class="form-group">
                         <label for="{{ form.total_fees_payable.id_for_label }}" class="form-label required-field">Total Fees (KES)</label>
                         {{ form.total_fees_payable }}
-                        {% if form.total_fees_payable.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.total_fees_payable.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                        {% if form.total_fees_payable.errors %}<div class="invalid-feedback d-block">{% for e in form.total_fees_payable.errors %}{{ e }}{% endfor %}</div>{% endif %}
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label for="{{ form.fees_paid.id_for_label }}" class="form-label required-field">Fees Paid (KES)</label>
+                        <label for="{{ form.fees_paid.id_for_label }}" class="form-label required-field">Fees Already Paid (KES)</label>
                         {{ form.fees_paid }}
-                        {% if form.fees_paid.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.fees_paid.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+                        {% if form.fees_paid.errors %}<div class="invalid-feedback d-block">{% for e in form.fees_paid.errors %}{{ e }}{% endfor %}</div>{% endif %}
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Fees Balance (KES)</label>
+                        <label class="form-label">Outstanding Balance (KES)</label>
                         <div class="calculated-field" id="fees-balance">0.00</div>
                         <input type="hidden" id="id_fees_balance" name="fees_balance" value="0">
                     </div>
@@ -1039,59 +643,52 @@
                     <div class="form-group">
                         <label for="{{ form.amount_requested.id_for_label }}" class="form-label required-field">Amount Requested (KES)</label>
                         {{ form.amount_requested }}
-                        {% if form.amount_requested.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.amount_requested.errors %}{{ error }}{% endfor %}
+                        {% if form.amount_requested.errors %}<div class="invalid-feedback d-block">{% for e in form.amount_requested.errors %}{{ e }}{% endfor %}</div>{% endif %}
+
+                        <!-- IMPORTANT notice -->
+                        <div class="amount-notice">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div class="amount-notice-text">
+                                <strong>Important:</strong> The amount you request is <strong>NOT</strong> the amount you will necessarily receive.
+                                The bursary committee reviews all applications and allocates funds based on need, available budget, and the number of qualifying applicants.
+                                You may receive a partial amount or a different amount than requested.
                             </div>
-                        {% endif %}
-                        <span class="form-text">Maximum amount will be displayed when you select a category</span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div id="max-amount-info" class="max-amount-alert" style="display: none; margin-top: 32px;">
-                        <i class="bi bi-info-circle"></i>
-                        <div>
-                            <strong>Amount Range:</strong><br>
-                            Min: KES <span id="min-amount">0</span><br>
-                            Max: KES <span id="max-amount">0</span>
+                        </div>
+
+                        <!-- Category range hint -->
+                        <div id="max-amount-info" class="max-amount-info-box mt-2" style="display:none;">
+                            <i class="bi bi-info-circle"></i>
+                            <div>
+                                <strong>Category Range:</strong>
+                                Min KES <span id="min-amount">0</span> — Max KES <span id="max-amount">0</span> per student in this category.
+                                Requesting within this range is advised.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="{{ form.household_monthly_income.id_for_label }}" class="form-label">Household Monthly Income (KES)</label>
                         {{ form.household_monthly_income }}
-                        {% if form.household_monthly_income.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.household_monthly_income.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                        <span class="form-text">Total monthly income of your household</span>
+                        <span class="form-text">Total monthly income of all household members</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Other Financial Support -->
+
+        <!-- ═══════ 4. OTHER SUPPORT ═══════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-cash-coin"></i>
-                </span>
+                <span class="section-icon"><i class="bi bi-cash-coin"></i></span>
                 Other Financial Support
             </h4>
-
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
                         <div class="form-check">
                             {{ form.other_bursaries }}
-                            <label for="{{ form.other_bursaries.id_for_label }}" class="form-check-label">
-                                Have you received other bursaries this year?
-                            </label>
+                            <label for="{{ form.other_bursaries.id_for_label }}" class="form-check-label">Have you received other bursaries this year?</label>
                         </div>
                     </div>
                 </div>
@@ -1099,44 +696,30 @@
                     <div class="form-group">
                         <label for="{{ form.other_bursaries_amount.id_for_label }}" class="form-label">Amount (KES)</label>
                         {{ form.other_bursaries_amount }}
-                        {% if form.other_bursaries_amount.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.other_bursaries_amount.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="col-md-4 conditional-field" id="other-source-field">
                     <div class="form-group">
                         <label for="{{ form.other_bursaries_source.id_for_label }}" class="form-label">Source</label>
                         {{ form.other_bursaries_source }}
-                        {% if form.other_bursaries_source.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.other_bursaries_source.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Previous Allocation -->
+
+        <!-- ═══════ 5. PREVIOUS ALLOCATION ═══════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-clock-history"></i>
-                </span>
+                <span class="section-icon"><i class="bi bi-clock-history"></i></span>
                 Previous Bursary Allocation
             </h4>
-
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
                         <div class="form-check">
                             {{ form.has_received_previous_allocation }}
-                            <label for="{{ form.has_received_previous_allocation.id_for_label }}" class="form-check-label">
-                                Have you received bursary before?
-                            </label>
+                            <label for="{{ form.has_received_previous_allocation.id_for_label }}" class="form-check-label">Have you received a bursary before?</label>
                         </div>
                     </div>
                 </div>
@@ -1144,122 +727,317 @@
                     <div class="form-group">
                         <label for="{{ form.previous_allocation_year.id_for_label }}" class="form-label">Year</label>
                         {{ form.previous_allocation_year }}
-                        {% if form.previous_allocation_year.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.previous_allocation_year.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="col-md-4 conditional-field" id="previous-amount-field">
                     <div class="form-group">
                         <label for="{{ form.previous_allocation_amount.id_for_label }}" class="form-label">Amount (KES)</label>
                         {{ form.previous_allocation_amount }}
-                        {% if form.previous_allocation_amount.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.previous_allocation_amount.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Family Situation -->
+
+        <!-- ═══════════════════════════════════════════════════════
+             6. FAMILY SITUATION  — enhanced with document upload
+        ════════════════════════════════════════════════════════════ -->
         <div class="form-section">
             <h4 class="page-section-header">
-                <span class="section-icon">
-                    <i class="bi bi-people"></i>
-                </span>
-                Family Situation
+                <span class="section-icon"><i class="bi bi-people"></i></span>
+                Family Situation &amp; Supporting Documents
             </h4>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <div class="form-check">
-                            {{ form.is_orphan }}
-                            <label for="{{ form.is_orphan.id_for_label }}" class="form-check-label">
-                                Are you an orphan? (Lost one or both parents)
-                            </label>
-                        </div>
-                    </div>
+            <div class="info-banner" style="margin-bottom:20px;">
+                <div class="info-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;"><i class="bi bi-shield-check"></i></div>
+                <div class="info-content">
+                    <h6>Document Integrity Policy</h6>
+                    <p>
+                        For every circumstance you declare below, <strong>supporting documents are required</strong>.
+                        Uploading fraudulent or forged documents is a criminal offence under the Kenya Penal Code
+                        and will result in <strong>immediate disqualification and possible prosecution</strong>.
+                        All documents are verified by the Bursary Committee.
+                    </p>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <div class="form-check">
-                            {{ form.is_total_orphan }}
-                            <label for="{{ form.is_total_orphan.id_for_label }}" class="form-check-label">
-                                Are you a total orphan? (Lost both parents)
-                            </label>
+            </div>
+
+            <!-- ── TOTAL ORPHAN ── -->
+            <div class="situation-card" id="card-total-orphan">
+                <div class="situation-card-header">
+                    <div class="situation-icon orphan-all"><i class="bi bi-heartbreak"></i></div>
+                    <div class="situation-label">
+                        <div class="situation-title">I am a total orphan (both parents deceased)</div>
+                        <div class="situation-subtitle">Highest priority. Requires documents for both parents.</div>
+                    </div>
+                    <div class="form-check" style="background:transparent;border:none;padding:0;">
+                        {{ form.is_total_orphan }}
+                    </div>
+                    <span class="doc-status-badge doc-badge-required" id="badge-total-orphan">
+                        <i class="bi bi-upload"></i> Docs Required
+                    </span>
+                </div>
+            </div>
+            <div class="doc-upload-area" id="docs-total-orphan">
+                <div class="doc-upload-inner">
+                    <div class="false-declaration-warning">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                        <div>Declaring false orphan status to gain bursary advantage is fraud. The committee cross-checks all death certificates with the Civil Registration Department and chief's letters with local administrators.</div>
+                    </div>
+                    <p class="fw-semibold text-danger mb-2"><i class="bi bi-file-earmark-text"></i> Required — Upload at least one document for EACH deceased parent:</p>
+                    <ul class="doc-requirement-list">
+                        <li><i class="bi bi-check-circle-fill text-primary"></i> <strong>Death certificate(s)</strong> — official copy from the Registrar of Deaths</li>
+                        <li><i class="bi bi-check-circle-fill text-primary"></i> <strong>Area Chief's Letter</strong> — on official letterhead confirming orphan status (alternative if death cert unavailable)</li>
+                        <li><i class="bi bi-info-circle text-muted"></i> Both documents carry equal weight. Upload whichever you have.</li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Father's Death Certificate / Chief's Letter <span class="file-slot-badge badge-mandatory">Required</span></span>
+                                <div class="drop-zone" id="dz-father" onclick="triggerFile('file-father')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-father" name="doc_father_death" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-father','chip-father')">
+                                <div id="chip-father" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-father','dz-father','chip-father')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Mother's Death Certificate / Chief's Letter <span class="file-slot-badge badge-mandatory">Required</span></span>
+                                <div class="drop-zone" id="dz-mother" onclick="triggerFile('file-mother')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-mother" name="doc_mother_death" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-mother','chip-mother')">
+                                <div id="chip-mother" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-mother','dz-mother','chip-mother')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <div class="form-check">
-                            {{ form.is_disabled }}
-                            <label for="{{ form.is_disabled.id_for_label }}" class="form-check-label">
-                                Do you have a disability?
-                            </label>
-                        </div>
+            <!-- ── HALF ORPHAN (one parent) ── -->
+            <div class="situation-card" id="card-orphan">
+                <div class="situation-card-header">
+                    <div class="situation-icon orphan-one"><i class="bi bi-person-x"></i></div>
+                    <div class="situation-label">
+                        <div class="situation-title">I have lost one parent</div>
+                        <div class="situation-subtitle">Single-parent household. Requires document for the deceased parent.</div>
                     </div>
+                    <div class="form-check" style="background:transparent;border:none;padding:0;">
+                        {{ form.is_orphan }}
+                    </div>
+                    <span class="doc-status-badge doc-badge-required" id="badge-orphan">
+                        <i class="bi bi-upload"></i> Docs Required
+                    </span>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <div class="form-check">
-                            {{ form.has_chronic_illness }}
-                            <label for="{{ form.has_chronic_illness.id_for_label }}" class="form-check-label">
-                                Do you have a chronic illness?
-                            </label>
+            </div>
+            <div class="doc-upload-area" id="docs-orphan">
+                <div class="doc-upload-inner">
+                    <div class="false-declaration-warning">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                        <div>False declaration of parental loss is subject to legal action. The committee may contact the area chief to verify the information provided.</div>
+                    </div>
+                    <p class="fw-semibold text-dark mb-2"><i class="bi bi-file-earmark-text"></i> Upload ONE of the following for the deceased parent:</p>
+                    <ul class="doc-requirement-list">
+                        <li><i class="bi bi-check-circle-fill text-primary"></i> <strong>Death Certificate</strong> — official copy from the Registrar of Deaths <em>(preferred)</em></li>
+                        <li><i class="bi bi-check2-circle text-success"></i> <strong>Area Chief's Letter</strong> — on official letterhead confirming the death (accepted if death cert unavailable)</li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Death Certificate <span class="file-slot-badge badge-preferred">Preferred</span></span>
+                                <div class="drop-zone" id="dz-orphan-dc" onclick="triggerFile('file-orphan-dc')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-orphan-dc" name="doc_one_parent_death_cert" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-orphan-dc','chip-orphan-dc')">
+                                <div id="chip-orphan-dc" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-orphan-dc','dz-orphan-dc','chip-orphan-dc')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Chief's Letter <span class="file-slot-badge badge-optional">Alternative</span></span>
+                                <div class="drop-zone" id="dz-orphan-chief" onclick="triggerFile('file-orphan-chief')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-orphan-chief" name="doc_one_parent_chief_letter" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-orphan-chief','chip-orphan-chief')">
+                                <div id="chip-orphan-chief" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-orphan-chief','dz-orphan-chief','chip-orphan-chief')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="conditional-field" id="chronic-illness-description">
-                <div class="form-group">
-                    <label for="{{ form.chronic_illness_description.id_for_label }}" class="form-label">Chronic Illness Description</label>
-                    {{ form.chronic_illness_description }}
-                    {% if form.chronic_illness_description.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.chronic_illness_description.errors %}{{ error }}{% endfor %}
+            <!-- ── DISABILITY ── -->
+            <div class="situation-card" id="card-disabled">
+                <div class="situation-card-header">
+                    <div class="situation-icon disability"><i class="bi bi-universal-access"></i></div>
+                    <div class="situation-label">
+                        <div class="situation-title">I have a physical or mental disability</div>
+                        <div class="situation-subtitle">Requires a government hospital assessment letter (Level 5 preferred).</div>
+                    </div>
+                    <div class="form-check" style="background:transparent;border:none;padding:0;">
+                        {{ form.is_disabled }}
+                    </div>
+                    <span class="doc-status-badge doc-badge-required" id="badge-disabled">
+                        <i class="bi bi-upload"></i> Docs Required
+                    </span>
+                </div>
+            </div>
+            <div class="doc-upload-area" id="docs-disabled">
+                <div class="doc-upload-inner">
+                    <div class="rules-box info" style="margin-bottom:16px;">
+                        <h6><i class="bi bi-hospital"></i> Hospital Assessment Requirements</h6>
+                        <ul class="rules-list">
+                            <li><i class="bi bi-star-fill" style="color:#3B82F6"></i> <strong>Level 5 Government Hospital letter</strong> is the most preferred document (e.g., Murang'a Level 5, Kenyatta National Hospital)</li>
+                            <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> <strong>Level 4 Government Hospital</strong> assessment is also accepted</li>
+                            <li><i class="bi bi-shield-check" style="color:#6366F1"></i> <strong>NCPWD Registration Certificate</strong> (National Council for Persons with Disabilities) is accepted</li>
+                            <li><i class="bi bi-x-circle" style="color:#EF4444"></i> Letters from private clinics, pharmacies, or Level 1–2 facilities are <strong>not accepted</strong></li>
+                        </ul>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Government Hospital Assessment Letter <span class="file-slot-badge badge-mandatory">Required</span></span>
+                                <div class="drop-zone" id="dz-disability-hosp" onclick="triggerFile('file-disability-hosp')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-disability-hosp" name="doc_disability_hospital" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-disability-hosp','chip-disability-hosp')">
+                                <div id="chip-disability-hosp" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-disability-hosp','dz-disability-hosp','chip-disability-hosp')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                    <span class="form-text">Please describe your chronic illness condition</span>
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">NCPWD Certificate <span class="file-slot-badge badge-optional">Optional but helpful</span></span>
+                                <div class="drop-zone" id="dz-disability-ncpwd" onclick="triggerFile('file-disability-ncpwd')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-disability-ncpwd" name="doc_disability_ncpwd" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-disability-ncpwd','chip-disability-ncpwd')">
+                                <div id="chip-disability-ncpwd" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-disability-ncpwd','dz-disability-ncpwd','chip-disability-ncpwd')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="row">
+            <!-- ── CHRONIC ILLNESS ── -->
+            <div class="situation-card" id="card-illness">
+                <div class="situation-card-header">
+                    <div class="situation-icon illness"><i class="bi bi-heart-pulse"></i></div>
+                    <div class="situation-label">
+                        <div class="situation-title">I have a chronic illness</div>
+                        <div class="situation-subtitle">Medical condition requiring ongoing treatment. Government hospital letter required.</div>
+                    </div>
+                    <div class="form-check" style="background:transparent;border:none;padding:0;">
+                        {{ form.has_chronic_illness }}
+                    </div>
+                    <span class="doc-status-badge doc-badge-required" id="badge-illness">
+                        <i class="bi bi-upload"></i> Docs Required
+                    </span>
+                </div>
+            </div>
+            <div class="doc-upload-area" id="docs-illness">
+                <div class="doc-upload-inner">
+                    <div class="conditional-field show" id="chronic-illness-description">
+                        <div class="form-group">
+                            <label for="{{ form.chronic_illness_description.id_for_label }}" class="form-label required-field">Describe Your Illness</label>
+                            {{ form.chronic_illness_description }}
+                            {% if form.chronic_illness_description.errors %}<div class="invalid-feedback d-block">{% for e in form.chronic_illness_description.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                            <span class="form-text">Describe the condition and how it affects your education/daily life</span>
+                        </div>
+                    </div>
+                    <div class="rules-box info" style="margin-top:12px;margin-bottom:16px;">
+                        <h6><i class="bi bi-hospital"></i> Accepted Medical Documents</h6>
+                        <ul class="rules-list">
+                            <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> Medical report from a Government Hospital (Level 4 or 5 preferred)</li>
+                            <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> Ongoing prescription / treatment record from government hospital</li>
+                            <li><i class="bi bi-x-circle" style="color:#EF4444"></i> Private hospital letters are not accepted without a government referral stamp</li>
+                        </ul>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="file-slot">
+                                <span class="file-slot-label">Medical Report / Hospital Letter <span class="file-slot-badge badge-mandatory">Required</span></span>
+                                <div class="drop-zone" id="dz-illness-report" onclick="triggerFile('file-illness-report')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    <p>Click or drag file here<br><strong>PDF, JPG, PNG</strong> — max 5 MB</p>
+                                </div>
+                                <input type="file" id="file-illness-report" name="doc_chronic_illness" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen(this,'dz-illness-report','chip-illness-report')">
+                                <div id="chip-illness-report" class="uploaded-file-chip" style="display:none">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <div class="uploaded-file-info"><div class="fname"></div><div class="fsize"></div></div>
+                                    <button type="button" class="remove-file-btn" onclick="removeFile('file-illness-report','dz-illness-report','chip-illness-report')"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Siblings -->
+            <div class="row mt-3">
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="{{ form.number_of_siblings.id_for_label }}" class="form-label">Number of Siblings</label>
                         {{ form.number_of_siblings }}
-                        {% if form.number_of_siblings.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.number_of_siblings.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="{{ form.number_of_siblings_in_school.id_for_label }}" class="form-label">Number of Siblings in School</label>
+                        <label for="{{ form.number_of_siblings_in_school.id_for_label }}" class="form-label">Siblings Currently in School</label>
                         {{ form.number_of_siblings_in_school }}
-                        {% if form.number_of_siblings_in_school.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.number_of_siblings_in_school.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
+                </div>
+            </div>
+
+            <!-- INTEGRITY OATH -->
+            <div class="integrity-box">
+                <h5><i class="bi bi-patch-check-fill text-success"></i> Declaration of Truth</h5>
+                <ul class="integrity-items">
+                    <li><i class="bi bi-check-circle-fill"></i> All information I have provided above is true and accurate to the best of my knowledge.</li>
+                    <li><i class="bi bi-check-circle-fill"></i> All documents uploaded are genuine originals or certified copies — not forged, altered, or fabricated.</li>
+                    <li><i class="bi bi-check-circle-fill"></i> I understand that any false declaration will result in disqualification, repayment of any funds received, and possible criminal prosecution.</li>
+                    <li><i class="bi bi-check-circle-fill"></i> I consent to the Bursary Committee verifying my information with relevant government offices, schools, and local administrators.</li>
+                </ul>
+                <div class="oath-checkbox">
+                    <input type="checkbox" id="oath-checkbox" name="declaration_oath" required>
+                    <label for="oath-checkbox">
+                        I, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>, hereby declare that all information and documents submitted in this application are genuine and truthful. I understand the legal consequences of providing false information.
+                    </label>
                 </div>
             </div>
         </div>
 
-        <!-- Form Actions -->
+
+        <!-- ═══════ SUBMIT ═══════ -->
         <div class="section-container">
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -1273,406 +1051,400 @@
         </div>
     </form>
 </div>
-{% endblock %}
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     DOCUMENT UPLOAD CONFIRMATION MODAL
+     Opens when a sensitive checkbox is clicked, forcing the user
+     to read the rules before the upload area expands.
+════════════════════════════════════════════════════════════════ -->
+<div class="doc-modal-overlay" id="docConfirmModal">
+    <div class="doc-modal">
+        <div class="doc-modal-header">
+            <div class="doc-modal-icon" id="modalIcon"></div>
+            <h4 id="modalTitle">Document Requirements</h4>
+            <button class="doc-modal-close" id="modalCancelBtn"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="doc-modal-body" id="modalBody"></div>
+        <div class="doc-modal-footer">
+            <button class="btn btn-outline-secondary btn-sm" id="modalRejectBtn">
+                <i class="bi bi-x-circle me-1"></i> Cancel — This Does Not Apply to Me
+            </button>
+            <button class="btn btn-primary btn-sm" id="modalAcceptBtn">
+                <i class="bi bi-check-circle me-1"></i> I Understand — Upload Documents
+            </button>
+        </div>
+    </div>
+</div>
+
 
 {% block extra_js %}
-<!-- jQuery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-<!-- Bootstrap Bundle JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-$(document).ready(function() {
-    // CSRF Token setup
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+/* ══════════════════════════════════════════
+   MODAL CONFIGURATION per situation
+══════════════════════════════════════════ */
+const MODAL_CONFIG = {
+    'id_is_total_orphan': {
+        title  : 'Total Orphan — Document Requirements',
+        icon   : '<i class="bi bi-heartbreak" style="color:#EF4444;font-size:22px;"></i>',
+        iconBg : 'background:#FEE2E2',
+        body   : `
+            <div class="false-declaration-warning" style="margin-bottom:18px;">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <div><strong>Warning:</strong> Falsely claiming orphan status to gain additional bursary points is fraud. All claims are cross-verified with the Civil Registration Department and local administration.</div>
+            </div>
+            <div class="rules-box critical">
+                <h6><i class="bi bi-exclamation-triangle-fill"></i> Required Documents (for EACH deceased parent)</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-check-circle-fill" style="color:#DC2626"></i> <strong>Death Certificate</strong> from the Registrar of Deaths <em>(strongly preferred)</em></li>
+                    <li><i class="bi bi-check2-circle" style="color:#DC2626"></i> <strong>Area Chief's Letter</strong> on official letterhead confirming the death (accepted alternative)</li>
+                    <li><i class="bi bi-info-circle" style="color:#DC2626"></i> You must upload a document for <strong>both father and mother</strong></li>
+                </ul>
+            </div>
+            <div class="rules-box info">
+                <h6><i class="bi bi-info-circle"></i> What happens next</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-arrow-right-circle"></i> After you accept, two upload slots will appear — one for each parent.</li>
+                    <li><i class="bi bi-arrow-right-circle"></i> The committee will contact your area chief to verify the information.</li>
+                    <li><i class="bi bi-arrow-right-circle"></i> Missing or invalid documents will result in this status not being recognised.</li>
+                </ul>
+            </div>`,
+    },
+    'id_is_orphan': {
+        title  : 'One Parent Lost — Document Requirements',
+        icon   : '<i class="bi bi-person-x" style="color:#F59E0B;font-size:22px;"></i>',
+        iconBg : 'background:#FEF3C7',
+        body   : `
+            <div class="false-declaration-warning" style="margin-bottom:18px;">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <div><strong>Warning:</strong> Falsely declaring parental loss is a criminal offence. The committee verifies all claims with local chiefs and the Civil Registration Department.</div>
+            </div>
+            <div class="rules-box critical">
+                <h6><i class="bi bi-exclamation-triangle-fill"></i> Upload ONE of the following for the deceased parent</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-star-fill" style="color:#DC2626"></i> <strong>Death Certificate</strong> — official copy from the Registrar of Deaths <em>(preferred)</em></li>
+                    <li><i class="bi bi-check2-circle" style="color:#DC2626"></i> <strong>Area Chief's Letter</strong> on official letterhead confirming the death <em>(accepted alternative)</em></li>
+                </ul>
+            </div>
+            <div class="rules-box info">
+                <h6><i class="bi bi-info-circle"></i> Note</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-arrow-right-circle"></i> If you have already selected "Total Orphan" above, do not also select this — they are mutually exclusive.</li>
+                    <li><i class="bi bi-arrow-right-circle"></i> At least one valid document is required for this status to be recognised.</li>
+                </ul>
+            </div>`,
+    },
+    'id_is_disabled': {
+        title  : 'Disability — Document Requirements',
+        icon   : '<i class="bi bi-universal-access" style="color:#3B82F6;font-size:22px;"></i>',
+        iconBg : 'background:#DBEAFE',
+        body   : `
+            <div class="rules-box info" style="margin-bottom:16px;">
+                <h6><i class="bi bi-hospital"></i> Accepted Hospital Levels</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-star-fill" style="color:#3B82F6"></i> <strong>Level 5 Government Hospital</strong> assessment letter <em>(strongly preferred)</em> — e.g. Murang'a Level 5, KNH, Moi Teaching</li>
+                    <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> <strong>Level 4 Government Hospital</strong> assessment — e.g. Kerugoya, Thika Level 4</li>
+                    <li><i class="bi bi-shield-check" style="color:#6366F1"></i> <strong>NCPWD Registration Certificate</strong> — National Council for Persons with Disabilities</li>
+                    <li><i class="bi bi-x-circle-fill" style="color:#EF4444"></i> Letters from <strong>private hospitals, clinics or dispensaries</strong> are NOT accepted unless accompanied by a government referral stamp</li>
+                </ul>
+            </div>
+            <div class="rules-box critical">
+                <h6><i class="bi bi-exclamation-triangle-fill"></i> Integrity Notice</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-exclamation-circle" style="color:#DC2626"></i> Fabricating a disability to gain additional bursary consideration is fraud punishable by law.</li>
+                    <li><i class="bi bi-exclamation-circle" style="color:#DC2626"></i> The committee may request a re-assessment at a designated government hospital.</li>
+                </ul>
+            </div>`,
+    },
+    'id_has_chronic_illness': {
+        title  : 'Chronic Illness — Document Requirements',
+        icon   : '<i class="bi bi-heart-pulse" style="color:#9333EA;font-size:22px;"></i>',
+        iconBg : 'background:#F3E8FF',
+        body   : `
+            <div class="rules-box info" style="margin-bottom:16px;">
+                <h6><i class="bi bi-hospital"></i> Accepted Documents</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> <strong>Medical report</strong> from a Government hospital (Level 4 or 5 preferred)</li>
+                    <li><i class="bi bi-check-circle-fill" style="color:#22C55E"></i> <strong>Treatment / prescription record</strong> from a government health facility</li>
+                    <li><i class="bi bi-x-circle-fill" style="color:#EF4444"></i> Letters from private clinics without government referral stamp are not accepted</li>
+                </ul>
+            </div>
+            <div class="rules-box critical">
+                <h6><i class="bi bi-exclamation-triangle-fill"></i> Integrity Notice</h6>
+                <ul class="rules-list">
+                    <li><i class="bi bi-exclamation-circle" style="color:#DC2626"></i> Fabricating a medical condition to gain additional consideration is fraud.</li>
+                    <li><i class="bi bi-exclamation-circle" style="color:#DC2626"></i> All medical documents are subject to verification with the issuing hospital.</li>
+                </ul>
+            </div>`,
+    },
+};
 
-    $.ajaxSetup({
-        beforeSend: function(xhr, settings) {
-            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-            }
+/* Map: checkbox id → upload-area id → card id */
+const CHECKBOX_MAP = {
+    'id_is_total_orphan'   : { area: 'docs-total-orphan', card: 'card-total-orphan', badge: 'badge-total-orphan' },
+    'id_is_orphan'         : { area: 'docs-orphan',       card: 'card-orphan',       badge: 'badge-orphan' },
+    'id_is_disabled'       : { area: 'docs-disabled',     card: 'card-disabled',     badge: 'badge-disabled' },
+    'id_has_chronic_illness': { area: 'docs-illness',     card: 'card-illness',      badge: 'badge-illness' },
+};
+
+let currentCheckboxId = null;
+
+/* ── Open confirmation modal ─────────────────────── */
+function openDocModal(checkboxId) {
+    const cfg = MODAL_CONFIG[checkboxId];
+    if (!cfg) return;
+
+    document.getElementById('modalTitle').textContent = cfg.title;
+    document.getElementById('modalIcon').innerHTML  = cfg.icon;
+    document.getElementById('modalIcon').style      = cfg.iconBg;
+    document.getElementById('modalBody').innerHTML  = cfg.body;
+    document.getElementById('docConfirmModal').classList.add('open');
+    currentCheckboxId = checkboxId;
+}
+
+/* ── Accept: expand upload area ──────────────────── */
+document.getElementById('modalAcceptBtn').addEventListener('click', function () {
+    if (!currentCheckboxId) return;
+    const map = CHECKBOX_MAP[currentCheckboxId];
+    document.getElementById(currentCheckboxId).checked = true;
+    expandDocArea(currentCheckboxId);
+    closeModal();
+});
+
+/* ── Reject: uncheck and close ───────────────────── */
+document.getElementById('modalRejectBtn').addEventListener('click', function () {
+    if (currentCheckboxId) {
+        document.getElementById(currentCheckboxId).checked = false;
+    }
+    closeModal();
+});
+document.getElementById('modalCancelBtn').addEventListener('click', function () {
+    if (currentCheckboxId) {
+        document.getElementById(currentCheckboxId).checked = false;
+    }
+    closeModal();
+});
+document.getElementById('docConfirmModal').addEventListener('click', function (e) {
+    if (e.target === this) {
+        if (currentCheckboxId) document.getElementById(currentCheckboxId).checked = false;
+        closeModal();
+    }
+});
+function closeModal() {
+    document.getElementById('docConfirmModal').classList.remove('open');
+    currentCheckboxId = null;
+}
+
+/* ── Expand/collapse upload area ─────────────────── */
+function expandDocArea(checkboxId) {
+    const map = CHECKBOX_MAP[checkboxId];
+    const area = document.getElementById(map.area);
+    const card = document.getElementById(map.card);
+    const badge = document.getElementById(map.badge);
+    area.classList.add('open');
+    card.classList.add('active');
+    badge.classList.remove('doc-badge-required');
+    badge.classList.add('doc-badge-pending');
+    badge.innerHTML = '<i class="bi bi-hourglass-split"></i> Awaiting Docs';
+}
+function collapseDocArea(checkboxId) {
+    const map = CHECKBOX_MAP[checkboxId];
+    document.getElementById(map.area).classList.remove('open');
+    document.getElementById(map.card).classList.remove('active', 'docs-ready');
+    const badge = document.getElementById(map.badge);
+    badge.className = 'doc-status-badge doc-badge-required';
+    badge.innerHTML = '<i class="bi bi-upload"></i> Docs Required';
+}
+
+/* ── Intercept checkbox change ───────────────────── */
+Object.keys(CHECKBOX_MAP).forEach(function (cbId) {
+    const cb = document.getElementById(cbId);
+    if (!cb) return;
+    cb.addEventListener('change', function (e) {
+        if (this.checked) {
+            e.preventDefault();
+            this.checked = false;   // uncheck until user confirms
+            openDocModal(cbId);
+        } else {
+            collapseDocArea(cbId);
         }
     });
+    // Restore state on page load (if editing)
+    if (cb.checked) expandDocArea(cbId);
+});
 
-    // Create searchable select for institution field
-    function createSearchableSelect() {
-        const $institutionSelect = $('#id_institution');
-        if ($institutionSelect.length === 0 || $institutionSelect.data('searchable-initialized')) {
-            return;
-        }
-        $institutionSelect.data('searchable-initialized', true);
-        
-        const $wrapper = $('<div class="searchable-select-wrapper position-relative"></div>');
-        const $searchInput = $('<input type="text" class="form-control searchable-input" placeholder="Type to search institution..." autocomplete="off">');
-        const $dropdown = $('<div class="searchable-dropdown position-absolute w-100 bg-white border rounded shadow-sm" style="display: none; max-height: 300px; overflow-y: auto; z-index: 1050;"></div>');
-        
-        const originalOptions = [];
-        $institutionSelect.find('option').each(function() {
-            originalOptions.push({
-                value: $(this).val(),
-                text: $(this).text(),
-                selected: $(this).prop('selected')
-            });
-        });
-        
-        const selectedOption = $institutionSelect.find('option:selected');
-        if (selectedOption.length > 0 && selectedOption.val()) {
-            $searchInput.val(selectedOption.text());
-        }
-        
-        $institutionSelect.hide();
-        $institutionSelect.after($wrapper);
-        $wrapper.append($searchInput);
-        $wrapper.append($dropdown);
-        
-        function filterOptions(searchTerm) {
-            $dropdown.empty();
-            
-            if (!searchTerm || searchTerm.length < 2) {
-                $dropdown.hide();
-                return;
-            }
-            
-            const filteredOptions = originalOptions.filter(option => {
-                return option.text.toLowerCase().includes(searchTerm.toLowerCase()) && option.value !== '';
-            });
-            
-            if (filteredOptions.length === 0) {
-                $dropdown.html('<div class="p-2 text-muted">No institutions found</div>');
-                $dropdown.show();
-                return;
-            }
-            
-            const limitedOptions = filteredOptions.slice(0, 10);
-            
-            limitedOptions.forEach(option => {
-                const $item = $(`<div class="dropdown-item searchable-option p-2 border-bottom cursor-pointer" data-value="${option.value}">${option.text}</div>`);
-                
-                try {
-                    const regex = new RegExp(`(${searchTerm})`, 'gi');
-                    const highlightedText = option.text.replace(regex, '<strong class="text-primary">$1</strong>');
-                    $item.html(highlightedText);
-                } catch (error) {
-                    $item.text(option.text);
-                }
-                
-                $dropdown.append($item);
-            });
-            
-            if (filteredOptions.length > 10) {
-                $dropdown.append(`<div class="p-2 text-muted small">Showing first 10 of ${filteredOptions.length} results</div>`);
-            }
-            
-            $dropdown.show();
-        }
-        
-        $searchInput.on('input', function() {
-            filterOptions($(this).val());
-            if ($(this).val() === '') {
-                $institutionSelect.val('').trigger('change');
-            }
-        });
-        
-        $searchInput.on('focus', function() {
-            const searchTerm = $(this).val();
-            if (searchTerm && searchTerm.length >= 2) {
-                filterOptions(searchTerm);
-            }
-        });
-        
-        $(document).on('click.searchable-select', function(e) {
-            if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
-                $dropdown.hide();
-            }
-        });
-        
-        $dropdown.on('click', '.searchable-option', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const value = $(this).data('value');
-            const text = $(this).text().replace(/<[^>]*>/g, '');
-            
-            if (value && text) {
-                $searchInput.val(text);
-                $institutionSelect.val(value).trigger('change');
-                $dropdown.hide();
-                $searchInput.removeClass('is-invalid');
-                $institutionSelect.removeClass('is-invalid');
-            }
-        });
-        
-        $searchInput.on('keydown', function(e) {
-            const $options = $dropdown.find('.searchable-option');
-            if ($options.length === 0) return;
-            
-            let $highlighted = $dropdown.find('.searchable-option.bg-light');
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if ($highlighted.length > 0) {
-                    $highlighted.removeClass('bg-light');
-                    const nextIndex = $options.index($highlighted) + 1;
-                    $highlighted = nextIndex < $options.length ? $options.eq(nextIndex) : $options.first();
-                } else {
-                    $highlighted = $options.first();
-                }
-                $highlighted.addClass('bg-light');
-                $highlighted[0].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if ($highlighted.length > 0) {
-                    $highlighted.removeClass('bg-light');
-                    const prevIndex = $options.index($highlighted) - 1;
-                    $highlighted = prevIndex >= 0 ? $options.eq(prevIndex) : $options.last();
-                } else {
-                    $highlighted = $options.last();
-                }
-                $highlighted.addClass('bg-light');
-                $highlighted[0].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if ($highlighted.length > 0 && $dropdown.is(':visible')) {
-                    $highlighted.trigger('click');
-                }
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                $dropdown.hide();
-                $dropdown.find('.searchable-option.bg-light').removeClass('bg-light');
-            }
-        });
+/* ── File upload helpers ─────────────────────────── */
+function triggerFile(inputId) { document.getElementById(inputId).click(); }
+
+function fileChosen(input, dzId, chipId) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const allowed = ['application/pdf','image/jpeg','image/jpg','image/png'];
+    if (!allowed.includes(file.type)) {
+        alert('Only PDF, JPG, or PNG files are accepted.');
+        input.value = '';
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File must be smaller than 5 MB.');
+        input.value = '';
+        return;
     }
 
+    const chip = document.getElementById(chipId);
+    chip.querySelector('.fname').textContent = file.name;
+    chip.querySelector('.fsize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    chip.style.display = 'flex';
+    document.getElementById(dzId).style.display = 'none';
+
+    // Update badge to "uploaded"
+    updateBadgeStatus();
+}
+
+function removeFile(inputId, dzId, chipId) {
+    document.getElementById(inputId).value = '';
+    document.getElementById(chipId).style.display = 'none';
+    document.getElementById(dzId).style.display = '';
+    updateBadgeStatus();
+}
+
+function updateBadgeStatus() {
+    Object.keys(CHECKBOX_MAP).forEach(function (cbId) {
+        const cb = document.getElementById(cbId);
+        if (!cb || !cb.checked) return;
+        const map = CHECKBOX_MAP[cbId];
+        const area = document.getElementById(map.area);
+        const chips = area.querySelectorAll('.uploaded-file-chip[style*="flex"]');
+        const badge = document.getElementById(map.badge);
+        const card  = document.getElementById(map.card);
+        if (chips.length > 0) {
+            badge.className = 'doc-status-badge doc-badge-uploaded';
+            badge.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + chips.length + ' Doc(s) Uploaded';
+            card.classList.add('docs-ready');
+        } else {
+            badge.className = 'doc-status-badge doc-badge-pending';
+            badge.innerHTML = '<i class="bi bi-hourglass-split"></i> Awaiting Docs';
+            card.classList.remove('docs-ready');
+        }
+    });
+}
+
+/* Drag and drop */
+document.querySelectorAll('.drop-zone').forEach(function (dz) {
+    dz.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('dragover'); });
+    dz.addEventListener('dragleave', function () { this.classList.remove('dragover'); });
+    dz.addEventListener('drop', function (e) {
+        e.preventDefault(); this.classList.remove('dragover');
+        const inputId = this.getAttribute('onclick').replace("triggerFile('","").replace("')","");
+        const input = document.getElementById(inputId);
+        if (e.dataTransfer.files.length && input) {
+            input.files = e.dataTransfer.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+});
+
+/* ══════════════════════════════════════════
+   REST OF FORM LOGIC
+══════════════════════════════════════════ */
+$(document).ready(function () {
+
+    /* Searchable institution select */
+    function createSearchableSelect() {
+        const $sel = $('#id_institution');
+        if (!$sel.length || $sel.data('si')) return;
+        $sel.data('si', true);
+        const $wrap = $('<div class="searchable-select-wrapper position-relative"></div>');
+        const $inp  = $('<input type="text" class="form-control searchable-input" placeholder="Type to search institution..." autocomplete="off">');
+        const $drop = $('<div class="searchable-dropdown" style="display:none;"></div>');
+        const opts  = [];
+        $sel.find('option').each(function () { opts.push({ value: $(this).val(), text: $(this).text(), selected: $(this).prop('selected') }); });
+        const sel = $sel.find('option:selected');
+        if (sel.length && sel.val()) $inp.val(sel.text());
+        $sel.hide().after($wrap);
+        $wrap.append($inp).append($drop);
+
+        function filter(q) {
+            $drop.empty();
+            if (!q || q.length < 2) { $drop.hide(); return; }
+            const res = opts.filter(o => o.text.toLowerCase().includes(q.toLowerCase()) && o.value !== '').slice(0, 10);
+            if (!res.length) { $drop.html('<div class="p-2 text-muted">No results</div>').show(); return; }
+            res.forEach(o => {
+                const $item = $(`<div class="searchable-option" data-value="${o.value}"></div>`);
+                try { $item.html(o.text.replace(new RegExp(`(${q})`,'gi'),'<strong class="text-primary">$1</strong>')); }
+                catch(e) { $item.text(o.text); }
+                $drop.append($item);
+            });
+            $drop.show();
+        }
+        $inp.on('input', function () { filter($(this).val()); if (!$(this).val()) $sel.val(''); });
+        $inp.on('focus', function () { if ($(this).val().length >= 2) filter($(this).val()); });
+        $(document).on('click.si', function (e) { if (!$wrap.is(e.target) && !$wrap.has(e.target).length) $drop.hide(); });
+        $drop.on('click', '.searchable-option', function () {
+            $inp.val($(this).text().replace(/<[^>]*>/g,'')); $sel.val($(this).data('value')); $drop.hide();
+        });
+    }
     createSearchableSelect();
 
-    // Calculate fees balance
-    function calculateBalance() {
-        const totalFees = parseFloat($('#id_total_fees_payable').val()) || 0;
-        const feesPaid = parseFloat($('#id_fees_paid').val()) || 0;
-        const balance = totalFees - feesPaid;
-        
-        $('#fees-balance').text(balance.toFixed(2));
-        $('#id_fees_balance').val(balance);
+    /* Fees balance */
+    function calcBalance() {
+        const b = (parseFloat($('#id_total_fees_payable').val())||0) - (parseFloat($('#id_fees_paid').val())||0);
+        $('#fees-balance').text(b.toFixed(2)); $('#id_fees_balance').val(b);
     }
+    $('#id_total_fees_payable,#id_fees_paid').on('input', calcBalance);
+    calcBalance();
 
-    $('#id_total_fees_payable, #id_fees_paid').on('input', calculateBalance);
-    calculateBalance();
-
-    // Toggle conditional fields
-    function toggleField(checkbox, field) {
-        if ($(checkbox).is(':checked')) {
-            $(field).addClass('show');
-        } else {
-            $(field).removeClass('show');
-        }
+    /* Generic conditional fields */
+    function toggle(cb, fields, reset) {
+        if ($(cb).is(':checked')) { $(fields).addClass('show'); }
+        else { $(fields).removeClass('show'); if (reset) reset(); }
     }
-
-    $('#id_other_bursaries').change(function() {
-        toggleField(this, '#other-amount-field, #other-source-field');
-        if (!$(this).is(':checked')) {
-            $('#id_other_bursaries_amount').val('0');
-            $('#id_other_bursaries_source').val('');
-        }
+    $('#id_other_bursaries').change(function () {
+        toggle(this, '#other-amount-field,#other-source-field',
+            function () { $('#id_other_bursaries_amount').val('0'); $('#id_other_bursaries_source').val(''); });
     });
-
-    $('#id_has_received_previous_allocation').change(function() {
-        toggleField(this, '#previous-year-field, #previous-amount-field');
-        if (!$(this).is(':checked')) {
-            $('#id_previous_allocation_year').val('');
-            $('#id_previous_allocation_amount').val('0');
-        }
+    $('#id_has_received_previous_allocation').change(function () {
+        toggle(this, '#previous-year-field,#previous-amount-field',
+            function () { $('#id_previous_allocation_year').val(''); $('#id_previous_allocation_amount').val('0'); });
     });
+    toggle('#id_other_bursaries','#other-amount-field,#other-source-field');
+    toggle('#id_has_received_previous_allocation','#previous-year-field,#previous-amount-field');
 
-    $('#id_has_chronic_illness').change(function() {
-        toggleField(this, '#chronic-illness-description');
-        if (!$(this).is(':checked')) {
-            $('#id_chronic_illness_description').val('');
-        }
-    });
-
-    // Initialize fields on page load
-    toggleField('#id_other_bursaries', '#other-amount-field, #other-source-field');
-    toggleField('#id_has_received_previous_allocation', '#previous-year-field, #previous-amount-field');
-    toggleField('#id_has_chronic_illness', '#chronic-illness-description');
-
-    // Update max amount display when category is selected
-    $('input[name="bursary_category"]').on('change', function() {
-        const maxAmount = $(this).data('max-amount');
-        const minAmount = $(this).data('min-amount');
-        
-        if (maxAmount && minAmount) {
-            $('#max-amount').text(parseFloat(maxAmount).toFixed(2));
-            $('#min-amount').text(parseFloat(minAmount).toFixed(2));
+    /* Category max amount hint */
+    $('input[name="bursary_category"]').on('change', function () {
+        const max = $(this).data('max-amount'), min = $(this).data('min-amount');
+        if (max && min) {
+            $('#max-amount').text(parseFloat(max).toLocaleString());
+            $('#min-amount').text(parseFloat(min).toLocaleString());
             $('#max-amount-info').show();
         }
     });
-
-    // Get category max amount via AJAX (fallback if not using radio buttons)
-    $('#id_bursary_category').change(function() {
-        const categoryId = $(this).val();
-        if (categoryId) {
-            $.get('{% url "get_category_max_amount" %}', {
-                category_id: categoryId
-            })
-            .done(function(data) {
-                if (data && data.success) {
-                    $('#max-amount').text(data.max_amount.toFixed(2));
-                    $('#min-amount').text(data.min_amount.toFixed(2));
-                    $('#max-amount-info').show();
-                } else {
-                    $('#max-amount-info').hide();
-                }
-            })
-            .fail(function() {
-                $('#max-amount-info').hide();
-            });
-        } else {
-            $('#max-amount-info').hide();
-        }
-    });
-
-    // Initialize category max amount
     $('input[name="bursary_category"]:checked').trigger('change');
-    $('#id_bursary_category').trigger('change');
 
-    // Form validation
-    function validateForm() {
-        let isValid = true;
-        $('.is-invalid').removeClass('is-invalid');
-        
-        // Check required fields
-        $('[required]').each(function() {
-            if (!$(this).val() || $(this).val().trim() === '') {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            }
-        });
-
-        // Check conditional required fields
-        if ($('#id_other_bursaries').is(':checked')) {
-            const amount = parseFloat($('#id_other_bursaries_amount').val());
-            if (!amount || amount <= 0) {
-                $('#id_other_bursaries_amount').addClass('is-invalid');
-                isValid = false;
-            }
-            
-            const source = $('#id_other_bursaries_source').val();
-            if (!source || !source.trim()) {
-                $('#id_other_bursaries_source').addClass('is-invalid');
-                isValid = false;
-            }
+    /* Oath checkbox required */
+    $('#applicationForm').on('submit', function (e) {
+        if (!$('#oath-checkbox').is(':checked')) {
+            e.preventDefault();
+            alert('You must read and accept the Declaration of Truth before submitting.');
+            $('#oath-checkbox').focus();
+            return false;
         }
 
-        if ($('#id_has_received_previous_allocation').is(':checked')) {
-            const year = $('#id_previous_allocation_year').val();
-            if (!year || !year.trim()) {
-                $('#id_previous_allocation_year').addClass('is-invalid');
-                isValid = false;
-            }
-            
-            const amount = parseFloat($('#id_previous_allocation_amount').val());
-            if (!amount || amount <= 0) {
-                $('#id_previous_allocation_amount').addClass('is-invalid');
-                isValid = false;
-            }
-        }
-
-        if ($('#id_has_chronic_illness').is(':checked')) {
-            const description = $('#id_chronic_illness_description').val();
-            if (!description || !description.trim()) {
-                $('#id_chronic_illness_description').addClass('is-invalid');
-                isValid = false;
-            }
-        }
-
-        // Validate institution field
-        const searchValue = $('.searchable-input').val();
-        const selectedValue = $('#id_institution').val();
-        
-        if (!searchValue || !selectedValue) {
-            $('.searchable-input').addClass('is-invalid');
-            isValid = false;
-        }
-
-        // Validate category selection (radio buttons)
         const categorySelected = $('input[name="bursary_category"]:checked').length > 0;
         if (!categorySelected) {
-            isValid = false;
-            $('.category-info-card').first().addClass('is-invalid');
-        }
-        
-        return isValid;
-    }
-
-    // Form submission
-    $('#applicationForm').on('submit', function(e) {
-        if ($('#submitBtn').prop('disabled')) {
             e.preventDefault();
+            alert('Please select a bursary category.');
             return false;
         }
 
-        if (!validateForm()) {
-            e.preventDefault();
-            
-            const $firstInvalid = $('.is-invalid').first();
-            if ($firstInvalid.length > 0) {
-                $('html, body').animate({
-                    scrollTop: $firstInvalid.offset().top - 100
-                }, 500);
-            }
-            
-            if ($('.alert-validation').length === 0) {
-                const alertHtml = `
-                    <div class="alert-custom alert-danger-custom alert-validation">
-                        <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
-                        <div style="flex: 1;">Please fill in all required fields correctly.</div>
-                        <button type="button" class="alert-close" onclick="this.parentElement.remove()">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
-                `;
-                $('.section-container').first().append(alertHtml);
-            }
-            
-            return false;
-        }
-
-        $('.alert-validation').remove();
-        $('#submitBtn').prop('disabled', true).html('<i class="bi bi-arrow-repeat spinner me-1"></i> Processing...');
-        
-        setTimeout(function() {
-            $('#submitBtn').prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> {% if application %}Update Application{% else %}Save Application{% endif %}');
-        }, 30000);
+        if ($('#submitBtn').prop('disabled')) { e.preventDefault(); return false; }
+        $('#submitBtn').prop('disabled', true).html('<i class="bi bi-arrow-repeat spinner me-1"></i> Saving…');
+        setTimeout(function () { $('#submitBtn').prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Save Application'); }, 30000);
     });
-
-    // Remove validation errors on input
-    $('input, select, textarea').on('input change', function() {
-        $(this).removeClass('is-invalid');
-    });
-
-    // Initialize form if editing
-    {% if application %}
-        setTimeout(function() {
-            $('#id_other_bursaries').trigger('change');
-            $('#id_has_received_previous_allocation').trigger('change');
-            $('#id_has_chronic_illness').trigger('change');
-            calculateBalance();
-        }, 100);
-    {% endif %}
 });
 </script>
+{% endblock %}
 {% endblock %}

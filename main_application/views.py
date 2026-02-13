@@ -9144,247 +9144,569 @@ def calculate_priority_score(application):
     return score
 
 
+"""
+Updated student_application_create view.
+Handles saving of the application AND all supporting documents
+uploaded via the Family Situation section.
+
+Document fields submitted from the HTML form:
+  doc_father_death          — total orphan: father's death cert / chief letter
+  doc_mother_death          — total orphan: mother's death cert / chief letter
+  doc_one_parent_death_cert — one parent: death certificate
+  doc_one_parent_chief_letter — one parent: chief's letter
+  doc_disability_hospital   — disability: hospital assessment letter
+  doc_disability_ncpwd      — disability: NCPWD certificate (optional)
+  doc_chronic_illness       — chronic illness: medical report
+
+Place this file at:
+    main_application/views.py  (replace / merge with existing view)
+"""
+
+import logging
+import os
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
+from django.shortcuts import redirect, render
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Helper: allowed document MIME types and size cap
+# ---------------------------------------------------------------------------
+ALLOWED_DOC_TYPES = {'application/pdf', 'image/jpeg', 'image/jpg', 'image/png'}
+MAX_DOC_SIZE_MB   = 5
+MAX_DOC_SIZE_BYTES = MAX_DOC_SIZE_MB * 1024 * 1024
+
+
+def _validate_uploaded_file(uploaded_file):
+    """
+    Validates a single uploaded file.
+    Returns (True, None) if valid, (False, error_string) if not.
+    """
+    if uploaded_file is None:
+        return True, None  # optional files are fine when absent
+
+    if uploaded_file.content_type not in ALLOWED_DOC_TYPES:
+        return False, f'"{uploaded_file.name}" is not an accepted file type. Use PDF, JPG, or PNG.'
+
+    if uploaded_file.size > MAX_DOC_SIZE_BYTES:
+        return False, f'"{uploaded_file.name}" exceeds {MAX_DOC_SIZE_MB} MB limit.'
+
+    return True, None
+
+
+def _get_optional_file(request, field_name):
+    """Returns uploaded file or None if field is absent / empty."""
+    return request.FILES.get(field_name) or None
+
+
+def _save_document(application, uploaded_file, document_type, description, verified=False):
+    """
+    Creates a Document record linked to the application.
+    Skips silently if uploaded_file is None.
+    Returns the Document instance or None.
+    """
+    if not uploaded_file:
+        return None
+
+    from main_application.models import Document
+
+    doc = Document(
+        application   = application,
+        document_type = document_type,
+        description   = description,
+        is_verified   = verified,
+    )
+    doc.file.save(
+        # Keep original filename but store under the application number sub-dir
+        os.path.basename(uploaded_file.name),
+        uploaded_file,
+        save=False,
+    )
+    doc.save()
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# Priority score helper (unchanged from original)
+# ---------------------------------------------------------------------------
+def calculate_priority_score(application):
+    """
+    Simple weighted priority score (0–100).
+    Higher score = higher need / priority.
+    """
+    score = 0
+
+    # Need-based factors
+    income = application.household_monthly_income or 0
+    if income <= 5000:
+        score += 30
+    elif income <= 10000:
+        score += 20
+    elif income <= 20000:
+        score += 10
+
+    # Orphan status
+    if application.is_total_orphan:
+        score += 25
+    elif application.is_orphan:
+        score += 15
+
+    # Disability / illness
+    if application.is_disabled:
+        score += 15
+    if application.has_chronic_illness:
+        score += 10
+
+    # Siblings in school
+    siblings_school = application.number_of_siblings_in_school or 0
+    if siblings_school >= 3:
+        score += 10
+    elif siblings_school >= 1:
+        score += 5
+
+    # Previous academic performance
+    avg = application.previous_academic_year_average or 0
+    if avg >= 80:
+        score += 10
+    elif avg >= 60:
+        score += 5
+
+    return min(score, 100)
+
+
+# ---------------------------------------------------------------------------
+# Main view
+# ---------------------------------------------------------------------------
 @login_required
 def student_application_create(request):
     """
-    Create new bursary application with enhanced validation and error handling
-    Students can only apply for categories in their constituency/ward
+    Create new bursary application.
+    Handles:
+      - Full form validation
+      - Category eligibility checks (scope, open status, capacity)
+      - Application save
+      - Supporting document uploads for all family-situation declarations
     """
+    from main_application.models import (
+        Applicant, Application, BursaryCategory, Document,
+        DisbursementRound, FiscalYear, Institution, WardAllocation,
+    )
+    from django.db.models import Q
+
+    # ── Guard: applicant profile ────────────────────────────────────────────
     try:
         applicant = request.user.applicant_profile
     except Applicant.DoesNotExist:
         messages.error(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
-    
-    # Validate applicant has constituency and ward
+
     if not applicant.constituency:
         messages.error(request, 'Your profile is missing constituency information. Please update your profile.')
         return redirect('student_profile_update')
-    
+
     if not applicant.ward:
         messages.error(request, 'Your profile is missing ward information. Please update your profile.')
         return redirect('student_profile_update')
-    
-    # Check for active fiscal year
+
+    # ── Guard: active fiscal year ───────────────────────────────────────────
     current_fiscal_year = FiscalYear.objects.filter(
-        is_active=True,
-        application_open=True
+        is_active=True, application_open=True
     ).first()
-    
+
     if not current_fiscal_year:
         messages.error(request, 'Applications are currently closed. Please check back later.')
         return redirect('student_dashboard')
-    
-    # Check application deadline
-    if current_fiscal_year.application_deadline and current_fiscal_year.application_deadline < timezone.now().date():
-        messages.error(request, f'Application deadline ({current_fiscal_year.application_deadline}) has passed.')
+
+    if (current_fiscal_year.application_deadline and
+            current_fiscal_year.application_deadline < timezone.now().date()):
+        messages.error(
+            request,
+            f'Application deadline ({current_fiscal_year.application_deadline}) has passed.'
+        )
         return redirect('student_dashboard')
-    
-    # Get current open disbursement round if any
+
+    # ── Open disbursement round ─────────────────────────────────────────────
     current_round = DisbursementRound.objects.filter(
         fiscal_year=current_fiscal_year,
         is_open=True,
         application_start_date__lte=timezone.now().date(),
-        application_end_date__gte=timezone.now().date()
+        application_end_date__gte=timezone.now().date(),
     ).first()
-    
-    # Check if already has application for current fiscal year
+
+    # ── Guard: one application per fiscal year ──────────────────────────────
     existing_application = Application.objects.filter(
-        applicant=applicant, 
-        fiscal_year=current_fiscal_year
+        applicant=applicant,
+        fiscal_year=current_fiscal_year,
     ).first()
-    
+
     if existing_application:
         messages.info(
-            request, 
+            request,
             f'You already have an application for {current_fiscal_year.name}. '
-            'You can edit your existing application if it is still in draft status.'
+            'You can edit it if it is still in draft status.'
         )
         return redirect('student_application_detail', pk=existing_application.pk)
-    
-    # Check ward allocation availability
-    ward_allocation = None
-    if applicant.ward:
-        ward_allocation = WardAllocation.objects.filter(
-            fiscal_year=current_fiscal_year,
-            ward=applicant.ward
-        ).first()
-        
-        if ward_allocation and ward_allocation.balance() <= 0:
-            messages.warning(
-                request,
-                f'The allocation for {applicant.ward.name} Ward has been exhausted. '
-                'Your application will be placed on a waiting list.'
-            )
-    
-    if request.method == 'POST':
-        form = ApplicationForm(request.POST, fiscal_year=current_fiscal_year)
-        
-        if form.is_valid():
-            try:
-                application = form.save(commit=False)
-                application.applicant = applicant
-                application.fiscal_year = current_fiscal_year
-                
-                # ============= VALIDATE CATEGORY ELIGIBILITY =============
-                selected_category = application.bursary_category
-                
-                # Check if category is open
-                if not selected_category.is_currently_open():
-                    messages.error(
-                        request,
-                        f'The category "{selected_category.name}" is currently closed for applications.'
-                    )
-                    return redirect('student_application_create')
-                
-                # Check if category can accept more applications
-                if not selected_category.can_accept_more_applications():
-                    messages.error(
-                        request,
-                        f'The category "{selected_category.name}" has reached its capacity. '
-                        'Please select a different category or contact the bursary office.'
-                    )
-                    return redirect('student_application_create')
-                
-                # Check scope restrictions
-                if selected_category.scope == 'constituency':
-                    if selected_category.constituency != applicant.constituency:
-                        messages.error(
-                            request,
-                            f'The category "{selected_category.name}" is only available to applicants from '
-                            f'{selected_category.constituency.name} Constituency. '
-                            f'You are registered in {applicant.constituency.name} Constituency.'
-                        )
-                        return redirect('student_application_create')
-                
-                elif selected_category.scope == 'ward':
-                    if selected_category.ward != applicant.ward:
-                        messages.error(
-                            request,
-                            f'The category "{selected_category.name}" is only available to applicants from '
-                            f'{selected_category.ward.name} Ward. '
-                            f'You are registered in {applicant.ward.name} Ward.'
-                        )
-                        return redirect('student_application_create')
-                
-                # =========================================================
-                
-                # Assign to current disbursement round if available
-                if current_round:
-                    application.disbursement_round = current_round
-                
-                # Calculate fees_balance
-                application.fees_balance = application.total_fees_payable - application.fees_paid
-                
-                # Initial status
-                application.status = 'draft'
-                
-                # Calculate priority score
-                application.priority_score = calculate_priority_score(application)
-                
-                # Save the application
-                application.save()
-                
-                messages.success(
-                    request, 
-                    'Application created successfully! Please upload required documents to submit your application.'
-                )
-                return redirect('student_application_documents', pk=application.pk)
-                
-            except IntegrityError as e:
-                error_message = str(e)
-                
-                # Parse common IntegrityError messages
-                if 'value too long' in error_message.lower():
-                    if 'application_number' in error_message.lower():
-                        messages.error(
-                            request, 
-                            'Error: Application number generation failed. Please contact system administrator.'
-                        )
-                    else:
-                        messages.error(
-                            request,
-                            'One of the fields contains a value that is too long. Please check your inputs.'
-                        )
-                elif 'unique constraint' in error_message.lower():
-                    messages.error(
-                        request,
-                        'A duplicate entry was detected. Please refresh the page and try again.'
-                    )
-                else:
-                    messages.error(
-                        request,
-                        f'Database error occurred: {error_message}'
-                    )
-                
-                # Log the error for debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'IntegrityError in application creation: {error_message}')
-                
-            except Exception as e:
-                messages.error(request, f'Error saving application: {str(e)}')
-                
-                # Log the error for debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'Error creating application: {str(e)}', exc_info=True)
-        else:
-            # Display form validation errors
-            for field, errors in form.errors.items():
-                for error in errors:
-                    if field == '__all__':
-                        messages.error(request, f'{error}')
-                    else:
-                        messages.error(request, f'{field}: {error}')
-    else:
-        form = ApplicationForm(fiscal_year=current_fiscal_year)
-    
-    # ============= GET CATEGORIES SPECIFIC TO USER'S CONSTITUENCY/WARD =============
-    # Get categories available to this applicant
-    from django.db.models import Q
-    
+
+    # ── Ward allocation info (for template warning) ─────────────────────────
+    ward_allocation = WardAllocation.objects.filter(
+        fiscal_year=current_fiscal_year,
+        ward=applicant.ward,
+    ).first()
+
+    if ward_allocation and ward_allocation.balance() <= 0:
+        messages.warning(
+            request,
+            f'The allocation for {applicant.ward.name} Ward has been exhausted. '
+            'Your application will be placed on a waiting list.'
+        )
+
+    # ── Available categories (filtered to applicant's location) ────────────
     categories = BursaryCategory.objects.filter(
         fiscal_year=current_fiscal_year,
         is_active=True,
-        is_open=True
+        is_open=True,
     ).filter(
-        Q(scope='county') |  # County-wide categories
-        Q(scope='constituency', constituency=applicant.constituency) |  # Their constituency
-        Q(scope='ward', ward=applicant.ward)  # Their ward
-    ).select_related('constituency', 'ward').order_by('constituency', 'ward', 'category_type', 'name')
-    
-    # Filter out categories that are full or outside application window
-    available_categories = []
-    closed_categories = []
-    
-    for category in categories:
-        if category.can_accept_more_applications():
-            available_categories.append(category)
+        Q(scope='county') |
+        Q(scope='constituency', constituency=applicant.constituency) |
+        Q(scope='ward', ward=applicant.ward)
+    ).select_related('constituency', 'ward').order_by(
+        'constituency', 'ward', 'category_type', 'name'
+    )
+
+    available_categories = [c for c in categories if c.can_accept_more_applications()]
+    closed_categories    = [c for c in categories if not c.can_accept_more_applications()]
+
+    institutions = Institution.objects.filter(is_active=True).order_by('institution_type', 'name')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # POST — process form submission
+    # ═══════════════════════════════════════════════════════════════════════
+    if request.method == 'POST':
+
+        # Importing here keeps the top-level import light
+        from main_application.forms import ApplicationForm
+
+        form = ApplicationForm(request.POST, fiscal_year=current_fiscal_year)
+
+        if form.is_valid():
+
+            # ── 1. Collect uploaded files ──────────────────────────────────
+            doc_files = {
+                # total orphan
+                'doc_father_death'            : _get_optional_file(request, 'doc_father_death'),
+                'doc_mother_death'            : _get_optional_file(request, 'doc_mother_death'),
+                # one parent
+                'doc_one_parent_death_cert'   : _get_optional_file(request, 'doc_one_parent_death_cert'),
+                'doc_one_parent_chief_letter' : _get_optional_file(request, 'doc_one_parent_chief_letter'),
+                # disability
+                'doc_disability_hospital'     : _get_optional_file(request, 'doc_disability_hospital'),
+                'doc_disability_ncpwd'        : _get_optional_file(request, 'doc_disability_ncpwd'),
+                # chronic illness
+                'doc_chronic_illness'         : _get_optional_file(request, 'doc_chronic_illness'),
+            }
+
+            # ── 2. Validate each uploaded file ─────────────────────────────
+            file_errors = []
+            for field_name, uploaded_file in doc_files.items():
+                ok, err = _validate_uploaded_file(uploaded_file)
+                if not ok:
+                    file_errors.append(err)
+            if file_errors:
+                for err in file_errors:
+                    messages.error(request, err)
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            # ── 3. Family situation document enforcement ───────────────────
+            #    If a student declares a status, they MUST provide at least
+            #    one corresponding document.
+            declared_situations = {
+                'is_total_orphan'   : form.cleaned_data.get('is_total_orphan'),
+                'is_orphan'         : form.cleaned_data.get('is_orphan'),
+                'is_disabled'       : form.cleaned_data.get('is_disabled'),
+                'has_chronic_illness': form.cleaned_data.get('has_chronic_illness'),
+            }
+
+            situation_errors = []
+
+            if declared_situations['is_total_orphan']:
+                if not doc_files['doc_father_death'] and not doc_files['doc_mother_death']:
+                    situation_errors.append(
+                        'You declared you are a total orphan. '
+                        'Please upload at least one death certificate or chief\'s letter '
+                        '(for father or mother).'
+                    )
+
+            if declared_situations['is_orphan'] and not declared_situations['is_total_orphan']:
+                if not doc_files['doc_one_parent_death_cert'] and not doc_files['doc_one_parent_chief_letter']:
+                    situation_errors.append(
+                        'You declared you have lost one parent. '
+                        'Please upload a death certificate or area chief\'s letter for the deceased parent.'
+                    )
+
+            if declared_situations['is_disabled']:
+                if not doc_files['doc_disability_hospital']:
+                    situation_errors.append(
+                        'You declared a disability. '
+                        'Please upload a government hospital assessment letter (Level 4 or 5).'
+                    )
+
+            if declared_situations['has_chronic_illness']:
+                if not doc_files['doc_chronic_illness']:
+                    situation_errors.append(
+                        'You declared a chronic illness. '
+                        'Please upload a medical report from a government hospital.'
+                    )
+
+            if situation_errors:
+                for err in situation_errors:
+                    messages.error(request, err)
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            # ── 4. Category eligibility checks ─────────────────────────────
+            application = form.save(commit=False)
+            application.applicant    = applicant
+            application.fiscal_year  = current_fiscal_year
+            selected_category        = application.bursary_category
+
+            if not selected_category.is_currently_open():
+                messages.error(
+                    request,
+                    f'The category "{selected_category.name}" is currently closed for applications.'
+                )
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            if not selected_category.can_accept_more_applications():
+                messages.error(
+                    request,
+                    f'The category "{selected_category.name}" has reached its capacity. '
+                    'Please select a different category or contact the bursary office.'
+                )
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            if selected_category.scope == 'constituency':
+                if selected_category.constituency != applicant.constituency:
+                    messages.error(
+                        request,
+                        f'"{selected_category.name}" is only for {selected_category.constituency.name} Constituency. '
+                        f'You are registered in {applicant.constituency.name}.'
+                    )
+                    return _render_form(
+                        request, form, available_categories, closed_categories,
+                        institutions, current_fiscal_year, current_round,
+                        ward_allocation, applicant,
+                    )
+
+            elif selected_category.scope == 'ward':
+                if selected_category.ward != applicant.ward:
+                    messages.error(
+                        request,
+                        f'"{selected_category.name}" is only for {selected_category.ward.name} Ward. '
+                        f'You are registered in {applicant.ward.name}.'
+                    )
+                    return _render_form(
+                        request, form, available_categories, closed_categories,
+                        institutions, current_fiscal_year, current_round,
+                        ward_allocation, applicant,
+                    )
+
+            # ── 5. Finalise application fields ─────────────────────────────
+            if current_round:
+                application.disbursement_round = current_round
+
+            application.fees_balance   = application.total_fees_payable - application.fees_paid
+            application.status         = 'draft'
+            application.priority_score = calculate_priority_score(application)
+
+            # ── 6. Save application + documents atomically ──────────────────
+            try:
+                with transaction.atomic():
+                    application.save()
+
+                    # --- TOTAL ORPHAN documents ---
+                    if declared_situations['is_total_orphan']:
+                        _save_document(
+                            application,
+                            doc_files['doc_father_death'],
+                            document_type='death_certificate',
+                            description="Father's Death Certificate / Chief's Letter (Total Orphan)",
+                        )
+                        _save_document(
+                            application,
+                            doc_files['doc_mother_death'],
+                            document_type='death_certificate',
+                            description="Mother's Death Certificate / Chief's Letter (Total Orphan)",
+                        )
+
+                    # --- ONE PARENT documents ---
+                    if declared_situations['is_orphan'] and not declared_situations['is_total_orphan']:
+                        _save_document(
+                            application,
+                            doc_files['doc_one_parent_death_cert'],
+                            document_type='death_certificate',
+                            description="Deceased Parent's Death Certificate (One Parent Lost)",
+                        )
+                        _save_document(
+                            application,
+                            doc_files['doc_one_parent_chief_letter'],
+                            document_type='chiefs_letter',
+                            description="Area Chief's Letter — One Parent Deceased",
+                        )
+
+                    # --- DISABILITY documents ---
+                    if declared_situations['is_disabled']:
+                        _save_document(
+                            application,
+                            doc_files['doc_disability_hospital'],
+                            document_type='disability_certificate',
+                            description='Government Hospital Disability Assessment Letter',
+                        )
+                        _save_document(
+                            application,
+                            doc_files['doc_disability_ncpwd'],
+                            document_type='disability_certificate',
+                            description='NCPWD Registration Certificate',
+                        )
+
+                    # --- CHRONIC ILLNESS document ---
+                    if declared_situations['has_chronic_illness']:
+                        _save_document(
+                            application,
+                            doc_files['doc_chronic_illness'],
+                            document_type='medical_report',
+                            description='Government Hospital Medical Report — Chronic Illness',
+                        )
+
+                    # Count how many docs were saved
+                    total_docs_saved = application.documents.count()
+
+            except IntegrityError as e:
+                err_str = str(e).lower()
+                if 'value too long' in err_str:
+                    messages.error(request, 'A field value is too long. Please check your inputs.')
+                elif 'unique constraint' in err_str:
+                    messages.error(request, 'A duplicate entry was detected. Please refresh and try again.')
+                else:
+                    messages.error(request, f'Database error: {e}')
+                logger.error('IntegrityError creating application: %s', e)
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            except Exception as e:
+                messages.error(request, f'An error occurred while saving your application: {e}')
+                logger.error('Error creating application: %s', e, exc_info=True)
+                return _render_form(
+                    request, form, available_categories, closed_categories,
+                    institutions, current_fiscal_year, current_round,
+                    ward_allocation, applicant,
+                )
+
+            # ── 7. Build success message ───────────────────────────────────
+            doc_note = ''
+            if total_docs_saved > 0:
+                doc_note = f' {total_docs_saved} supporting document(s) were saved.'
+
+            messages.success(
+                request,
+                f'Application {application.application_number} created successfully.{doc_note} '
+                'Please upload any remaining required documents to complete your submission.'
+            )
+
+            return redirect('student_application_documents', pk=application.pk)
+
         else:
-            closed_categories.append(category)
-    
-    # ==============================================================================
-    
-    # Get active institutions ordered by type and name
-    institutions = Institution.objects.filter(
-        is_active=True
-    ).order_by('institution_type', 'name')
-    
+            # Django form validation errors — surface them clearly
+            for field, errs in form.errors.items():
+                for err in errs:
+                    if field == '__all__':
+                        messages.error(request, err)
+                    else:
+                        label = form.fields[field].label if field in form.fields else field
+                        messages.error(request, f'{label}: {err}')
+
+    else:
+        from main_application.forms import ApplicationForm
+        form = ApplicationForm(fiscal_year=current_fiscal_year)
+
+    # ── GET render ──────────────────────────────────────────────────────────
+    return _render_form(
+        request, form, available_categories, closed_categories,
+        institutions, current_fiscal_year, current_round,
+        ward_allocation, applicant,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Private render helper — avoids repeating the context block
+# ---------------------------------------------------------------------------
+def _render_form(
+    request, form, available_categories, closed_categories,
+    institutions, current_fiscal_year, current_round,
+    ward_allocation, applicant,
+):
     context = {
-        'form': form,
-        'categories': available_categories,
-        'closed_categories': closed_categories,
-        'institutions': institutions,
-        'current_fiscal_year': current_fiscal_year,
-        'current_round': current_round,
-        'ward_allocation': ward_allocation,
-        'applicant': applicant,
+        'form'                  : form,
+        'categories'            : available_categories,
+        'closed_categories'     : closed_categories,
+        'institutions'          : institutions,
+        'current_fiscal_year'   : current_fiscal_year,
+        'current_round'         : current_round,
+        'ward_allocation'       : ward_allocation,
+        'applicant'             : applicant,
         'applicant_constituency': applicant.constituency,
-        'applicant_ward': applicant.ward,
+        'applicant_ward'        : applicant.ward,
     }
-    
     return render(request, 'students/application_form.html', context)
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# AJAX helper view — returns max/min amount for a selected category
+# (unchanged from original, included for completeness)
+# ───────────────────────────────────────────────────────────────────────────
+@login_required
+def get_category_max_amount(request):
+    """Return JSON with max/min amount for a bursary category."""
+    import json
+    from django.http import JsonResponse
+    from main_application.models import BursaryCategory
+
+    category_id = request.GET.get('category_id')
+    if not category_id:
+        return JsonResponse({'success': False, 'error': 'No category id provided'})
+
+    try:
+        category = BursaryCategory.objects.get(pk=category_id, is_active=True)
+        return JsonResponse({
+            'success'   : True,
+            'max_amount': float(category.max_amount_per_applicant),
+            'min_amount': float(category.min_amount_per_applicant),
+            'name'      : category.name,
+            'balance'   : float(category.balance()),
+        })
+    except BursaryCategory.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Category not found'})
 
 
 # Helper view to get category max amounts via AJAX
