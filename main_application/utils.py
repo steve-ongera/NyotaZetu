@@ -916,21 +916,39 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 
-def create_audit_log(user, action, table_affected, description, ip_address, record_id=None, old_values=None, new_values=None):
+def create_audit_log(
+    request,
+    action,
+    table_affected,
+    description,
+    record_id=None,
+    old_values=None,
+    new_values=None,
+):
     """
-    Create an audit log entry
-    
-    Args:
-        user: User performing the action
-        action: Type of action (create, update, delete, view, etc.)
-        table_affected: Name of the database table/model
-        description: Human-readable description
-        ip_address: IP address of the user
-        record_id: ID of the affected record (optional)
-        old_values: Dict of old values for updates (optional)
-        new_values: Dict of new values for updates (optional)
+    Safe audit logger.
+    Extracts IP and user-agent automatically from request.
     """
+
     try:
+        # Handle case where request might not be passed
+        if hasattr(request, "META"):
+            user = request.user if request.user.is_authenticated else None
+
+            # Extract IP safely
+            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(",")[0].strip()
+            else:
+                ip_address = request.META.get("REMOTE_ADDR", "127.0.0.1")
+
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
+        else:
+            # Fallback if someone passes user instead of request
+            user = request
+            ip_address = "127.0.0.1"
+            user_agent = ""
+
         AuditLog.objects.create(
             user=user,
             action=action,
@@ -938,9 +956,11 @@ def create_audit_log(user, action, table_affected, description, ip_address, reco
             record_id=str(record_id) if record_id else None,
             description=description,
             ip_address=ip_address,
+            user_agent=user_agent,
             old_values=old_values,
-            new_values=new_values
+            new_values=new_values,
         )
+
     except Exception as e:
         print(f"Error creating audit log: {e}")
 

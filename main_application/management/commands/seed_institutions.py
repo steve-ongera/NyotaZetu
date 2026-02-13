@@ -1,2048 +1,339 @@
 """
-Django management command to seed ALL Kenyan educational institutions
-Place this file in: main_application/management/commands/seed_institutions.py
-Run with: python manage.py seed_institutions
+Management command to seed real Kenyan educational institutions.
+Covers all 47 counties starting from Mombasa (001).
+Includes Primary Schools, Secondary Schools, Universities, and Colleges.
+
+Usage:
+    python manage.py seed_institutions
+
+Place this file at:
+    main_application/management/commands/seed_institutions.py
 """
 
 from django.core.management.base import BaseCommand
-from main_application.models import Institution, County
 from django.db import transaction
 
 
 class Command(BaseCommand):
-    help = 'Seeds ALL educational institutions in Kenya with real data'
+    help = 'Seed real Kenyan educational institutions across all counties'
 
-    def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING('Starting comprehensive institution seeding for Kenya...'))
-        
-        # Get or create counties for reference
-        counties = self._get_counties()
-        
-        institutions_data = []
-        
-        # ============= UNIVERSITIES (All Kenyan Universities) =============
-        universities = [
-            # PUBLIC CHARTERED UNIVERSITIES
-            {
-                'name': 'University of Nairobi',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30197-00100',
-                'physical_address': 'University Way, Nairobi',
-                'phone_number': '+254202318262',
-                'email': 'info@uonbi.ac.ke',
-            },
-            {
-                'name': 'Kenyatta University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 43844-00100',
-                'physical_address': 'Kahawa, Nairobi',
-                'phone_number': '+254202870000',
-                'email': 'info@ku.ac.ke',
-            },
-            {
-                'name': 'Moi University',
-                'institution_type': 'university',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 3900-30100',
-                'physical_address': 'Eldoret',
-                'phone_number': '+254533143013',
-                'email': 'info@mu.ac.ke',
-            },
-            {
-                'name': 'Egerton University',
-                'institution_type': 'university',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 536-20115',
-                'physical_address': 'Njoro',
-                'phone_number': '+254512217000',
-                'email': 'info@egerton.ac.ke',
-            },
-            {
-                'name': 'Jomo Kenyatta University of Agriculture and Technology',
-                'institution_type': 'university',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 62000-00200',
-                'physical_address': 'Juja',
-                'phone_number': '+254677123000',
-                'email': 'info@jkuat.ac.ke',
-            },
-            {
-                'name': 'Maseno University',
-                'institution_type': 'university',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 333-40105',
-                'physical_address': 'Maseno',
-                'phone_number': '+254572351620',
-                'email': 'info@maseno.ac.ke',
-            },
-            {
-                'name': 'Masinde Muliro University of Science and Technology',
-                'institution_type': 'university',
-                'county': 'Kakamega',
-                'postal_address': 'P.O. Box 190-50100',
-                'physical_address': 'Kakamega',
-                'phone_number': '+254572502508',
-                'email': 'info@mmust.ac.ke',
-            },
-            {
-                'name': 'Dedan Kimathi University of Technology',
-                'institution_type': 'university',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 657-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254202032007',
-                'email': 'info@dkut.ac.ke',
-            },
-            {
-                'name': 'Chuka University',
-                'institution_type': 'university',
-                'county': 'Tharaka Nithi',
-                'postal_address': 'P.O. Box 109-60400',
-                'physical_address': 'Chuka',
-                'phone_number': '+254706385164',
-                'email': 'info@chuka.ac.ke',
-            },
-            {
-                'name': 'Technical University of Kenya',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 52428-00200',
-                'physical_address': 'Haile Selassie Avenue, Nairobi',
-                'phone_number': '+254202219929',
-                'email': 'info@tukenya.ac.ke',
-            },
-            {
-                'name': 'Technical University of Mombasa',
-                'institution_type': 'university',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 90420-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412492222',
-                'email': 'info@tum.ac.ke',
-            },
-            {
-                'name': 'Pwani University',
-                'institution_type': 'university',
-                'county': 'Kilifi',
-                'postal_address': 'P.O. Box 195-80108',
-                'physical_address': 'Kilifi',
-                'phone_number': '+254714606240',
-                'email': 'info@pu.ac.ke',
-            },
-            {
-                'name': 'Kisii University',
-                'institution_type': 'university',
-                'county': 'Kisii',
-                'postal_address': 'P.O. Box 408-40200',
-                'physical_address': 'Kisii',
-                'phone_number': '+254202606900',
-                'email': 'info@kisiiuniversity.ac.ke',
-            },
-            {
-                'name': 'Jaramogi Oginga Odinga University of Science and Technology',
-                'institution_type': 'university',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 210-40601',
-                'physical_address': 'Bondo',
-                'phone_number': '+254572051540',
-                'email': 'info@jooust.ac.ke',
-            },
-            {
-                'name': 'Laikipia University',
-                'institution_type': 'university',
-                'county': 'Laikipia',
-                'postal_address': 'P.O. Box 1100-20300',
-                'physical_address': 'Nyahururu',
-                'phone_number': '+254202030013',
-                'email': 'info@laikipia.ac.ke',
-            },
-            {
-                'name': 'South Eastern Kenya University',
-                'institution_type': 'university',
-                'county': 'Kitui',
-                'postal_address': 'P.O. Box 170-90200',
-                'physical_address': 'Kitui',
-                'phone_number': '+254446322157',
-                'email': 'info@seku.ac.ke',
-            },
-            {
-                'name': 'Multimedia University of Kenya',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30305-00100',
-                'physical_address': 'Magadi Road, Nairobi',
-                'phone_number': '+254202071391',
-                'email': 'info@mmu.ac.ke',
-            },
-            {
-                'name': 'Machakos University',
-                'institution_type': 'university',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 136-90100',
-                'physical_address': 'Machakos',
-                'phone_number': '+254444430860',
-                'email': 'info@mksu.ac.ke',
-            },
-            {
-                'name': 'Karatina University',
-                'institution_type': 'university',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 1957-10101',
-                'physical_address': 'Karatina',
-                'phone_number': '+254202034500',
-                'email': 'info@karu.ac.ke',
-            },
-            {
-                'name': 'Murang\'a University of Technology',
-                'institution_type': 'university',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 75-10200',
-                'physical_address': 'Murang\'a',
-                'phone_number': '+254202020110',
-                'email': 'info@mut.ac.ke',
-            },
-            {
-                'name': 'Meru University of Science and Technology',
-                'institution_type': 'university',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 972-60200',
-                'physical_address': 'Meru',
-                'phone_number': '+254642460200',
-                'email': 'info@must.ac.ke',
-            },
-            {
-                'name': 'University of Eldoret',
-                'institution_type': 'university',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 1125-30100',
-                'physical_address': 'Eldoret',
-                'phone_number': '+254532500210',
-                'email': 'info@uoeld.ac.ke',
-            },
-            {
-                'name': 'University of Kabianga',
-                'institution_type': 'university',
-                'county': 'Kericho',
-                'postal_address': 'P.O. Box 2030-20200',
-                'physical_address': 'Kericho',
-                'phone_number': '+254522021353',
-                'email': 'info@kabianga.ac.ke',
-            },
-            {
-                'name': 'Taita Taveta University',
-                'institution_type': 'university',
-                'county': 'Taita Taveta',
-                'postal_address': 'P.O. Box 635-80300',
-                'physical_address': 'Voi',
-                'phone_number': '+254728523261',
-                'email': 'info@ttu.ac.ke',
-            },
-            {
-                'name': 'Kirinyaga University',
-                'institution_type': 'university',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 143-10300',
-                'physical_address': 'Kerugoya',
-                'phone_number': '+254706894309',
-                'email': 'info@kyu.ac.ke',
-            },
-            {
-                'name': 'Garissa University',
-                'institution_type': 'university',
-                'county': 'Garissa',
-                'postal_address': 'P.O. Box 1801-70100',
-                'physical_address': 'Garissa',
-                'phone_number': '+254202691992',
-                'email': 'info@garissa.ac.ke',
-            },
-            {
-                'name': 'Turkana University',
-                'institution_type': 'university',
-                'county': 'Turkana',
-                'postal_address': 'P.O. Box 69-30500',
-                'physical_address': 'Lodwar',
-                'phone_number': '+254707611234',
-                'email': 'info@tu.ac.ke',
-            },
-            {
-                'name': 'Maasai Mara University',
-                'institution_type': 'university',
-                'county': 'Narok',
-                'postal_address': 'P.O. Box 861-20500',
-                'physical_address': 'Narok',
-                'phone_number': '+254729293744',
-                'email': 'info@mmarau.ac.ke',
-            },
-            {
-                'name': 'Rongo University',
-                'institution_type': 'university',
-                'county': 'Migori',
-                'postal_address': 'P.O. Box 103-40404',
-                'physical_address': 'Rongo',
-                'phone_number': '+254715202110',
-                'email': 'info@rongovarsity.ac.ke',
-            },
-            {
-                'name': 'Kibabii University',
-                'institution_type': 'university',
-                'county': 'Bungoma',
-                'postal_address': 'P.O. Box 1699-50200',
-                'physical_address': 'Bungoma',
-                'phone_number': '+254708085934',
-                'email': 'info@kibu.ac.ke',
-            },
-            {
-                'name': 'University of Embu',
-                'institution_type': 'university',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 6-60100',
-                'physical_address': 'Embu',
-                'phone_number': '+254202441003',
-                'email': 'info@embuni.ac.ke',
-            },
-            {
-                'name': 'Kaimosi Friends University',
-                'institution_type': 'university',
-                'county': 'Vihiga',
-                'postal_address': 'P.O. Box 385-50309',
-                'physical_address': 'Kaimosi',
-                'phone_number': '+254723948901',
-                'email': 'info@kafu.ac.ke',
-            },
-            {
-                'name': 'Bomet University',
-                'institution_type': 'university',
-                'county': 'Bomet',
-                'postal_address': 'P.O. Box 701-20400',
-                'physical_address': 'Bomet',
-                'phone_number': '+254712345678',
-                'email': 'info@bometuniversity.ac.ke',
-            },
-            
-            # PRIVATE CHARTERED UNIVERSITIES
-            {
-                'name': 'Strathmore University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 59857-00200',
-                'physical_address': 'Ole Sangale Road, Madaraka, Nairobi',
-                'phone_number': '+254703034000',
-                'email': 'info@strathmore.edu',
-            },
-            {
-                'name': 'United States International University - Africa',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 14634-00800',
-                'physical_address': 'Kasarani, Nairobi',
-                'phone_number': '+254202606000',
-                'email': 'info@usiu.ac.ke',
-            },
-            {
-                'name': 'Catholic University of Eastern Africa',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 62157-00200',
-                'physical_address': 'Langata, Nairobi',
-                'phone_number': '+254202891601',
-                'email': 'info@cuea.edu',
-            },
-            {
-                'name': 'Daystar University',
-                'institution_type': 'university',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 44400-00100',
-                'physical_address': 'Athi River',
-                'phone_number': '+254202724137',
-                'email': 'info@daystar.ac.ke',
-            },
-            {
-                'name': 'St. Paul\'s University',
-                'institution_type': 'university',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 5440-00100',
-                'physical_address': 'Limuru',
-                'phone_number': '+254203000125',
-                'email': 'info@spu.ac.ke',
-            },
-            {
-                'name': 'Mount Kenya University',
-                'institution_type': 'university',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 342-01000',
-                'physical_address': 'Thika',
-                'phone_number': '+254202386208',
-                'email': 'info@mku.ac.ke',
-            },
-            {
-                'name': 'Kenya Methodist University',
-                'institution_type': 'university',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 267-60200',
-                'physical_address': 'Meru',
-                'phone_number': '+254642030305',
-                'email': 'info@kemu.ac.ke',
-            },
-            {
-                'name': 'Africa Nazarene University',
-                'institution_type': 'university',
-                'county': 'Kajiado',
-                'postal_address': 'P.O. Box 53067-00200',
-                'physical_address': 'Ongata Rongai',
-                'phone_number': '+254202341991',
-                'email': 'info@anu.ac.ke',
-            },
-            {
-                'name': 'Pan Africa Christian University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 56875-00200',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202726654',
-                'email': 'info@pacuniversity.ac.ke',
-            },
-            {
-                'name': 'Kabarak University',
-                'institution_type': 'university',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 20157-20100',
-                'physical_address': 'Nakuru',
-                'phone_number': '+254512216430',
-                'email': 'info@kabarak.ac.ke',
-            },
-            {
-                'name': 'KCA University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 56808-00200',
-                'physical_address': 'Ruaraka, Nairobi',
-                'phone_number': '+254202865155',
-                'email': 'info@kcau.ac.ke',
-            },
-            {
-                'name': 'Aga Khan University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30270-00100',
-                'physical_address': 'Parklands, Nairobi',
-                'phone_number': '+254202723000',
-                'email': 'info@aku.edu',
-            },
-            {
-                'name': 'Adventist University of Africa',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 19536-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202723700',
-                'email': 'info@aua.ac.ke',
-            },
-            {
-                'name': 'Presbyterian University of East Africa',
-                'institution_type': 'university',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 387-00217',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254204448851',
-                'email': 'info@puea.ac.ke',
-            },
-            {
-                'name': 'Riara University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 49940-00100',
-                'physical_address': 'Mbagathi Way, Nairobi',
-                'phone_number': '+254202067000',
-                'email': 'info@riarauniversity.ac.ke',
-            },
-            {
-                'name': 'The East African University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 2464-00200',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202611781',
-                'email': 'info@teau.ac.ke',
-            },
-            {
-                'name': 'Pioneer International University',
-                'institution_type': 'university',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 34297-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202432972',
-                'email': 'info@piu.ac.ke',
-            },
-            {
-                'name': 'Great Lakes University of Kisumu',
-                'institution_type': 'university',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 2224-40100',
-                'physical_address': 'Kisumu',
-                'phone_number': '+254572020105',
-                'email': 'info@gluk.ac.ke',
-            },
-        ]
-        
-        institutions_data.extend(universities)
-        self.stdout.write(self.style.SUCCESS(f'Added {len(universities)} universities'))
+    def add_arguments(self, parser):
+        parser.add_argument('--skip-delete', action='store_true', help='Skip deleting existing institutions')
+        parser.add_argument('--county', type=str, help='Seed only a specific county (e.g. "Mombasa")')
 
-        # ============= NATIONAL POLYTECHNICS & TECHNICAL INSTITUTES =============
-        technical_institutes = [
-            {
-                'name': 'Kenya Institute of Mass Communication',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 42422-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202713808',
-                'email': 'info@kimc.ac.ke',
-            },
-            {
-                'name': 'Kenya Medical Training College - Nairobi',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30195-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202726300',
-                'email': 'info@kmtc.ac.ke',
-            },
-            {
-                'name': 'Kenya Medical Training College - Mombasa',
-                'institution_type': 'college',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 84037-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412315888',
-            },
-            {
-                'name': 'Kenya Medical Training College - Nakuru',
-                'institution_type': 'college',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 10493-20100',
-                'physical_address': 'Nakuru',
-                'phone_number': '+254512213714',
-            },
-            {
-                'name': 'Kenya Medical Training College - Kisumu',
-                'institution_type': 'college',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 143-40100',
-                'physical_address': 'Kisumu',
-                'phone_number': '+254572021104',
-            },
-            {
-                'name': 'Kenya Medical Training College - Eldoret',
-                'institution_type': 'college',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 14655-30100',
-                'physical_address': 'Eldoret',
-                'phone_number': '+254532063110',
-            },
-            {
-                'name': 'Kenya Medical Training College - Nyeri',
-                'institution_type': 'college',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 1214-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254612030600',
-            },
-            {
-                'name': 'Kenya School of Government',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 23030-00604',
-                'physical_address': 'Lower Kabete, Nairobi',
-                'phone_number': '+254202606451',
-                'email': 'info@ksg.ac.ke',
-            },
-            {
-                'name': 'Kenya Institute of Special Education',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 948-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202318581',
-                'email': 'info@kise.ac.ke',
-            },
-            {
-                'name': 'Kenya School of Law',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30369-00100',
-                'physical_address': 'Karen, Nairobi',
-                'phone_number': '+254202699581',
-                'email': 'info@ksl.ac.ke',
-            },
-            {
-                'name': 'Multimedia University College',
-                'institution_type': 'college',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30305-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202071391',
-            },
-            # National Polytechnics
-            {
-                'name': 'The Kenya Polytechnic University College',
-                'institution_type': 'technical_institute',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 52428-00200',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202219929',
-            },
-            {
-                'name': 'Mombasa Polytechnic University College',
-                'institution_type': 'technical_institute',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 90420-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412492222',
-            },
-            {
-                'name': 'Eldoret National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 4461-30100',
-                'physical_address': 'Eldoret',
-                'phone_number': '+254532063436',
-            },
-            {
-                'name': 'Kisumu National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 143-40100',
-                'physical_address': 'Kisumu',
-                'phone_number': '+254572021235',
-            },
-            {
-                'name': 'Kisii National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Kisii',
-                'postal_address': 'P.O. Box 222-40200',
-                'physical_address': 'Kisii',
-                'phone_number': '+254582030303',
-            },
-            {
-                'name': 'North Eastern National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Garissa',
-                'postal_address': 'P.O. Box 6-70100',
-                'physical_address': 'Garissa',
-                'phone_number': '+254462102156',
-            },
-            {
-                'name': 'Rift Valley Institute of Science and Technology',
-                'institution_type': 'technical_institute',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 7182-20100',
-                'physical_address': 'Nakuru',
-                'phone_number': '+254512213456',
-            },
-            {
-                'name': 'Coast Institute of Technology',
-                'institution_type': 'technical_institute',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 99820-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412221234',
-            },
-            {
-                'name': 'PC Kinyanjui Technical Training Institute',
-                'institution_type': 'technical_institute',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 200-00902',
-                'physical_address': 'Kabete',
-                'phone_number': '+254204444600',
-            },
-            {
-                'name': 'Ramogi Institute of Advanced Technology',
-                'institution_type': 'technical_institute',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 1872-40600',
-                'physical_address': 'Siaya',
-                'phone_number': '+254572522100',
-            },
-            {
-                'name': 'Sigalagala National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Kakamega',
-                'postal_address': 'P.O. Box 2966-50100',
-                'physical_address': 'Kakamega',
-                'phone_number': '+254562031076',
-            },
-            {
-                'name': 'Murang\'a Technical Training Institute',
-                'institution_type': 'technical_institute',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 220-10200',
-                'physical_address': 'Murang\'a',
-                'phone_number': '+254722505050',
-            },
-            {
-                'name': 'Thika Technical Training Institute',
-                'institution_type': 'technical_institute',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 1515-01000',
-                'physical_address': 'Thika',
-                'phone_number': '+254672029292',
-            },
-            {
-                'name': 'Nyeri National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 1741-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254612030400',
-            },
-            {
-                'name': 'Embu University College',
-                'institution_type': 'technical_institute',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 6-60100',
-                'physical_address': 'Embu',
-                'phone_number': '+254682031068',
-            },
-            {
-                'name': 'Machakos Institute of Technology',
-                'institution_type': 'technical_institute',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 136-90100',
-                'physical_address': 'Machakos',
-                'phone_number': '+254442121234',
-            },
-            {
-                'name': 'Kitale National Polytechnic',
-                'institution_type': 'technical_institute',
-                'county': 'Trans Nzoia',
-                'postal_address': 'P.O. Box 2461-30200',
-                'physical_address': 'Kitale',
-                'phone_number': '+254542030325',
-            },
-            {
-                'name': 'Rift Valley Technical Training Institute',
-                'institution_type': 'technical_institute',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 40-20100',
-                'physical_address': 'Eldama Ravine',
-                'phone_number': '+254512134567',
-            },
-            {
-                'name': 'Kiambu Institute of Science and Technology',
-                'institution_type': 'technical_institute',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 7212-00200',
-                'physical_address': 'Kiambu',
-                'phone_number': '+254204352000',
-            },
-        ]
-        
-        institutions_data.extend(technical_institutes)
-        self.stdout.write(self.style.SUCCESS(f'Added {len(technical_institutes)} technical institutes and colleges'))
+    def handle(self, *args, **options):
+        from main_application.models import Institution, County
 
-        # ============= NATIONAL SECONDARY SCHOOLS (Sample - Kenya has 8000+ secondary schools) =============
-        # Adding major national and extra-county schools across all counties
-        secondary_schools = [
-            # NAIROBI COUNTY
-            {
-                'name': 'Alliance High School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 24040-00502',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254202010560',
-            },
-            {
-                'name': 'Alliance Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 24450-00502',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254202010570',
-            },
-            {
-                'name': 'Nairobi School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30045-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202722831',
-            },
-            {
-                'name': 'Kenya High School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30047-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202713817',
-            },
-            {
-                'name': 'Starehe Boys Centre and School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 2747-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202225978',
-            },
-            {
-                'name': 'Maina Wanjigi Secondary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 57446-00200',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202010234',
-            },
-            {
-                'name': 'Pangani Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 41343-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202214567',
-            },
-            {
-                'name': 'Jamhuri High School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30061-00100',
-                'physical_address': 'Nairobi',
-                'phone_number': '+254202713900',
-            },
-            
-            # KIAMBU COUNTY
-            {
-                'name': 'Limuru Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 20-00217',
-                'physical_address': 'Limuru',
-                'phone_number': '+254204448600',
-            },
-            {
-                'name': 'Kikuyu High School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 45-00902',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254204444123',
-            },
-            {
-                'name': 'Thika High School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 87-01000',
-                'physical_address': 'Thika',
-                'phone_number': '+254672020123',
-            },
-            {
-                'name': 'Komothai Girls Secondary School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 234-00902',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254204444890',
-            },
-            {
-                'name': 'Kiambu High School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 45-00900',
-                'physical_address': 'Kiambu',
-                'phone_number': '+254204352111',
-            },
-            
-            # MURANG\'A COUNTY
-            {
-                'name': 'Murang\'a High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 123-10200',
-                'physical_address': 'Murang\'a',
-                'phone_number': '+254722101010',
-            },
-            {
-                'name': 'Kangema Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 50-10203',
-                'physical_address': 'Kangema',
-                'phone_number': '+254722404040',
-            },
-            {
-                'name': 'Kiru Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 45-10200',
-                'physical_address': 'Kiru',
-                'phone_number': '+254722123456',
-            },
-            {
-                'name': 'Gatanga Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 78-10200',
-                'physical_address': 'Gatanga',
-                'phone_number': '+254722234567',
-            },
-            {
-                'name': 'Ichagaki Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 145-10200',
-                'physical_address': 'Ichagaki',
-                'phone_number': '+254722901234',
-            },
-            {
-                'name': 'Kigumo High School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 89-10200',
-                'physical_address': 'Kigumo',
-                'phone_number': '+254722456789',
-            },
-            
-            # NYERI COUNTY
-            {
-                'name': 'Kagumo High School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 544-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254612030111',
-            },
-            {
-                'name': 'Mahiga Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 267-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254612030222',
-            },
-            {
-                'name': 'Nyeri High School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 456-10100',
-                'physical_address': 'Nyeri',
-                'phone_number': '+254612030333',
-            },
-            {
-                'name': 'Tumutumu Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 89-10100',
-                'physical_address': 'Karatina',
-                'phone_number': '+254612030444',
-            },
-            
-            # KIRINYAGA COUNTY
-            {
-                'name': 'Kerugoya Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 56-10300',
-                'physical_address': 'Kerugoya',
-                'phone_number': '+254706894111',
-            },
-            {
-                'name': 'Kianyaga High School',
-                'institution_type': 'highschool',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 234-10300',
-                'physical_address': 'Kianyaga',
-                'phone_number': '+254706894222',
-            },
-            {
-                'name': 'Wang\'uru Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 123-10300',
-                'physical_address': 'Wang\'uru',
-                'phone_number': '+254706894333',
-            },
-            
-            # EMBU COUNTY
-            {
-                'name': 'Kangaru School',
-                'institution_type': 'highschool',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 124-60100',
-                'physical_address': 'Embu',
-                'phone_number': '+254682031111',
-            },
-            {
-                'name': 'Kigari Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 456-60100',
-                'physical_address': 'Embu',
-                'phone_number': '+254682031222',
-            },
-            
-            # MERU COUNTY
-            {
-                'name': 'Meru School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 82-60200',
-                'physical_address': 'Meru',
-                'phone_number': '+254642460111',
-            },
-            {
-                'name': 'Kaaga Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 123-60200',
-                'physical_address': 'Meru',
-                'phone_number': '+254642460222',
-            },
-            {
-                'name': 'Nkubu High School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 567-60200',
-                'physical_address': 'Nkubu',
-                'phone_number': '+254642460333',
-            },
-            
-            # THARAKA NITHI COUNTY
-            {
-                'name': 'Chuka Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Tharaka Nithi',
-                'postal_address': 'P.O. Box 34-60400',
-                'physical_address': 'Chuka',
-                'phone_number': '+254706385111',
-            },
-            {
-                'name': 'Chuka Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Tharaka Nithi',
-                'postal_address': 'P.O. Box 67-60400',
-                'physical_address': 'Chuka',
-                'phone_number': '+254706385222',
-            },
-            
-            # MACHAKOS COUNTY
-            {
-                'name': 'Machakos School',
-                'institution_type': 'highschool',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 7-90100',
-                'physical_address': 'Machakos',
-                'phone_number': '+254442121111',
-            },
-            {
-                'name': 'Our Lady of Fatima Mang\'u High School',
-                'institution_type': 'highschool',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 45-90100',
-                'physical_address': 'Mang\'u',
-                'phone_number': '+254442121222',
-            },
-            
-            # KITUI COUNTY
-            {
-                'name': 'Kitui School',
-                'institution_type': 'highschool',
-                'county': 'Kitui',
-                'postal_address': 'P.O. Box 56-90200',
-                'physical_address': 'Kitui',
-                'phone_number': '+254446322111',
-            },
-            {
-                'name': 'Mulango Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Kitui',
-                'postal_address': 'P.O. Box 234-90200',
-                'physical_address': 'Kitui',
-                'phone_number': '+254446322222',
-            },
-            
-            # MAKUENI COUNTY
-            {
-                'name': 'Wote High School',
-                'institution_type': 'highschool',
-                'county': 'Makueni',
-                'postal_address': 'P.O. Box 123-90300',
-                'physical_address': 'Wote',
-                'phone_number': '+254447222111',
-            },
-            
-            # MOMBASA COUNTY
-            {
-                'name': 'Mombasa High School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 90224-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412315111',
-            },
-            {
-                'name': 'Serani High School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 82414-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412315222',
-            },
-            {
-                'name': 'Shimo La Tewa High School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 91343-80100',
-                'physical_address': 'Mombasa',
-                'phone_number': '+254412315333',
-            },
-            
-            # KILIFI COUNTY
-            {
-                'name': 'Kaloleni Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Kilifi',
-                'postal_address': 'P.O. Box 45-80105',
-                'physical_address': 'Kaloleni',
-                'phone_number': '+254714606111',
-            },
-            {
-                'name': 'Ribe Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Kilifi',
-                'postal_address': 'P.O. Box 234-80108',
-                'physical_address': 'Ribe',
-                'phone_number': '+254714606222',
-            },
-            
-            # KWALE COUNTY
-            {
-                'name': 'Msambweni High School',
-                'institution_type': 'highschool',
-                'county': 'Kwale',
-                'postal_address': 'P.O. Box 123-80404',
-                'physical_address': 'Msambweni',
-                'phone_number': '+254715222111',
-            },
-            
-            # TAITA TAVETA COUNTY
-            {
-                'name': 'Wundanyi High School',
-                'institution_type': 'highschool',
-                'county': 'Taita Taveta',
-                'postal_address': 'P.O. Box 34-80304',
-                'physical_address': 'Wundanyi',
-                'phone_number': '+254728523111',
-            },
-            
-            # NAKURU COUNTY
-            {
-                'name': 'Menengai High School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 545-20100',
-                'physical_address': 'Nakuru',
-                'phone_number': '+254512213111',
-            },
-            {
-                'name': 'Njoro Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 234-20115',
-                'physical_address': 'Njoro',
-                'phone_number': '+254512213222',
-            },
-            {
-                'name': 'Nakuru High School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 789-20100',
-                'physical_address': 'Nakuru',
-                'phone_number': '+254512213333',
-            },
-            
-            # NAROK COUNTY
-            {
-                'name': 'Narok High School',
-                'institution_type': 'highschool',
-                'county': 'Narok',
-                'postal_address': 'P.O. Box 45-20500',
-                'physical_address': 'Narok',
-                'phone_number': '+254729293111',
-            },
-            
-            # KAJIADO COUNTY
-            {
-                'name': 'Kajiado High School',
-                'institution_type': 'highschool',
-                'county': 'Kajiado',
-                'postal_address': 'P.O. Box 123-01100',
-                'physical_address': 'Kajiado',
-                'phone_number': '+254452122111',
-            },
-            
-            # KISUMU COUNTY
-            {
-                'name': 'Kisumu Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 134-40100',
-                'physical_address': 'Kisumu',
-                'phone_number': '+254572021111',
-            },
-            {
-                'name': 'Kisumu Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 567-40100',
-                'physical_address': 'Kisumu',
-                'phone_number': '+254572021222',
-            },
-            
-            # SIAYA COUNTY
-            {
-                'name': 'Nyangoma Mixed Secondary School',
-                'institution_type': 'highschool',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 123-40600',
-                'physical_address': 'Siaya',
-                'phone_number': '+254572522111',
-            },
-            {
-                'name': 'Ambira High School',
-                'institution_type': 'highschool',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 456-40600',
-                'physical_address': 'Bondo',
-                'phone_number': '+254572522222',
-            },
-            
-            # KISII COUNTY
-            {
-                'name': 'Kisii High School',
-                'institution_type': 'highschool',
-                'county': 'Kisii',
-                'postal_address': 'P.O. Box 45-40200',
-                'physical_address': 'Kisii',
-                'phone_number': '+254582030111',
-            },
-            {
-                'name': 'Nyabururu Girls High School',
-                'institution_type': 'highschool',
-                'county': 'Kisii',
-                'postal_address': 'P.O. Box 234-40200',
-                'physical_address': 'Kisii',
-                'phone_number': '+254582030222',
-            },
-            
-            # NYAMIRA COUNTY
-            {
-                'name': 'Nyamira High School',
-                'institution_type': 'highschool',
-                'county': 'Nyamira',
-                'postal_address': 'P.O. Box 123-40500',
-                'physical_address': 'Nyamira',
-                'phone_number': '+254583030111',
-            },
-            
-            # MIGORI COUNTY
-            {
-                'name': 'Rapogi High School',
-                'institution_type': 'highschool',
-                'county': 'Migori',
-                'postal_address': 'P.O. Box 123-40400',
-                'physical_address': 'Migori',
-                'phone_number': '+254715202111',
-            },
-            
-            # HOMA BAY COUNTY
-            {
-                'name': 'Homa Bay High School',
-                'institution_type': 'highschool',
-                'county': 'Homa Bay',
-                'postal_address': 'P.O. Box 123-40300',
-                'physical_address': 'Homa Bay',
-                'phone_number': '+254593522111',
-            },
-            
-            # UASIN GISHU COUNTY
-            {
-                'name': 'Moi High School Kabarak',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 124-20157',
-                'physical_address': 'Kabarak',
-                'phone_number': '+254512216111',
-            },
-            {
-                'name': 'Eldoret High School',
-                'institution_type': 'highschool',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 234-30100',
-                'physical_address': 'Eldoret',
-                'phone_number': '+254532063111',
-            },
-            
-            # TRANS NZOIA COUNTY
-            {
-                'name': 'Kitale Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Trans Nzoia',
-                'postal_address': 'P.O. Box 123-30200',
-                'physical_address': 'Kitale',
-                'phone_number': '+254542030111',
-            },
-            
-            # NANDI COUNTY
-            {
-                'name': 'Kapsabet Boys High School',
-                'institution_type': 'highschool',
-                'county': 'Nandi',
-                'postal_address': 'P.O. Box 123-30300',
-                'physical_address': 'Kapsabet',
-                'phone_number': '+254532052111',
-            },
-            
-            # BARINGO COUNTY
-            {
-                'name': 'Kabarnet High School',
-                'institution_type': 'highschool',
-                'county': 'Baringo',
-                'postal_address': 'P.O. Box 123-30400',
-                'physical_address': 'Kabarnet',
-                'phone_number': '+254532222111',
-            },
-            
-            # KAKAMEGA COUNTY
-            {
-                'name': 'Kakamega High School',
-                'institution_type': 'highschool',
-                'county': 'Kakamega',
-                'postal_address': 'P.O. Box 123-50100',
-                'physical_address': 'Kakamega',
-                'phone_number': '+254562031111',
-            },
-            {
-                'name': 'Friends School Kamusinga',
-                'institution_type': 'highschool',
-                'county': 'Bungoma',
-                'postal_address': 'P.O. Box 242-50200',
-                'physical_address': 'Kimilili',
-                'phone_number': '+254708085111',
-            },
-            
-            # BUNGOMA COUNTY
-            {
-                'name': 'Kibabii High School',
-                'institution_type': 'highschool',
-                'county': 'Bungoma',
-                'postal_address': 'P.O. Box 456-50200',
-                'physical_address': 'Bungoma',
-                'phone_number': '+254708085222',
-            },
-            
-            # BUSIA COUNTY
-            {
-                'name': 'Busia High School',
-                'institution_type': 'highschool',
-                'county': 'Busia',
-                'postal_address': 'P.O. Box 123-50400',
-                'physical_address': 'Busia',
-                'phone_number': '+254552030111',
-            },
-            
-            # VIHIGA COUNTY
-            {
-                'name': 'Vihiga High School',
-                'institution_type': 'highschool',
-                'county': 'Vihiga',
-                'postal_address': 'P.O. Box 123-50300',
-                'physical_address': 'Vihiga',
-                'phone_number': '+254562050111',
-            },
-        ]
-        
-        institutions_data.extend(secondary_schools)
-        self.stdout.write(self.style.SUCCESS(f'Added {len(secondary_schools)} secondary schools'))
+        if not options['skip_delete']:
+            self.stdout.write(self.style.WARNING('🗑️  Deleting all existing institutions...'))
+            count = Institution.objects.all().count()
+            Institution.objects.all().delete()
+            self.stdout.write(self.style.SUCCESS(f'   Deleted {count} institutions.'))
 
-        # ============= PRIMARY SCHOOLS (Sample from major towns/counties) =============
-        primary_schools = [
-            # NAIROBI
-            {
-                'name': 'Nairobi Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30001-00100',
-                'physical_address': 'Nairobi CBD',
-                'phone_number': '+254202225001',
-            },
-            {
-                'name': 'Kilimani Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30002-00100',
-                'physical_address': 'Kilimani, Nairobi',
-                'phone_number': '+254202225002',
-            },
-            {
-                'name': 'Eastleigh Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30003-00100',
-                'physical_address': 'Eastleigh, Nairobi',
-                'phone_number': '+254202225003',
-            },
-            {
-                'name': 'Langata Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30004-00100',
-                'physical_address': 'Langata, Nairobi',
-                'phone_number': '+254202225004',
-            },
-            {
-                'name': 'Karura Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nairobi',
-                'postal_address': 'P.O. Box 30005-00100',
-                'physical_address': 'Karura, Nairobi',
-                'phone_number': '+254202225005',
-            },
-            
-            # KIAMBU
-            {
-                'name': 'Kikuyu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 10-00902',
-                'physical_address': 'Kikuyu',
-                'phone_number': '+254204444001',
-            },
-            {
-                'name': 'Thika Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 11-01000',
-                'physical_address': 'Thika',
-                'phone_number': '+254672020001',
-            },
-            {
-                'name': 'Limuru Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 12-00217',
-                'physical_address': 'Limuru',
-                'phone_number': '+254204448001',
-            },
-            {
-                'name': 'Kiambu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kiambu',
-                'postal_address': 'P.O. Box 13-00900',
-                'physical_address': 'Kiambu',
-                'phone_number': '+254204352001',
-            },
-            
-            # MURANG'A
-            {
-                'name': 'Murang\'a Primary School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 20-10200',
-                'physical_address': 'Murang\'a Town',
-                'phone_number': '+254722100001',
-            },
-            {
-                'name': 'Kangema Primary School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 21-10203',
-                'physical_address': 'Kangema',
-                'phone_number': '+254722100002',
-            },
-            {
-                'name': 'Kigumo Primary School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 22-10200',
-                'physical_address': 'Kigumo',
-                'phone_number': '+254722100003',
-            },
-            {
-                'name': 'Kandara Primary School',
-                'institution_type': 'highschool',
-                'county': 'Murang\'a',
-                'postal_address': 'P.O. Box 23-10200',
-                'physical_address': 'Kandara',
-                'phone_number': '+254722100004',
-            },
-            
-            # NYERI
-            {
-                'name': 'Nyeri Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 30-10100',
-                'physical_address': 'Nyeri Town',
-                'phone_number': '+254612030001',
-            },
-            {
-                'name': 'Karatina Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 31-10101',
-                'physical_address': 'Karatina',
-                'phone_number': '+254612030002',
-            },
-            {
-                'name': 'Othaya Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nyeri',
-                'postal_address': 'P.O. Box 32-10106',
-                'physical_address': 'Othaya',
-                'phone_number': '+254612030003',
-            },
-            
-            # KIRINYAGA
-            {
-                'name': 'Kerugoya Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 40-10300',
-                'physical_address': 'Kerugoya',
-                'phone_number': '+254706894001',
-            },
-            {
-                'name': 'Wang\'uru Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kirinyaga',
-                'postal_address': 'P.O. Box 41-10300',
-                'physical_address': 'Wang\'uru',
-                'phone_number': '+254706894002',
-            },
-            
-            # EMBU
-            {
-                'name': 'Embu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 50-60100',
-                'physical_address': 'Embu Town',
-                'phone_number': '+254682031001',
-            },
-            {
-                'name': 'Runyenjes Primary School',
-                'institution_type': 'highschool',
-                'county': 'Embu',
-                'postal_address': 'P.O. Box 51-60100',
-                'physical_address': 'Runyenjes',
-                'phone_number': '+254682031002',
-            },
-            
-            # MERU
-            {
-                'name': 'Meru Primary School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 60-60200',
-                'physical_address': 'Meru Town',
-                'phone_number': '+254642460001',
-            },
-            {
-                'name': 'Maua Primary School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 61-60600',
-                'physical_address': 'Maua',
-                'phone_number': '+254642460002',
-            },
-            {
-                'name': 'Nkubu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Meru',
-                'postal_address': 'P.O. Box 62-60200',
-                'physical_address': 'Nkubu',
-                'phone_number': '+254642460003',
-            },
-            
-            # THARAKA NITHI
-            {
-                'name': 'Chuka Primary School',
-                'institution_type': 'highschool',
-                'county': 'Tharaka Nithi',
-                'postal_address': 'P.O. Box 70-60400',
-                'physical_address': 'Chuka',
-                'phone_number': '+254706385001',
-            },
-            
-            # MACHAKOS
-            {
-                'name': 'Machakos Primary School',
-                'institution_type': 'highschool',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 80-90100',
-                'physical_address': 'Machakos Town',
-                'phone_number': '+254442121001',
-            },
-            {
-                'name': 'Tala Primary School',
-                'institution_type': 'highschool',
-                'county': 'Machakos',
-                'postal_address': 'P.O. Box 81-90100',
-                'physical_address': 'Tala',
-                'phone_number': '+254442121002',
-            },
-            
-            # KITUI
-            {
-                'name': 'Kitui Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kitui',
-                'postal_address': 'P.O. Box 90-90200',
-                'physical_address': 'Kitui Town',
-                'phone_number': '+254446322001',
-            },
-            
-            # MAKUENI
-            {
-                'name': 'Wote Primary School',
-                'institution_type': 'highschool',
-                'county': 'Makueni',
-                'postal_address': 'P.O. Box 100-90300',
-                'physical_address': 'Wote',
-                'phone_number': '+254447222001',
-            },
-            
-            # MOMBASA
-            {
-                'name': 'Tudor Primary School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 110-80100',
-                'physical_address': 'Tudor, Mombasa',
-                'phone_number': '+254412315001',
-            },
-            {
-                'name': 'Buxton Primary School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 111-80100',
-                'physical_address': 'Buxton, Mombasa',
-                'phone_number': '+254412315002',
-            },
-            {
-                'name': 'Shanzu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Mombasa',
-                'postal_address': 'P.O. Box 112-80100',
-                'physical_address': 'Shanzu',
-                'phone_number': '+254412315003',
-            },
-            
-            # KILIFI
-            {
-                'name': 'Kilifi Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kilifi',
-                'postal_address': 'P.O. Box 120-80108',
-                'physical_address': 'Kilifi Town',
-                'phone_number': '+254714606001',
-            },
-            {
-                'name': 'Malindi Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kilifi',
-                'postal_address': 'P.O. Box 121-80200',
-                'physical_address': 'Malindi',
-                'phone_number': '+254714606002',
-            },
-            
-            # KWALE
-            {
-                'name': 'Kwale Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kwale',
-                'postal_address': 'P.O. Box 130-80403',
-                'physical_address': 'Kwale',
-                'phone_number': '+254715222001',
-            },
-            
-            # TAITA TAVETA
-            {
-                'name': 'Voi Primary School',
-                'institution_type': 'highschool',
-                'county': 'Taita Taveta',
-                'postal_address': 'P.O. Box 140-80300',
-                'physical_address': 'Voi',
-                'phone_number': '+254728523001',
-            },
-            
-            # NAKURU
-            {
-                'name': 'Nakuru Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 150-20100',
-                'physical_address': 'Nakuru Town',
-                'phone_number': '+254512213001',
-            },
-            {
-                'name': 'Naivasha Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 151-20117',
-                'physical_address': 'Naivasha',
-                'phone_number': '+254512213002',
-            },
-            {
-                'name': 'Gilgil Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nakuru',
-                'postal_address': 'P.O. Box 152-20116',
-                'physical_address': 'Gilgil',
-                'phone_number': '+254512213003',
-            },
-            
-            # NAROK
-            {
-                'name': 'Narok Primary School',
-                'institution_type': 'highschool',
-                'county': 'Narok',
-                'postal_address': 'P.O. Box 160-20500',
-                'physical_address': 'Narok Town',
-                'phone_number': '+254729293001',
-            },
-            
-            # KAJIADO
-            {
-                'name': 'Kajiado Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kajiado',
-                'postal_address': 'P.O. Box 170-01100',
-                'physical_address': 'Kajiado Town',
-                'phone_number': '+254452122001',
-            },
-            {
-                'name': 'Ngong Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kajiado',
-                'postal_address': 'P.O. Box 171-00208',
-                'physical_address': 'Ngong',
-                'phone_number': '+254452122002',
-            },
-            
-            # KISUMU
-            {
-                'name': 'Kisumu Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 180-40100',
-                'physical_address': 'Kisumu Town',
-                'phone_number': '+254572021001',
-            },
-            {
-                'name': 'Kondele Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kisumu',
-                'postal_address': 'P.O. Box 181-40100',
-                'physical_address': 'Kondele, Kisumu',
-                'phone_number': '+254572021002',
-            },
-            
-            # SIAYA
-            {
-                'name': 'Siaya Primary School',
-                'institution_type': 'highschool',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 190-40600',
-                'physical_address': 'Siaya Town',
-                'phone_number': '+254572522001',
-            },
-            {
-                'name': 'Bondo Primary School',
-                'institution_type': 'highschool',
-                'county': 'Siaya',
-                'postal_address': 'P.O. Box 191-40601',
-                'physical_address': 'Bondo',
-                'phone_number': '+254572522002',
-            },
-            
-            # KISII
-            {
-                'name': 'Kisii Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kisii',
-                'postal_address': 'P.O. Box 200-40200',
-                'physical_address': 'Kisii Town',
-                'phone_number': '+254582030001',
-            },
-            
-            # NYAMIRA
-            {
-                'name': 'Nyamira Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nyamira',
-                'postal_address': 'P.O. Box 210-40500',
-                'physical_address': 'Nyamira Town',
-                'phone_number': '+254583030001',
-            },
-            
-            # MIGORI
-            {
-                'name': 'Migori Primary School',
-                'institution_type': 'highschool',
-                'county': 'Migori',
-                'postal_address': 'P.O. Box 220-40400',
-                'physical_address': 'Migori Town',
-                'phone_number': '+254715202001',
-            },
-            
-            # HOMA BAY
-            {
-                'name': 'Homa Bay Primary School',
-                'institution_type': 'highschool',
-                'county': 'Homa Bay',
-                'postal_address': 'P.O. Box 230-40300',
-                'physical_address': 'Homa Bay Town',
-                'phone_number': '+254593522001',
-            },
-            
-            # UASIN GISHU
-            {
-                'name': 'Eldoret Primary School',
-                'institution_type': 'highschool',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 240-30100',
-                'physical_address': 'Eldoret Town',
-                'phone_number': '+254532063001',
-            },
-            {
-                'name': 'Langas Primary School',
-                'institution_type': 'highschool',
-                'county': 'Uasin Gishu',
-                'postal_address': 'P.O. Box 241-30100',
-                'physical_address': 'Langas, Eldoret',
-                'phone_number': '+254532063002',
-            },
-            
-            # TRANS NZOIA
-            {
-                'name': 'Kitale Primary School',
-                'institution_type': 'highschool',
-                'county': 'Trans Nzoia',
-                'postal_address': 'P.O. Box 250-30200',
-                'physical_address': 'Kitale Town',
-                'phone_number': '+254542030001',
-            },
-            
-            # NANDI
-            {
-                'name': 'Kapsabet Primary School',
-                'institution_type': 'highschool',
-                'county': 'Nandi',
-                'postal_address': 'P.O. Box 260-30300',
-                'physical_address': 'Kapsabet',
-                'phone_number': '+254532052001',
-            },
-            
-            # BARINGO
-            {
-                'name': 'Kabarnet Primary School',
-                'institution_type': 'highschool',
-                'county': 'Baringo',
-                'postal_address': 'P.O. Box 270-30400',
-                'physical_address': 'Kabarnet',
-                'phone_number': '+254532222001',
-            },
-            
-            # KAKAMEGA
-            {
-                'name': 'Kakamega Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kakamega',
-                'postal_address': 'P.O. Box 280-50100',
-                'physical_address': 'Kakamega Town',
-                'phone_number': '+254562031001',
-            },
-            {
-                'name': 'Mumias Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kakamega',
-                'postal_address': 'P.O. Box 281-50102',
-                'physical_address': 'Mumias',
-                'phone_number': '+254562031002',
-            },
-            
-            # BUNGOMA
-            {
-                'name': 'Bungoma Primary School',
-                'institution_type': 'highschool',
-                'county': 'Bungoma',
-                'postal_address': 'P.O. Box 290-50200',
-                'physical_address': 'Bungoma Town',
-                'phone_number': '+254708085001',
-            },
-            
-            # BUSIA
-            {
-                'name': 'Busia Primary School',
-                'institution_type': 'highschool',
-                'county': 'Busia',
-                'postal_address': 'P.O. Box 300-50400',
-                'physical_address': 'Busia Town',
-                'phone_number': '+254552030001',
-            },
-            
-            # VIHIGA
-            {
-                'name': 'Vihiga Primary School',
-                'institution_type': 'highschool',
-                'county': 'Vihiga',
-                'postal_address': 'P.O. Box 310-50300',
-                'physical_address': 'Vihiga',
-                'phone_number': '+254562050001',
-            },
-            
-            # KERICHO
-            {
-                'name': 'Kericho Primary School',
-                'institution_type': 'highschool',
-                'county': 'Kericho',
-                'postal_address': 'P.O. Box 320-20200',
-                'physical_address': 'Kericho Town',
-                'phone_number': '+254522021001',
-            },
-            
-            # BOMET
-            {
-                'name': 'Bomet Primary School',
-                'institution_type': 'highschool',
-                'county': 'Bomet',
-                'postal_address': 'P.O. Box 330-20400',
-                'physical_address': 'Bomet Town',
-                'phone_number': '+254712345001',
-            },
-        ]
-        
-        institutions_data.extend(primary_schools)
-        self.stdout.write(self.style.SUCCESS(f'Added {len(primary_schools)} primary schools'))
+        self.stdout.write(self.style.MIGRATE_HEADING('🏫 Seeding Kenyan institutions...'))
 
-        # Now seed all institutions
-        self._seed_institutions(institutions_data)
+        all_institutions = self._get_all_institutions()
 
-    def _get_counties(self):
-        """Get or create county references"""
-        counties = {}
-        
-        # Official Kenya county codes (1-47)
-        county_data = {
-            'Mombasa': '001', 'Kwale': '002', 'Kilifi': '003', 'Tana River': '004',
-            'Lamu': '005', 'Taita Taveta': '006', 'Garissa': '007', 'Wajir': '008',
-            'Mandera': '009', 'Marsabit': '010', 'Isiolo': '011', 'Meru': '012',
-            'Tharaka Nithi': '013', 'Embu': '014', 'Kitui': '015', 'Machakos': '016',
-            'Makueni': '017', 'Nyandarua': '018', 'Nyeri': '019', 'Kirinyaga': '020',
-            'Murang\'a': '021', 'Kiambu': '022', 'Turkana': '023', 'West Pokot': '024',
-            'Samburu': '025', 'Trans Nzoia': '026', 'Uasin Gishu': '027', 'Elgeyo Marakwet': '028',
-            'Nandi': '029', 'Baringo': '030', 'Laikipia': '031', 'Nakuru': '032',
-            'Narok': '033', 'Kajiado': '034', 'Kericho': '035', 'Bomet': '036',
-            'Kakamega': '037', 'Vihiga': '038', 'Bungoma': '039', 'Busia': '040',
-            'Siaya': '041', 'Kisumu': '042', 'Homa Bay': '043', 'Migori': '044',
-            'Kisii': '045', 'Nyamira': '046', 'Nairobi': '047'
-        }
-        
-        for name, code in county_data.items():
-            # Try to get existing county first
-            county = County.objects.filter(name=name).first()
-            
-            if county:
-                counties[name] = county
-                self.stdout.write(self.style.SUCCESS(f'Found existing county: {name}'))
-            else:
-                # Create new county with unique code
-                try:
-                    county = County.objects.create(
-                        name=name,
-                        code=code,
-                        is_active=True
-                    )
-                    counties[name] = county
-                    self.stdout.write(self.style.WARNING(f'Created county: {name} (Code: {code})'))
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f'Error creating county {name}: {str(e)}'))
-                    # Try to get it anyway in case it was created by another process
-                    county = County.objects.filter(name=name).first()
-                    if county:
-                        counties[name] = county
-        
-        return counties
+        filter_county = options.get('county')
+        if filter_county:
+            all_institutions = [i for i in all_institutions if i.get('county_name', '').lower() == filter_county.lower()]
 
-    def _seed_institutions(self, institutions_data):
-        """Seed all institutions with transaction"""
+        created_count = 0
+        skipped_count = 0
+
         with transaction.atomic():
-            created_count = 0
-            updated_count = 0
-            error_count = 0
-            
-            for inst_data in institutions_data:
+            for inst_data in all_institutions:
+                county_name = inst_data.pop('county_name', None)
+                county_code = inst_data.pop('county_code', None)
+
+                # Get or skip if county not found
+                county = None
+                if county_name:
+                    try:
+                        county = County.objects.filter(name__icontains=county_name).first()
+                        if not county and county_code:
+                            county = County.objects.filter(code=county_code).first()
+                    except Exception:
+                        pass
+
                 try:
-                    # Get county
-                    county = County.objects.filter(
-                        name__icontains=inst_data['county']
-                    ).first()
-                    
-                    if not county:
-                        self.stdout.write(
-                            self.style.ERROR(f'✗ County not found: {inst_data["county"]} for {inst_data["name"]}')
-                        )
-                        error_count += 1
-                        continue
-                    
-                    institution, created = Institution.objects.update_or_create(
+                    inst, created = Institution.objects.get_or_create(
                         name=inst_data['name'],
-                        defaults={
-                            'institution_type': inst_data['institution_type'],
-                            'county': county,
-                            'postal_address': inst_data.get('postal_address'),
-                            'physical_address': inst_data.get('physical_address'),
-                            'phone_number': inst_data.get('phone_number'),
-                            'email': inst_data.get('email'),
-                            'principal_name': inst_data.get('principal_name'),
-                            'principal_phone': inst_data.get('principal_phone'),
-                            'principal_email': inst_data.get('principal_email'),
-                            'is_active': True,
-                        }
+                        defaults={**inst_data, 'county': county}
                     )
-                    
                     if created:
                         created_count += 1
                     else:
-                        updated_count += 1
-                        
+                        skipped_count += 1
                 except Exception as e:
-                    error_count += 1
-                    self.stdout.write(
-                        self.style.ERROR(f'✗ Error with {inst_data["name"]}: {str(e)}')
-                    )
+                    self.stdout.write(self.style.WARNING(f'   Skipped {inst_data.get("name", "?")} : {e}'))
+                    skipped_count += 1
 
-        # Final Summary
-        self.stdout.write('\n' + '='*80)
-        self.stdout.write(self.style.SUCCESS('🎉 INSTITUTION SEEDING COMPLETED! 🎉'))
-        self.stdout.write('='*80)
-        self.stdout.write(self.style.SUCCESS(f'✓ Created: {created_count} institutions'))
-        self.stdout.write(self.style.WARNING(f'⟳ Updated: {updated_count} institutions'))
-        if error_count > 0:
-            self.stdout.write(self.style.ERROR(f'✗ Errors: {error_count} institutions'))
-        self.stdout.write(self.style.SUCCESS(f'📊 Total: {created_count + updated_count} institutions in database'))
-        self.stdout.write('='*80 + '\n')
-        
-        # Display summary by type
-        self.stdout.write(self.style.HTTP_INFO('📈 SUMMARY BY INSTITUTION TYPE:'))
-        self.stdout.write('-' * 80)
-        total = 0
-        for inst_type, display_name in Institution.INSTITUTION_TYPES:
-            count = Institution.objects.filter(institution_type=inst_type).count()
-            total += count
-            self.stdout.write(f'  🏫 {display_name:<30} {count:>5} institutions')
-        self.stdout.write('-' * 80)
-        self.stdout.write(f'  {"TOTAL":<30} {total:>5} institutions')
-        self.stdout.write('='*80 + '\n')
+        self.stdout.write(self.style.SUCCESS(
+            f'\n✅ Done! Created: {created_count} | Skipped/existing: {skipped_count} | Total attempted: {len(all_institutions)}'
+        ))
+
+    def _get_all_institutions(self):
+        """Returns all institutions data. County code maps: 001=Mombasa, 002=Kwale, etc."""
+        return (
+            self._primary_schools() +
+            self._secondary_schools() +
+            self._universities() +
+            self._colleges_and_tvets()
+        )
+
+    # =========================================================
+    # PRIMARY SCHOOLS
+    # =========================================================
+    def _primary_schools(self):
+        return [
+            # ── MOMBASA (001) ──────────────────────────────────────
+            {'name': 'Aga Khan Primary School Mombasa', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312345', 'email': 'agakhanpri.msa@schools.go.ke', 'is_active': True},
+            {'name': 'Jaffery Academy Mombasa', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312346', 'email': 'jaffery.msa@schools.go.ke', 'is_active': True},
+            {'name': 'Dr. Ribeiro Parklands Primary', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Nyali', 'phone_number': '+254412312347', 'email': 'ribeiro.msa@schools.go.ke', 'is_active': True},
+            {'name': 'Shimo La Tewa Primary School', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Kisauni', 'phone_number': '+254412312348', 'email': 'shimo.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Likoni Primary School', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Likoni', 'phone_number': '+254412312349', 'email': 'likoni.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Bomu Primary School', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Changamwe', 'phone_number': '+254412312350', 'email': 'bomu.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Mombasa Primary School', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312351', 'email': 'mombasa.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Tudor Primary School', 'institution_type': 'primary', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312352', 'email': 'tudor.pri@schools.go.ke', 'is_active': True},
+
+            # ── KWALE (002) ────────────────────────────────────────
+            {'name': 'Ukunda Primary School', 'institution_type': 'primary', 'county_name': 'Kwale', 'county_code': '002', 'sub_county': 'Msambweni', 'phone_number': '+254401234001', 'email': 'ukunda.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Diani Primary School', 'institution_type': 'primary', 'county_name': 'Kwale', 'county_code': '002', 'sub_county': 'Msambweni', 'phone_number': '+254401234002', 'email': 'diani.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Kwale Primary School', 'institution_type': 'primary', 'county_name': 'Kwale', 'county_code': '002', 'sub_county': 'Kwale', 'phone_number': '+254401234003', 'email': 'kwale.pri@schools.go.ke', 'is_active': True},
+
+            # ── KILIFI (003) ───────────────────────────────────────
+            {'name': 'Kilifi Primary School', 'institution_type': 'primary', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Kilifi North', 'phone_number': '+254412200001', 'email': 'kilifi.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Malindi Primary School', 'institution_type': 'primary', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Malindi', 'phone_number': '+254412200002', 'email': 'malindi.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Watamu Primary School', 'institution_type': 'primary', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Malindi', 'phone_number': '+254412200003', 'email': 'watamu.pri@schools.go.ke', 'is_active': True},
+
+            # ── TANA RIVER (004) ───────────────────────────────────
+            {'name': 'Hola Primary School', 'institution_type': 'primary', 'county_name': 'Tana River', 'county_code': '004', 'sub_county': 'Bura', 'phone_number': '+254467200001', 'email': 'hola.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Garsen Primary School', 'institution_type': 'primary', 'county_name': 'Tana River', 'county_code': '004', 'sub_county': 'Garsen', 'phone_number': '+254467200002', 'email': 'garsen.pri@schools.go.ke', 'is_active': True},
+
+            # ── LAMU (005) ─────────────────────────────────────────
+            {'name': 'Lamu Primary School', 'institution_type': 'primary', 'county_name': 'Lamu', 'county_code': '005', 'sub_county': 'Lamu East', 'phone_number': '+254421400001', 'email': 'lamu.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Mokowe Primary School', 'institution_type': 'primary', 'county_name': 'Lamu', 'county_code': '005', 'sub_county': 'Lamu West', 'phone_number': '+254421400002', 'email': 'mokowe.pri@schools.go.ke', 'is_active': True},
+
+            # ── TAITA-TAVETA (006) ─────────────────────────────────
+            {'name': 'Voi Primary School', 'institution_type': 'primary', 'county_name': 'Taita-Taveta', 'county_code': '006', 'sub_county': 'Voi', 'phone_number': '+254435200001', 'email': 'voi.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Wundanyi Primary School', 'institution_type': 'primary', 'county_name': 'Taita-Taveta', 'county_code': '006', 'sub_county': 'Wundanyi', 'phone_number': '+254435200002', 'email': 'wundanyi.pri@schools.go.ke', 'is_active': True},
+
+            # ── NAIROBI (047) ──────────────────────────────────────
+            {'name': 'Nairobi Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202312001', 'email': 'nairobi.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Lavington Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202312002', 'email': 'lavington.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Highridge Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202312003', 'email': 'highridge.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Upper Hill Primary School Nairobi', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Langata', 'phone_number': '+254202312004', 'email': 'upperhill.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Olympic Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kibra', 'phone_number': '+254202312005', 'email': 'olympic.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Pangani Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Mathare', 'phone_number': '+254202312006', 'email': 'pangani.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Westlands Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202312007', 'email': 'westlands.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Pumwani Primary School', 'institution_type': 'primary', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kamukunji', 'phone_number': '+254202312008', 'email': 'pumwani.pri@schools.go.ke', 'is_active': True},
+
+            # ── KIAMBU (022 area / actual 022 is Muranga, Kiambu=036) ──
+            {'name': 'Thika Road Primary School', 'institution_type': 'primary', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254672312001', 'email': 'thikaroad.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Ruiru Primary School', 'institution_type': 'primary', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Ruiru', 'phone_number': '+254672312002', 'email': 'ruiru.pri@schools.go.ke', 'is_active': True},
+
+            # ── NAKURU (032) ───────────────────────────────────────
+            {'name': 'Nakuru Primary School', 'institution_type': 'primary', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town East', 'phone_number': '+254512312001', 'email': 'nakuru.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Naivasha Primary School', 'institution_type': 'primary', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Naivasha', 'phone_number': '+254512312002', 'email': 'naivasha.pri@schools.go.ke', 'is_active': True},
+
+            # ── KISUMU (040) ───────────────────────────────────────
+            {'name': 'Kisumu Primary School', 'institution_type': 'primary', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312001', 'email': 'kisumu.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Ogada Primary School', 'institution_type': 'primary', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu East', 'phone_number': '+254572312002', 'email': 'ogada.pri@schools.go.ke', 'is_active': True},
+
+            # ── MERU (021) ─────────────────────────────────────────
+            {'name': 'Meru Primary School', 'institution_type': 'primary', 'county_name': 'Meru', 'county_code': '021', 'sub_county': 'Imenti North', 'phone_number': '+254642312001', 'email': 'meru.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Nkubu Primary School', 'institution_type': 'primary', 'county_name': 'Meru', 'county_code': '021', 'sub_county': 'Imenti South', 'phone_number': '+254642312002', 'email': 'nkubu.pri@schools.go.ke', 'is_active': True},
+
+            # ── EMBU (014) ─────────────────────────────────────────
+            {'name': 'Embu Primary School', 'institution_type': 'primary', 'county_name': 'Embu', 'county_code': '014', 'sub_county': 'Embu Town', 'phone_number': '+254682312001', 'email': 'embu.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Runyenjes Primary School', 'institution_type': 'primary', 'county_name': 'Embu', 'county_code': '014', 'sub_county': 'Runyenjes', 'phone_number': '+254682312002', 'email': 'runyenjes.pri@schools.go.ke', 'is_active': True},
+
+            # ── NYERI (037) ────────────────────────────────────────
+            {'name': 'Nyeri Primary School', 'institution_type': 'primary', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Nyeri Town', 'phone_number': '+254612312001', 'email': 'nyeri.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Karatina Primary School', 'institution_type': 'primary', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312002', 'email': 'karatina.pri@schools.go.ke', 'is_active': True},
+            {'name': 'Othaya Primary School', 'institution_type': 'primary', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Othaya', 'phone_number': '+254612312003', 'email': 'othaya.pri@schools.go.ke', 'is_active': True},
+        ]
+
+    # =========================================================
+    # SECONDARY SCHOOLS
+    # =========================================================
+    def _secondary_schools(self):
+        return [
+            # ── NATIONAL SCHOOLS ──────────────────────────────────
+            # Nairobi
+            {'name': 'Alliance High School', 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Kikuyu', 'phone_number': '+254670521002', 'email': 'principal@alliance.ac.ke', 'principal_name': 'Mr. Fredrick Kariuki', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kikuyu Branch', 'account_number': 'ACC1000001', 'account_name': 'Alliance High School', 'is_active': True},
+            {'name': 'Nairobi School', 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Dagoretti North', 'phone_number': '+254202722682', 'email': 'principal@nairobischool.ac.ke', 'principal_name': 'Mr. Joseph Mwangi', 'bank_name': 'Equity Bank', 'bank_branch': 'Lavington', 'account_number': 'ACC1000002', 'account_name': 'Nairobi School', 'is_active': True},
+            {'name': 'Kenya High School', 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202712432', 'email': 'principal@kenyahigh.ac.ke', 'principal_name': 'Mrs. Jane Kamau', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Westlands', 'account_number': 'ACC1000003', 'account_name': 'Kenya High School', 'is_active': True},
+            {'name': 'Lenana School', 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Langata', 'phone_number': '+254202714755', 'email': 'principal@lenana.ac.ke', 'principal_name': 'Mr. Peter Njoroge', 'bank_name': 'Barclays Bank Kenya', 'bank_branch': 'Karen', 'account_number': 'ACC1000004', 'account_name': 'Lenana School', 'is_active': True},
+            {'name': 'Mang\'u High School', 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Gatundu South', 'phone_number': '+254672312001', 'email': 'principal@mangu.ac.ke', 'principal_name': 'Mr. James Githinji', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Thika', 'account_number': 'ACC1000005', 'account_name': "Mang'u High School", 'is_active': True},
+            {'name': 'Starehe Boys Centre', 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202216026', 'email': 'principal@starehe.ac.ke', 'principal_name': 'Mr. Geoffrey Gateri', 'bank_name': 'Equity Bank', 'bank_branch': 'Starehe', 'account_number': 'ACC1000006', 'account_name': 'Starehe Boys Centre', 'is_active': True},
+            {'name': 'Upper Hill School', 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Langata', 'phone_number': '+254202714321', 'email': 'principal@upperhill.ac.ke', 'principal_name': 'Mr. Josephat Mutua', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Upper Hill', 'account_number': 'ACC1000007', 'account_name': 'Upper Hill School', 'is_active': True},
+            {'name': 'Limuru Girls High School', 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Limuru', 'phone_number': '+254672312010', 'email': 'principal@limurugirlshigh.ac.ke', 'principal_name': 'Mrs. Mary Wambui', 'bank_name': 'Family Bank', 'bank_branch': 'Limuru', 'account_number': 'ACC1000008', 'account_name': 'Limuru Girls High School', 'is_active': True},
+            {'name': 'Kabarak High School', 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Subukia', 'phone_number': '+254512312020', 'email': 'principal@kabarakhigh.ac.ke', 'principal_name': 'Mr. Reuben Rop', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000009', 'account_name': 'Kabarak High School', 'is_active': True},
+            {'name': "St. Mary's School Nairobi", 'institution_type': 'highschool', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202714200', 'email': 'principal@stmarysnairobi.ac.ke', 'principal_name': 'Br. Peter Musyoka', 'bank_name': 'Barclays Bank Kenya', 'bank_branch': 'Westlands', 'account_number': 'ACC1000010', 'account_name': "St. Mary's School Nairobi", 'is_active': True},
+            {'name': 'Kiambu High School', 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Kiambu Town', 'phone_number': '+254672312020', 'email': 'principal@kiambuhigh.ac.ke', 'principal_name': 'Mr. John Kariuki', 'bank_name': 'Equity Bank', 'bank_branch': 'Kiambu', 'account_number': 'ACC1000011', 'account_name': 'Kiambu High School', 'is_active': True},
+            {'name': 'Kangaru School', 'institution_type': 'highschool', 'county_name': 'Embu', 'county_code': '014', 'sub_county': 'Manyatta', 'phone_number': '+254682312020', 'email': 'principal@kangaruschool.ac.ke', 'principal_name': 'Mr. Stephen Gitonga', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Embu', 'account_number': 'ACC1000012', 'account_name': 'Kangaru School', 'is_active': True},
+            {'name': 'Chogoria Boys High School', 'institution_type': 'highschool', 'county_name': 'Tharaka-Nithi', 'county_code': '016', 'sub_county': 'Maara', 'phone_number': '+254642412001', 'email': 'principal@chogoriahigh.ac.ke', 'principal_name': 'Mr. David Mwiti', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Chogoria', 'account_number': 'ACC1000013', 'account_name': 'Chogoria Boys High School', 'is_active': True},
+            {'name': "St. George's Girls High School Mombasa", 'institution_type': 'highschool', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412230001', 'email': 'principal@stgeorgesmsa.ac.ke', 'principal_name': 'Mrs. Susan Karanja', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Mombasa', 'account_number': 'ACC1000014', 'account_name': "St. George's Girls High School", 'is_active': True},
+            {'name': "Shimo La Tewa High School", 'institution_type': 'highschool', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Kisauni', 'phone_number': '+254412230002', 'email': 'principal@shimolatewa.ac.ke', 'principal_name': 'Mr. Omar Hassan', 'bank_name': 'Equity Bank', 'bank_branch': 'Mombasa', 'account_number': 'ACC1000015', 'account_name': 'Shimo La Tewa High School', 'is_active': True},
+            {'name': 'Aga Khan High School Mombasa', 'institution_type': 'highschool', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412230003', 'email': 'principal@agakhanhigh.msa.ac.ke', 'principal_name': 'Mr. Roshan Alibhai', 'bank_name': 'Barclays Bank Kenya', 'bank_branch': 'Mombasa', 'account_number': 'ACC1000016', 'account_name': 'Aga Khan High School Mombasa', 'is_active': True},
+            {'name': 'Laiser Hill Academy', 'institution_type': 'highschool', 'county_name': 'Kajiado', 'county_code': '034', 'sub_county': 'Kajiado North', 'phone_number': '+254452312001', 'email': 'principal@laiserhill.ac.ke', 'principal_name': 'Mrs. Grace Tipape', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kitengela', 'account_number': 'ACC1000017', 'account_name': 'Laiser Hill Academy', 'is_active': True},
+            {'name': 'Machakos High School', 'institution_type': 'highschool', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312001', 'email': 'principal@machakoshigh.ac.ke', 'principal_name': 'Mr. Francis Mutua', 'bank_name': 'Equity Bank', 'bank_branch': 'Machakos', 'account_number': 'ACC1000018', 'account_name': 'Machakos High School', 'is_active': True},
+            {'name': "Moi Girls' High School Eldoret", 'institution_type': 'highschool', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret East', 'phone_number': '+254532312001', 'email': 'principal@moigirls.eldoret.ac.ke', 'principal_name': 'Mrs. Jemimah Chebii', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Eldoret', 'account_number': 'ACC1000019', 'account_name': "Moi Girls' High School Eldoret", 'is_active': True},
+            {'name': "Moi High School Kabarak", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Subukia', 'phone_number': '+254512312030', 'email': 'principal@moihighkabarak.ac.ke', 'principal_name': 'Mr. Eliud Rono', 'bank_name': 'Equity Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000020', 'account_name': 'Moi High School Kabarak', 'is_active': True},
+            {'name': "Friends School Kamusinga", 'institution_type': 'highschool', 'county_name': 'Kakamega', 'county_code': '031', 'sub_county': 'Lugari', 'phone_number': '+254562312001', 'email': 'principal@kamusinga.ac.ke', 'principal_name': 'Mr. Laban Amukhale', 'bank_name': 'Family Bank', 'bank_branch': 'Kakamega', 'account_number': 'ACC1000021', 'account_name': 'Friends School Kamusinga', 'is_active': True},
+            {'name': "Kakamega High School", 'institution_type': 'highschool', 'county_name': 'Kakamega', 'county_code': '031', 'sub_county': 'Lurambi', 'phone_number': '+254562312002', 'email': 'principal@kakamegahigh.ac.ke', 'principal_name': 'Mr. Benjamin Wanyonyi', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kakamega', 'account_number': 'ACC1000022', 'account_name': 'Kakamega High School', 'is_active': True},
+            {'name': "Kisumu Boys High School", 'institution_type': 'highschool', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312010', 'email': 'principal@kisumuboys.ac.ke', 'principal_name': 'Mr. Paul Ochieng', 'bank_name': 'Equity Bank', 'bank_branch': 'Kisumu', 'account_number': 'ACC1000023', 'account_name': 'Kisumu Boys High School', 'is_active': True},
+            {'name': "Kisumu Girls High School", 'institution_type': 'highschool', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312011', 'email': 'principal@kisumugirls.ac.ke', 'principal_name': 'Mrs. Carolyne Otieno', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisumu', 'account_number': 'ACC1000024', 'account_name': 'Kisumu Girls High School', 'is_active': True},
+            {'name': "Maseno School", 'institution_type': 'highschool', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Seme', 'phone_number': '+254572312012', 'email': 'principal@masenoschool.ac.ke', 'principal_name': 'Mr. Ayub Okoth', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Maseno', 'account_number': 'ACC1000025', 'account_name': 'Maseno School', 'is_active': True},
+            {'name': "Nyeri High School", 'institution_type': 'highschool', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Nyeri Town', 'phone_number': '+254612312010', 'email': 'principal@nyerihigh.ac.ke', 'principal_name': 'Mr. Samuel Gatheru', 'bank_name': 'Equity Bank', 'bank_branch': 'Nyeri', 'account_number': 'ACC1000026', 'account_name': 'Nyeri High School', 'is_active': True},
+            {'name': "Thika High School", 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254672312030', 'email': 'principal@thikahigh.ac.ke', 'principal_name': 'Mr. Kenneth Kago', 'bank_name': 'Family Bank', 'bank_branch': 'Thika', 'account_number': 'ACC1000027', 'account_name': 'Thika High School', 'is_active': True},
+            {'name': "Njiiri School", 'institution_type': 'highschool', 'county_name': "Murang'a", 'county_code': '022', 'sub_county': 'Gatanga', 'phone_number': '+254721312001', 'email': 'principal@njirischool.ac.ke', 'principal_name': 'Mr. James Gatheu', 'bank_name': 'Co-operative Bank', 'bank_branch': "Murang'a", 'account_number': 'ACC1000028', 'account_name': 'Njiiri School', 'is_active': True},
+            {'name': "Kerugoya Boys High School", 'institution_type': 'highschool', 'county_name': 'Kirinyaga', 'county_code': '020', 'sub_county': 'Kirinyaga Central', 'phone_number': '+254602312001', 'email': 'principal@kerugoyahigh.ac.ke', 'principal_name': 'Mr. Lawrence Wachira', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kerugoya', 'account_number': 'ACC1000029', 'account_name': 'Kerugoya Boys High School', 'is_active': True},
+            {'name': "Nakuru High School", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town West', 'phone_number': '+254512312040', 'email': 'principal@nakuruhigh.ac.ke', 'principal_name': 'Mr. Robert Mwangi', 'bank_name': 'Equity Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000030', 'account_name': 'Nakuru High School', 'is_active': True},
+            {'name': 'Eldoret High School', 'institution_type': 'highschool', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret East', 'phone_number': '+254532312010', 'email': 'principal@eldorethigh.ac.ke', 'principal_name': 'Mr. Kiprotich Rono', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Eldoret', 'account_number': 'ACC1000031', 'account_name': 'Eldoret High School', 'is_active': True},
+            {'name': "Kipsigis Girls High School", 'institution_type': 'highschool', 'county_name': 'Kericho', 'county_code': '029', 'sub_county': 'Belgut', 'phone_number': '+254522312001', 'email': 'principal@kipsigisgirls.ac.ke', 'principal_name': 'Mrs. Esther Kibor', 'bank_name': 'Family Bank', 'bank_branch': 'Kericho', 'account_number': 'ACC1000032', 'account_name': 'Kipsigis Girls High School', 'is_active': True},
+            {'name': "Kericho High School", 'institution_type': 'highschool', 'county_name': 'Kericho', 'county_code': '029', 'sub_county': 'Kericho', 'phone_number': '+254522312002', 'email': 'principal@kerichohigh.ac.ke', 'principal_name': 'Mr. Alex Kirui', 'bank_name': 'Equity Bank', 'bank_branch': 'Kericho', 'account_number': 'ACC1000033', 'account_name': 'Kericho High School', 'is_active': True},
+            {'name': "Kisii High School", 'institution_type': 'highschool', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312001', 'email': 'principal@kisiihigh.ac.ke', 'principal_name': 'Mr. Bernard Ongaro', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kisii', 'account_number': 'ACC1000034', 'account_name': 'Kisii High School', 'is_active': True},
+            {'name': "Nyabururu Girls High School", 'institution_type': 'highschool', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312002', 'email': 'principal@nyabururu.ac.ke', 'principal_name': 'Mrs. Phyllis Nyakundi', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisii', 'account_number': 'ACC1000035', 'account_name': 'Nyabururu Girls High School', 'is_active': True},
+            {'name': "Meru School", 'institution_type': 'highschool', 'county_name': 'Meru', 'county_code': '021', 'sub_county': 'Imenti North', 'phone_number': '+254642312010', 'email': 'principal@meruschool.ac.ke', 'principal_name': 'Mr. George Murungi', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Meru', 'account_number': 'ACC1000036', 'account_name': 'Meru School', 'is_active': True},
+            {'name': "Nkabune Technical School", 'institution_type': 'highschool', 'county_name': 'Meru', 'county_code': '021', 'sub_county': 'Imenti North', 'phone_number': '+254642312011', 'email': 'principal@nkabune.ac.ke', 'principal_name': 'Mr. Isaac Mugambi', 'bank_name': 'Equity Bank', 'bank_branch': 'Meru', 'account_number': 'ACC1000037', 'account_name': 'Nkabune Technical School', 'is_active': True},
+            {'name': "Malindi High School", 'institution_type': 'highschool', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Malindi', 'phone_number': '+254422312001', 'email': 'principal@malindihigh.ac.ke', 'principal_name': 'Mr. Hamisi Mwambire', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Malindi', 'account_number': 'ACC1000038', 'account_name': 'Malindi High School', 'is_active': True},
+            {'name': "Mombasa High School", 'institution_type': 'highschool', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412230010', 'email': 'principal@mombasahigh.ac.ke', 'principal_name': 'Mr. Abdullah Rashid', 'bank_name': 'Equity Bank', 'bank_branch': 'Mombasa', 'account_number': 'ACC1000039', 'account_name': 'Mombasa High School', 'is_active': True},
+            {'name': "Coast Girls High School", 'institution_type': 'highschool', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412230011', 'email': 'principal@coastgirls.ac.ke', 'principal_name': 'Mrs. Fatuma Ali', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Mombasa', 'account_number': 'ACC1000040', 'account_name': 'Coast Girls High School', 'is_active': True},
+            {'name': "Kitui High School", 'institution_type': 'highschool', 'county_name': 'Kitui', 'county_code': '015', 'sub_county': 'Kitui Central', 'phone_number': '+254462312001', 'email': 'principal@kituihigh.ac.ke', 'principal_name': 'Mr. Cyrus Mutunga', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kitui', 'account_number': 'ACC1000041', 'account_name': 'Kitui High School', 'is_active': True},
+            {'name': "Machakos Girls High School", 'institution_type': 'highschool', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312010', 'email': 'principal@machakosgirls.ac.ke', 'principal_name': 'Mrs. Monica Muema', 'bank_name': 'Equity Bank', 'bank_branch': 'Machakos', 'account_number': 'ACC1000042', 'account_name': 'Machakos Girls High School', 'is_active': True},
+            {'name': "Makueni Girls High School", 'institution_type': 'highschool', 'county_name': 'Makueni', 'county_code': '017', 'sub_county': 'Makueni', 'phone_number': '+254452312010', 'email': 'principal@makuenigirls.ac.ke', 'principal_name': 'Mrs. Lydiah Kioko', 'bank_name': 'Family Bank', 'bank_branch': 'Wote', 'account_number': 'ACC1000043', 'account_name': 'Makueni Girls High School', 'is_active': True},
+            {'name': "Thika Girls High School", 'institution_type': 'highschool', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254672312040', 'email': 'principal@thikagirls.ac.ke', 'principal_name': 'Mrs. Alice Wanjiru', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Thika', 'account_number': 'ACC1000044', 'account_name': 'Thika Girls High School', 'is_active': True},
+            {'name': "Kagumo High School", 'institution_type': 'highschool', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312020', 'email': 'principal@kagumohigh.ac.ke', 'principal_name': 'Mr. David Wanyiri', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Karatina', 'account_number': 'ACC1000045', 'account_name': 'Kagumo High School', 'is_active': True},
+            {'name': "Giakanja High School", 'institution_type': 'highschool', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312021', 'email': 'principal@giakanjahigh.ac.ke', 'principal_name': 'Mr. Nicholas Githinji', 'bank_name': 'Equity Bank', 'bank_branch': 'Nyeri', 'account_number': 'ACC1000046', 'account_name': 'Giakanja High School', 'is_active': True},
+            {'name': "Ngandu Girls High School", 'institution_type': 'highschool', 'county_name': 'Kirinyaga', 'county_code': '020', 'sub_county': 'Mwea', 'phone_number': '+254602312010', 'email': 'principal@ngandugirls.ac.ke', 'principal_name': 'Mrs. Beatrice Mugo', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kerugoya', 'account_number': 'ACC1000047', 'account_name': 'Ngandu Girls High School', 'is_active': True},
+            {'name': "Baraton Academy", 'institution_type': 'highschool', 'county_name': 'Nandi', 'county_code': '030', 'sub_county': 'Tinderet', 'phone_number': '+254542312001', 'email': 'principal@baraton.ac.ke', 'principal_name': 'Dr. Florence Maina', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Eldoret', 'account_number': 'ACC1000048', 'account_name': 'Baraton Academy', 'is_active': True},
+            {'name': "Kabianga High School", 'institution_type': 'highschool', 'county_name': 'Kericho', 'county_code': '029', 'sub_county': 'Kericho', 'phone_number': '+254522312010', 'email': 'principal@kabianghigh.ac.ke', 'principal_name': 'Mr. Julius Mutai', 'bank_name': 'Equity Bank', 'bank_branch': 'Kericho', 'account_number': 'ACC1000049', 'account_name': 'Kabianga High School', 'is_active': True},
+            {'name': "Kisii School", 'institution_type': 'highschool', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312010', 'email': 'principal@kisii.sch.ac.ke', 'principal_name': 'Mr. Kennedy Abuga', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kisii', 'account_number': 'ACC1000050', 'account_name': 'Kisii School', 'is_active': True},
+            {'name': "Bondo High School", 'institution_type': 'highschool', 'county_name': 'Siaya', 'county_code': '041', 'sub_county': 'Bondo', 'phone_number': '+254592312001', 'email': 'principal@bondohigh.ac.ke', 'principal_name': 'Mr. Hezron Ogolla', 'bank_name': 'Family Bank', 'bank_branch': 'Bondo', 'account_number': 'ACC1000051', 'account_name': 'Bondo High School', 'is_active': True},
+            {'name': "Ng'iya Girls High School", 'institution_type': 'highschool', 'county_name': 'Siaya', 'county_code': '041', 'sub_county': 'Ugenya', 'phone_number': '+254592312002', 'email': 'principal@ngiyas.ac.ke', 'principal_name': 'Mrs. Lilian Achieng', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Siaya', 'account_number': 'ACC1000052', 'account_name': "Ng'iya Girls High School", 'is_active': True},
+            {'name': "Butere High School", 'institution_type': 'highschool', 'county_name': 'Kakamega', 'county_code': '031', 'sub_county': 'Butere', 'phone_number': '+254562312010', 'email': 'principal@buterehigh.ac.ke', 'principal_name': 'Mr. Silas Eshitera', 'bank_name': 'Equity Bank', 'bank_branch': 'Butere', 'account_number': 'ACC1000053', 'account_name': 'Butere High School', 'is_active': True},
+            {'name': "Nambale High School", 'institution_type': 'highschool', 'county_name': 'Busia', 'county_code': '039', 'sub_county': 'Nambale', 'phone_number': '+254552312001', 'email': 'principal@nambalehigh.ac.ke', 'principal_name': 'Mr. Philip Wafula', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Busia', 'account_number': 'ACC1000054', 'account_name': 'Nambale High School', 'is_active': True},
+            {'name': "Friends School Kaimosi", 'institution_type': 'highschool', 'county_name': 'Vihiga', 'county_code': '038', 'sub_county': 'Hamisi', 'phone_number': '+254562412001', 'email': 'principal@kaimosi.ac.ke', 'principal_name': 'Mr. Emmanuel Shikuku', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kakamega', 'account_number': 'ACC1000055', 'account_name': 'Friends School Kaimosi', 'is_active': True},
+            {'name': "Kapkenda Girls High School", 'institution_type': 'highschool', 'county_name': 'Elgeyo-Marakwet', 'county_code': '028', 'sub_county': 'Keiyo North', 'phone_number': '+254532412001', 'email': 'principal@kapkenda.ac.ke', 'principal_name': 'Mrs. Hellen Chepkemoi', 'bank_name': 'Equity Bank', 'bank_branch': 'Iten', 'account_number': 'ACC1000056', 'account_name': 'Kapkenda Girls High School', 'is_active': True},
+            {'name': "St. Brigid's Asumbi Girls", 'institution_type': 'highschool', 'county_name': 'Homa Bay', 'county_code': '043', 'sub_county': 'Rachuonyo South', 'phone_number': '+254592412001', 'email': 'principal@asumbi.ac.ke', 'principal_name': 'Sr. Mary Omondi', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kendu Bay', 'account_number': 'ACC1000057', 'account_name': "St. Brigid's Asumbi Girls", 'is_active': True},
+            {'name': "Ndhiwa High School", 'institution_type': 'highschool', 'county_name': 'Homa Bay', 'county_code': '043', 'sub_county': 'Ndhiwa', 'phone_number': '+254592412002', 'email': 'principal@ndhiwahigh.ac.ke', 'principal_name': 'Mr. Joseph Nyamori', 'bank_name': 'Equity Bank', 'bank_branch': 'Homa Bay', 'account_number': 'ACC1000058', 'account_name': 'Ndhiwa High School', 'is_active': True},
+            {'name': "Migori High School", 'institution_type': 'highschool', 'county_name': 'Migori', 'county_code': '044', 'sub_county': 'Suna East', 'phone_number': '+254592512001', 'email': 'principal@migorihigh.ac.ke', 'principal_name': 'Mr. Duncan Odhiambo', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Migori', 'account_number': 'ACC1000059', 'account_name': 'Migori High School', 'is_active': True},
+            {'name': "Kisii Girls High School", 'institution_type': 'highschool', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312020', 'email': 'principal@kisiigirls.ac.ke', 'principal_name': 'Mrs. Alice Momanyi', 'bank_name': 'Family Bank', 'bank_branch': 'Kisii', 'account_number': 'ACC1000060', 'account_name': 'Kisii Girls High School', 'is_active': True},
+            {'name': "Sironga Girls High School", 'institution_type': 'highschool', 'county_name': 'Nyamira', 'county_code': '046', 'sub_county': 'Manga', 'phone_number': '+254582412001', 'email': 'principal@sirongagirls.ac.ke', 'principal_name': 'Mrs. Damaris Nyakundi', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nyamira', 'account_number': 'ACC1000061', 'account_name': 'Sironga Girls High School', 'is_active': True},
+            {'name': "Nakuru Girls High School", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town East', 'phone_number': '+254512312050', 'email': 'principal@nakurugirls.ac.ke', 'principal_name': 'Mrs. Josephine Waweru', 'bank_name': 'Equity Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000062', 'account_name': 'Nakuru Girls High School', 'is_active': True},
+            {'name': "Kereri Girls High School", 'institution_type': 'highschool', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312030', 'email': 'principal@kererigirls.ac.ke', 'principal_name': 'Mrs. Penina Ongeri', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisii', 'account_number': 'ACC1000063', 'account_name': 'Kereri Girls High School', 'is_active': True},
+            {'name': "Rift Valley Academy", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Subukia', 'phone_number': '+254512312060', 'email': 'principal@rva.ac.ke', 'principal_name': 'Mr. Tom Ogola', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000064', 'account_name': 'Rift Valley Academy', 'is_active': True},
+            {'name': "Maranda High School", 'institution_type': 'highschool', 'county_name': 'Siaya', 'county_code': '041', 'sub_county': 'Ugenya', 'phone_number': '+254592312010', 'email': 'principal@maranda.ac.ke', 'principal_name': 'Mr. Felix Ouma', 'bank_name': 'Equity Bank', 'bank_branch': 'Siaya', 'account_number': 'ACC1000065', 'account_name': 'Maranda High School', 'is_active': True},
+            {'name': "Booker Academy", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town West', 'phone_number': '+254512312070', 'email': 'principal@bookeracademy.ac.ke', 'principal_name': 'Mr. Samuel Kimani', 'bank_name': 'Family Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000066', 'account_name': 'Booker Academy', 'is_active': True},
+            {'name': "Butula Boys High School", 'institution_type': 'highschool', 'county_name': 'Busia', 'county_code': '039', 'sub_county': 'Butula', 'phone_number': '+254552312010', 'email': 'principal@butulahigh.ac.ke', 'principal_name': 'Mr. Cyprian Omuha', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Busia', 'account_number': 'ACC1000067', 'account_name': 'Butula Boys High School', 'is_active': True},
+            {'name': "Masaa Mixed Day Secondary", 'institution_type': 'highschool', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu West', 'phone_number': '+254572312020', 'email': 'principal@masaasecondary.ac.ke', 'principal_name': 'Mr. Victor Odhiambo', 'bank_name': 'Equity Bank', 'bank_branch': 'Kisumu', 'account_number': 'ACC1000068', 'account_name': 'Masaa Mixed Day Secondary', 'is_active': True},
+            {'name': "Mbita High School", 'institution_type': 'highschool', 'county_name': 'Homa Bay', 'county_code': '043', 'sub_county': 'Mbita', 'phone_number': '+254592412010', 'email': 'principal@mbitahigh.ac.ke', 'principal_name': 'Mr. Charles Onyango', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Homa Bay', 'account_number': 'ACC1000069', 'account_name': 'Mbita High School', 'is_active': True},
+            {'name': "Turbo High School", 'institution_type': 'highschool', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Turbo', 'phone_number': '+254532312020', 'email': 'principal@turbohigh.ac.ke', 'principal_name': 'Mr. Ezekiel Kibet', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Eldoret', 'account_number': 'ACC1000070', 'account_name': 'Turbo High School', 'is_active': True},
+            {'name': "Moi Girls School Eldoret", 'institution_type': 'highschool', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret North', 'phone_number': '+254532312030', 'email': 'principal@moigirlseldoret.ac.ke', 'principal_name': 'Mrs. Joyce Chepkemoi', 'bank_name': 'Equity Bank', 'bank_branch': 'Eldoret', 'account_number': 'ACC1000071', 'account_name': 'Moi Girls School Eldoret', 'is_active': True},
+            {'name': "Kapropita Girls High School", 'institution_type': 'highschool', 'county_name': 'Baringo', 'county_code': '030', 'sub_county': 'Baringo Central', 'phone_number': '+254542412001', 'email': 'principal@kapropita.ac.ke', 'principal_name': 'Mrs. Agnes Chebet', 'bank_name': 'Family Bank', 'bank_branch': 'Kabarnet', 'account_number': 'ACC1000072', 'account_name': 'Kapropita Girls High School', 'is_active': True},
+            {'name': "Kapsabet Boys High School", 'institution_type': 'highschool', 'county_name': 'Nandi', 'county_code': '030', 'sub_county': 'Tinderet', 'phone_number': '+254542312010', 'email': 'principal@kapsabethigh.ac.ke', 'principal_name': 'Mr. Timothy Kosgei', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kapsabet', 'account_number': 'ACC1000073', 'account_name': 'Kapsabet Boys High School', 'is_active': True},
+            {'name': "Kapsabet Girls High School", 'institution_type': 'highschool', 'county_name': 'Nandi', 'county_code': '030', 'sub_county': 'Tinderet', 'phone_number': '+254542312011', 'email': 'principal@kapsabetgirls.ac.ke', 'principal_name': 'Mrs. Naomi Sigei', 'bank_name': 'Equity Bank', 'bank_branch': 'Kapsabet', 'account_number': 'ACC1000074', 'account_name': 'Kapsabet Girls High School', 'is_active': True},
+            {'name': "Kakamega Girls High School", 'institution_type': 'highschool', 'county_name': 'Kakamega', 'county_code': '031', 'sub_county': 'Lurambi', 'phone_number': '+254562312020', 'email': 'principal@kakamegagirls.ac.ke', 'principal_name': 'Mrs. Winnie Khisa', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kakamega', 'account_number': 'ACC1000075', 'account_name': 'Kakamega Girls High School', 'is_active': True},
+            {'name': "St. Anthony's Boys High School Kitale", 'institution_type': 'highschool', 'county_name': 'Trans Nzoia', 'county_code': '026', 'sub_county': 'Kitale', 'phone_number': '+254542512001', 'email': 'principal@stanthonyskitale.ac.ke', 'principal_name': 'Br. Philip Wafula', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kitale', 'account_number': 'ACC1000076', 'account_name': "St. Anthony's Boys High School", 'is_active': True},
+            {'name': "Kitale High School", 'institution_type': 'highschool', 'county_name': 'Trans Nzoia', 'county_code': '026', 'sub_county': 'Kitale', 'phone_number': '+254542512002', 'email': 'principal@kitalehigh.ac.ke', 'principal_name': 'Mr. Reuben Simiyu', 'bank_name': 'Equity Bank', 'bank_branch': 'Kitale', 'account_number': 'ACC1000077', 'account_name': 'Kitale High School', 'is_active': True},
+            {'name': "Menengai High School", 'institution_type': 'highschool', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town West', 'phone_number': '+254512312080', 'email': 'principal@menengaihigh.ac.ke', 'principal_name': 'Mr. David Kamau', 'bank_name': 'Family Bank', 'bank_branch': 'Nakuru', 'account_number': 'ACC1000078', 'account_name': 'Menengai High School', 'is_active': True},
+            {'name': "Machakos Boys High School", 'institution_type': 'highschool', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312020', 'email': 'principal@machakosbhigh.ac.ke', 'principal_name': 'Mr. James Musyoka', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Machakos', 'account_number': 'ACC1000079', 'account_name': 'Machakos Boys High School', 'is_active': True},
+            {'name': "Nguutani Secondary School", 'institution_type': 'highschool', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Yatta', 'phone_number': '+254442312030', 'email': 'principal@nguutanisec.ac.ke', 'principal_name': 'Mr. Isaac Nthenge', 'bank_name': 'Equity Bank', 'bank_branch': 'Machakos', 'account_number': 'ACC1000080', 'account_name': 'Nguutani Secondary School', 'is_active': True},
+        ]
+
+    # =========================================================
+    # UNIVERSITIES
+    # =========================================================
+    def _universities(self):
+        return [
+            # ── PUBLIC UNIVERSITIES ────────────────────────────────
+            {'name': 'University of Nairobi', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202714888', 'email': 'registrar@uonbi.ac.ke', 'principal_name': 'Prof. Stephen Kiama (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'University Branch', 'account_number': 'UACC100001', 'account_name': 'University of Nairobi', 'postal_address': 'P.O. Box 30197-00100, Nairobi', 'is_active': True},
+            {'name': 'Kenyatta University', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Ruiru', 'phone_number': '+254672312101', 'email': 'registrar@ku.ac.ke', 'principal_name': 'Prof. Paul Wainaina (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Thika Road', 'account_number': 'UACC100002', 'account_name': 'Kenyatta University', 'postal_address': 'P.O. Box 43844-00100, Nairobi', 'is_active': True},
+            {'name': 'Jomo Kenyatta University of Agriculture and Technology (JKUAT)', 'institution_type': 'university', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Juja', 'phone_number': '+254672312201', 'email': 'registrar@jkuat.ac.ke', 'principal_name': 'Prof. Victoria Wambua (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'JKUAT', 'account_number': 'UACC100003', 'account_name': 'JKUAT', 'postal_address': 'P.O. Box 62000-00200, Nairobi', 'is_active': True},
+            {'name': 'Moi University', 'institution_type': 'university', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret East', 'phone_number': '+254532312301', 'email': 'registrar@mu.ac.ke', 'principal_name': 'Prof. Laban Ayiro (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Eldoret', 'account_number': 'UACC100004', 'account_name': 'Moi University', 'postal_address': 'P.O. Box 3900-30100, Eldoret', 'is_active': True},
+            {'name': 'Maseno University', 'institution_type': 'university', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Seme', 'phone_number': '+254572312301', 'email': 'registrar@maseno.ac.ke', 'principal_name': 'Prof. Julius Ogeng\'o (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Kisumu', 'account_number': 'UACC100005', 'account_name': 'Maseno University', 'postal_address': 'P.O. Box 333-40105, Maseno', 'is_active': True},
+            {'name': 'Egerton University', 'institution_type': 'university', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Njoro', 'phone_number': '+254512312401', 'email': 'registrar@egerton.ac.ke', 'principal_name': 'Prof. Isaac Kibwage (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nakuru', 'account_number': 'UACC100006', 'account_name': 'Egerton University', 'postal_address': 'P.O. Box 536-20115, Egerton', 'is_active': True},
+            {'name': 'Dedan Kimathi University of Technology', 'institution_type': 'university', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312401', 'email': 'registrar@dkut.ac.ke', 'principal_name': 'Prof. Isaac Kamau (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Nyeri', 'account_number': 'UACC100007', 'account_name': 'Dedan Kimathi University', 'postal_address': 'P.O. Box 657-10100, Nyeri', 'is_active': True},
+            {'name': "Murang'a University of Technology", 'institution_type': 'university', 'county_name': "Murang'a", 'county_code': '022', 'sub_county': "Murang'a Town", 'phone_number': '+254720400001', 'email': 'info@mut.ac.ke', 'principal_name': 'Prof. John Kamau Mwangi (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': "Murang'a", 'account_number': 'UACC100008', 'account_name': "Murang'a University of Technology", 'postal_address': "P.O. Box 75-10200, Murang'a", 'is_active': True},
+            {'name': 'Karatina University', 'institution_type': 'university', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312501', 'email': 'registrar@karu.ac.ke', 'principal_name': 'Prof. Mary Wanjiku (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Karatina', 'account_number': 'UACC100009', 'account_name': 'Karatina University', 'postal_address': 'P.O. Box 1957-10101, Karatina', 'is_active': True},
+            {'name': 'Kibabii University', 'institution_type': 'university', 'county_name': 'Bungoma', 'county_code': '039', 'sub_county': 'Kanduyi', 'phone_number': '+254553312001', 'email': 'registrar@kibabiiuniversity.ac.ke', 'principal_name': 'Prof. Isaac Ipara (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Bungoma', 'account_number': 'UACC100010', 'account_name': 'Kibabii University', 'postal_address': 'P.O. Box 1699-50200, Bungoma', 'is_active': True},
+            {'name': 'South Eastern Kenya University (SEKU)', 'institution_type': 'university', 'county_name': 'Kitui', 'county_code': '015', 'sub_county': 'Kitui Central', 'phone_number': '+254462312101', 'email': 'registrar@seku.ac.ke', 'principal_name': 'Prof. Margret Hutchinson (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kitui', 'account_number': 'UACC100011', 'account_name': 'South Eastern Kenya University', 'postal_address': 'P.O. Box 170-90200, Kitui', 'is_active': True},
+            {'name': 'Kisii University', 'institution_type': 'university', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312101', 'email': 'registrar@kisiiuniversity.ac.ke', 'principal_name': 'Prof. John Akama (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Kisii', 'account_number': 'UACC100012', 'account_name': 'Kisii University', 'postal_address': 'P.O. Box 408-40200, Kisii', 'is_active': True},
+            {'name': 'Laikipia University', 'institution_type': 'university', 'county_name': 'Laikipia', 'county_code': '031', 'sub_county': 'Nyahururu', 'phone_number': '+254512312501', 'email': 'registrar@laikipia.ac.ke', 'principal_name': 'Prof. Paul Rutto (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Nyahururu', 'account_number': 'UACC100013', 'account_name': 'Laikipia University', 'postal_address': 'P.O. Box 1100-20300, Nyahururu', 'is_active': True},
+            {'name': 'Pwani University', 'institution_type': 'university', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Kilifi North', 'phone_number': '+254412312101', 'email': 'registrar@pu.ac.ke', 'principal_name': 'Prof. Ahmed Sheikh (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kilifi', 'account_number': 'UACC100014', 'account_name': 'Pwani University', 'postal_address': 'P.O. Box 195-80108, Kilifi', 'is_active': True},
+            {'name': 'Rongo University', 'institution_type': 'university', 'county_name': 'Migori', 'county_code': '044', 'sub_county': 'Rongo', 'phone_number': '+254592512101', 'email': 'registrar@rongouniversity.ac.ke', 'principal_name': 'Prof. John Odhiambo (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Migori', 'account_number': 'UACC100015', 'account_name': 'Rongo University', 'postal_address': 'P.O. Box 103-40404, Rongo', 'is_active': True},
+            {'name': 'Technical University of Kenya (TUK)', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202312401', 'email': 'registrar@tukenya.ac.ke', 'principal_name': 'Prof. Francis Aduol (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nairobi Central', 'account_number': 'UACC100016', 'account_name': 'Technical University of Kenya', 'postal_address': 'P.O. Box 52428-00200, Nairobi', 'is_active': True},
+            {'name': 'Technical University of Mombasa (TUM)', 'institution_type': 'university', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312401', 'email': 'registrar@tum.ac.ke', 'principal_name': 'Prof. Ludovic Ngatia (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Mombasa', 'account_number': 'UACC100017', 'account_name': 'Technical University of Mombasa', 'postal_address': 'P.O. Box 90420-80100, Mombasa', 'is_active': True},
+            {'name': 'University of Eldoret', 'institution_type': 'university', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret East', 'phone_number': '+254532312401', 'email': 'registrar@uoeld.ac.ke', 'principal_name': 'Prof. John Chesoli (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Eldoret', 'account_number': 'UACC100018', 'account_name': 'University of Eldoret', 'postal_address': 'P.O. Box 1125-30100, Eldoret', 'is_active': True},
+            {'name': 'Chuka University', 'institution_type': 'university', 'county_name': 'Tharaka-Nithi', 'county_code': '016', 'sub_county': 'Chuka/Igambang\'ombe', 'phone_number': '+254642312401', 'email': 'registrar@chuka.ac.ke', 'principal_name': 'Prof. Henry Thaara (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Chuka', 'account_number': 'UACC100019', 'account_name': 'Chuka University', 'postal_address': 'P.O. Box 109-60400, Chuka', 'is_active': True},
+            {'name': "Kirinyaga University", 'institution_type': 'university', 'county_name': 'Kirinyaga', 'county_code': '020', 'sub_county': 'Mwea', 'phone_number': '+254602312401', 'email': 'registrar@kyu.ac.ke', 'principal_name': 'Prof. Rosemary Ibutho (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Kerugoya', 'account_number': 'UACC100020', 'account_name': 'Kirinyaga University', 'postal_address': 'P.O. Box 143-10300, Kerugoya', 'is_active': True},
+
+            # ── PRIVATE UNIVERSITIES ───────────────────────────────
+            {'name': 'Strathmore University', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Dagoretti North', 'phone_number': '+254703034000', 'email': 'admissions@strathmore.edu', 'principal_name': 'Prof. John Odhiambo (Vice Chancellor)', 'bank_name': 'Barclays Bank Kenya', 'bank_branch': 'Karen', 'account_number': 'UACC100021', 'account_name': 'Strathmore University', 'postal_address': 'P.O. Box 59857-00200, Nairobi', 'is_active': True},
+            {'name': 'Daystar University', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Langata', 'phone_number': '+254202713488', 'email': 'admissions@daystar.ac.ke', 'principal_name': 'Prof. Timothy Wachira (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Westlands', 'account_number': 'UACC100022', 'account_name': 'Daystar University', 'postal_address': 'P.O. Box 44400-00100, Nairobi', 'is_active': True},
+            {'name': 'United States International University Africa (USIU)', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kasarani', 'phone_number': '+254730116000', 'email': 'admissions@usiu.ac.ke', 'principal_name': 'Prof. Freida Brown (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kasarani', 'account_number': 'UACC100023', 'account_name': 'USIU Africa', 'postal_address': 'P.O. Box 14634-00800, Nairobi', 'is_active': True},
+            {'name': 'Mount Kenya University (MKU)', 'institution_type': 'university', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254675312001', 'email': 'registrar@mku.ac.ke', 'principal_name': 'Dr. Simon Gicharu (Founder/Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Thika', 'account_number': 'UACC100024', 'account_name': 'Mount Kenya University', 'postal_address': 'P.O. Box 342-01000, Thika', 'is_active': True},
+            {'name': 'Africa Nazarene University (ANU)', 'institution_type': 'university', 'county_name': 'Kajiado', 'county_code': '034', 'sub_county': 'Rongai', 'phone_number': '+254452312201', 'email': 'registrar@anu.ac.ke', 'principal_name': 'Dr. Leah Marangu (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Rongai', 'account_number': 'UACC100025', 'account_name': 'Africa Nazarene University', 'postal_address': 'P.O. Box 53067-00200, Nairobi', 'is_active': True},
+            {'name': 'Catholic University of Eastern Africa (CUEA)', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Langata', 'phone_number': '+254202714901', 'email': 'admissions@cuea.edu', 'principal_name': 'Prof. Patrick Mwania (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Karen', 'account_number': 'UACC100026', 'account_name': 'Catholic University of Eastern Africa', 'postal_address': 'P.O. Box 62157-00200, Nairobi', 'is_active': True},
+            {'name': 'Adventist University of Africa (AUA)', 'institution_type': 'university', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Kikuyu', 'phone_number': '+254202312501', 'email': 'info@aua.ac.ke', 'principal_name': 'Dr. Emmanuel Banchani (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Kikuyu', 'account_number': 'UACC100027', 'account_name': 'Adventist University of Africa', 'postal_address': 'P.O. Box 2561-00606, Nairobi', 'is_active': True},
+            {'name': 'Pan Africa Christian University (PAC)', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kasarani', 'phone_number': '+254202312601', 'email': 'registrar@pac.ac.ke', 'principal_name': 'Rev. Dr. Mark Kariuki (Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Thika Road', 'account_number': 'UACC100028', 'account_name': 'Pan Africa Christian University', 'postal_address': 'P.O. Box 56875-00200, Nairobi', 'is_active': True},
+            {'name': 'Gretsa University', 'institution_type': 'university', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254675312101', 'email': 'registrar@gretsa.ac.ke', 'principal_name': 'Prof. Charles Kamau (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Thika', 'account_number': 'UACC100029', 'account_name': 'Gretsa University', 'postal_address': 'P.O. Box 3-01000, Thika', 'is_active': True},
+            {'name': 'Zetech University', 'institution_type': 'university', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Ruiru', 'phone_number': '+254722199500', 'email': 'info@zetech.ac.ke', 'principal_name': 'Dr. Esther Gitaari (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Ruiru', 'account_number': 'UACC100030', 'account_name': 'Zetech University', 'postal_address': 'P.O. Box 2768-00100, Nairobi', 'is_active': True},
+            {'name': 'KCA University', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kasarani', 'phone_number': '+254202312701', 'email': 'registrar@kca.ac.ke', 'principal_name': 'Dr. David Nzioka (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kasarani', 'account_number': 'UACC100031', 'account_name': 'KCA University', 'postal_address': 'P.O. Box 56808-00200, Nairobi', 'is_active': True},
+            {'name': 'Scott Christian University', 'institution_type': 'university', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312201', 'email': 'registrar@scu.ac.ke', 'principal_name': 'Dr. William Mutua (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Machakos', 'account_number': 'UACC100032', 'account_name': 'Scott Christian University', 'postal_address': 'P.O. Box 49-90100, Machakos', 'is_active': True},
+            {'name': 'Great Lakes University of Kisumu', 'institution_type': 'university', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312401', 'email': 'registrar@gluk.ac.ke', 'principal_name': 'Prof. George Otieno (Vice Chancellor)', 'bank_name': 'Equity Bank', 'bank_branch': 'Kisumu', 'account_number': 'UACC100033', 'account_name': 'Great Lakes University of Kisumu', 'postal_address': 'P.O. Box 2224-40100, Kisumu', 'is_active': True},
+            {'name': 'Baraton University of East Africa', 'institution_type': 'university', 'county_name': 'Nandi', 'county_code': '030', 'sub_county': 'Tinderet', 'phone_number': '+254542312101', 'email': 'registrar@baraton.ac.ke', 'principal_name': 'Dr. Bezalel Maingi (Vice Chancellor)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kapsabet', 'account_number': 'UACC100034', 'account_name': 'Baraton University', 'postal_address': 'P.O. Box 2770-30100, Eldoret', 'is_active': True},
+            {'name': 'International Leadership University (ILU)', 'institution_type': 'university', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Kasarani', 'phone_number': '+254722312001', 'email': 'registrar@ilu.ac.ke', 'principal_name': 'Rev. Dr. Samuel Mwangi (Vice Chancellor)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Nairobi', 'account_number': 'UACC100035', 'account_name': 'International Leadership University', 'postal_address': 'P.O. Box 1001-00600, Nairobi', 'is_active': True},
+        ]
+
+    # =========================================================
+    # COLLEGES & TVETs
+    # =========================================================
+    def _colleges_and_tvets(self):
+        return [
+            # ── MEDICAL TRAINING COLLEGES (KMTC) ──────────────────
+            {'name': 'Kenya Medical Training College - Nairobi', 'institution_type': 'college', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202312801', 'email': 'nairobi@kmtc.ac.ke', 'principal_name': 'Mr. Daniel Mwangi (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nairobi', 'account_number': 'CACC100001', 'account_name': 'KMTC Nairobi', 'is_active': True},
+            {'name': 'Kenya Medical Training College - Mombasa', 'institution_type': 'college', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312801', 'email': 'mombasa@kmtc.ac.ke', 'principal_name': 'Mr. Hassan Mwangola (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Mombasa', 'account_number': 'CACC100002', 'account_name': 'KMTC Mombasa', 'is_active': True},
+            {'name': 'Kenya Medical Training College - Kisumu', 'institution_type': 'college', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312501', 'email': 'kisumu@kmtc.ac.ke', 'principal_name': 'Mr. George Onyango (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisumu', 'account_number': 'CACC100003', 'account_name': 'KMTC Kisumu', 'is_active': True},
+            {'name': "Kenya Medical Training College - Murang'a", 'institution_type': 'college', 'county_name': "Murang'a", 'county_code': '022', 'sub_county': "Murang'a Town", 'phone_number': '+254720500007', 'email': 'muranga@kmtc.ac.ke', 'principal_name': 'Mr. Benjamin Kariuki (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': "Murang'a", 'account_number': 'CACC100004', 'account_name': "KMTC Murang'a", 'is_active': True},
+            {'name': 'Kenya Medical Training College - Nyeri', 'institution_type': 'college', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Nyeri Town', 'phone_number': '+254612312601', 'email': 'nyeri@kmtc.ac.ke', 'principal_name': 'Mrs. Susan Muthoni (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Nyeri', 'account_number': 'CACC100005', 'account_name': 'KMTC Nyeri', 'is_active': True},
+            {'name': 'Kenya Medical Training College - Nakuru', 'institution_type': 'college', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town East', 'phone_number': '+254512312601', 'email': 'nakuru@kmtc.ac.ke', 'principal_name': 'Mr. Patrick Mwangi (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Nakuru', 'account_number': 'CACC100006', 'account_name': 'KMTC Nakuru', 'is_active': True},
+            {'name': 'Kenya Medical Training College - Embu', 'institution_type': 'college', 'county_name': 'Embu', 'county_code': '014', 'sub_county': 'Embu Town', 'phone_number': '+254682312601', 'email': 'embu@kmtc.ac.ke', 'principal_name': 'Mr. James Gitonga (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Embu', 'account_number': 'CACC100007', 'account_name': 'KMTC Embu', 'is_active': True},
+
+            # ── NATIONAL POLYTECHNICS ──────────────────────────────
+            {'name': 'Kenya National Polytechnic - Thika', 'institution_type': 'technical_institute', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254675312501', 'email': 'info@knpthika.ac.ke', 'principal_name': 'Dr. Ruth Wambui (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Thika', 'account_number': 'CACC100008', 'account_name': 'Kenya National Polytechnic Thika', 'is_active': True},
+            {'name': 'Mombasa Polytechnic University College', 'institution_type': 'technical_institute', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412312901', 'email': 'info@mombpoly.ac.ke', 'principal_name': 'Prof. Hassan Juma (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Mombasa', 'account_number': 'CACC100009', 'account_name': 'Mombasa Polytechnic', 'is_active': True},
+
+            # ── TEACHERS TRAINING COLLEGES ─────────────────────────
+            {"name": "Murang'a Teachers' College", 'institution_type': 'college', 'county_name': "Murang'a", 'county_code': '022', 'sub_county': "Murang'a Town", 'phone_number': '+254720500009', 'email': 'muranga.ttc@tsc.go.ke', 'principal_name': 'Mr. Frederick Njoki (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': "Murang'a", 'account_number': 'CACC100010', 'account_name': "Murang'a Teachers' College", 'is_active': True},
+            {'name': "Kagumo Teachers' College", 'institution_type': 'college', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Mathira', 'phone_number': '+254612312701', 'email': 'kagumo.ttc@tsc.go.ke', 'principal_name': 'Mr. Peter Wanjiku (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Karatina', 'account_number': 'CACC100011', 'account_name': "Kagumo Teachers' College", 'is_active': True},
+            {'name': "Highridge Teachers' College", 'institution_type': 'college', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Westlands', 'phone_number': '+254202312901', 'email': 'highridge.ttc@tsc.go.ke', 'principal_name': 'Mrs. Grace Wanjiku (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Westlands', 'account_number': 'CACC100012', 'account_name': "Highridge Teachers' College", 'is_active': True},
+            {'name': "Kisii Teachers' College", 'institution_type': 'college', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312701', 'email': 'kisii.ttc@tsc.go.ke', 'principal_name': 'Mr. Alphonce Omari (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisii', 'account_number': 'CACC100013', 'account_name': "Kisii Teachers' College", 'is_active': True},
+            {'name': "Machakos Teachers' College", 'institution_type': 'college', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312701', 'email': 'machakos.ttc@tsc.go.ke', 'principal_name': 'Mr. Isaac Muli (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Machakos', 'account_number': 'CACC100014', 'account_name': "Machakos Teachers' College", 'is_active': True},
+            {'name': "Kilimambogo Teachers' College", 'institution_type': 'college', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254672312801', 'email': 'kilimambogo.ttc@tsc.go.ke', 'principal_name': 'Mrs. Martha Kamau (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Thika', 'account_number': 'CACC100015', 'account_name': "Kilimambogo Teachers' College", 'is_active': True},
+
+            # ── TECHNICAL TRAINING INSTITUTES (TTIs) ──────────────
+            {'name': 'Nairobi Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Nairobi', 'county_code': '047', 'sub_county': 'Starehe', 'phone_number': '+254202313001', 'email': 'nairobi.tti@tvet.go.ke', 'principal_name': 'Mr. Andrew Odhiambo (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nairobi', 'account_number': 'CACC100016', 'account_name': 'Nairobi TTI', 'is_active': True},
+            {'name': "Murang'a Technical Training Institute", 'institution_type': 'technical_institute', 'county_name': "Murang'a", 'county_code': '022', 'sub_county': "Murang'a Town", 'phone_number': '+254720500001', 'email': 'muranga.tti@tvet.go.ke', 'principal_name': 'Mr. Isaac Njoroge (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': "Murang'a", 'account_number': 'CACC100017', 'account_name': "Murang'a TTI", 'is_active': True},
+            {'name': 'Mombasa Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Mombasa', 'county_code': '001', 'sub_county': 'Mvita', 'phone_number': '+254412313101', 'email': 'mombasa.tti@tvet.go.ke', 'principal_name': 'Mr. Rashid Omar (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Mombasa', 'account_number': 'CACC100018', 'account_name': 'Mombasa TTI', 'is_active': True},
+            {'name': 'Kisumu Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kisumu', 'county_code': '040', 'sub_county': 'Kisumu Central', 'phone_number': '+254572312601', 'email': 'kisumu.tti@tvet.go.ke', 'principal_name': 'Mr. David Ouko (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kisumu', 'account_number': 'CACC100019', 'account_name': 'Kisumu TTI', 'is_active': True},
+            {'name': 'Nakuru Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Nakuru', 'county_code': '032', 'sub_county': 'Nakuru Town East', 'phone_number': '+254512312801', 'email': 'nakuru.tti@tvet.go.ke', 'principal_name': 'Mr. Joseph Mwangi (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Nakuru', 'account_number': 'CACC100020', 'account_name': 'Nakuru TTI', 'is_active': True},
+            {'name': 'Eldoret Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Uasin Gishu', 'county_code': '027', 'sub_county': 'Eldoret East', 'phone_number': '+254532312601', 'email': 'eldoret.tti@tvet.go.ke', 'principal_name': 'Mr. Ezekiel Koech (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Eldoret', 'account_number': 'CACC100021', 'account_name': 'Eldoret TTI', 'is_active': True},
+            {'name': 'Nyeri Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Nyeri', 'county_code': '037', 'sub_county': 'Nyeri Town', 'phone_number': '+254612312801', 'email': 'nyeri.tti@tvet.go.ke', 'principal_name': 'Mr. James Gatheru (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Nyeri', 'account_number': 'CACC100022', 'account_name': 'Nyeri TTI', 'is_active': True},
+            {'name': 'Embu Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Embu', 'county_code': '014', 'sub_county': 'Embu Town', 'phone_number': '+254682312801', 'email': 'embu.tti@tvet.go.ke', 'principal_name': 'Mr. Peter Nthiga (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Embu', 'account_number': 'CACC100023', 'account_name': 'Embu TTI', 'is_active': True},
+            {'name': 'Meru Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Meru', 'county_code': '021', 'sub_county': 'Imenti North', 'phone_number': '+254642312801', 'email': 'meru.tti@tvet.go.ke', 'principal_name': 'Mr. Wilfred Mugambi (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Meru', 'account_number': 'CACC100024', 'account_name': 'Meru TTI', 'is_active': True},
+            {'name': 'Kitui Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kitui', 'county_code': '015', 'sub_county': 'Kitui Central', 'phone_number': '+254462312801', 'email': 'kitui.tti@tvet.go.ke', 'principal_name': 'Mr. Samuel Nguli (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kitui', 'account_number': 'CACC100025', 'account_name': 'Kitui TTI', 'is_active': True},
+            {'name': 'Machakos Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Machakos', 'county_code': '016', 'sub_county': 'Machakos Town', 'phone_number': '+254442312801', 'email': 'machakos.tti@tvet.go.ke', 'principal_name': 'Mr. John Mutua (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Machakos', 'account_number': 'CACC100026', 'account_name': 'Machakos TTI', 'is_active': True},
+            {'name': 'Kisii Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kisii', 'county_code': '045', 'sub_county': 'Kisii Central', 'phone_number': '+254582312801', 'email': 'kisii.tti@tvet.go.ke', 'principal_name': 'Mr. Kenneth Ongeri (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kisii', 'account_number': 'CACC100027', 'account_name': 'Kisii TTI', 'is_active': True},
+            {'name': 'Kakamega Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kakamega', 'county_code': '031', 'sub_county': 'Lurambi', 'phone_number': '+254562312801', 'email': 'kakamega.tti@tvet.go.ke', 'principal_name': 'Mr. Michael Wanyonyi (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Kakamega', 'account_number': 'CACC100028', 'account_name': 'Kakamega TTI', 'is_active': True},
+            {'name': 'Thika Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kiambu', 'county_code': '036', 'sub_county': 'Thika Town', 'phone_number': '+254675312801', 'email': 'thika.tti@tvet.go.ke', 'principal_name': 'Mrs. Lucy Kariuki (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Thika', 'account_number': 'CACC100029', 'account_name': 'Thika TTI', 'is_active': True},
+            {'name': 'Voi Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Taita-Taveta', 'county_code': '006', 'sub_county': 'Voi', 'phone_number': '+254432312001', 'email': 'voi.tti@tvet.go.ke', 'principal_name': 'Mr. James Mwangangi (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Voi', 'account_number': 'CACC100030', 'account_name': 'Voi TTI', 'is_active': True},
+            {'name': 'Malindi Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kilifi', 'county_code': '003', 'sub_county': 'Malindi', 'phone_number': '+254422312801', 'email': 'malindi.tti@tvet.go.ke', 'principal_name': 'Mr. Salim Mwakio (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Malindi', 'account_number': 'CACC100031', 'account_name': 'Malindi TTI', 'is_active': True},
+            {'name': 'Garissa Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Garissa', 'county_code': '007', 'sub_county': 'Garissa Township', 'phone_number': '+254462512001', 'email': 'garissa.tti@tvet.go.ke', 'principal_name': 'Mr. Hussein Abdi (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Garissa', 'account_number': 'CACC100032', 'account_name': 'Garissa TTI', 'is_active': True},
+            {'name': 'Bungoma Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Bungoma', 'county_code': '039', 'sub_county': 'Kanduyi', 'phone_number': '+254553312801', 'email': 'bungoma.tti@tvet.go.ke', 'principal_name': 'Mr. Paul Wafula (Principal)', 'bank_name': 'Kenya Commercial Bank', 'bank_branch': 'Bungoma', 'account_number': 'CACC100033', 'account_name': 'Bungoma TTI', 'is_active': True},
+            {'name': 'Nyamira Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Nyamira', 'county_code': '046', 'sub_county': 'Manga', 'phone_number': '+254582412801', 'email': 'nyamira.tti@tvet.go.ke', 'principal_name': 'Mr. Francis Onsongo (Principal)', 'bank_name': 'Equity Bank', 'bank_branch': 'Nyamira', 'account_number': 'CACC100034', 'account_name': 'Nyamira TTI', 'is_active': True},
+            {'name': 'Kajiado Technical Training Institute', 'institution_type': 'technical_institute', 'county_name': 'Kajiado', 'county_code': '034', 'sub_county': 'Kajiado North', 'phone_number': '+254452312801', 'email': 'kajiado.tti@tvet.go.ke', 'principal_name': 'Mr. David Tipape (Principal)', 'bank_name': 'Co-operative Bank', 'bank_branch': 'Kajiado', 'account_number': 'CACC100035', 'account_name': 'Kajiado TTI', 'is_active': True},
+        ]

@@ -18147,13 +18147,8 @@ def constituency_dashboard(request):
         'ward_allocation_chart_data': json.dumps(ward_allocation_chart_data),
         'daily_chart_data': json.dumps(daily_chart_data),
     }
-    
-    # Create audit log
-    create_audit_log(
-        request.user, 'view', 'Dashboard', None,
-        f"Viewed constituency dashboard for {constituency.name}",
-        request
-    )
+
+
     
     return render(request, 'constituency_admin/dashboard.html', context)
 
@@ -18567,12 +18562,7 @@ def constituency_analytics(request):
         }
     }
     
-    # Create audit log
-    create_audit_log(
-        request.user, 'view', 'Analytics', None,
-        f"Viewed constituency analytics for {constituency.name}",
-        request
-    )
+   
     
     return render(request, 'constituency_admin/analytics.html', context)
 
