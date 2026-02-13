@@ -1,11 +1,11 @@
 {% extends 'student_base.html' %}
-{% load static %}
 {% load humanize %}
 
-{% block title %}My Profile - Student Panel{% endblock %}
+{% block title %}My Profile - Nyota Zetu Bursary System{% endblock %}
 
 {% block extra_css %}
 <style>
+    /* ── Breadcrumb ─────────────────────────── */
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -14,1216 +14,1092 @@
         display: flex;
         flex-wrap: wrap;
     }
-
-    .breadcrumb-item {
-        color: #64748B;
-    }
-
+    .breadcrumb-item { color: #64748B; }
     .breadcrumb-item + .breadcrumb-item::before {
         content: "/ ";
         color: #94A3B8;
         padding: 0 8px;
     }
+    .breadcrumb-item.active { color: #1E293B; font-weight: 500; }
+    .breadcrumb a { color: #3498db; text-decoration: none; transition: color .3s; }
+    .breadcrumb a:hover { color: #2980b9; }
 
-    .breadcrumb-item.active {
-        color: #1E293B;
-        font-weight: 500;
-    }
-
-    .breadcrumb a {
-        color: #3498db;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    .breadcrumb a:hover {
-        color: #2980b9;
-    }
-
-    .back-button-container {
-        margin-bottom: 20px;
-    }
-
-    .btn-secondary-custom {
-        padding: 10px 20px;
+    /* ── Layout Shells ──────────────────────── */
+    .section-container {
         background: white;
-        color: #64748B;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-secondary-custom:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
-        color: #64748B;
-    }
-
-    .content-grid {
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 24px;
-    }
-
-    .profile-sidebar {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
         border-radius: 8px;
         padding: 24px;
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .page-subtitle { color: #64748B; font-size: 14px; margin: 0; }
+
+    /* ── Profile Grid ───────────────────────── */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    /* ── Sidebar ────────────────────────────── */
+    .profile-sidebar {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #E2E8F0;
         height: fit-content;
-        position: sticky;
-        top: 20px;
     }
 
-    .profile-img-container {
-        text-align: center;
-        margin-bottom: 20px;
+    /* Avatar with upload overlay */
+    .avatar-wrapper {
         position: relative;
+        width: 150px;
+        margin: 0 auto 20px;
     }
-
-    .profile-img {
-        width: 120px;
-        height: 120px;
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
         border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(52,152,219,.3);
+        overflow: hidden;
     }
-
-    .edit-profile-btn {
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .avatar-upload-overlay {
         position: absolute;
-        top: 0;
-        right: calc(50% - 72px);
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
+        bottom: 4px;
+        right: 4px;
+        background: #3498db;
+        color: white;
         border-radius: 50%;
         width: 36px;
         height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #3498db;
-        text-decoration: none;
-        transition: all 0.3s ease;
         cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        transition: background .2s;
+        border: 2px solid white;
     }
+    .avatar-upload-overlay:hover { background: #2980b9; }
+    .avatar-upload-overlay i { font-size: 14px; }
 
-    .edit-profile-btn:hover {
-        background: white;
-        color: #2980b9;
-        transform: scale(1.1);
-    }
+    .profile-info { text-align: center; }
+    .profile-name { font-size: 18px; font-weight: 600; color: #1E293B; margin-bottom: 4px; }
+    .profile-role { font-size: 13px; color: #64748B; margin-bottom: 8px; }
 
-    .profile-name {
-        font-size: 22px;
-        font-weight: 600;
-        margin: 12px 0 6px;
-    }
-
-    .profile-id {
-        opacity: 0.9;
-        margin-bottom: 20px;
-        font-size: 14px;
-    }
-
-    .profile-details {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .profile-detail-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .profile-detail-item:last-child {
-        border-bottom: none;
-    }
-
-    .profile-detail-item i {
-        width: 20px;
-        flex-shrink: 0;
-    }
-
-    .btn-edit-profile {
-        margin-top: 16px;
-        padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-    }
-
-    .btn-edit-profile:hover {
-        background: rgba(255, 255, 255, 0.3);
-        border-color: rgba(255, 255, 255, 0.5);
-        color: white;
-    }
-
-    .tabs-navigation {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        overflow: hidden;
-    }
-
-    .tab-list {
-        display: flex;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        border-bottom: 1px solid #E2E8F0;
-    }
-
-    .tab-item {
-        flex: 1;
-    }
-
-    .tab-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 16px;
-        color: #64748B;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        border-bottom: 3px solid transparent;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        background: none;
-        border: none;
-        width: 100%;
-    }
-
-    .tab-link:hover {
-        color: #3498db;
-        background: #F8FAFC;
-    }
-
-    .tab-link.active {
-        color: #3498db;
-        border-bottom-color: #3498db;
-        background: white;
-    }
-
-    .tab-content {
-        display: none;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    .card-custom {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        padding: 16px 20px;
-        background: #F8FAFC;
-        border-bottom: 1px solid #E2E8F0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .card-title-custom {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-edit-small {
-        padding: 6px 14px;
-        background: white;
-        color: #3498db;
-        border: 1px solid #3498db;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
+    /* Verification badge */
+    .verified-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-    }
-
-    .btn-edit-small:hover {
-        background: #3498db;
-        color: white;
-    }
-
-    .card-body-custom {
-        padding: 20px;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-
-    .detail-item {
-        padding-bottom: 16px;
-        margin-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
-    }
-
-    .detail-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-        padding-bottom: 0;
-    }
-
-    .detail-label {
+        gap: 4px;
+        background: #DCFCE7;
+        color: #166534;
         font-size: 12px;
         font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 6px;
-        display: block;
-    }
-
-    .detail-value {
-        font-size: 14px;
-        color: #1E293B;
-        font-weight: 500;
-    }
-
-    .badge-custom {
-        display: inline-block;
         padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
+        border-radius: 20px;
+        margin-bottom: 16px;
     }
-
-    .badge-success {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .badge-secondary {
-        background: #E2E8F0;
-        color: #64748B;
-    }
-
-    .badge-warning {
+    .unverified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         background: #FEF3C7;
         color: #92400E;
-    }
-
-    .badge-info {
-        background: #DBEAFE;
-        color: #1E40AF;
-    }
-
-    .badge-danger {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .progress-section {
-        margin: 20px 0;
-    }
-
-    .progress-label {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #1E293B;
-        font-weight: 500;
-    }
-
-    .progress-bar-custom {
-        height: 8px;
-        background: #F1F5F9;
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 4px;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(135deg, #27ae60, #219653);
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-
-    .progress-text {
         font-size: 12px;
-        color: #64748B;
-        text-align: right;
-    }
-
-    .guardian-card {
-        background: #F8FAFC;
-        border-left: 3px solid #3498db;
-        border-radius: 8px;
-        padding: 16px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
         margin-bottom: 16px;
     }
 
-    .guardian-card:last-child {
-        margin-bottom: 0;
-    }
-
-    .guardian-name {
-        font-size: 15px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .guardian-relationship {
-        font-size: 12px;
-        color: #64748B;
-        margin-left: 8px;
-    }
-
-    .primary-badge {
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        background: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-    }
-
-    .sibling-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .sibling-table thead th {
-        background: #F8FAFC;
-        padding: 12px 16px;
-        text-align: left;
-        font-size: 12px;
-        font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #E2E8F0;
-        white-space: nowrap;
-    }
-
-    .sibling-table tbody td {
-        padding: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        font-size: 14px;
-        color: #334155;
-    }
-
-    .sibling-table tbody tr {
-        transition: background-color 0.2s ease;
-    }
-
-    .sibling-table tbody tr:hover {
-        background-color: #F8FAFC;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .status-draft {
-        background: #E2E8F0;
-        color: #64748B;
-    }
-
-    .status-submitted {
-        background: #FEF3C7;
-        color: #92400E;
-    }
-
-    .status-under-review {
-        background: #DBEAFE;
-        color: #1E40AF;
-    }
-
-    .status-approved {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .status-rejected {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .status-disbursed {
-        background: #E0E7FF;
-        color: #3730A3;
-    }
-
-    .btn-view-small {
-        padding: 6px 14px;
+    .profile-meta {
         background: white;
-        color: #3498db;
-        border: 1px solid #3498db;
         border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
+        padding: 16px;
+        margin-top: 20px;
+        border: 1px solid #E2E8F0;
     }
-
-    .btn-view-small:hover {
-        background: #3498db;
-        color: white;
+    .profile-meta-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 13px;
+        color: #64748B;
     }
+    .profile-meta-item:last-child { border-bottom: none; }
+    .profile-meta-item i { color: #3498db; width: 20px; flex-shrink: 0; margin-top: 1px; }
+    .meta-label { font-weight: 600; color: #334155; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+    .meta-value { color: #475569; font-size: 13px; margin-top: 1px; word-break: break-all; }
 
-    .btn-add-small {
-        padding: 6px 14px;
-        background: #27ae60;
-        color: white;
-        border: 1px solid #27ae60;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .btn-add-small:hover {
-        background: #219653;
-        color: white;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #94A3B8;
-        font-size: 14px;
-    }
-
-    .stats-grid {
+    /* Stats strip */
+    .stats-strip {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-top: 20px;
+        gap: 8px;
+        margin-top: 16px;
     }
-
-    .stat-item {
-        background: #F8FAFC;
-        border-radius: 8px;
-        padding: 16px;
+    .stat-box {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px 8px;
         text-align: center;
     }
-
-    .stat-value {
-        font-size: 24px;
+    .stat-box .stat-num {
+        font-size: 18px;
         font-weight: 700;
         color: #3498db;
+    }
+    .stat-box .stat-lbl {
+        font-size: 10px;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-top: 2px;
+    }
+
+    /* ── Tabs ───────────────────────────────── */
+    .tab-container { background: white; }
+    .tab-nav {
+        display: flex;
+        gap: 4px;
+        border-bottom: 2px solid #F1F5F9;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+    .tab-button {
+        padding: 11px 18px;
+        border: none;
+        background: transparent;
+        color: #64748B;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all .25s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .tab-button:hover { color: #3498db; }
+    .tab-button.active { color: #3498db; border-bottom-color: #3498db; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Section titles ─────────────────────── */
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #F1F5F9;
+    }
+
+    /* ── Read-only info grid ────────────────── */
+    .readonly-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 20px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+    }
+    .readonly-field {}
+    .readonly-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: .5px;
         margin-bottom: 4px;
     }
-
-    .stat-label {
+    .readonly-value {
+        font-size: 14px;
+        color: #334155;
+        font-weight: 500;
+    }
+    .lock-icon { color: #CBD5E1; font-size: 11px; margin-left: 4px; }
+    .readonly-note {
         font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 16px;
+        font-style: italic;
+    }
+
+    /* ── Forms ──────────────────────────────── */
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+    .form-label .required { color: #DC2626; margin-left: 4px; }
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #334155;
+        transition: all .3s;
+        box-sizing: border-box;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52,152,219,.1);
+    }
+    .form-control:disabled, .form-control[readonly] {
+        background: #F1F5F9;
+        color: #94A3B8;
+        cursor: not-allowed;
+    }
+    .form-help { font-size: 12px; color: #94A3B8; margin-top: 5px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ── Buttons ────────────────────────────── */
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-primary:hover { background: #2980b9; transform: translateY(-1px); }
+    .btn-danger { background: #EF4444; color: white; }
+    .btn-danger:hover { background: #DC2626; transform: translateY(-1px); }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+    /* ── Notes / Alerts ─────────────────────── */
+    .info-note {
+        background: #F0F9FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #1E40AF;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .info-note.warning {
+        background: #FEF3C7;
+        border-color: #FDE68A;
+        color: #92400E;
+    }
+    .info-note.success {
+        background: #F0FDF4;
+        border-color: #BBF7D0;
+        color: #166534;
+    }
+    .info-note.danger {
+        background: #FEF2F2;
+        border-color: #FECACA;
+        color: #991B1B;
+    }
+    .info-note i { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Password strength bar ──────────────── */
+    .pw-strength {
+        height: 4px;
+        background: #E2E8F0;
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    .pw-strength-bar {
+        height: 100%;
+        border-radius: 2px;
+        width: 0;
+        transition: width .3s, background .3s;
+    }
+    .pw-strength-label {
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    /* ── Activity log ───────────────────────── */
+    .activity-item {
+        padding: 14px 16px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 3px solid #3498db;
+    }
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 4px;
+        gap: 12px;
+    }
+    .activity-action { font-size: 14px; font-weight: 600; color: #1E293B; }
+    .activity-time { font-size: 12px; color: #94A3B8; white-space: nowrap; }
+    .activity-description { font-size: 13px; color: #64748B; }
+
+    /* ── Application summary cards ──────────── */
+    .app-card {
+        padding: 14px 16px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        transition: border-color .2s;
+    }
+    .app-card:hover { border-color: #3498db; }
+    .app-info { flex: 1; min-width: 0; }
+    .app-number { font-size: 13px; font-weight: 700; color: #3498db; }
+    .app-detail { font-size: 12px; color: #64748B; margin-top: 2px; }
+    .app-amount { font-size: 15px; font-weight: 700; color: #1E293B; white-space: nowrap; }
+
+    /* Status badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-success { background: #DCFCE7; color: #166534; }
+    .badge-warning { background: #FEF3C7; color: #92400E; }
+    .badge-info    { background: #DBEAFE; color: #1E40AF; }
+    .badge-danger  { background: #FEE2E2; color: #991B1B; }
+    .badge-secondary { background: #F1F5F9; color: #475569; }
+
+    /* ── Photo modal ─────────────────────────── */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+        background: white;
+        border-radius: 10px;
+        padding: 28px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        color: #94A3B8;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+    }
+    .modal-close:hover { color: #1E293B; }
+    .photo-preview-wrap {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 3px dashed #CBD5E1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color .2s;
+    }
+    .photo-preview-wrap:hover { border-color: #3498db; }
+    .photo-preview-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-preview-placeholder { color: #CBD5E1; font-size: 36px; }
+    .file-input-label {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        border: 1px dashed #CBD5E1;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
         color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        transition: all .2s;
     }
+    .file-input-label:hover { border-color: #3498db; color: #3498db; }
+    #photoFileInput { display: none; }
 
-    @media (max-width: 1200px) {
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .profile-sidebar {
-            position: relative;
-            top: 0;
-        }
+    /* ── Responsive ─────────────────────────── */
+    @media (max-width: 900px) {
+        .profile-grid { grid-template-columns: 1fr; }
     }
-
-    @media (max-width: 768px) {
-        .tab-list {
-            flex-direction: column;
-        }
-
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .sibling-table {
-            font-size: 12px;
-        }
-
-        .sibling-table thead th,
-        .sibling-table tbody td {
-            padding: 10px;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .card-header-custom {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .btn-edit-small {
-            align-self: flex-start;
-        }
+    @media (max-width: 600px) {
+        .form-row { grid-template-columns: 1fr; }
+        .readonly-grid { grid-template-columns: 1fr; }
+        .tab-nav { gap: 0; }
+        .tab-button { padding: 10px 12px; font-size: 13px; }
+        .stats-strip { grid-template-columns: repeat(3,1fr); }
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
 <div class="container-fluid">
+
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{% url 'student_dashboard' %}">
-                    <i class="bi bi-house-door"></i> Dashboard
-                </a>
+                <a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">My Profile</li>
         </ol>
     </nav>
 
-    <!-- Content Grid -->
-    <div class="content-grid">
-        <!-- Profile Sidebar -->
-        <div class="profile-sidebar">
-            <div class="profile-img-container">
-                {% if applicant.profile_picture %}
-                    <img src="{{ applicant.profile_picture.url }}" alt="Profile Image" class="profile-img">
-                {% else %}
-                    <img src="{% static 'images/default-avatar.png' %}" alt="Profile Image" class="profile-img" onerror="this.src='https://ui-avatars.com/api/?name={{ applicant.user.first_name }}+{{ applicant.user.last_name }}&background=3498db&color=fff&size=120'">
-                {% endif %}
-                
-                <a href="{% url 'student_profile_create' %}" class="edit-profile-btn" title="Edit Profile">
-                    <i class="bi bi-camera"></i>
-                </a>
-                
-                <h3 class="profile-name">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</h3>
-                <p class="profile-id">ID: {{ applicant.id_number }}</p>
-            </div>
-            
-            <div class="profile-details">
-                <div class="profile-detail-item">
-                    <i class="bi bi-envelope"></i>
-                    <span>{{ applicant.user.email }}</span>
-                </div>
-                <div class="profile-detail-item">
-                    <i class="bi bi-telephone"></i>
-                    <span>{{ applicant.user.phone_number|default:"Not provided" }}</span>
-                </div>
-                <div class="profile-detail-item">
-                    <i class="bi bi-person"></i>
-                    <span>Student</span>
-                </div>
-                <div class="profile-detail-item">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>{{ applicant.ward.name|default:"Not specified" }}</span>
-                </div>
-
-                <!-- Profile Completion Progress -->
-                <div class="progress-section">
-                    <div class="progress-label">
-                        <span>Profile Completion</span>
-                        <span>{{ completion_percentage }}%</span>
-                    </div>
-                    <div class="progress-bar-custom">
-                        <div class="progress-fill" style="width: {{ completion_percentage }}%;"></div>
-                    </div>
-                    <div class="progress-text">
-                        Complete your profile to improve application chances
-                    </div>
-                </div>
-                
-                <a href="{% url 'student_profile_create' %}" class="btn-edit-profile">
-                    <i class="bi bi-pencil"></i>
-                    Edit Profile
-                </a>
-            </div>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-person-circle"></i>
+                My Profile
+            </h1>
+            <p class="page-subtitle">Manage your account information, photo, and password</p>
         </div>
 
-        <!-- Main Content -->
-        <div>
-            <!-- Tabs Navigation -->
-            <div class="tabs-navigation">
-                <ul class="tab-list">
-                    <li class="tab-item">
-                        <button class="tab-link active" data-tab="personal">
-                            <i class="bi bi-person"></i>
-                            Personal
-                        </button>
-                    </li>
-                    <li class="tab-item">
-                        <button class="tab-link" data-tab="location">
-                            <i class="bi bi-geo"></i>
-                            Location
-                        </button>
-                    </li>
-                    <li class="tab-item">
-                        <button class="tab-link" data-tab="family">
-                            <i class="bi bi-people"></i>
-                            Family
-                        </button>
-                    </li>
-                    <li class="tab-item">
-                        <button class="tab-link" data-tab="applications">
-                            <i class="bi bi-files"></i>
-                            Applications
-                        </button>
-                    </li>
-                </ul>
-            </div>
+        <!-- Messages -->
+        {% for message in messages %}
+        <div class="info-note {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}{% endif %}" style="margin-bottom:16px;">
+            <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
 
-            <!-- Tab Content -->
-            <div id="tabContent">
-                <!-- Personal Information Tab -->
-                <div class="tab-content active" id="personal">
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-person-badge"></i>
-                                Personal Information
-                            </div>
-                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
-                                <i class="bi bi-pencil"></i>
-                                Edit
-                            </a>
-                        </div>
-                        <div class="card-body-custom">
-                            <div class="info-grid">
-                                <div class="detail-item">
-                                    <span class="detail-label">Full Name</span>
-                                    <span class="detail-value">{{ applicant.user.first_name }} {{ applicant.user.last_name }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">ID Number</span>
-                                    <span class="detail-value">{{ applicant.id_number }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Gender</span>
-                                    <span class="detail-value">{{ applicant.get_gender_display }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Date of Birth</span>
-                                    <span class="detail-value">{{ applicant.date_of_birth|date:"M d, Y" }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Email</span>
-                                    <span class="detail-value">{{ applicant.user.email }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Phone</span>
-                                    <span class="detail-value">{{ applicant.user.phone_number|default:"Not provided" }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Profile Status</span>
-                                    <span class="detail-value">
-                                        {% if completion_percentage == 100 %}
-                                            <span class="badge-custom badge-success">Complete</span>
-                                        {% elif completion_percentage >= 70 %}
-                                            <span class="badge-custom badge-info">Good</span>
-                                        {% elif completion_percentage >= 40 %}
-                                            <span class="badge-custom badge-warning">Fair</span>
-                                        {% else %}
-                                            <span class="badge-custom badge-danger">Incomplete</span>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Profile Grid -->
+        <div class="profile-grid">
 
-                    <!-- Special Needs -->
-                    {% if applicant.special_needs %}
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-wheelchair"></i>
-                                Special Needs
-                            </div>
-                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
-                                <i class="bi bi-pencil"></i>
-                                Edit
-                            </a>
-                        </div>
-                        <div class="card-body-custom">
-                            <span class="badge-custom badge-warning" style="margin-bottom: 16px; display: inline-block;">Has Special Needs</span>
-                            <div class="detail-item">
-                                <span class="detail-label">Description</span>
-                                <span class="detail-value">{{ applicant.special_needs_description|default:"Not provided" }}</span>
-                            </div>
-                        </div>
+            <!-- ═══════════ SIDEBAR ═══════════ -->
+            <div class="profile-sidebar">
+
+                <!-- Avatar -->
+                <div class="avatar-wrapper">
+                    <div class="profile-avatar">
+                        {% if applicant.profile_picture and applicant.profile_picture.name != 'profile_pics/default.png' %}
+                            <img src="{{ applicant.profile_picture.url }}" alt="Profile photo">
+                        {% else %}
+                            {{ request.user.first_name.0|upper }}{{ request.user.last_name.0|upper }}
+                        {% endif %}
                     </div>
+                    <div class="avatar-upload-overlay" onclick="openPhotoModal()" title="Change photo">
+                        <i class="bi bi-camera"></i>
+                    </div>
+                </div>
+
+                <!-- Name & role -->
+                <div class="profile-info">
+                    <div class="profile-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+                    <div class="profile-role">Bursary Applicant</div>
+                    {% if applicant.is_verified %}
+                        <span class="verified-badge"><i class="bi bi-patch-check-fill"></i> Verified</span>
+                    {% else %}
+                        <span class="unverified-badge"><i class="bi bi-exclamation-circle"></i> Pending Verification</span>
                     {% endif %}
+                </div>
 
-                    <!-- Quick Stats -->
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-bar-chart"></i>
-                                Profile Stats
-                            </div>
-                        </div>
-                        <div class="card-body-custom">
-                            <div class="stats-grid">
-                                <div class="stat-item">
-                                    <div class="stat-value">{{ guardians.count }}</div>
-                                    <div class="stat-label">Guardians</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">{{ siblings.count }}</div>
-                                    <div class="stat-label">Siblings</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">{{ applications_count|default:0 }}</div>
-                                    <div class="stat-label">Applications</div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Quick stats -->
+                <div class="stats-strip">
+                    <div class="stat-box">
+                        <div class="stat-num">{{ applicant.applications.count }}</div>
+                        <div class="stat-lbl">Applications</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">{{ applicant.applications.filter.count|default:"0" }}</div>
+                        <div class="stat-lbl">Approved</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">KES {{ total_allocated|intcomma }}</div>
+                        <div class="stat-lbl">Received</div>
                     </div>
                 </div>
 
-                <!-- Location Information Tab -->
-                <div class="tab-content" id="location">
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-geo-alt"></i>
-                                Location Information
-                            </div>
-                            <a href="{% url 'student_profile_create' %}" class="btn-edit-small">
-                                <i class="bi bi-pencil"></i>
-                                Edit
-                            </a>
+                <!-- Contact meta -->
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <i class="bi bi-at"></i>
+                        <div>
+                            <div class="meta-label">Username</div>
+                            <div class="meta-value">{{ request.user.username }}</div>
                         </div>
-                        <div class="card-body-custom">
-                            <div class="detail-item">
-                                <span class="detail-label">County</span>
-                                <span class="detail-value">{{ applicant.county.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Constituency</span>
-                                <span class="detail-value">{{ applicant.constituency.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Ward</span>
-                                <span class="detail-value">{{ applicant.ward.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Location</span>
-                                <span class="detail-value">{{ applicant.location.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Sub-location</span>
-                                <span class="detail-value">{{ applicant.sublocation.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Village</span>
-                                <span class="detail-value">{{ applicant.village.name|default:"Not specified" }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Physical Address</span>
-                                <span class="detail-value">{{ applicant.physical_address }}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Postal Address</span>
-                                <span class="detail-value">{{ applicant.postal_address|default:"Not provided" }}</span>
-                            </div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-envelope"></i>
+                        <div>
+                            <div class="meta-label">Email</div>
+                            <div class="meta-value">{{ request.user.email|default:"Not set" }}</div>
+                        </div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-phone"></i>
+                        <div>
+                            <div class="meta-label">Phone</div>
+                            <div class="meta-value">{{ request.user.phone_number|default:"Not set" }}</div>
+                        </div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-geo-alt"></i>
+                        <div>
+                            <div class="meta-label">Ward</div>
+                            <div class="meta-value">{{ applicant.ward.name|default:"Not set" }}</div>
+                        </div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <i class="bi bi-calendar-date"></i>
+                        <div>
+                            <div class="meta-label">Member since</div>
+                            <div class="meta-value">{{ request.user.date_joined|date:"F Y" }}</div>
                         </div>
                     </div>
                 </div>
+            </div><!-- /sidebar -->
 
-                <!-- Family Information Tab -->
-                <div class="tab-content" id="family">
-                    <!-- Guardians -->
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-people"></i>
-                                Guardians/Parents
+
+            <!-- ═══════════ MAIN TABS ═══════════ -->
+            <div class="tab-container">
+                <div class="tab-nav">
+                    <button class="tab-button active" onclick="switchTab('profile', event)">
+                        <i class="bi bi-person"></i> Personal Info
+                    </button>
+                    <button class="tab-button" onclick="switchTab('sensitive', event)">
+                        <i class="bi bi-lock"></i> Sensitive Info
+                    </button>
+                    <button class="tab-button" onclick="switchTab('security', event)">
+                        <i class="bi bi-shield-lock"></i> Security
+                    </button>
+                    <button class="tab-button" onclick="switchTab('applications', event)">
+                        <i class="bi bi-file-earmark-text"></i> Applications
+                    </button>
+                    <button class="tab-button" onclick="switchTab('activity', event)">
+                        <i class="bi bi-clock-history"></i> Activity
+                    </button>
+                </div>
+
+
+                <!-- ══ TAB 1: Personal Info (EDITABLE) ══ -->
+                <div class="tab-content active" id="profile-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-pencil-square"></i> Editable Information
+                    </h2>
+
+                    <div class="info-note">
+                        <i class="bi bi-info-circle"></i>
+                        <span>You can update your name, email, and phone number. For changes to ID number, location, or username please contact the bursary office.</span>
+                    </div>
+
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="first_name">
+                                    First Name <span class="required">*</span>
+                                </label>
+                                <input type="text" name="first_name" id="first_name"
+                                    class="form-control"
+                                    value="{{ request.user.first_name }}"
+                                    placeholder="Enter first name"
+                                    required>
                             </div>
-                            <a href="{% url 'guardian_create' %}" class="btn-add-small">
-                                <i class="bi bi-plus"></i>
-                                Add Guardian
-                            </a>
+                            <div class="form-group">
+                                <label class="form-label" for="last_name">
+                                    Last Name <span class="required">*</span>
+                                </label>
+                                <input type="text" name="last_name" id="last_name"
+                                    class="form-control"
+                                    value="{{ request.user.last_name }}"
+                                    placeholder="Enter last name"
+                                    required>
+                            </div>
                         </div>
-                        <div class="card-body-custom">
-                            {% for guardian in guardians %}
-                            <div class="guardian-card">
-                                <div class="guardian-name">
-                                    {{ guardian.name }}
-                                    <span class="guardian-relationship">({{ guardian.get_relationship_display }})</span>
-                                    {% if guardian.is_primary_contact %}
-                                        <span class="primary-badge">Primary</span>
+
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email Address</label>
+                            <input type="email" name="email" id="email"
+                                class="form-control"
+                                value="{{ request.user.email }}"
+                                placeholder="example@gmail.com">
+                            <div class="form-help">Used for bursary notifications and account recovery.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="phone_number">Phone Number</label>
+                            <input type="tel" name="phone_number" id="phone_number"
+                                class="form-control"
+                                value="{{ request.user.phone_number }}"
+                                placeholder="+254XXXXXXXXX">
+                            <div class="form-help">Format: +254XXXXXXXXX — SMS notifications will be sent here.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2-circle"></i> Save Changes
+                        </button>
+                    </form>
+                </div><!-- /profile-tab -->
+
+
+                <!-- ══ TAB 2: Sensitive / Read-only Info ══ -->
+                <div class="tab-content" id="sensitive-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-lock-fill"></i> Sensitive Information
+                    </h2>
+
+                    <div class="info-note warning">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <span>The fields below are <strong>locked</strong> for security and data integrity. These were set during registration. To request a change, please visit the bursary office in person with supporting documents.</span>
+                    </div>
+
+                    <p class="readonly-note">
+                        <i class="bi bi-lock"></i>
+                        These fields are read-only and cannot be changed online.
+                    </p>
+
+                    <!-- Identity -->
+                    <h3 style="font-size:14px;font-weight:600;color:#475569;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">
+                        <i class="bi bi-person-badge" style="color:#3498db;"></i> Identity
+                    </h3>
+                    <div class="readonly-grid" style="margin-bottom:20px;">
+                        <div class="readonly-field">
+                            <div class="readonly-label"><i class="bi bi-at"></i> Username <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ request.user.username }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label"><i class="bi bi-card-text"></i> National ID / Birth Cert <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.id_number }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label"><i class="bi bi-calendar3"></i> Date of Birth <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.date_of_birth|date:"d F Y" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label"><i class="bi bi-gender-ambiguous"></i> Gender <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.get_gender_display }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <h3 style="font-size:14px;font-weight:600;color:#475569;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">
+                        <i class="bi bi-geo-alt" style="color:#3498db;"></i> Administrative Location
+                    </h3>
+                    <div class="readonly-grid" style="margin-bottom:20px;">
+                        <div class="readonly-field">
+                            <div class="readonly-label">County <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.county.name|default:"Not set" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label">Constituency <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.constituency.name|default:"Not set" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label">Ward <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.ward.name|default:"Not set" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label">Location <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.location.name|default:"Not set" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label">Sub-Location <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.sublocation.name|default:"Not set" }}</div>
+                        </div>
+                        <div class="readonly-field">
+                            <div class="readonly-label">Village <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.village.name|default:"Not set" }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Physical address (read-only display) -->
+                    <div class="readonly-grid">
+                        <div class="readonly-field" style="grid-column: 1 / -1;">
+                            <div class="readonly-label">Physical Address <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">{{ applicant.physical_address }}</div>
+                        </div>
+                        {% if applicant.special_needs %}
+                        <div class="readonly-field" style="grid-column: 1 / -1;">
+                            <div class="readonly-label">Special Needs <i class="bi bi-lock lock-icon"></i></div>
+                            <div class="readonly-value">
+                                <span class="badge badge-warning"><i class="bi bi-heart"></i> Special Needs Applicant</span>
+                                <div style="font-size:13px;color:#64748B;margin-top:6px;">{{ applicant.special_needs_description|default:"Details recorded." }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="info-note" style="margin-top:20px;">
+                        <i class="bi bi-telephone"></i>
+                        <span>To update any of the above information, call the bursary office at <strong>+254 710 000 100</strong> or email <strong>bursary@muranga.go.ke</strong>.</span>
+                    </div>
+                </div><!-- /sensitive-tab -->
+
+
+                <!-- ══ TAB 3: Security (Password) ══ -->
+                <div class="tab-content" id="security-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-shield-lock"></i> Change Password
+                    </h2>
+
+                    <div class="info-note warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Security tip:</strong> Use at least 8 characters combining uppercase, lowercase, numbers, and special characters (e.g. @, #, !).
+                    </div>
+
+                    <form method="post" autocomplete="off" style="max-width:480px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="form-group">
+                            <label class="form-label" for="current_password">
+                                Current Password <span class="required">*</span>
+                            </label>
+                            <input type="password" name="current_password" id="current_password"
+                                class="form-control" required autocomplete="current-password"
+                                placeholder="Enter your current password">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="new_password">
+                                New Password <span class="required">*</span>
+                            </label>
+                            <input type="password" name="new_password" id="new_password"
+                                class="form-control" required minlength="8"
+                                placeholder="At least 8 characters"
+                                oninput="checkStrength(this.value)">
+                            <div class="pw-strength">
+                                <div class="pw-strength-bar" id="strengthBar"></div>
+                            </div>
+                            <div class="pw-strength-label" id="strengthLabel" style="color:#94A3B8;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="confirm_password">
+                                Confirm New Password <span class="required">*</span>
+                            </label>
+                            <input type="password" name="confirm_password" id="confirm_password"
+                                class="form-control" required minlength="8"
+                                placeholder="Repeat new password"
+                                oninput="checkMatch()">
+                            <div class="form-help" id="matchMsg"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-key"></i> Change Password
+                        </button>
+                    </form>
+                </div><!-- /security-tab -->
+
+
+                <!-- ══ TAB 4: Applications ══ -->
+                <div class="tab-content" id="applications-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-file-earmark-text"></i> My Applications
+                    </h2>
+
+                    {% if applications %}
+                        {% for app in applications %}
+                        <div class="app-card">
+                            <div class="app-info">
+                                <div class="app-number">{{ app.application_number }}</div>
+                                <div class="app-detail">
+                                    {{ app.institution.name }} &bull;
+                                    {{ app.fiscal_year.name }} &bull;
+                                    {{ app.bursary_category.name }}
+                                </div>
+                                <div style="margin-top:6px;">
+                                    {% if app.status == 'disbursed' %}
+                                        <span class="badge badge-success"><i class="bi bi-check-circle"></i> Disbursed</span>
+                                    {% elif app.status == 'approved' %}
+                                        <span class="badge badge-info"><i class="bi bi-check"></i> Approved</span>
+                                    {% elif app.status == 'under_review' %}
+                                        <span class="badge badge-warning"><i class="bi bi-hourglass-split"></i> Under Review</span>
+                                    {% elif app.status == 'submitted' %}
+                                        <span class="badge badge-info"><i class="bi bi-send"></i> Submitted</span>
+                                    {% elif app.status == 'rejected' %}
+                                        <span class="badge badge-danger"><i class="bi bi-x-circle"></i> Rejected</span>
+                                    {% elif app.status == 'draft' %}
+                                        <span class="badge badge-secondary"><i class="bi bi-pencil"></i> Draft</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">{{ app.get_status_display }}</span>
                                     {% endif %}
                                 </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Phone</span>
-                                    <span class="detail-value">{{ guardian.phone_number }}</span>
-                                </div>
-                                {% if guardian.email %}
-                                <div class="detail-item">
-                                    <span class="detail-label">Email</span>
-                                    <span class="detail-value">{{ guardian.email }}</span>
-                                </div>
-                                {% endif %}
-                                {% if guardian.occupation %}
-                                <div class="detail-item">
-                                    <span class="detail-label">Occupation</span>
-                                    <span class="detail-value">{{ guardian.occupation }}</span>
-                                </div>
-                                {% endif %}
-                                {% if guardian.monthly_income %}
-                                <div class="detail-item">
-                                    <span class="detail-label">Monthly Income</span>
-                                    <span class="detail-value">KES {{ guardian.monthly_income|floatformat:0|intcomma }}</span>
-                                </div>
-                                {% endif %}
-                                {% if guardian.id_number %}
-                                <div class="detail-item">
-                                    <span class="detail-label">ID Number</span>
-                                    <span class="detail-value">{{ guardian.id_number }}</span>
-                                </div>
-                                {% endif %}
                             </div>
-                            {% empty %}
-                            <div class="empty-state">
-                                No guardian information provided.
-                                <div style="margin-top: 16px;">
-                                    <a href="{% url 'guardian_create' %}" class="btn-add-small">
-                                        <i class="bi bi-plus"></i>
-                                        Add Your First Guardian
-                                    </a>
+                            <div style="text-align:right;">
+                                <div class="app-amount">KES {{ app.amount_requested|intcomma }}</div>
+                                <div style="font-size:11px;color:#94A3B8;margin-top:2px;">
+                                    {% if app.date_submitted %}{{ app.date_submitted|date:"d M Y" }}{% else %}Not submitted{% endif %}
                                 </div>
+                                <a href="{% url 'application_detail' app.application_number %}" class="btn btn-sm btn-primary" style="margin-top:6px;">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
                             </div>
-                            {% endfor %}
                         </div>
-                    </div>
+                        {% endfor %}
 
-                    <!-- Siblings -->
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-people"></i>
-                                Siblings
-                            </div>
-                            <a href="{% url 'sibling_create' %}" class="btn-add-small">
-                                <i class="bi bi-plus"></i>
-                                Add Sibling
+                        <div style="margin-top:16px;">
+                            <a href="{% url 'student_applications' %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-list-ul"></i> View All Applications
                             </a>
                         </div>
-                        <div class="card-body-custom">
-                            {% if siblings %}
-                                <div class="table-responsive">
-                                    <table class="sibling-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Age</th>
-                                                <th>Education Level</th>
-                                                <th>School</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for sibling in siblings %}
-                                            <tr>
-                                                <td><strong>{{ sibling.name }}</strong></td>
-                                                <td>{{ sibling.age }} years</td>
-                                                <td>{{ sibling.education_level }}</td>
-                                                <td>{{ sibling.school_name|default:"-" }}</td>
-                                                <td>
-                                                    {% if sibling.is_in_school %}
-                                                        <span class="badge-custom badge-success">In School</span>
-                                                    {% else %}
-                                                        <span class="badge-custom badge-secondary">Not in School</span>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="empty-state">
-                                    No sibling information provided.
-                                    <div style="margin-top: 16px;">
-                                        <a href="{% url 'sibling_create' %}" class="btn-add-small">
-                                            <i class="bi bi-plus"></i>
-                                            Add Your First Sibling
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
+                    {% else %}
+                        <div class="info-note">
+                            <i class="bi bi-info-circle"></i>
+                            <span>You have not submitted any applications yet.
+                                <a href="#" style="font-weight:600;">Apply for a bursary</a>
+                            </span>
                         </div>
-                    </div>
-                </div>
+                    {% endif %}
+                </div><!-- /applications-tab -->
 
-                <!-- Applications Tab -->
-                <div class="tab-content" id="applications">
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <div class="card-title-custom">
-                                <i class="bi bi-file-text"></i>
-                                Applications History
+
+                <!-- ══ TAB 5: Activity Log ══ -->
+                <div class="tab-content" id="activity-tab">
+                    <h2 class="section-title">
+                        <i class="bi bi-clock-history"></i> Recent Activity
+                    </h2>
+
+                    {% if recent_activities %}
+                        {% for activity in recent_activities %}
+                        <div class="activity-item">
+                            <div class="activity-header">
+                                <div class="activity-action">{{ activity.get_action_display }}</div>
+                                <div class="activity-time">{{ activity.timestamp|timesince }} ago</div>
                             </div>
-                            <a href="{% url 'student_dashboard' %}" class="btn-add-small">
-                                <i class="bi bi-plus"></i>
-                                New Application
-                            </a>
+                            <div class="activity-description">{{ activity.description }}</div>
                         </div>
-                        <div class="card-body-custom">
-                            {% if applications %}
-                            <div class="table-responsive">
-                                <table class="sibling-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Application #</th>
-                                            <th>Fiscal Year</th>
-                                            <th>Category</th>
-                                            <th>Institution</th>
-                                            <th>Amount Requested</th>
-                                            <th>Status</th>
-                                            <th>Date Submitted</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for application in applications %}
-                                        <tr>
-                                            <td><strong>{{ application.application_number }}</strong></td>
-                                            <td>{{ application.fiscal_year.name }}</td>
-                                            <td>{{ application.bursary_category.name }}</td>
-                                            <td>{{ application.institution.name }}</td>
-                                            <td>KES {{ application.amount_requested|floatformat:0|intcomma }}</td>
-                                            <td>
-                                                {% if application.status == 'draft' %}
-                                                    <span class="status-badge status-draft">Draft</span>
-                                                {% elif application.status == 'submitted' %}
-                                                    <span class="status-badge status-submitted">Submitted</span>
-                                                {% elif application.status == 'under_review' %}
-                                                    <span class="status-badge status-under-review">Under Review</span>
-                                                {% elif application.status == 'approved' %}
-                                                    <span class="status-badge status-approved">Approved</span>
-                                                {% elif application.status == 'rejected' %}
-                                                    <span class="status-badge status-rejected">Rejected</span>
-                                                {% elif application.status == 'disbursed' %}
-                                                    <span class="status-badge status-disbursed">Disbursed</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ application.date_submitted|date:"M d, Y" }}</td>
-                                            <td>
-                                                <a href="{% url 'application_detail' application.id %}" class="btn-view-small">
-                                                    <i class="bi bi-eye"></i>
-                                                    View
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {% else %}
-                            <div class="empty-state">
-                                No applications found.
-                                <div style="margin-top: 16px;">
-                                    <a href="{% url 'student_dashboard' %}" class="btn-add-small">
-                                        <i class="bi bi-plus"></i>
-                                        Start Your First Application
-                                    </a>
-                                </div>
-                            </div>
-                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="info-note">
+                            <i class="bi bi-clock"></i>
+                            <span>No recent activity to display.</span>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    {% endif %}
+                </div><!-- /activity-tab -->
+
+            </div><!-- /tab-container -->
+        </div><!-- /profile-grid -->
+    </div><!-- /section-container -->
+</div><!-- /container-fluid -->
+
+
+<!-- ── Photo Upload Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="photoModal">
+    <div class="modal-box">
+        <div class="modal-title">
+            <span><i class="bi bi-camera" style="color:#3498db;margin-right:8px;"></i>Update Profile Photo</span>
+            <button class="modal-close" onclick="closePhotoModal()">&times;</button>
         </div>
+
+        <form method="post" enctype="multipart/form-data" id="photoForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_photo">
+            <input type="file" id="photoFileInput" name="profile_picture"
+                accept="image/jpeg,image/png,image/webp"
+                onchange="previewPhoto(event)">
+
+            <!-- Preview circle -->
+            <div class="photo-preview-wrap" onclick="document.getElementById('photoFileInput').click()">
+                {% if applicant.profile_picture and applicant.profile_picture.name != 'profile_pics/default.png' %}
+                    <img id="photoPreview" src="{{ applicant.profile_picture.url }}" alt="Preview">
+                {% else %}
+                    <span class="photo-preview-placeholder" id="photoPlaceholder">
+                        <i class="bi bi-person" id="personIcon"></i>
+                    </span>
+                    <img id="photoPreview" src="" alt="Preview" style="display:none;">
+                {% endif %}
+            </div>
+
+            <label class="file-input-label" for="photoFileInput">
+                <i class="bi bi-upload"></i> Click to select a photo (JPEG / PNG / WebP, max 5 MB)
+            </label>
+
+            <div id="photoError" class="info-note danger" style="display:none;margin-bottom:12px;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span id="photoErrorMsg"></span>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;" id="uploadBtn" disabled>
+                    <i class="bi bi-cloud-upload"></i> Upload Photo
+                </button>
+                <button type="button" class="btn" style="background:#F1F5F9;color:#475569;" onclick="closePhotoModal()">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
-{% endblock %}
+
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab switching functionality
-        const tabLinks = document.querySelectorAll('.tab-link');
-        const tabContents = document.querySelectorAll('.tab-content');
+    /* ── Tab switching ─────────────────────── */
+    function switchTab(tabName, e) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabName + '-tab').classList.add('active');
+        const btn = e ? e.currentTarget : document.querySelector(`[onclick*="${tabName}"]`);
+        if (btn) btn.classList.add('active');
+    }
 
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                const targetTab = this.getAttribute('data-tab');
+    /* ── Password strength ─────────────────── */
+    function checkStrength(val) {
+        const bar   = document.getElementById('strengthBar');
+        const label = document.getElementById('strengthLabel');
+        let score = 0;
+        if (val.length >= 8)  score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
 
-                // Remove active class from all tabs
-                tabLinks.forEach(l => l.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
+        const levels = [
+            { pct: '0%',   color: '#E2E8F0', text: '' },
+            { pct: '25%',  color: '#EF4444', text: 'Weak' },
+            { pct: '50%',  color: '#F59E0B', text: 'Fair' },
+            { pct: '75%',  color: '#3B82F6', text: 'Good' },
+            { pct: '100%', color: '#22C55E', text: 'Strong ✓' },
+        ];
+        const l = levels[Math.min(score, 4)];
+        bar.style.width    = l.pct;
+        bar.style.background = l.color;
+        label.textContent  = val.length ? l.text : '';
+        label.style.color  = l.color;
+        checkMatch();
+    }
 
-                // Add active class to clicked tab
-                this.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
+    function checkMatch() {
+        const np = document.getElementById('new_password').value;
+        const cp = document.getElementById('confirm_password').value;
+        const msg = document.getElementById('matchMsg');
+        if (!cp) { msg.textContent = ''; return; }
+        if (np === cp) {
+            msg.textContent = '✓ Passwords match';
+            msg.style.color = '#22C55E';
+            document.getElementById('confirm_password').setCustomValidity('');
+        } else {
+            msg.textContent = '✗ Passwords do not match';
+            msg.style.color = '#EF4444';
+            document.getElementById('confirm_password').setCustomValidity('Passwords do not match');
+        }
+    }
 
-                // Save active tab to localStorage
-                localStorage.setItem('activeTab', targetTab);
-            });
-        });
+    /* ── Photo modal ─────────────────────── */
+    function openPhotoModal()  { document.getElementById('photoModal').classList.add('open'); }
+    function closePhotoModal() {
+        document.getElementById('photoModal').classList.remove('open');
+        document.getElementById('photoError').style.display = 'none';
+    }
 
-        // Check localStorage for saved tab
-        const savedTab = localStorage.getItem('activeTab');
-        if (savedTab) {
-            const targetLink = document.querySelector(`[data-tab="${savedTab}"]`);
-            if (targetLink) {
-                targetLink.click();
-            }
+    function previewPhoto(event) {
+        const file = event.target.files[0];
+        const errDiv = document.getElementById('photoError');
+        const errMsg = document.getElementById('photoErrorMsg');
+        const btn    = document.getElementById('uploadBtn');
+        errDiv.style.display = 'none';
+
+        if (!file) { btn.disabled = true; return; }
+
+        const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.type)) {
+            errMsg.textContent = 'Only JPEG, PNG, or WebP images are allowed.';
+            errDiv.style.display = 'flex';
+            btn.disabled = true;
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            errMsg.textContent = 'Image must be smaller than 5 MB.';
+            errDiv.style.display = 'flex';
+            btn.disabled = true;
+            return;
         }
 
-        // Check if there's a hash in the URL and activate that tab
-        const hash = window.location.hash;
-        if (hash && !savedTab) {
-            const tabName = hash.substring(1); // Remove the # symbol
-            const targetLink = document.querySelector(`[data-tab="${tabName}"]`);
-            if (targetLink) {
-                targetLink.click();
-            }
-        }
-
-        // Update URL hash when tab changes
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                const tabName = this.getAttribute('data-tab');
-                history.pushState(null, null, `#${tabName}`);
-            });
-        });
-
-        // Animate progress bar
-        const progressFill = document.querySelector('.progress-fill');
-        const completionPercentage = {{ completion_percentage }};
-        let currentWidth = 0;
-        
-        const animateProgress = () => {
-            if (currentWidth < completionPercentage) {
-                currentWidth += 1;
-                progressFill.style.width = `${currentWidth}%`;
-                setTimeout(animateProgress, 10);
-            }
+        const reader = new FileReader();
+        reader.onload = e => {
+            const prev = document.getElementById('photoPreview');
+            const ph   = document.getElementById('photoPlaceholder');
+            prev.src   = e.target.result;
+            prev.style.display = 'block';
+            if (ph) ph.style.display = 'none';
         };
-        
-        // Start animation after a short delay
-        setTimeout(animateProgress, 500);
+        reader.readAsDataURL(file);
+        btn.disabled = false;
+    }
 
-        // Add keyboard shortcuts for tabs
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                const keyMap = {
-                    '1': 'personal',
-                    '2': 'location',
-                    '3': 'family',
-                    '4': 'applications'
-                };
-
-                if (keyMap[e.key]) {
-                    e.preventDefault();
-                    const targetLink = document.querySelector(`[data-tab="${keyMap[e.key]}"]`);
-                    if (targetLink) {
-                        targetLink.click();
-                    }
-                }
-            }
-        });
-
-        // Add smooth scrolling for card content
-        const tabContent = document.querySelector('#tabContent');
-        if (tabContent) {
-            tabContent.style.maxHeight = 'calc(100vh - 200px)';
-            tabContent.style.overflowY = 'auto';
-            tabContent.style.paddingRight = '4px';
-        }
-
-        // Add scroll indicator for long content
-        const activeTabContent = document.querySelector('.tab-content.active');
-        if (activeTabContent && activeTabContent.scrollHeight > activeTabContent.clientHeight) {
-            activeTabContent.style.borderRight = '2px solid #F1F5F9';
-        }
-
-        // Listen for window resize and adjust tab content height
-        window.addEventListener('resize', function() {
-            const tabContent = document.querySelector('#tabContent');
-            if (tabContent) {
-                tabContent.style.maxHeight = 'calc(100vh - 200px)';
-            }
-        });
-    });
-
-    // Handle browser back/forward buttons
-    window.addEventListener('popstate', function() {
-        const hash = window.location.hash;
-        if (hash) {
-            const tabName = hash.substring(1);
-            const targetLink = document.querySelector(`[data-tab="${tabName}"]`);
-            if (targetLink) {
-                targetLink.click();
-            }
-        }
+    /* Close modal on backdrop click */
+    document.getElementById('photoModal').addEventListener('click', function(e) {
+        if (e.target === this) closePhotoModal();
     });
 </script>
+{% endblock %}
 {% endblock %}

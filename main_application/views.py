@@ -8935,80 +8935,138 @@ def student_profile_create(request):
     
     return render(request, 'students/profile_form.html', context)
 
+# ============================================================
+# views.py  — paste these functions into your views file
+# ============================================================
+
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth import update_session_auth_hash
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import re
+
+
 @login_required
 def student_profile_view(request):
     """
-    View student profile details with enhanced information
+    View & edit student profile.
+    Editable  : first_name, last_name, email, phone_number,
+                profile_picture, password
+    Read-only  : username, id_number, location fields (county → village),
+                 date_of_birth, gender, admission details
     """
     try:
         applicant = request.user.applicant_profile
-    except Applicant.DoesNotExist:
+    except Exception:
         messages.warning(request, 'Please complete your profile first.')
         return redirect('student_profile_create')
-    
-    # Get guardians ordered by primary contact first
-    guardians = Guardian.objects.filter(applicant=applicant).order_by('-is_primary_contact', 'name')
-    
-    # Get siblings ordered by school status and age
-    siblings = SiblingInformation.objects.filter(applicant=applicant).order_by('-is_in_school', '-age')
-    
-    # Get applications count for this applicant
-    applications_count = Application.objects.filter(applicant=applicant).count()
-    
-    # Calculate profile completion percentage
-    completion_score = 0
-    total_fields = 14  # Total weighted fields to check
-    
-    # Personal information fields (6 fields)
-    if applicant.user.first_name and applicant.user.first_name.strip():
-        completion_score += 1
-    if applicant.user.email and applicant.user.email.strip():
-        completion_score += 1
-    if applicant.gender:
-        completion_score += 1
-    if applicant.date_of_birth:
-        completion_score += 1
-    if applicant.id_number and applicant.id_number.strip():
-        completion_score += 1
-    if applicant.user.phone_number and applicant.user.phone_number.strip():
-        completion_score += 1
-    
-    # Location information fields (6 fields)
-    if applicant.county:
-        completion_score += 1
-    if applicant.constituency:
-        completion_score += 1
-    if applicant.ward:
-        completion_score += 1
-    if applicant.location:
-        completion_score += 1
-    if applicant.sublocation:
-        completion_score += 1
-    if applicant.village:
-        completion_score += 1
-    
-    # Guardian information (1 field - weighted)
-    if guardians.exists():
-        completion_score += 1
-    
-    # Sibling information (1 field - weighted)
-    if siblings.exists():
-        completion_score += 1
-    
-    # Calculate completion percentage
-    completion_percentage = round((completion_score / total_fields) * 100)
-    
-    # Prepare context
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # ── 1. Update basic profile ─────────────────────────────
+        if action == 'update_profile':
+            first_name  = request.POST.get('first_name', '').strip()
+            last_name   = request.POST.get('last_name', '').strip()
+            email       = request.POST.get('email', '').strip()
+            phone       = request.POST.get('phone_number', '').strip()
+
+            errors = []
+
+            if not first_name:
+                errors.append('First name is required.')
+            if not last_name:
+                errors.append('Last name is required.')
+
+            # Email validation
+            if email:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    errors.append('Enter a valid email address.')
+
+            # Phone validation  (+254XXXXXXXXX)
+            if phone:
+                if not re.match(r'^\+254\d{9}$', phone):
+                    errors.append("Phone must be in format +254XXXXXXXXX (12 digits).")
+
+            if errors:
+                for e in errors:
+                    messages.error(request, e)
+            else:
+                user = request.user
+                user.first_name = first_name
+                user.last_name  = last_name
+                user.email      = email
+                user.phone_number = phone
+                user.save()
+                messages.success(request, 'Profile updated successfully.')
+            return redirect('student_profile_view')
+
+        # ── 2. Update profile photo ─────────────────────────────
+        elif action == 'update_photo':
+            if 'profile_picture' in request.FILES:
+                photo = request.FILES['profile_picture']
+
+                # Basic validation
+                allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+                if photo.content_type not in allowed:
+                    messages.error(request, 'Only JPEG, PNG, or WebP images are allowed.')
+                elif photo.size > 5 * 1024 * 1024:          # 5 MB limit
+                    messages.error(request, 'Image must be smaller than 5 MB.')
+                else:
+                    applicant.profile_picture = photo
+                    applicant.save()
+                    messages.success(request, 'Profile photo updated successfully.')
+            else:
+                messages.error(request, 'No image file was selected.')
+            return redirect('student_profile_view') 
+
+        # ── 3. Change password ──────────────────────────────────
+        elif action == 'change_password':
+            current_pw  = request.POST.get('current_password', '')
+            new_pw      = request.POST.get('new_password', '')
+            confirm_pw  = request.POST.get('confirm_password', '')
+
+            if not request.user.check_password(current_pw):
+                messages.error(request, 'Current password is incorrect.')
+            elif len(new_pw) < 8:
+                messages.error(request, 'New password must be at least 8 characters.')
+            elif new_pw != confirm_pw:
+                messages.error(request, 'New passwords do not match.')
+            elif current_pw == new_pw:
+                messages.error(request, 'New password must be different from the current one.')
+            else:
+                request.user.set_password(new_pw)
+                request.user.save()
+                update_session_auth_hash(request, request.user)   # keep user logged in
+                messages.success(request, 'Password changed successfully.')
+            return redirect('student_profile_view')
+
+    # ── GET: build context ──────────────────────────────────────
+    from main_application.models import AuditLog, Application, Allocation
+
+    recent_activities = AuditLog.objects.filter(
+        user=request.user
+    ).order_by('-timestamp')[:10]
+
+    applications = Application.objects.filter(
+        applicant=applicant
+    ).select_related('fiscal_year', 'bursary_category', 'institution').order_by('-date_submitted')[:5]
+
+    total_allocated = Allocation.objects.filter(
+        applicant=applicant, is_disbursed=True
+    ).aggregate(total=__import__('django.db.models', fromlist=['Sum']).Sum('amount_allocated'))['total'] or 0
+
     context = {
-        'applicant': applicant,
-        'guardians': guardians,
-        'siblings': siblings,
-        'applications_count': applications_count,
-        'completion_percentage': completion_percentage,
-        'completion_score': completion_score,
-        'total_fields': total_fields,
+        'applicant'        : applicant,
+        'recent_activities': recent_activities,
+        'applications'     : applications,
+        'total_allocated'  : total_allocated,
+        'page_title'       : 'My Profile',
     }
-    
     return render(request, 'students/profile_view.html', context)
 
 from django.shortcuts import render, redirect, get_object_or_404
