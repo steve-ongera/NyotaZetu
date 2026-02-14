@@ -2819,6 +2819,19 @@ def disbursement_reports(request):
     
     return render(request, 'finance/disbursement_reports.html', context)
 
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Sum, F, Q, Count, DecimalField, ExpressionWrapper
+from decimal import Decimal
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Sum, F, Q, Count, DecimalField, ExpressionWrapper
+from decimal import Decimal
+
 @login_required
 @user_passes_test(is_finance)
 def budget_utilization_report(request):
@@ -2839,17 +2852,23 @@ def budget_utilization_report(request):
     # Overall budget performance
     total_budget = fiscal_year.total_bursary_allocation
     total_allocated = Allocation.objects.filter(
-        application__fiscal_year=fiscal_year
+        fiscal_year=fiscal_year
     ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
     
     total_disbursed = Allocation.objects.filter(
-        application__fiscal_year=fiscal_year,
+        fiscal_year=fiscal_year,
         is_disbursed=True
     ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
     
-    # Category performance
+    # Calculate rates safely
+    utilization_rate = (float(total_allocated) / float(total_budget) * 100) if total_budget > 0 else 0
+    disbursement_rate = (float(total_disbursed) / float(total_allocated) * 100) if total_allocated > 0 else 0
+    balance = total_budget - total_allocated
+    
+    # Category performance with proper ExpressionWrapper - correct relationship path
     category_performance = BursaryCategory.objects.filter(
-        fiscal_year=fiscal_year
+        fiscal_year=fiscal_year,
+        is_active=True
     ).annotate(
         total_allocated=Sum('application__allocation__amount_allocated'),
         total_disbursed=Sum(
@@ -2858,19 +2877,31 @@ def budget_utilization_report(request):
         ),
         beneficiaries=Count('application__allocation', distinct=True)
     ).annotate(
-        remaining=F('allocation_amount') - F('total_allocated'),
-        utilization_rate=F('total_allocated') * 100.0 / F('allocation_amount')
+        remaining=ExpressionWrapper(
+            F('allocation_amount') - F('total_allocated'),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+        utilization_rate=ExpressionWrapper(
+            F('total_allocated') * Decimal('100.0') / F('allocation_amount'),
+            output_field=DecimalField(max_digits=5, decimal_places=2)
+        )
     )
     
-    # Ward performance
+    # Ward performance with proper ExpressionWrapper
     ward_performance = WardAllocation.objects.filter(
         fiscal_year=fiscal_year
-    ).select_related('ward').annotate(
-        balance=F('allocated_amount') - F('spent_amount'),
-        utilization_rate=F('spent_amount') * 100.0 / F('allocated_amount')
+    ).select_related('ward', 'ward__constituency').annotate(
+        balance=ExpressionWrapper(
+            F('allocated_amount') - F('spent_amount'),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+        utilization_rate=ExpressionWrapper(
+            F('spent_amount') * Decimal('100.0') / F('allocated_amount'),
+            output_field=DecimalField(max_digits=5, decimal_places=2)
+        )
     ).order_by('-utilization_rate')
     
-    # Institution performance
+    # Institution performance - correct relationship path through application
     institution_performance = Institution.objects.filter(
         application__fiscal_year=fiscal_year,
         application__allocation__isnull=False
@@ -2883,18 +2914,67 @@ def budget_utilization_report(request):
         student_count=Count('application__allocation', distinct=True)
     ).order_by('-total_allocated')[:20]
     
+    # Prepare chart data
+    # Chart 1: Category Performance Radar
+    category_chart_data = {
+        'labels': [cat.name for cat in category_performance],
+        'utilization': [float(cat.utilization_rate or 0) for cat in category_performance],
+        'allocated': [float(cat.total_allocated or 0) for cat in category_performance],
+        'budget': [float(cat.allocation_amount) for cat in category_performance],
+    }
+    
+    # Chart 2: Ward Performance (Top 15)
+    top_wards = ward_performance[:15]
+    ward_chart_data = {
+        'labels': [f"{w.ward.name}" for w in top_wards],
+        'utilization': [float(w.utilization_rate or 0) for w in top_wards],
+        'spent': [float(w.spent_amount) for w in top_wards],
+        'allocated': [float(w.allocated_amount) for w in top_wards],
+    }
+    
+    # Chart 3: Institution Distribution (Top 10)
+    top_institutions = institution_performance[:10]
+    institution_chart_data = {
+        'labels': [inst.name[:30] for inst in top_institutions],
+        'allocated': [float(inst.total_allocated or 0) for inst in top_institutions],
+        'disbursed': [float(inst.total_disbursed or 0) for inst in top_institutions],
+        'students': [inst.student_count for inst in top_institutions],
+    }
+    
+    # Chart 4: Overall Budget Breakdown (Pie Chart)
+    budget_breakdown_data = {
+        'labels': ['Allocated', 'Disbursed', 'Balance'],
+        'values': [float(total_allocated), float(total_disbursed), float(balance)],
+        'colors': ['#3498db', '#27ae60', '#95a5a6']
+    }
+    
+    # Performance metrics
+    performance_metrics = {
+        'on_track_categories': category_performance.filter(utilization_rate__lte=100).count(),
+        'over_budget_categories': category_performance.filter(utilization_rate__gt=100).count(),
+        'high_performing_wards': ward_performance.filter(utilization_rate__gte=80, utilization_rate__lte=100).count(),
+        'low_performing_wards': ward_performance.filter(utilization_rate__lt=50).count(),
+    }
+    
     context = {
         'fiscal_year': fiscal_year,
         'total_budget': total_budget,
         'total_allocated': total_allocated,
         'total_disbursed': total_disbursed,
+        'balance': balance,
+        'utilization_rate': utilization_rate,
+        'disbursement_rate': disbursement_rate,
         'category_performance': category_performance,
         'ward_performance': ward_performance,
         'institution_performance': institution_performance,
-        'fiscal_years': FiscalYear.objects.all(),
+        'fiscal_years': FiscalYear.objects.all().order_by('-start_date'),
+        'category_chart_data': category_chart_data,
+        'ward_chart_data': ward_chart_data,
+        'institution_chart_data': institution_chart_data,
+        'budget_breakdown_data': budget_breakdown_data,
+        'performance_metrics': performance_metrics,
     }
     return render(request, 'finance/budget_utilization_report.html', context)
-
 
 # ============= AJAX VIEWS =============
 

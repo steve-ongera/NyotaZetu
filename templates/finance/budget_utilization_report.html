@@ -1,186 +1,1167 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
+{% load humanize %}
 {% load static %}
 
-{% block title %}Budget Utilization Report{% endblock %}
+{% block title %}Budget Utilization Report - Finance{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .fiscal-year-select {
+        padding: 10px 16px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        background: white;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .fiscal-year-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .export-btn, .print-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover, .print-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        color: #64748B;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .stat-card.primary::before {
+        background: linear-gradient(180deg, #3498db, #2980b9);
+    }
+
+    .stat-card.success::before {
+        background: linear-gradient(180deg, #27ae60, #229954);
+    }
+
+    .stat-card.warning::before {
+        background: linear-gradient(180deg, #f39c12, #e67e22);
+    }
+
+    .stat-card.info::before {
+        background: linear-gradient(180deg, #9b59b6, #8e44ad);
+    }
+
+    .stat-card.danger::before {
+        background: linear-gradient(180deg, #e74c3c, #c0392b);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1E293B;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .stat-subtext {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 6px;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+    }
+
+    .chart-container.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .chart-header {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .chart-subtitle {
+        font-size: 13px;
+        color: #64748B;
+    }
+
+    canvas {
+        max-height: 400px;
+    }
+
+    .performance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .performance-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        padding: 20px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .performance-card::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .performance-card.success {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .performance-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .performance-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .performance-card.danger {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .performance-label {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        opacity: 0.9;
+    }
+
+    .performance-value {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .performance-text {
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-top: 20px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .data-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .entity-name {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .amount {
+        font-weight: 600;
+        font-family: monospace;
+    }
+
+    .amount.positive {
+        color: #27ae60;
+    }
+
+    .amount.negative {
+        color: #e74c3c;
+    }
+
+    .utilization-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .utilization-badge.excellent {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .utilization-badge.good {
+        background: #DBEAFE;
+        color: #1E3A8A;
+    }
+
+    .utilization-badge.fair {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .utilization-badge.poor {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .progress-bar {
+        height: 6px;
+        background: #F1F5F9;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 6px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    .tabs-container {
+        margin-bottom: 24px;
+    }
+
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid #E2E8F0;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .tab {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+        color: #3498db;
+    }
+
+    .tab.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .summary-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 32px;
+        color: white;
+        margin-bottom: 32px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .summary-box::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .summary-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+    }
+
+    .summary-stat-item {
+        position: relative;
+        z-index: 1;
+    }
+
+    .summary-stat-label {
+        font-size: 12px;
+        opacity: 0.9;
+        margin-bottom: 6px;
+    }
+
+    .summary-stat-value {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .performance-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-stats {
+            grid-template-columns: 1fr;
+        }
+
+        canvas {
+            max-height: 300px;
+        }
+    }
+
+    @media print {
+        .header-actions,
+        .breadcrumb,
+        .tabs {
+            display: none;
+        }
+
+        .section-container {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="content">
-    <div class="page-header">
-        <h1>Budget Utilization Report</h1>
-        <p>Detailed budget performance analysis</p>
-    </div>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance_dashboard' %}">Finance</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Budget Utilization Report</li>
+        </ol>
+    </nav>
 
-    <!-- Fiscal Year Selection -->
-    <div class="filters-section">
-        <h3>Select Fiscal Year</h3>
-        <form method="get" action="">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Fiscal Year</label>
-                    <select name="fiscal_year" onchange="this.form.submit()">
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}" {% if fiscal_year.id == fy.id %}selected{% endif %}>
-                            {{ fy.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+    <div class="section-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Budget Utilization Report
+                </h1>
+                <p class="page-subtitle">
+                    Comprehensive analysis of budget performance and utilization
+                </p>
+            </div>
+            <div class="header-actions">
+                <select class="fiscal-year-select" onchange="changeFiscalYear(this.value)">
+                    {% for fy in fiscal_years %}
+                    <option value="{{ fy.id }}" {% if fy.id == fiscal_year.id %}selected{% endif %}>
+                        {{ fy.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button class="print-btn" onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    Print
+                </button>
+                <button class="export-btn" onclick="exportReport()">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Box -->
+        <div class="summary-box">
+            <h3 class="summary-title">
+                <i class="bi bi-info-circle"></i>
+                {{ fiscal_year.name }} Budget Summary
+            </h3>
+            <div class="summary-stats">
+                <div class="summary-stat-item">
+                    <div class="summary-stat-label">Total Budget</div>
+                    <div class="summary-stat-value">KES {{ total_budget|floatformat:0|intcomma }}</div>
+                </div>
+                <div class="summary-stat-item">
+                    <div class="summary-stat-label">Total Allocated</div>
+                    <div class="summary-stat-value">KES {{ total_allocated|floatformat:0|intcomma }}</div>
+                </div>
+                <div class="summary-stat-item">
+                    <div class="summary-stat-label">Total Disbursed</div>
+                    <div class="summary-stat-value">KES {{ total_disbursed|floatformat:0|intcomma }}</div>
+                </div>
+                <div class="summary-stat-item">
+                    <div class="summary-stat-label">Utilization Rate</div>
+                    <div class="summary-stat-value">{{ utilization_rate|floatformat:1 }}%</div>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
 
-    <!-- Overall Performance -->
-    <div class="section">
-        <h2>Overall Budget Performance - {{ fiscal_year.name }}</h2>
-        <table>
-            <tr>
-                <th>Total Budget</th>
-                <td>KES {{ total_budget|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Total Allocated</th>
-                <td>KES {{ total_allocated|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Total Disbursed</th>
-                <td>KES {{ total_disbursed|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Budget Balance</th>
-                <td>KES {% widthratio total_budget 1 1 as budget %}{% widthratio total_allocated|default:0 1 1 as alloc %}{{ budget|add:"-"|add:alloc|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Allocation Rate</th>
-                <td>
-                    {% if total_budget > 0 %}
-                        {% widthratio total_allocated|default:0 100 total_budget as rate %}
-                        {{ rate }}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <th>Disbursement Rate</th>
-                <td>
-                    {% if total_allocated > 0 %}
-                        {% widthratio total_disbursed|default:0 100 total_allocated as rate %}
-                        {{ rate }}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
-    </div>
+        <!-- Performance Metrics -->
+        <div class="performance-grid">
+            <div class="performance-card success">
+                <div class="performance-label">On-Track Categories</div>
+                <div class="performance-value">{{ performance_metrics.on_track_categories }}</div>
+                <div class="performance-text">Within budget allocation</div>
+            </div>
 
-    <!-- Category Performance -->
-    <div class="section">
-        <h2>Category Performance</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Type</th>
-                    <th>Budget</th>
-                    <th>Allocated</th>
-                    <th>Disbursed</th>
-                    <th>Balance</th>
-                    <th>Beneficiaries</th>
-                    <th>Utilization</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for category in category_performance %}
-                <tr>
-                    <td>{{ category.name }}</td>
-                    <td>{{ category.get_category_type_display }}</td>
-                    <td>KES {{ category.allocation_amount|floatformat:2 }}</td>
-                    <td>KES {{ category.total_allocated|floatformat:2|default:"0.00" }}</td>
-                    <td>KES {{ category.total_disbursed|floatformat:2|default:"0.00" }}</td>
-                    <td>KES {{ category.remaining|floatformat:2|default:"0.00" }}</td>
-                    <td>{{ category.beneficiaries }}</td>
-                    <td>{{ category.utilization_rate|floatformat:1 }}%</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8">No category data available</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            <div class="performance-card warning">
+                <div class="performance-label">Over-Budget Categories</div>
+                <div class="performance-value">{{ performance_metrics.over_budget_categories }}</div>
+                <div class="performance-text">Exceeded allocation</div>
+            </div>
 
-    <!-- Ward Performance -->
-    <div class="section">
-        <h2>Ward Performance</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ward</th>
-                    <th>Allocated</th>
-                    <th>Spent</th>
-                    <th>Balance</th>
-                    <th>Beneficiaries</th>
-                    <th>Utilization Rate</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ward in ward_performance %}
-                <tr>
-                    <td>{{ ward.ward.name }}</td>
-                    <td>KES {{ ward.allocated_amount|floatformat:2 }}</td>
-                    <td>KES {{ ward.spent_amount|floatformat:2 }}</td>
-                    <td>KES {{ ward.balance|floatformat:2 }}</td>
-                    <td>{{ ward.beneficiaries_count }}</td>
-                    <td>{{ ward.utilization_rate|floatformat:1 }}%</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6">No ward data available</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            <div class="performance-card info">
+                <div class="performance-label">High Performing Wards</div>
+                <div class="performance-value">{{ performance_metrics.high_performing_wards }}</div>
+                <div class="performance-text">80-100% utilization</div>
+            </div>
 
-    <!-- Top Institutions by Allocation -->
-    <div class="section">
-        <h2>Top 20 Institutions by Allocation</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Institution</th>
-                    <th>Type</th>
-                    <th>Allocated</th>
-                    <th>Disbursed</th>
-                    <th>Students</th>
-                    <th>Avg per Student</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for inst in institution_performance %}
-                <tr>
-                    <td>{{ inst.name }}</td>
-                    <td>{{ inst.get_institution_type_display }}</td>
-                    <td>KES {{ inst.total_allocated|floatformat:2 }}</td>
-                    <td>KES {{ inst.total_disbursed|floatformat:2|default:"0.00" }}</td>
-                    <td>{{ inst.student_count }}</td>
-                    <td>
-                        {% if inst.student_count > 0 %}
-                            KES {% widthratio inst.total_allocated 1 inst.student_count as avg %}{{ avg|floatformat:2 }}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6">No institution data available</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <div class="performance-card danger">
+                <div class="performance-label">Low Performing Wards</div>
+                <div class="performance-value">{{ performance_metrics.low_performing_wards }}</div>
+                <div class="performance-text">Below 50% utilization</div>
+            </div>
+        </div>
+
+        <!-- Main Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-label">
+                    <i class="bi bi-wallet2"></i>
+                    Total Budget
+                </div>
+                <div class="stat-value">KES {{ total_budget|floatformat:0|intcomma }}</div>
+                <div class="stat-subtext">Fiscal Year {{ fiscal_year.name }}</div>
+            </div>
+
+            <div class="stat-card success">
+                <div class="stat-label">
+                    <i class="bi bi-check-circle"></i>
+                    Allocated
+                </div>
+                <div class="stat-value">KES {{ total_allocated|floatformat:0|intcomma }}</div>
+                <div class="stat-subtext">{{ utilization_rate|floatformat:1 }}% of budget</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ utilization_rate }}%; background: linear-gradient(90deg, #27ae60, #229954);"></div>
+                </div>
+            </div>
+
+            <div class="stat-card info">
+                <div class="stat-label">
+                    <i class="bi bi-cash-coin"></i>
+                    Disbursed
+                </div>
+                <div class="stat-value">KES {{ total_disbursed|floatformat:0|intcomma }}</div>
+                <div class="stat-subtext">{{ disbursement_rate|floatformat:1 }}% of allocated</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ disbursement_rate }}%; background: linear-gradient(90deg, #3498db, #2980b9);"></div>
+                </div>
+            </div>
+
+            <div class="stat-card warning">
+                <div class="stat-label">
+                    <i class="bi bi-piggy-bank"></i>
+                    Balance
+                </div>
+                <div class="stat-value">KES {{ balance|floatformat:0|intcomma }}</div>
+                <div class="stat-subtext">
+                    {% widthratio balance total_budget 100 %}% remaining
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="chart-grid">
+            <!-- Chart 1: Budget Breakdown Pie Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-pie-chart"></i>
+                        Overall Budget Breakdown
+                    </h3>
+                    <p class="chart-subtitle">Distribution of budget allocation</p>
+                </div>
+                <canvas id="budgetBreakdownChart"></canvas>
+            </div>
+
+            <!-- Chart 2: Category Performance Radar -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-radar"></i>
+                        Category Utilization
+                    </h3>
+                    <p class="chart-subtitle">Utilization rate by category</p>
+                </div>
+                <canvas id="categoryRadarChart"></canvas>
+            </div>
+
+            <!-- Chart 3: Ward Performance Bar Chart -->
+            <div class="chart-container full-width">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-bar-chart"></i>
+                        Ward Performance Analysis
+                    </h3>
+                    <p class="chart-subtitle">Top 15 wards by utilization rate</p>
+                </div>
+                <canvas id="wardPerformanceChart"></canvas>
+            </div>
+
+            <!-- Chart 4: Institution Distribution -->
+            <div class="chart-container full-width">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="bi bi-building"></i>
+                        Top Institutions by Allocation
+                    </h3>
+                    <p class="chart-subtitle">Top 10 institutions receiving bursaries</p>
+                </div>
+                <canvas id="institutionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabbed Data Tables -->
+        <div class="tabs-container section-container">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('category')">
+                    <i class="bi bi-tag"></i> Category Performance
+                </button>
+                <button class="tab" onclick="showTab('ward')">
+                    <i class="bi bi-geo-alt"></i> Ward Performance
+                </button>
+                <button class="tab" onclick="showTab('institution')">
+                    <i class="bi bi-building"></i> Institution Performance
+                </button>
+            </div>
+
+            <!-- Category Performance Table -->
+            <div id="category-tab" class="tab-content active">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Budget</th>
+                                <th>Allocated</th>
+                                <th>Disbursed</th>
+                                <th>Remaining</th>
+                                <th>Beneficiaries</th>
+                                <th>Utilization</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in category_performance %}
+                            <tr>
+                                <td>
+                                    <span class="entity-name">{{ category.name }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount">KES {{ category.allocation_amount|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount">KES {{ category.total_allocated|default:0|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount">KES {{ category.total_disbursed|default:0|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount {% if category.remaining >= 0 %}positive{% else %}negative{% endif %}">
+                                        KES {{ category.remaining|floatformat:0|intcomma }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span>{{ category.beneficiaries }}</span>
+                                </td>
+                                <td>
+                                    {% with util=category.utilization_rate|floatformat:1 %}
+                                    <span class="utilization-badge {% if util|floatformat:0|add:0 >= 90 %}excellent{% elif util|floatformat:0|add:0 >= 70 %}good{% elif util|floatformat:0|add:0 >= 50 %}fair{% else %}poor{% endif %}">
+                                        {{ util }}%
+                                    </span>
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                    <i class="bi bi-inbox" style="font-size: 48px; color: #CBD5E1;"></i>
+                                    <p style="margin-top: 16px; color: #64748B;">No category data available</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ward Performance Table -->
+            <div id="ward-tab" class="tab-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ward</th>
+                                <th>Constituency</th>
+                                <th>Allocated</th>
+                                <th>Spent</th>
+                                <th>Balance</th>
+                                <th>Beneficiaries</th>
+                                <th>Utilization</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ward in ward_performance %}
+                            <tr>
+                                <td>
+                                    <span class="entity-name">{{ ward.ward.name }}</span>
+                                </td>
+                                <td>{{ ward.ward.constituency.name }}</td>
+                                <td>
+                                    <span class="amount">KES {{ ward.allocated_amount|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount">KES {{ ward.spent_amount|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount positive">KES {{ ward.balance|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span>{{ ward.beneficiaries_count }}</span>
+                                </td>
+                                <td>
+                                    {% with util=ward.utilization_rate|floatformat:1 %}
+                                    <span class="utilization-badge {% if util|floatformat:0|add:0 >= 90 %}excellent{% elif util|floatformat:0|add:0 >= 70 %}good{% elif util|floatformat:0|add:0 >= 50 %}fair{% else %}poor{% endif %}">
+                                        {{ util }}%
+                                    </span>
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                    <i class="bi bi-inbox" style="font-size: 48px; color: #CBD5E1;"></i>
+                                    <p style="margin-top: 16px; color: #64748B;">No ward data available</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Institution Performance Table -->
+            <div id="institution-tab" class="tab-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Institution</th>
+                                <th>Type</th>
+                                <th>Total Allocated</th>
+                                <th>Total Disbursed</th>
+                                <th>Students</th>
+                                <th>Avg per Student</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for institution in institution_performance %}
+                            <tr>
+                                <td>
+                                    <span class="entity-name">{{ institution.name }}</span>
+                                </td>
+                                <td>{{ institution.get_institution_type_display }}</td>
+                                <td>
+                                    <span class="amount">KES {{ institution.total_allocated|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span class="amount">KES {{ institution.total_disbursed|default:0|floatformat:0|intcomma }}</span>
+                                </td>
+                                <td>
+                                    <span>{{ institution.student_count }}</span>
+                                </td>
+                                <td>
+                                    {% widthratio institution.total_allocated institution.student_count 1 as avg %}
+                                    <span class="amount">KES {{ avg|floatformat:0|intcomma }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px;">
+                                    <i class="bi bi-inbox" style="font-size: 48px; color: #CBD5E1;"></i>
+                                    <p style="margin-top: 16px; color: #64748B;">No institution data available</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart.js defaults
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    Chart.defaults.color = '#64748B';
+
+    // Chart 1: Budget Breakdown Pie Chart
+    const breakdownCtx = document.getElementById('budgetBreakdownChart');
+    if (breakdownCtx) {
+        const breakdownData = {{ budget_breakdown_data|safe }};
+        new Chart(breakdownCtx, {
+            type: 'doughnut',
+            data: {
+                labels: breakdownData.labels,
+                datasets: [{
+                    data: breakdownData.values,
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(39, 174, 96, 0.8)',
+                        'rgba(149, 165, 166, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(39, 174, 96, 1)',
+                        'rgba(149, 165, 166, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: KES ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Category Radar Chart
+    const categoryRadarCtx = document.getElementById('categoryRadarChart');
+    if (categoryRadarCtx) {
+        const categoryData = {{ category_chart_data|safe }};
+        new Chart(categoryRadarCtx, {
+            type: 'radar',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    label: 'Utilization Rate (%)',
+                    data: categoryData.utilization,
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(52, 152, 219, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 3: Ward Performance Bar Chart
+    const wardCtx = document.getElementById('wardPerformanceChart');
+    if (wardCtx) {
+        const wardData = {{ ward_chart_data|safe }};
+        new Chart(wardCtx, {
+            type: 'bar',
+            data: {
+                labels: wardData.labels,
+                datasets: [
+                    {
+                        label: 'Allocated',
+                        data: wardData.allocated,
+                        backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Spent',
+                        data: wardData.spent,
+                        backgroundColor: 'rgba(39, 174, 96, 0.6)',
+                        borderColor: 'rgba(39, 174, 96, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': KES ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 4: Institution Distribution
+    const institutionCtx = document.getElementById('institutionChart');
+    if (institutionCtx) {
+        const institutionData = {{ institution_chart_data|safe }};
+        new Chart(institutionCtx, {
+            type: 'bar',
+            data: {
+                labels: institutionData.labels,
+                datasets: [
+                    {
+                        label: 'Total Allocated',
+                        data: institutionData.allocated,
+                        backgroundColor: 'rgba(155, 89, 182, 0.6)',
+                        borderColor: 'rgba(155, 89, 182, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Number of Students',
+                        data: institutionData.students,
+                        backgroundColor: 'rgba(243, 156, 18, 0.6)',
+                        borderColor: 'rgba(243, 156, 18, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KES ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' students';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.classList.add('active');
+}
+
+function changeFiscalYear(fiscalYearId) {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('fiscal_year', fiscalYearId);
+    window.location.href = currentUrl.toString();
+}
+
+function exportReport() {
+    alert('Export functionality - to be implemented');
+}
+</script>
 {% endblock %}
