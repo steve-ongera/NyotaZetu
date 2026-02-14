@@ -423,7 +423,7 @@ urlpatterns = [
     path('ward-admin/api/bulk-notify/', views.api_send_bulk_notification, name='api_bulk_notification'),
     
     # Export functionality
-    path('export/applications/', views.export_applications, name='export_applications'),
+    path('ward-admin/export/applications/', views.export_applications, name='export_applications'),
     path('ward/applications/<int:application_id>/',  views.ward_admin_application_detail_view, name='ward_admin_application_detail'),
     path('ward/applications/pending-review/', views.ward_admin_pending_review_view, name='ward_admin_pending_review'),
     path('ward/applications/<int:application_id>/review/',  views.ward_admin_review_application_view, name='ward_admin_review_application'),
