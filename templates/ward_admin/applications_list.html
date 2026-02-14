@@ -8,85 +8,717 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    /* Previous styles remain... (keeping all existing CSS) */
-    .breadcrumb{padding:0;margin-bottom:20px;font-size:14px;list-style:none;display:flex;flex-wrap:wrap}
-    .breadcrumb-item{color:#64748B}
-    .breadcrumb-item+.breadcrumb-item::before{content:"/ ";color:#94A3B8;padding:0 8px}
-    .breadcrumb-item.active{color:#1E293B;font-weight:500}
-    .breadcrumb a{color:#3498db;text-decoration:none}
-    .breadcrumb a:hover{color:#2980b9}
+    /* Your Original CSS - Preserved Exactly */
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
 
-    .section-container{background:white;border-radius:8px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:24px;border:1px solid #E2E8F0}
-    .page-header{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-    .page-title{font-size:22px;font-weight:600;color:#1E293B;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-    .page-subtitle{color:#64748B;font-size:14px;margin:0}
+    .breadcrumb-item {
+        color: #64748B;
+    }
 
-    /* Stats Cards */
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px}
-    .stat-card{background:white;border:1px solid #E2E8F0;border-radius:8px;padding:16px;text-align:center}
-    .stat-value{font-size:24px;font-weight:700;color:#1E293B;margin-bottom:4px}
-    .stat-label{font-size:12px;color:#64748B;text-transform:uppercase}
-    .stat-card.total{border-left:4px solid #3498db}
-    .stat-card.submitted{border-left:4px solid #ffc107}
-    .stat-card.approved{border-left:4px solid#28a745}
-    .stat-card.rejected{border-left:4px solid #dc3545}
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-select {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        align-items: center;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .clear-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #64748B;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .clear-btn:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .record-count {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .applicants-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .applicants-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .applicants-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .applicants-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .applicants-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-danger {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .badge-purple {
+        background: #F3E8FF;
+        color: #6B21A8;
+    }
+
+    .badge-secondary {
+        background: #E2E8F0;
+        color: #475569;
+    }
+
+    .action-btn {
+        padding: 8px 16px;
+        background: white;
+        color: #3498db;
+        border: 1px solid #3498db;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn:hover {
+        background: #3498db;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .action-btn.btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .applicant-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .applicant-id {
+        font-size: 12px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Stats Grid - Clean version without border-left */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    /* Color coding for different stat types */
+    .stat-card.total .stat-value {
+        color: #3498db;
+    }
+
+    .stat-card.submitted .stat-value {
+        color: #ffc107;
+    }
+
+    .stat-card.approved .stat-value {
+        color: #28a745;
+    }
+
+    .stat-card.rejected .stat-value {
+        color: #dc3545;
+    }
 
     /* Bulk Actions Bar */
-    .bulk-actions-bar{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:16px;margin-bottom:20px;display:none}
-    .bulk-actions-bar.active{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-    .selection-info{font-size:14px;color:#1E293B;font-weight:600}
-    .bulk-btn-group{display:flex;gap:10px;flex-wrap:wrap}
-    .bulk-btn{padding:8px 16px;border-radius:6px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:6px}
-    .bulk-btn.allocate{background:#28a745;color:white}
-    .bulk-btn.allocate:hover{background:#218838}
-    .bulk-btn.reject{background:#dc3545;color:white}
-    .bulk-btn.reject:hover{background:#c82333}
-    .bulk-btn.notify{background:#3498db;color:white}
-    .bulk-btn.notify:hover{background:#2980b9}
-    .bulk-btn.export{background:#6c757d;color:white}
-    .bulk-btn.export:hover{background:#5a6268}
+    .bulk-actions-bar {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: none;
+    }
 
-    /* Table enhancements */
-    .select-checkbox{width:18px;height:18px;cursor:pointer}
-    .action-btn-group{display:flex;gap:6px}
-    .action-btn{padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
-    .action-btn.allocate{background:#28a745;color:white;border-color:#28a745}
-    .action-btn.allocate:hover{background:#218838}
-    .action-btn.reject{background:#dc3545;color:white;border-color:#dc3545}
-    .action-btn.reject:hover{background:#c82333}
-    .action-btn.view{background:white;color:#3498db;border-color:#3498db}
-    .action-btn.view:hover{background:#3498db;color:white}
+    .bulk-actions-bar.active {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
 
-    /* Modal Enhancements */
-    .modal-header{background:#F8FAFC;border-bottom:2px solid #E2E8F0}
-    .modal-title{font-weight:600;color:#1E293B}
-    .form-group{margin-bottom:16px}
-    .form-label{font-size:13px;font-weight:600;color:#64748B;margin-bottom:6px;display:block}
-    .form-control,.form-select{width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:6px;font-size:14px}
-    .form-control:focus,.form-select:focus{outline:none;border-color:#3498db;box-shadow:0 0 0 3px rgba(52,152,219,.1)}
-    .modal-footer{border-top:1px solid #E2E8F0;background:#F8FAFC}
+    .selection-info {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 600;
+    }
+
+    .bulk-btn-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bulk-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: white;
+    }
+
+    .bulk-btn.allocate {
+        color: #28a745;
+        border-color: #28a745;
+    }
+
+    .bulk-btn.allocate:hover {
+        background: #28a745;
+        color: white;
+    }
+
+    .bulk-btn.reject {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .bulk-btn.reject:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .bulk-btn.notify {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .bulk-btn.notify:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .bulk-btn.export {
+        color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .bulk-btn.export:hover {
+        background: #6c757d;
+        color: white;
+    }
+
+    /* Table checkbox */
+    .select-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    /* Action buttons in table */
+    .action-btn-group {
+        display: flex;
+        gap: 6px;
+    }
+
+    .action-btn.allocate {
+        color: #28a745;
+        border-color: #28a745;
+    }
+
+    .action-btn.allocate:hover {
+        background: #28a745;
+        color: white;
+    }
+
+    .action-btn.reject {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .action-btn.reject:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .action-btn.view {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .action-btn.view:hover {
+        background: #3498db;
+        color: white;
+    }
 
     /* Toast notifications */
-    .toast-container{position:fixed;top:80px;right:20px;z-index:9999}
-    .toast{background:white;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:300px;margin-bottom:12px}
-    .toast.success{border-left:4px solid #28a745}
-    .toast.error{border-left:4px solid #dc3545}
-    .toast.info{border-left:4px solid #3498db}
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+    }
 
-    @media(max-width:768px){
-        .stats-grid{grid-template-columns:repeat(2,1fr)}
-        .bulk-actions-bar{flex-direction:column;align-items:stretch}
-        .bulk-btn-group{flex-direction:column}
+    .toast {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 300px;
+        margin-bottom: 12px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .toast.success {
+        border-left: 4px solid #28a745;
+    }
+
+    .toast.error {
+        border-left: 4px solid #dc3545;
+    }
+
+    .toast.info {
+        border-left: 4px solid #3498db;
+    }
+
+    @media (max-width: 768px) {
+        .filter-content {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .applicants-table {
+            font-size: 13px;
+        }
+
+        .applicants-table thead th,
+        .applicants-table tbody td {
+            padding: 10px;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .bulk-actions-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .bulk-btn-group {
+            flex-direction: column;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a></li>
-            <li class="breadcrumb-item active">Applications</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'ward_admin_dashboard' %}">Ward Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Applications</li>
         </ol>
     </nav>
 
@@ -111,63 +743,116 @@
     </div>
 
     <div class="section-container">
+        <!-- Page Header -->
         <div class="page-header">
             <div>
-                <h1 class="page-title"><i class="bi bi-file-text"></i> Ward Applications</h1>
-                <p class="page-subtitle">{{ ward.name }} Ward - Manage Applications</p>
+                <h1 class="page-title">
+                    <i class="bi bi-file-text"></i>
+                    Ward Applications
+                </h1>
+                <p class="page-subtitle">
+                    {{ ward.name }} Ward - All Applications
+                </p>
             </div>
-            <div style="display:flex;gap:10px">
+            <div style="display: flex; gap: 10px;">
                 <button class="bulk-btn export" onclick="exportFiltered()">
                     <i class="bi bi-download"></i> Export Filtered
                 </button>
             </div>
         </div>
 
-        <!-- Filters (keep existing filter section) -->
+        <!-- Filters -->
         <div class="filter-section">
-            <div class="filter-header" onclick="toggleFilters()">
-                <h6 class="filter-title"><i class="bi bi-funnel"></i> Filter Applications</h6>
+            <div class="filter-header">
+                <h6 class="filter-title">
+                    <i class="bi bi-funnel"></i>
+                    Filter Applications
+                </h6>
                 <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
             </div>
-            <div class="filter-content" id="filtersContent" style="display:none">
+            
+            <div class="filter-content" id="filtersContent" style="display: none;">
                 <form method="get" id="filterForm">
-                    <div class="filter-content" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+                    <div class="filter-content">
                         <div class="filter-group">
-                            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
-                            <input type="text" name="search" class="form-control" value="{{ search_query|default:'' }}" placeholder="Application #, Name...">
+                            <label class="filter-label" for="search">
+                                <i class="bi bi-search"></i> Search
+                            </label>
+                            <input type="text" 
+                                   name="search" 
+                                   id="search"
+                                   class="form-control" 
+                                   value="{{ search_query|default:'' }}" 
+                                   placeholder="Application #, Name, ID Number...">
                         </div>
+                        
                         <div class="filter-group">
-                            <label class="filter-label"><i class="bi bi-filter-circle"></i> Status</label>
-                            <select name="status" class="form-select">
+                            <label class="filter-label" for="status">
+                                <i class="bi bi-filter-circle"></i> Status
+                            </label>
+                            <select name="status" id="status" class="filter-select">
                                 <option value="">All Status</option>
+                                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
                                 <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
                                 <option value="under_review" {% if status_filter == 'under_review' %}selected{% endif %}>Under Review</option>
                                 <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
                                 <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="disbursed" {% if status_filter == 'disbursed' %}selected{% endif %}>Disbursed</option>
                             </select>
                         </div>
+                        
                         <div class="filter-group">
-                            <label class="filter-label"><i class="bi bi-layers"></i> Category</label>
-                            <select name="category" class="form-select">
+                            <label class="filter-label" for="category">
+                                <i class="bi bi-layers"></i> Category
+                            </label>
+                            <select name="category" id="category" class="filter-select">
                                 <option value="">All Categories</option>
                                 {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+                                <option value="{{ cat.id }}" 
+                                        {% if category_filter == cat.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>
+                        
                         <div class="filter-group">
-                            <label class="filter-label"><i class="bi bi-building"></i> Institution</label>
-                            <select name="institution" class="form-select">
+                            <label class="filter-label" for="institution">
+                                <i class="bi bi-building"></i> Institution
+                            </label>
+                            <select name="institution" id="institution" class="filter-select">
                                 <option value="">All Institutions</option>
                                 {% for inst in institutions %}
-                                <option value="{{ inst.id }}" {% if institution_filter == inst.id|stringformat:'s' %}selected{% endif %}>{{ inst.name }}</option>
+                                <option value="{{ inst.id }}" 
+                                        {% if institution_filter == inst.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ inst.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label" for="fiscal_year">
+                                <i class="bi bi-calendar"></i> Fiscal Year
+                            </label>
+                            <select name="fiscal_year" id="fiscal_year" class="filter-select">
+                                {% for fy in fiscal_years %}
+                                <option value="{{ fy.id }}" 
+                                        {% if fiscal_year_id == fy.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ fy.name }}
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
-                    <div style="display:flex;gap:10px;margin-top:16px">
-                        <button type="submit" class="bulk-btn notify"><i class="bi bi-search"></i> Apply</button>
-                        <a href="{% url 'ward_admin_applications' %}" class="bulk-btn export"><i class="bi bi-x"></i> Reset</a>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="filter-btn">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
+                            <i class="bi bi-x-circle"></i> Reset Filters
+                        </a>
                     </div>
                 </form>
             </div>
@@ -195,6 +880,14 @@
         </div>
 
         <!-- Applications Table -->
+        <div class="table-header">
+            <h6 class="table-title">
+                <i class="bi bi-table"></i>
+                Applications List
+            </h6>
+            <span class="record-count">{{ page_obj.paginator.count }} records</span>
+        </div>
+
         <div class="table-responsive">
             <table class="applicants-table">
                 <thead>
@@ -204,38 +897,71 @@
                         <th>Application Number</th>
                         <th>Applicant</th>
                         <th>Institution</th>
+                        <th>Category</th>
                         <th>Amount Requested</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>Submitted</th>
+                        <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for app in page_obj %}
                     <tr>
-                        <td><input type="checkbox" class="select-checkbox app-checkbox" data-app-id="{{ app.id }}" data-app-number="{{ app.application_number }}" data-amount="{{ app.amount_requested }}"></td>
+                        <td><input type="checkbox" class="select-checkbox app-checkbox" 
+                                   data-app-id="{{ app.id }}" 
+                                   data-app-number="{{ app.application_number }}" 
+                                   data-amount="{{ app.amount_requested }}"></td>
                         <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                         <td><strong>{{ app.application_number }}</strong></td>
                         <td>
-                            <div>{{ app.applicant.user.get_full_name }}</div>
-                            <small style="color:#64748B">{{ app.applicant.id_number }}</small>
+                            <div class="applicant-info">
+                                <div class="applicant-name">{{ app.applicant.user.get_full_name }}</div>
+                                <div class="applicant-id">
+                                    <i class="bi bi-card-text"></i> {{ app.applicant.id_number }}
+                                </div>
+                            </div>
                         </td>
                         <td>{{ app.institution.name }}</td>
+                        <td>
+                            <span class="badge badge-info">
+                                {{ app.bursary_category.name }}
+                            </span>
+                        </td>
                         <td>KES {{ app.amount_requested|intcomma }}</td>
                         <td>
-                            <span class="badge {% if app.status == 'submitted' %}badge-warning{% elif app.status == 'approved' %}badge-success{% elif app.status == 'rejected' %}badge-danger{% endif %}">
+                            <span class="badge 
+                                {% if app.status == 'submitted' %}badge-warning
+                                {% elif app.status == 'approved' %}badge-success
+                                {% elif app.status == 'rejected' %}badge-danger
+                                {% elif app.status == 'under_review' %}badge-info
+                                {% elif app.status == 'disbursed' %}badge-purple
+                                {% else %}badge-secondary{% endif %}">
                                 {{ app.get_status_display }}
                             </span>
                         </td>
                         <td>
+                            {% if app.date_submitted %}
+                            {{ app.date_submitted|date:"d M Y" }}
+                            {% else %}
+                            <span class="text-muted">Not submitted</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
                             <div class="action-btn-group">
-                                <a href="{% url 'ward_admin_application_detail' app.id %}" class="action-btn view" title="View">
+                                <a href="{% url 'ward_admin_application_detail' app.id %}" 
+                                   class="action-btn view btn-sm"
+                                   title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if app.status == 'submitted' %}
-                                <button class="action-btn allocate" onclick="openAllocateModal({{ app.id }}, '{{ app.application_number }}', {{ app.amount_requested }})" title="Allocate">
+                                <button class="action-btn allocate btn-sm" 
+                                        onclick="openAllocateModal({{ app.id }}, '{{ app.application_number }}', {{ app.amount_requested }})" 
+                                        title="Allocate">
                                     <i class="bi bi-check"></i>
                                 </button>
-                                <button class="action-btn reject" onclick="openRejectModal({{ app.id }}, '{{ app.application_number }}')" title="Reject">
+                                <button class="action-btn reject btn-sm" 
+                                        onclick="openRejectModal({{ app.id }}, '{{ app.application_number }}')" 
+                                        title="Reject">
                                     <i class="bi bi-x"></i>
                                 </button>
                                 {% endif %}
@@ -243,36 +969,85 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="8" style="text-align:center;padding:40px;color:#94A3B8">No applications found</td></tr>
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Applications Found</h3>
+                                <p class="empty-text">
+                                    {% if search_query or status_filter or category_filter or institution_filter %}
+                                        No applications match your current filters.
+                                    {% else %}
+                                        There are no applications in your ward yet.
+                                    {% endif %}
+                                </p>
+                                {% if search_query or status_filter or category_filter or institution_filter %}
+                                <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
+                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination (keep existing) -->
+        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
         <div class="pagination-container">
-            <div class="pagination-info">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}</div>
-            <nav><ul class="pagination">
-                {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i></a></li>
-                {% endif %}
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            <div class="pagination-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
+            </div>
+            
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
                     {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-right"></i></a></li>
-                {% endif %}
-            </ul></nav>
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- Modals (All 5 modals remain exactly the same as before) -->
 <!-- Single Allocate Modal -->
 <div class="modal fade" id="allocateModal" tabindex="-1">
     <div class="modal-dialog">
@@ -444,11 +1219,11 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// JavaScript remains exactly the same as before
 const CSRF = '{{ csrf_token }}';
 let selectedApps = [];
 let currentAppId = null;
 
-// Selection management
 document.getElementById('selectAll').addEventListener('change', function() {
     const checkboxes = document.querySelectorAll('.app-checkbox');
     checkboxes.forEach(cb => cb.checked = this.checked);
@@ -479,7 +1254,6 @@ function clearSelection() {
     updateSelection();
 }
 
-// Single allocate
 function openAllocateModal(appId, appNumber, reqAmount) {
     currentAppId = appId;
     document.getElementById('allocAppNumber').value = appNumber;
@@ -520,7 +1294,6 @@ function submitAllocate() {
     .catch(e => showToast('Error: ' + e, 'error'));
 }
 
-// Single reject
 function openRejectModal(appId, appNumber) {
     currentAppId = appId;
     document.getElementById('rejectAppNumber').value = appNumber;
@@ -563,7 +1336,6 @@ function submitReject() {
     .catch(e => showToast('Error: ' + e, 'error'));
 }
 
-// Bulk allocate
 function openBulkAllocateModal() {
     if (selectedApps.length === 0) return;
     
@@ -614,7 +1386,6 @@ function submitBulkAllocate() {
     .catch(e => showToast('Error: ' + e, 'error'));
 }
 
-// Bulk reject
 function openBulkRejectModal() {
     if (selectedApps.length === 0) return;
     document.getElementById('bulkRejectCount').textContent = selectedApps.length;
@@ -651,7 +1422,6 @@ function submitBulkReject() {
     .catch(e => showToast('Error: ' + e, 'error'));
 }
 
-// Bulk notify
 function openBulkNotifyModal() {
     if (selectedApps.length === 0) return;
     document.getElementById('bulkNotifyCount').textContent = selectedApps.length;
@@ -695,12 +1465,10 @@ function submitBulkNotify() {
     .catch(e => showToast('Error: ' + e, 'error'));
 }
 
-// Export
 function exportFiltered() {
     window.location.href = '/ward-admin/export/applications/?' + window.location.search.substring(1);
 }
 
-// Toast notifications
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -709,7 +1477,6 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 4000);
 }
 
-// Filter toggle
 function toggleFilters() {
     const content = document.getElementById('filtersContent');
     const toggle = document.getElementById('filterToggle');
@@ -723,8 +1490,23 @@ function toggleFilters() {
 }
 
 // Auto-expand filters if active
-if ("{{ search_query|default:'' }}" || "{{ status_filter|default:'' }}" || "{{ category_filter|default:'' }}") {
-    toggleFilters();
-}
+document.addEventListener('DOMContentLoaded', function() {
+    const hasActiveFilters = "{{ search_query|default:'' }}" !== "" || 
+                            "{{ status_filter|default:'' }}" !== "" || 
+                            "{{ category_filter|default:'' }}" !== "" ||
+                            "{{ institution_filter|default:'' }}" !== "";
+    
+    if (hasActiveFilters) {
+        document.getElementById('filtersContent').style.display = 'grid';
+        document.getElementById('filterToggle').classList.add('rotated');
+    }
+
+    const searchInput = document.getElementById('search');
+    const searchQuery = "{{ search_query|default:'' }}";
+    if (searchQuery && searchInput) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    }
+});
 </script>
 {% endblock %}
