@@ -2351,6 +2351,12 @@ def mark_bulk_cheque_collected(request, cheque_id):
 
 # ============= BUDGET MANAGEMENT =============
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db.models import Sum, F, Q, DecimalField, ExpressionWrapper
+from decimal import Decimal
+
 @login_required
 @user_passes_test(is_finance)
 def budget_management(request):
@@ -2366,45 +2372,75 @@ def budget_management(request):
     # Overall budget statistics
     total_budget = current_fiscal_year.total_bursary_allocation
     total_allocated = Allocation.objects.filter(
-        application__fiscal_year=current_fiscal_year
+        fiscal_year=current_fiscal_year
     ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
     
     total_disbursed = Allocation.objects.filter(
-        application__fiscal_year=current_fiscal_year,
+        fiscal_year=current_fiscal_year,
         is_disbursed=True
     ).aggregate(Sum('amount_allocated'))['amount_allocated__sum'] or 0
     
     budget_balance = total_budget - total_allocated
-    utilization_rate = (total_allocated / total_budget * 100) if total_budget > 0 else 0
-    disbursement_rate = (total_disbursed / total_allocated * 100) if total_allocated > 0 else 0
+    utilization_rate = (float(total_allocated) / float(total_budget) * 100) if total_budget > 0 else 0
+    disbursement_rate = (float(total_disbursed) / float(total_allocated) * 100) if total_allocated > 0 else 0
     
     # Category-wise budget breakdown
     category_budgets = BursaryCategory.objects.filter(
         fiscal_year=current_fiscal_year,
         is_active=True
     ).annotate(
-        allocated=Sum('application__allocation__amount_allocated'),
+        allocated=Sum('allocations__amount_allocated'),
         disbursed=Sum(
-            'application__allocation__amount_allocated',
-            filter=Q(application__allocation__is_disbursed=True)
+            'allocations__amount_allocated',
+            filter=Q(allocations__is_disbursed=True)
         )
     )
     
-    # Ward-wise allocation
+    # Ward-wise allocation with proper output_field
     ward_allocations = WardAllocation.objects.filter(
         fiscal_year=current_fiscal_year
     ).select_related('ward').annotate(
-        balance=F('allocated_amount') - F('spent_amount'),
-        utilization=F('spent_amount') * 100.0 / F('allocated_amount')
+        balance=ExpressionWrapper(
+            F('allocated_amount') - F('spent_amount'),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+        utilization=ExpressionWrapper(
+            F('spent_amount') * Decimal('100.0') / F('allocated_amount'),
+            output_field=DecimalField(max_digits=5, decimal_places=2)
+        )
     ).order_by('ward__name')
     
     # Disbursement rounds
     disbursement_rounds = DisbursementRound.objects.filter(
         fiscal_year=current_fiscal_year
     ).annotate(
-        actual_disbursed=Sum('application__allocation__amount_allocated',
-                           filter=Q(application__allocation__is_disbursed=True))
+        actual_disbursed=Sum(
+            'application__allocation__amount_allocated',
+            filter=Q(application__allocation__is_disbursed=True)
+        )
     )
+    
+    # Prepare data for charts
+    # Chart 1: Budget Utilization by Category
+    category_chart_data = {
+        'labels': [cat.name for cat in category_budgets],
+        'allocated': [float(cat.allocated or 0) for cat in category_budgets],
+        'budget': [float(cat.allocation_amount) for cat in category_budgets],
+    }
+    
+    # Chart 2: Ward-wise Distribution
+    ward_chart_data = {
+        'labels': [wa.ward.name for wa in ward_allocations[:10]],  # Top 10 wards
+        'allocated': [float(wa.spent_amount) for wa in ward_allocations[:10]],
+        'budget': [float(wa.allocated_amount) for wa in ward_allocations[:10]],
+    }
+    
+    # Chart 3: Disbursement Timeline
+    disbursement_chart_data = {
+        'labels': [dr.name for dr in disbursement_rounds],
+        'planned': [float(dr.allocated_amount) for dr in disbursement_rounds],
+        'actual': [float(dr.actual_disbursed or 0) for dr in disbursement_rounds],
+    }
     
     context = {
         'current_fiscal_year': current_fiscal_year,
@@ -2417,9 +2453,11 @@ def budget_management(request):
         'category_budgets': category_budgets,
         'ward_allocations': ward_allocations,
         'disbursement_rounds': disbursement_rounds,
+        'category_chart_data': category_chart_data,
+        'ward_chart_data': ward_chart_data,
+        'disbursement_chart_data': disbursement_chart_data,
     }
     return render(request, 'finance/budget_management.html', context)
-
 
 # ============= REPORTS =============
 @login_required

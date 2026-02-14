@@ -1,144 +1,896 @@
 {% extends 'admin_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Bulk Cheques{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    /* Modern styling from second HTML */
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .stat-card:nth-child(1) { color: #3498db; }
+    .stat-card:nth-child(2) { color: #27ae60; }
+    .stat-card:nth-child(3) { color: #f39c12; }
+    .stat-card:nth-child(4) { color: #e74c3c; }
+
+    .stat-card h3 {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .filter-toggle {
+        color: #64748B;
+        transition: transform 0.3s ease;
+    }
+
+    .filter-toggle.rotated {
+        transform: rotate(180deg);
+    }
+
+    .filter-content {
+        display: none;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-group select,
+    .form-group input[type="date"],
+    .form-group input[type="text"] {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-outline:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+    }
+
+    .btn-success:hover {
+        background: #219a52;
+        transform: translateY(-1px);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        grid-column: 1 / -1;
+        margin-top: 8px;
+    }
+
+    .section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .section h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .table-section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: #F8FAFC;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .record-count {
+        padding: 6px 12px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .data-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .data-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .action-link {
+        color: #3498db;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .action-link:hover {
+        background: #F8FAFC;
+        color: #2980b9;
+    }
+
+    .action-link i {
+        font-size: 14px;
+    }
+
+    .amount-cell {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .institution-name {
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .cheque-number {
+        font-family: monospace;
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .holder-name {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .holder-name i {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Status indicator */
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-indicator i {
+        font-size: 8px;
+    }
+
+    .status-indicator .collected i {
+        color: #27ae60;
+    }
+
+    .status-indicator .pending i {
+        color: #f39c12;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .data-table {
+            font-size: 13px;
+        }
+
+        .data-table thead th,
+        .data-table tbody td {
+            padding: 10px;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="content">
-    <div class="page-header">
-        <h1>Bulk Cheques</h1>
-        <p>Manage bulk cheque assignments</p>
-    </div>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance_dashboard' %}">Finance Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Bulk Cheques</li>
+        </ol>
+    </nav>
 
     <!-- Statistics -->
     <div class="stats-grid">
         <div class="stat-card">
-            <h3>Total Amount</h3>
-            <p class="stat-value">KES {{ total_amount|floatformat:2|default:"0.00" }}</p>
+            <h3><i class="bi bi-cash-stack"></i> Total Amount</h3>
+            <p class="stat-value">KES {{ total_amount|floatformat:2|default:"0.00"|intcomma }}</p>
         </div>
         <div class="stat-card">
-            <h3>Total Students</h3>
-            <p class="stat-value">{{ total_students }}</p>
+            <h3><i class="bi bi-people"></i> Total Students</h3>
+            <p class="stat-value">{{ total_students|intcomma }}</p>
         </div>
         <div class="stat-card">
-            <h3>Collected</h3>
-            <p class="stat-value">{{ collected_count }}</p>
+            <h3><i class="bi bi-check-circle"></i> Collected</h3>
+            <p class="stat-value">{{ collected_count|intcomma }}</p>
         </div>
         <div class="stat-card">
-            <h3>Pending Collection</h3>
-            <p class="stat-value">{{ pending_count }}</p>
+            <h3><i class="bi bi-clock"></i> Pending Collection</h3>
+            <p class="stat-value">{{ pending_count|intcomma }}</p>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="filters-section">
-        <h3>Filter Bulk Cheques</h3>
-        <form method="get" action="">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Fiscal Year</label>
-                    <select name="fiscal_year">
-                        <option value="">All Years</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
-                            {{ fy.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+    <div class="filter-section">
+        <div class="filter-header" onclick="toggleFilters()">
+            <h3 class="filter-title">
+                <i class="bi bi-funnel"></i>
+                Filter Bulk Cheques
+            </h3>
+            <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+        </div>
+        
+        <div class="filter-content" id="filtersContent">
+            <form method="get" action="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fiscal_year">
+                            <i class="bi bi-calendar"></i> Fiscal Year
+                        </label>
+                        <select name="fiscal_year" id="fiscal_year">
+                            <option value="">All Years</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                                {{ fy.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label>Institution</label>
-                    <select name="institution">
-                        <option value="">All Institutions</option>
-                        {% for inst in institutions %}
-                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
-                            {{ inst.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="institution">
+                            <i class="bi bi-building"></i> Institution
+                        </label>
+                        <select name="institution" id="institution">
+                            <option value="">All Institutions</option>
+                            {% for inst in institutions %}
+                            <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                                {{ inst.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="status">
-                        <option value="">All Status</option>
-                        <option value="collected" {% if request.GET.status == 'collected' %}selected{% endif %}>Collected</option>
-                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="status">
+                            <i class="bi bi-flag"></i> Status
+                        </label>
+                        <select name="status" id="status">
+                            <option value="">All Status</option>
+                            <option value="collected" {% if request.GET.status == 'collected' %}selected{% endif %}>Collected</option>
+                            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <button type="submit">Filter</button>
-                    <a href="{% url 'finance_bulk_cheque_list' %}">Clear</a>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'finance_bulk_cheque_list' %}" class="btn btn-outline">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <!-- Bulk Cheques Table -->
     <div class="section">
-        <h2>Bulk Cheques ({{ bulk_cheques.paginator.count }} total)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Cheque Number</th>
-                    <th>Institution</th>
-                    <th>Fiscal Year</th>
-                    <th>Amount</th>
-                    <th>Students</th>
-                    <th>Cheque Holder</th>
-                    <th>Status</th>
-                    <th>Created Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cheque in bulk_cheques %}
-                <tr>
-                    <td>{{ cheque.cheque_number }}</td>
-                    <td>{{ cheque.institution.name }}</td>
-                    <td>{{ cheque.fiscal_year.name }}</td>
-                    <td>KES {{ cheque.total_amount|floatformat:2 }}</td>
-                    <td>{{ cheque.student_count }}</td>
-                    <td>{{ cheque.cheque_holder_name }}</td>
-                    <td>
-                        {% if cheque.is_collected %}
-                            <span class="badge-success">Collected</span>
+        <h2>
+            <i class="bi bi-files"></i>
+            Bulk Cheques
+        </h2>
+        
+        <div class="table-section">
+            <div class="table-header">
+                <h4 class="table-title">
+                    <i class="bi bi-table"></i>
+                    Cheques List
+                </h4>
+                <span class="record-count">{{ bulk_cheques.paginator.count|intcomma }} total records</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cheque Number</th>
+                            <th>Institution</th>
+                            <th>Fiscal Year</th>
+                            <th>Amount</th>
+                            <th>Students</th>
+                            <th>Cheque Holder</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cheque in bulk_cheques %}
+                        <tr>
+                            <td>
+                                <span class="cheque-number">{{ cheque.cheque_number }}</span>
+                            </td>
+                            <td>
+                                <span class="institution-name">{{ cheque.institution.name|truncatechars:30 }}</span>
+                            </td>
+                            <td>{{ cheque.fiscal_year.name }}</td>
+                            <td class="amount-cell">KES {{ cheque.total_amount|floatformat:2|intcomma }}</td>
+                            <td>{{ cheque.student_count|intcomma }}</td>
+                            <td>
+                                <span class="holder-name">
+                                    <i class="bi bi-person"></i>
+                                    {{ cheque.cheque_holder_name }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="status-indicator">
+                                    {% if cheque.is_collected %}
+                                        <span class="badge badge-success">
+                                            <i class="bi bi-check-circle"></i> Collected
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-warning">
+                                            <i class="bi bi-clock"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>{{ cheque.created_date|date:"Y-m-d" }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'finance_bulk_cheque_detail' cheque.id %}" class="action-link" title="View Details">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    {% if not cheque.is_collected %}
+                                    <a href="{% url 'finance_mark_bulk_cheque_collected' cheque.id %}" class="action-link" title="Mark as Collected">
+                                        <i class="bi bi-check-circle"></i> Mark Collected
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-files"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Bulk Cheques Found</h3>
+                                    <p class="empty-text">
+                                        {% if request.GET.fiscal_year or request.GET.institution or request.GET.status %}
+                                            No bulk cheques match your current filters.
+                                        {% else %}
+                                            There are no bulk cheques created yet.
+                                        {% endif %}
+                                    </p>
+                                    {% if request.GET.fiscal_year or request.GET.institution or request.GET.status %}
+                                    <a href="{% url 'finance_bulk_cheque_list' %}" class="btn btn-primary">
+                                        <i class="bi bi-x-circle"></i> Clear Filters
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if bulk_cheques.has_other_pages %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ bulk_cheques.start_index|intcomma }} to {{ bulk_cheques.end_index|intcomma }} of {{ bulk_cheques.paginator.count|intcomma }} cheques
+                </div>
+                
+                <nav>
+                    <ul class="pagination">
+                        {% if bulk_cheques.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bulk_cheques.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
                         {% else %}
-                            <span class="badge-warning">Pending</span>
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                            </li>
                         {% endif %}
-                    </td>
-                    <td>{{ cheque.created_date|date:"Y-m-d" }}</td>
-                    <td>
-                        <a href="{% url 'finance_bulk_cheque_detail' cheque.id %}">View</a>
-                        {% if not cheque.is_collected %}
-                            | <a href="{% url 'finance_mark_bulk_cheque_collected' cheque.id %}">Mark Collected</a>
+
+                        {% for num in bulk_cheques.paginator.page_range %}
+                            {% if bulk_cheques.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > bulk_cheques.number|add:'-3' and num < bulk_cheques.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if bulk_cheques.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bulk_cheques.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                            </li>
                         {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9">No bulk cheques found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Pagination -->
-        {% if bulk_cheques.has_other_pages %}
-        <div class="pagination">
-            {% if bulk_cheques.has_previous %}
-                <a href="?page={{ bulk_cheques.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
-            {% endif %}
-
-            <span>Page {{ bulk_cheques.number }} of {{ bulk_cheques.paginator.num_pages }}</span>
-
-            {% if bulk_cheques.has_next %}
-                <a href="?page={{ bulk_cheques.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </ul>
+                </nav>
+            </div>
             {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-expand filters if any are active
+    const hasActiveFilters = "{{ request.GET.fiscal_year|default:'' }}" !== "" || 
+                            "{{ request.GET.institution|default:'' }}" !== "" || 
+                            "{{ request.GET.status|default:'' }}" !== "";
+    
+    const filtersContent = document.getElementById('filtersContent');
+    const filterToggle = document.getElementById('filterToggle');
+    
+    if (hasActiveFilters && filtersContent && filterToggle) {
+        filtersContent.style.display = 'block';
+        filterToggle.classList.add('rotated');
+    } else if (filtersContent) {
+        // Hide filters by default
+        filtersContent.style.display = 'none';
+    }
+});
+
+function toggleFilters() {
+    const content = document.getElementById('filtersContent');
+    const toggle = document.getElementById('filterToggle');
+    
+    if (content && toggle) {
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+}
+</script>
 {% endblock %}
