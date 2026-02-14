@@ -26357,7 +26357,7 @@ from .models import *
 from .decorators import ward_admin_required
 
 
-@ward_admin_required  # This already includes login_required functionality
+@login_required # This already includes login_required functionality
 def ward_admin_dashboard_view(request):
     """
     Main dashboard for Ward Administrator
@@ -26472,8 +26472,7 @@ def ward_admin_dashboard_view(request):
 
 # ============= APPLICATIONS MANAGEMENT =============
 
-@login_required
-@ward_admin_required
+@login_required 
 def ward_admin_applications_list_view(request):
     """
     List all applications from the ward
@@ -26484,7 +26483,7 @@ def ward_admin_applications_list_view(request):
     
     if not ward:
         messages.error(request, "You are not assigned to any ward.")
-        return redirect('ward_admin_dashboard')
+        return redirect('logout_view')
     
     # Get filter parameters
     status_filter = request.GET.get('status', '')
