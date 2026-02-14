@@ -358,18 +358,10 @@ urlpatterns = [
     path('reviewer/applications/reviewed/', views.reviewed_applications, name='reviewed_applications'),
     path('reviewer/applications/<int:application_id>/', views.reviewer_application_detail, name='reviewer_application_detail'),
     path('reviewer/applications/<int:application_id>/review/', views.submit_review, name='submit_review'),
-    path(
-        'ward/applications/',
-        views.ward_applications_list,
-        name='ward_applications_list',
-    ),
+    path('reviewer_ward/applications/',views.reviewer_ward_applications_list,name='reviewer_ward_applications_list',),
 
     # ── NEW: Single application detail ──────────────────────────────────────
-    path(
-        'ward/applications/<int:application_id>/',
-        views.ward_application_detail,
-        name='ward_application_detail',
-    ),
+    path('reviewer_ward/applications/<int:application_id>/',views.reviewer_ward_application_detail,name='ward_application_detail',),
     
     # Document proxy API - Get document data for modal viewer
     path('reviewer/application/<int:application_id>/document/<int:document_id>/proxy/', views.reviewer_document_proxy, name='reviewer_document_proxy'),

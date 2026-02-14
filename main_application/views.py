@@ -24241,7 +24241,7 @@ from .utils import create_audit_log  # adjust import path as needed
 
 @login_required
 @reviewer_required
-def ward_applications_list(request):
+def reviewer_ward_applications_list(request):
     """
     All applications for the reviewer's assigned ward across every status,
     with rich filtering (status, category, village, institution) and
@@ -24382,7 +24382,7 @@ def ward_applications_list(request):
 
 @login_required
 @reviewer_required
-def ward_application_detail(request, application_id):
+def reviewer_ward_application_detail(request, application_id):
     """
     Full detail view for a single application in the reviewer's ward.
     Shows: applicant info, guardian(s), siblings, documents, review history,
@@ -26357,7 +26357,8 @@ from .models import *
 from .decorators import ward_admin_required
 
 
-@login_required # This already includes login_required functionality
+@login_required
+@ward_admin_required
 def ward_admin_dashboard_view(request):
     """
     Main dashboard for Ward Administrator
@@ -26472,7 +26473,8 @@ def ward_admin_dashboard_view(request):
 
 # ============= APPLICATIONS MANAGEMENT =============
 
-@login_required 
+@login_required
+@ward_admin_required
 def ward_admin_applications_list_view(request):
     """
     List all applications from the ward
