@@ -1,169 +1,946 @@
-{% extends 'base.html' %}
+{% extends 'admin_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}All Disbursements{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    /* Modern styling from second HTML */
+    .breadcrumb {
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 14px;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+        color: #64748B;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "/ ";
+        color: #94A3B8;
+        padding: 0 8px;
+    }
+
+    .breadcrumb-item.active {
+        color: #1E293B;
+        font-weight: 500;
+    }
+
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .breadcrumb a:hover {
+        color: #2980b9;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .page-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-subtitle {
+        color: #64748B;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-outline:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+    }
+
+    .btn-success:hover {
+        background: #219a52;
+        transform: translateY(-1px);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .stat-card:first-child { color: #3498db; }
+    .stat-card:last-child { color: #27ae60; }
+
+    .stat-card h3 {
+        font-size: 14px;
+        color: #64748B;
+        margin-bottom: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .section h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .filter-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: end;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-group select,
+    .form-group input[type="date"],
+    .form-group input[type="text"] {
+        padding: 10px 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        grid-column: 1 / -1;
+        margin-top: 8px;
+    }
+
+    .table-section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: #F8FAFC;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .record-count {
+        padding: 6px 12px;
+        background: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead th {
+        background: #F8FAFC;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .data-table tbody td {
+        padding: 16px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #334155;
+    }
+
+    .data-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #F8FAFC;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .badge-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .badge-warning {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .amount-cell {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .applicant-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .applicant-id {
+        font-size: 12px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .institution-name {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .reference-number {
+        font-family: monospace;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: #CBD5E1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #94A3B8;
+        margin-bottom: 20px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-top: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: #64748B;
+        font-size: 14px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .page-link:hover {
+        background: #F8FAFC;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Payment method specific styling */
+    .payment-method {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: #F1F5F9;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .payment-method i {
+        font-size: 14px;
+    }
+
+    /* Export button section */
+    .export-section {
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .data-table {
+            font-size: 13px;
+        }
+
+        .data-table thead th,
+        .data-table tbody td {
+            padding: 10px;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .export-section {
+            justify-content: stretch;
+        }
+
+        .export-section .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="content">
-    <div class="page-header">
-        <h1>All Disbursements</h1>
-        <p>Complete disbursement history</p>
-    </div>
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'finance_dashboard' %}">Finance Dashboard</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">All Disbursements</li>
+        </ol>
+    </nav>
 
     <!-- Statistics -->
     <div class="stats-grid">
         <div class="stat-card">
-            <h3>Total Disbursed</h3>
-            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00" }}</p>
+            <h3><i class="bi bi-cash-stack"></i> Total Disbursed</h3>
+            <p class="stat-value">KES {{ total_disbursed|floatformat:2|default:"0.00"|intcomma }}</p>
         </div>
         <div class="stat-card">
-            <h3>Total Transactions</h3>
-            <p class="stat-value">{{ total_count }}</p>
+            <h3><i class="bi bi-credit-card"></i> Total Transactions</h3>
+            <p class="stat-value">{{ total_count|intcomma }}</p>
         </div>
     </div>
 
     <!-- Payment Method Breakdown -->
     <div class="section">
-        <h2>Payment Method Breakdown</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Payment Method</th>
-                    <th>Total Amount</th>
-                    <th>Count</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment in payment_breakdown %}
-                <tr>
-                    <td>{{ payment.payment_method|title }}</td>
-                    <td>KES {{ payment.total|floatformat:2 }}</td>
-                    <td>{{ payment.count }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3">No disbursements found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <h2>
+            <i class="bi bi-pie-chart"></i>
+            Payment Method Breakdown
+        </h2>
+        <div class="table-section">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Payment Method</th>
+                        <th>Total Amount</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payment_breakdown %}
+                    <tr>
+                        <td>
+                            <span class="payment-method">
+                                {% if payment.payment_method == 'cheque' %}
+                                    <i class="bi bi-file-text"></i>
+                                {% elif payment.payment_method == 'bank_transfer' %}
+                                    <i class="bi bi-bank"></i>
+                                {% elif payment.payment_method == 'mpesa' %}
+                                    <i class="bi bi-phone"></i>
+                                {% elif payment.payment_method == 'bulk_cheque' %}
+                                    <i class="bi bi-files"></i>
+                                {% endif %}
+                                {{ payment.payment_method|title }}
+                            </span>
+                        </td>
+                        <td class="amount-cell">KES {{ payment.total|floatformat:2|intcomma }}</td>
+                        <td>{{ payment.count|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h3 class="empty-title">No Disbursements Found</h3>
+                                <p class="empty-text">No payment method breakdown available.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Filters -->
-    <div class="filters-section">
-        <h3>Filter Disbursements</h3>
-        <form method="get" action="">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Fiscal Year</label>
-                    <select name="fiscal_year">
-                        <option value="">All Years</option>
-                        {% for fy in fiscal_years %}
-                        <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
-                            {{ fy.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+    <div class="filter-section">
+        <div class="filter-header" onclick="toggleFilters()">
+            <h3 class="filter-title">
+                <i class="bi bi-funnel"></i>
+                Filter Disbursements
+            </h3>
+            <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
+        </div>
+        
+        <div class="filter-content" id="filtersContent">
+            <form method="get" action="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fiscal_year">
+                            <i class="bi bi-calendar"></i> Fiscal Year
+                        </label>
+                        <select name="fiscal_year" id="fiscal_year">
+                            <option value="">All Years</option>
+                            {% for fy in fiscal_years %}
+                            <option value="{{ fy.id }}" {% if request.GET.fiscal_year == fy.id|stringformat:"s" %}selected{% endif %}>
+                                {{ fy.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label>Institution</label>
-                    <select name="institution">
-                        <option value="">All Institutions</option>
-                        {% for inst in institutions %}
-                        <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
-                            {{ inst.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="institution">
+                            <i class="bi bi-building"></i> Institution
+                        </label>
+                        <select name="institution" id="institution">
+                            <option value="">All Institutions</option>
+                            {% for inst in institutions %}
+                            <option value="{{ inst.id }}" {% if request.GET.institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                                {{ inst.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label>Date From</label>
-                    <input type="date" name="date_from" value="{{ request.GET.date_from }}">
-                </div>
+                    <div class="form-group">
+                        <label for="date_from">
+                            <i class="bi bi-calendar-range"></i> Date From
+                        </label>
+                        <input type="date" name="date_from" id="date_from" value="{{ request.GET.date_from }}">
+                    </div>
 
-                <div class="form-group">
-                    <label>Date To</label>
-                    <input type="date" name="date_to" value="{{ request.GET.date_to }}">
-                </div>
+                    <div class="form-group">
+                        <label for="date_to">
+                            <i class="bi bi-calendar-range"></i> Date To
+                        </label>
+                        <input type="date" name="date_to" id="date_to" value="{{ request.GET.date_to }}">
+                    </div>
 
-                <div class="form-group">
-                    <label>Payment Method</label>
-                    <select name="payment_method">
-                        <option value="">All Methods</option>
-                        <option value="cheque" {% if request.GET.payment_method == 'cheque' %}selected{% endif %}>Cheque</option>
-                        <option value="bank_transfer" {% if request.GET.payment_method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
-                        <option value="mpesa" {% if request.GET.payment_method == 'mpesa' %}selected{% endif %}>M-Pesa</option>
-                        <option value="bulk_cheque" {% if request.GET.payment_method == 'bulk_cheque' %}selected{% endif %}>Bulk Cheque</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="payment_method">
+                            <i class="bi bi-credit-card"></i> Payment Method
+                        </label>
+                        <select name="payment_method" id="payment_method">
+                            <option value="">All Methods</option>
+                            <option value="cheque" {% if request.GET.payment_method == 'cheque' %}selected{% endif %}>Cheque</option>
+                            <option value="bank_transfer" {% if request.GET.payment_method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                            <option value="mpesa" {% if request.GET.payment_method == 'mpesa' %}selected{% endif %}>M-Pesa</option>
+                            <option value="bulk_cheque" {% if request.GET.payment_method == 'bulk_cheque' %}selected{% endif %}>Bulk Cheque</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <button type="submit">Filter</button>
-                    <a href="{% url 'finance_disbursement_list' %}">Clear</a>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'finance_disbursement_list' %}" class="btn btn-outline">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <!-- Export Button -->
-    <div class="section">
-        <a href="{% url 'finance_export_disbursements_csv' %}?{{ request.GET.urlencode }}" class="button">Export to CSV</a>
+    <div class="export-section">
+        <a href="{% url 'finance_export_disbursements_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+            <i class="bi bi-download"></i> Export to CSV
+        </a>
     </div>
 
     <!-- Disbursements Table -->
     <div class="section">
-        <h2>Disbursement Records ({{ disbursements.paginator.count }} total)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Application No.</th>
-                    <th>Student Name</th>
-                    <th>ID Number</th>
-                    <th>Institution</th>
-                    <th>Amount</th>
-                    <th>Payment Method</th>
-                    <th>Cheque/Ref No.</th>
-                    <th>Disbursement Date</th>
-                    <th>Disbursed By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for disbursement in disbursements %}
-                <tr>
-                    <td>{{ disbursement.application.application_number }}</td>
-                    <td>{{ disbursement.application.applicant.user.get_full_name }}</td>
-                    <td>{{ disbursement.application.applicant.id_number }}</td>
-                    <td>{{ disbursement.application.institution.name }}</td>
-                    <td>KES {{ disbursement.amount_allocated|floatformat:2 }}</td>
-                    <td>{{ disbursement.get_payment_method_display }}</td>
-                    <td>{{ disbursement.cheque_number|default:"-" }}</td>
-                    <td>{{ disbursement.disbursement_date|date:"Y-m-d" }}</td>
-                    <td>{{ disbursement.disbursed_by.get_full_name|default:"-" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9">No disbursements found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <h2>
+            <i class="bi bi-list-check"></i>
+            Disbursement Records
+        </h2>
+        
+        <div class="table-section">
+            <div class="table-header">
+                <h4 class="table-title">
+                    <i class="bi bi-table"></i>
+                    Disbursements List
+                </h4>
+                <span class="record-count">{{ disbursements.paginator.count|intcomma }} total records</span>
+            </div>
 
-        <!-- Pagination -->
-        {% if disbursements.has_other_pages %}
-        <div class="pagination">
-            {% if disbursements.has_previous %}
-                <a href="?page={{ disbursements.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
-            {% endif %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Application No.</th>
+                            <th>Student</th>
+                            <th>ID Number</th>
+                            <th>Institution</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Cheque/Ref No.</th>
+                            <th>Disbursement Date</th>
+                            <th>Disbursed By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for disbursement in disbursements %}
+                        <tr>
+                            <td>
+                                <strong>{{ disbursement.application.application_number }}</strong>
+                            </td>
+                            <td>
+                                <div class="applicant-info">
+                                    <span class="applicant-name">{{ disbursement.application.applicant.user.get_full_name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="applicant-id">
+                                    <i class="bi bi-card-text"></i> {{ disbursement.application.applicant.id_number }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="institution-name">{{ disbursement.application.institution.name|truncatechars:30 }}</span>
+                            </td>
+                            <td class="amount-cell">KES {{ disbursement.amount_allocated|floatformat:2|intcomma }}</td>
+                            <td>
+                                <span class="payment-method">
+                                    {% if disbursement.payment_method == 'cheque' %}
+                                        <i class="bi bi-file-text"></i>
+                                    {% elif disbursement.payment_method == 'bank_transfer' %}
+                                        <i class="bi bi-bank"></i>
+                                    {% elif disbursement.payment_method == 'mpesa' %}
+                                        <i class="bi bi-phone"></i>
+                                    {% elif disbursement.payment_method == 'bulk_cheque' %}
+                                        <i class="bi bi-files"></i>
+                                    {% endif %}
+                                    {{ disbursement.get_payment_method_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if disbursement.cheque_number %}
+                                <span class="reference-number">{{ disbursement.cheque_number }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ disbursement.disbursement_date|date:"Y-m-d" }}</td>
+                            <td>{{ disbursement.disbursed_by.get_full_name|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Disbursements Found</h3>
+                                    <p class="empty-text">
+                                        {% if request.GET.fiscal_year or request.GET.institution or request.GET.date_from or request.GET.date_to or request.GET.payment_method %}
+                                            No disbursements match your current filters.
+                                        {% else %}
+                                            There are no disbursement records yet.
+                                        {% endif %}
+                                    </p>
+                                    {% if request.GET.fiscal_year or request.GET.institution or request.GET.date_from or request.GET.date_to or request.GET.payment_method %}
+                                    <a href="{% url 'finance_disbursement_list' %}" class="btn btn-primary">
+                                        <i class="bi bi-x-circle"></i> Clear Filters
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-            <span>Page {{ disbursements.number }} of {{ disbursements.paginator.num_pages }}</span>
+            <!-- Pagination -->
+            {% if disbursements.has_other_pages %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ disbursements.start_index|intcomma }} to {{ disbursements.end_index|intcomma }} of {{ disbursements.paginator.count|intcomma }} disbursements
+                </div>
+                
+                <nav>
+                    <ul class="pagination">
+                        {% if disbursements.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ disbursements.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                            </li>
+                        {% endif %}
 
-            {% if disbursements.has_next %}
-                <a href="?page={{ disbursements.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                        {% for num in disbursements.paginator.page_range %}
+                            {% if disbursements.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > disbursements.number|add:'-3' and num < disbursements.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if disbursements.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ disbursements.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
             {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-expand filters if any are active
+    const hasActiveFilters = "{{ request.GET.fiscal_year|default:'' }}" !== "" || 
+                            "{{ request.GET.institution|default:'' }}" !== "" || 
+                            "{{ request.GET.date_from|default:'' }}" !== "" ||
+                            "{{ request.GET.date_to|default:'' }}" !== "" ||
+                            "{{ request.GET.payment_method|default:'' }}" !== "";
+    
+    if (hasActiveFilters) {
+        const filtersContent = document.getElementById('filtersContent');
+        const filterToggle = document.getElementById('filterToggle');
+        if (filtersContent) {
+            filtersContent.style.display = 'block';
+            filterToggle.classList.add('rotated');
+        }
+    } else {
+        // Hide filters by default
+        document.getElementById('filtersContent').style.display = 'none';
+    }
+});
+
+function toggleFilters() {
+    const content = document.getElementById('filtersContent');
+    const toggle = document.getElementById('filterToggle');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        toggle.classList.add('rotated');
+    } else {
+        content.style.display = 'none';
+        toggle.classList.remove('rotated');
+    }
+}
+</script>
 {% endblock %}
