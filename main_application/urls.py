@@ -415,6 +415,15 @@ urlpatterns = [
     
     path('ward/dashboard/', views.ward_admin_dashboard_view, name='ward_admin_dashboard'),
     path('ward/applications/', views.ward_admin_applications_list_view, name='ward_admin_applications'),
+    # API endpoints for operations
+    path('api/allocate/', views.api_allocate_application, name='api_allocate_application'),
+    path('api/reject/', views.api_reject_application, name='api_reject_application'),
+    path('api/bulk-allocate/', views.api_bulk_allocate, name='api_bulk_allocate'),
+    path('api/bulk-reject/', views.api_bulk_reject, name='api_bulk_reject'),
+    path('api/bulk-notify/', views.api_send_bulk_notification, name='api_bulk_notification'),
+    
+    # Export functionality
+    path('export/applications/', views.export_applications, name='export_applications'),
     path('ward/applications/<int:application_id>/',  views.ward_admin_application_detail_view, name='ward_admin_application_detail'),
     path('ward/applications/pending-review/', views.ward_admin_pending_review_view, name='ward_admin_pending_review'),
     path('ward/applications/<int:application_id>/review/',  views.ward_admin_review_application_view, name='ward_admin_review_application'),

@@ -26473,12 +26473,42 @@ def ward_admin_dashboard_view(request):
 
 # ============= APPLICATIONS MANAGEMENT =============
 
+# ward_admin/views.py - Enhanced Applications Management
+
+import json
+import logging
+from datetime import datetime
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q, Sum, Count
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods, require_POST
+
+# For Excel export
+import pandas as pd
+from io import BytesIO
+
+from main_application.models import (
+    Application, Applicant, Document, Allocation,
+    BursaryCategory, Institution, FiscalYear, Ward,
+    Notification, EmailLog, SMSLog, AuditLog
+)
+from main_application.decorators import ward_admin_required
+
+logger = logging.getLogger(__name__)
+
+
 @login_required
 @ward_admin_required
 def ward_admin_applications_list_view(request):
     """
-    List all applications from the ward
-    With filtering and search capabilities
+    Dynamic applications list with filtering, search, and bulk operations
     """
     user = request.user
     ward = user.assigned_ward
@@ -26494,7 +26524,7 @@ def ward_admin_applications_list_view(request):
     search_query = request.GET.get('search', '')
     fiscal_year_id = request.GET.get('fiscal_year', '')
     
-    # Base queryset
+    # Base queryset with optimized queries
     applications = Application.objects.filter(
         applicant__ward=ward
     ).select_related(
@@ -26502,6 +26532,9 @@ def ward_admin_applications_list_view(request):
         'institution',
         'bursary_category',
         'fiscal_year'
+    ).prefetch_related(
+        'documents',
+        'reviews'
     )
     
     # Apply filters
@@ -26521,20 +26554,32 @@ def ward_admin_applications_list_view(request):
         current_fy = FiscalYear.objects.filter(is_active=True).first()
         if current_fy:
             applications = applications.filter(fiscal_year=current_fy)
+            fiscal_year_id = str(current_fy.id)
     
     if search_query:
         applications = applications.filter(
             Q(application_number__icontains=search_query) |
             Q(applicant__user__first_name__icontains=search_query) |
             Q(applicant__user__last_name__icontains=search_query) |
-            Q(applicant__id_number__icontains=search_query)
+            Q(applicant__id_number__icontains=search_query) |
+            Q(institution__name__icontains=search_query)
         )
     
+    # Calculate statistics
+    stats = {
+        'total': applications.count(),
+        'submitted': applications.filter(status='submitted').count(),
+        'under_review': applications.filter(status='under_review').count(),
+        'approved': applications.filter(status='approved').count(),
+        'rejected': applications.filter(status='rejected').count(),
+        'disbursed': applications.filter(status='disbursed').count(),
+    }
+    
     # Order by submission date
-    applications = applications.order_by('-date_submitted')
+    applications = applications.order_by('-date_submitted', '-last_updated')
     
     # Pagination
-    paginator = Paginator(applications, 20)
+    paginator = Paginator(applications, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -26542,6 +26587,15 @@ def ward_admin_applications_list_view(request):
     categories = BursaryCategory.objects.filter(is_active=True)
     institutions = Institution.objects.filter(is_active=True).order_by('name')
     fiscal_years = FiscalYear.objects.all().order_by('-start_date')
+    
+    # Get ward allocation info for current fiscal year
+    ward_allocation = None
+    if fiscal_year_id:
+        from main_application.models import WardAllocation
+        ward_allocation = WardAllocation.objects.filter(
+            ward=ward,
+            fiscal_year_id=fiscal_year_id
+        ).first()
     
     context = {
         'ward': ward,
@@ -26554,10 +26608,786 @@ def ward_admin_applications_list_view(request):
         'institution_filter': institution_filter,
         'search_query': search_query,
         'fiscal_year_id': fiscal_year_id,
+        'stats': stats,
+        'ward_allocation': ward_allocation,
     }
     
     return render(request, 'ward_admin/applications_list.html', context)
 
+
+# ============================================================================
+# API ENDPOINTS FOR BULK OPERATIONS
+# ============================================================================
+
+@login_required
+@ward_admin_required
+@require_POST
+def api_allocate_application(request):
+    """
+    API: Allocate funds to a single application
+    """
+    try:
+        data = json.loads(request.body)
+        application_id = data.get('application_id')
+        allocated_amount = Decimal(str(data.get('allocated_amount', 0)))
+        remarks = data.get('remarks', '')
+        
+        application = get_object_or_404(
+            Application,
+            id=application_id,
+            applicant__ward=request.user.assigned_ward
+        )
+        
+        # Validation
+        if allocated_amount <= 0:
+            return JsonResponse({
+                'success': False,
+                'message': 'Allocated amount must be greater than zero.'
+            }, status=400)
+        
+        if allocated_amount > application.amount_requested:
+            return JsonResponse({
+                'success': False,
+                'message': f'Allocated amount (KES {allocated_amount:,.2f}) cannot exceed requested amount (KES {application.amount_requested:,.2f}).'
+            }, status=400)
+        
+        with transaction.atomic():
+            # Update application status
+            application.status = 'approved'
+            application.save()
+            
+            # Create or update allocation
+            allocation, created = Allocation.objects.update_or_create(
+                application=application,
+                defaults={
+                    'applicant': application.applicant,
+                    'fiscal_year': application.fiscal_year,
+                    'bursary_category': application.bursary_category,
+                    'amount_allocated': allocated_amount,
+                    'approved_amount': allocated_amount,
+                    'status': 'approved',
+                    'approved_by': request.user,
+                    'remarks': remarks,
+                }
+            )
+            
+            # Create notification
+            Notification.objects.create(
+                user=application.applicant.user,
+                notification_type='allocation',
+                title='Bursary Application Approved',
+                message=f'Your application {application.application_number} has been approved for KES {allocated_amount:,.2f}. {remarks}',
+                related_application=application
+            )
+            
+            # Send email notification
+            _send_allocation_email(application, allocated_amount, remarks)
+            
+            # Send SMS notification
+            _send_allocation_sms(application, allocated_amount)
+            
+            # Audit log
+            AuditLog.objects.create(
+                user=request.user,
+                action='approve',
+                table_affected='Application',
+                record_id=str(application.id),
+                description=f'Approved application {application.application_number} for KES {allocated_amount:,.2f}',
+                ip_address=get_client_ip(request)
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully allocated KES {allocated_amount:,.2f} to {application.applicant.user.get_full_name()}',
+            'application_number': application.application_number,
+            'allocated_amount': float(allocated_amount)
+        })
+        
+    except Exception as e:
+        logger.error(f'Error allocating application: {e}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+@require_POST
+def api_reject_application(request):
+    """
+    API: Reject a single application
+    """
+    try:
+        data = json.loads(request.body)
+        application_id = data.get('application_id')
+        rejection_reason = data.get('rejection_reason', '')
+        missing_documents = data.get('missing_documents', [])
+        
+        application = get_object_or_404(
+            Application,
+            id=application_id,
+            applicant__ward=request.user.assigned_ward
+        )
+        
+        if not rejection_reason:
+            return JsonResponse({
+                'success': False,
+                'message': 'Rejection reason is required.'
+            }, status=400)
+        
+        with transaction.atomic():
+            # Update application status
+            application.status = 'rejected'
+            application.save()
+            
+            # Create notification
+            message = f'Your application {application.application_number} could not be approved. Reason: {rejection_reason}'
+            if missing_documents:
+                doc_list = ', '.join(missing_documents)
+                message += f' Missing documents: {doc_list}'
+            
+            Notification.objects.create(
+                user=application.applicant.user,
+                notification_type='application_status',
+                title='Bursary Application Not Approved',
+                message=message,
+                related_application=application
+            )
+            
+            # Send email
+            _send_rejection_email(application, rejection_reason, missing_documents)
+            
+            # Send SMS
+            _send_rejection_sms(application, rejection_reason)
+            
+            # Audit log
+            AuditLog.objects.create(
+                user=request.user,
+                action='reject',
+                table_affected='Application',
+                record_id=str(application.id),
+                description=f'Rejected application {application.application_number}: {rejection_reason}',
+                ip_address=get_client_ip(request)
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Application rejected successfully.',
+            'application_number': application.application_number
+        })
+        
+    except Exception as e:
+        logger.error(f'Error rejecting application: {e}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+@require_POST
+def api_bulk_allocate(request):
+    """
+    API: Bulk allocate funds to multiple applications
+    """
+    try:
+        data = json.loads(request.body)
+        applications_data = data.get('applications', [])
+        notification_message = data.get('notification_message', '')
+        
+        if not applications_data:
+            return JsonResponse({
+                'success': False,
+                'message': 'No applications provided.'
+            }, status=400)
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        
+        with transaction.atomic():
+            for app_data in applications_data:
+                try:
+                    application = Application.objects.get(
+                        id=app_data['application_id'],
+                        applicant__ward=request.user.assigned_ward
+                    )
+                    
+                    allocated_amount = Decimal(str(app_data['allocated_amount']))
+                    
+                    # Update application
+                    application.status = 'approved'
+                    application.save()
+                    
+                    # Create allocation
+                    Allocation.objects.update_or_create(
+                        application=application,
+                        defaults={
+                            'applicant': application.applicant,
+                            'fiscal_year': application.fiscal_year,
+                            'bursary_category': application.bursary_category,
+                            'amount_allocated': allocated_amount,
+                            'approved_amount': allocated_amount,
+                            'status': 'approved',
+                            'approved_by': request.user,
+                            'remarks': notification_message,
+                        }
+                    )
+                    
+                    # Notification
+                    Notification.objects.create(
+                        user=application.applicant.user,
+                        notification_type='allocation',
+                        title='Bursary Approved',
+                        message=f'Your application {application.application_number} has been approved for KES {allocated_amount:,.2f}. {notification_message}',
+                        related_application=application
+                    )
+                    
+                    # Send notifications
+                    _send_allocation_email(application, allocated_amount, notification_message)
+                    _send_allocation_sms(application, allocated_amount)
+                    
+                    success_count += 1
+                    
+                except Exception as e:
+                    error_count += 1
+                    errors.append(f"App {app_data.get('application_id')}: {str(e)}")
+                    logger.error(f'Error in bulk allocate: {e}', exc_info=True)
+        
+        # Audit log
+        AuditLog.objects.create(
+            user=request.user,
+            action='approve',
+            table_affected='Application',
+            record_id='bulk',
+            description=f'Bulk allocated {success_count} applications',
+            ip_address=get_client_ip(request)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully allocated {success_count} applications. {error_count} errors.',
+            'success_count': success_count,
+            'error_count': error_count,
+            'errors': errors
+        })
+        
+    except Exception as e:
+        logger.error(f'Error in bulk allocate: {e}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+@require_POST
+def api_bulk_reject(request):
+    """
+    API: Bulk reject multiple applications
+    """
+    try:
+        data = json.loads(request.body)
+        application_ids = data.get('application_ids', [])
+        rejection_reason = data.get('rejection_reason', '')
+        
+        if not application_ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'No applications selected.'
+            }, status=400)
+        
+        if not rejection_reason:
+            return JsonResponse({
+                'success': False,
+                'message': 'Rejection reason is required.'
+            }, status=400)
+        
+        success_count = 0
+        
+        with transaction.atomic():
+            applications = Application.objects.filter(
+                id__in=application_ids,
+                applicant__ward=request.user.assigned_ward
+            )
+            
+            for application in applications:
+                # Update status
+                application.status = 'rejected'
+                application.save()
+                
+                # Notification
+                Notification.objects.create(
+                    user=application.applicant.user,
+                    notification_type='application_status',
+                    title='Application Not Approved',
+                    message=f'Your application {application.application_number} could not be approved. Reason: {rejection_reason}',
+                    related_application=application
+                )
+                
+                # Send notifications
+                _send_rejection_email(application, rejection_reason, [])
+                _send_rejection_sms(application, rejection_reason)
+                
+                success_count += 1
+        
+        # Audit log
+        AuditLog.objects.create(
+            user=request.user,
+            action='reject',
+            table_affected='Application',
+            record_id='bulk',
+            description=f'Bulk rejected {success_count} applications: {rejection_reason}',
+            ip_address=get_client_ip(request)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully rejected {success_count} applications.',
+            'count': success_count
+        })
+        
+    except Exception as e:
+        logger.error(f'Error in bulk reject: {e}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+@require_POST
+def api_send_bulk_notification(request):
+    """
+    API: Send notification to multiple applicants
+    """
+    try:
+        data = json.loads(request.body)
+        application_ids = data.get('application_ids', [])
+        notification_title = data.get('title', '')
+        notification_message = data.get('message', '')
+        send_email = data.get('send_email', True)
+        send_sms = data.get('send_sms', True)
+        
+        if not application_ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'No applications selected.'
+            }, status=400)
+        
+        if not notification_title or not notification_message:
+            return JsonResponse({
+                'success': False,
+                'message': 'Title and message are required.'
+            }, status=400)
+        
+        success_count = 0
+        
+        applications = Application.objects.filter(
+            id__in=application_ids,
+            applicant__ward=request.user.assigned_ward
+        ).select_related('applicant__user')
+        
+        for application in applications:
+            user = application.applicant.user
+            
+            # Create notification
+            Notification.objects.create(
+                user=user,
+                notification_type='system',
+                title=notification_title,
+                message=notification_message,
+                related_application=application
+            )
+            
+            # Send email
+            if send_email and user.email:
+                _send_custom_email(user, application, notification_title, notification_message)
+            
+            # Send SMS
+            if send_sms and user.phone_number:
+                _send_custom_sms(user, notification_message)
+            
+            success_count += 1
+        
+        # Audit log
+        AuditLog.objects.create(
+            user=request.user,
+            action='notification',
+            table_affected='Notification',
+            record_id='bulk',
+            description=f'Sent bulk notification to {success_count} applicants: {notification_title}',
+            ip_address=get_client_ip(request)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Notification sent to {success_count} applicants.',
+            'count': success_count
+        })
+        
+    except Exception as e:
+        logger.error(f'Error sending bulk notification: {e}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@ward_admin_required
+def export_applications(request):
+    """
+    Export filtered applications to Excel
+    """
+    try:
+        ward = request.user.assigned_ward
+        
+        # Get filter parameters (same as list view)
+        status_filter = request.GET.get('status', '')
+        category_filter = request.GET.get('category', '')
+        institution_filter = request.GET.get('institution', '')
+        search_query = request.GET.get('search', '')
+        fiscal_year_id = request.GET.get('fiscal_year', '')
+        
+        # Build queryset
+        applications = Application.objects.filter(
+            applicant__ward=ward
+        ).select_related(
+            'applicant__user',
+            'institution',
+            'bursary_category',
+            'fiscal_year'
+        )
+        
+        # Apply same filters as list view
+        if status_filter:
+            applications = applications.filter(status=status_filter)
+        
+        if category_filter:
+            applications = applications.filter(bursary_category_id=category_filter)
+        
+        if institution_filter:
+            applications = applications.filter(institution_id=institution_filter)
+        
+        if fiscal_year_id:
+            applications = applications.filter(fiscal_year_id=fiscal_year_id)
+        else:
+            current_fy = FiscalYear.objects.filter(is_active=True).first()
+            if current_fy:
+                applications = applications.filter(fiscal_year=current_fy)
+        
+        if search_query:
+            applications = applications.filter(
+                Q(application_number__icontains=search_query) |
+                Q(applicant__user__first_name__icontains=search_query) |
+                Q(applicant__user__last_name__icontains=search_query) |
+                Q(applicant__id_number__icontains=search_query)
+            )
+        
+        # Prepare data for Excel
+        data = []
+        for app in applications:
+            try:
+                allocation = app.allocation if hasattr(app, 'allocation') else None
+                allocated_amount = allocation.amount_allocated if allocation else 0
+            except:
+                allocated_amount = 0
+            
+            data.append({
+                'Application Number': app.application_number,
+                'Applicant Name': app.applicant.user.get_full_name(),
+                'ID Number': app.applicant.id_number,
+                'Phone Number': app.applicant.user.phone_number,
+                'Email': app.applicant.user.email,
+                'Ward': app.applicant.ward.name if app.applicant.ward else '',
+                'Institution': app.institution.name,
+                'Category': app.bursary_category.name,
+                'Year of Study': app.year_of_study,
+                'Amount Requested': float(app.amount_requested),
+                'Amount Allocated': float(allocated_amount),
+                'Status': app.get_status_display(),
+                'Date Submitted': app.date_submitted.strftime('%Y-%m-%d %H:%M') if app.date_submitted else '',
+                'Fiscal Year': app.fiscal_year.name,
+            })
+        
+        # Create Excel file
+        df = pd.DataFrame(data)
+        
+        # Create Excel writer
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Applications', index=False)
+            
+            # Get workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['Applications']
+            
+            # Format headers
+            for cell in worksheet[1]:
+                cell.font = cell.font.copy(bold=True)
+                cell.fill = cell.fill.copy(patternType='solid', fgColor='D3D3D3')
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        
+        # Generate filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'{ward.name}_Ward_Applications_{timestamp}.xlsx'
+        
+        # Audit log
+        AuditLog.objects.create(
+            user=request.user,
+            action='export',
+            table_affected='Application',
+            record_id='export',
+            description=f'Exported {len(data)} applications to Excel',
+            ip_address=get_client_ip(request)
+        )
+        
+        # Return Excel file
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f'Error exporting applications: {e}', exc_info=True)
+        messages.error(request, f'Error exporting data: {str(e)}')
+        return redirect('ward_admin_applications')
+
+
+# ============================================================================
+# NOTIFICATION HELPER FUNCTIONS
+# ============================================================================
+
+def _send_allocation_email(application, allocated_amount, remarks=''):
+    """Send allocation email notification"""
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        user = application.applicant.user
+        
+        subject = f'Bursary Application Approved - {application.application_number}'
+        
+        message = f"""Dear {user.first_name} {user.last_name},
+
+Congratulations! Your bursary application has been APPROVED.
+
+Application Details:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Application Number: {application.application_number}
+Amount Approved: KES {allocated_amount:,.2f}
+Institution: {application.institution.name}
+Category: {application.bursary_category.name}
+
+{f'Note: {remarks}' if remarks else ''}
+
+⚠️ IMPORTANT: The amount allocated may differ from the final disbursement amount after final verification.
+
+The approved amount will be disbursed directly to your institution soon.
+
+Best regards,
+Nyota Zetu Bursary Team
+{application.fiscal_year.county.name} County
+Ward: {application.applicant.ward.name}"""
+        
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            related_application=application,
+            status='sent'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending allocation email: {e}', exc_info=True)
+
+
+def _send_allocation_sms(application, allocated_amount):
+    """Send allocation SMS notification"""
+    try:
+        user = application.applicant.user
+        
+        message = (
+            f"Congratulations {user.first_name}! "
+            f"Your bursary application {application.application_number} "
+            f"has been APPROVED for KES {allocated_amount:,.2f}. "
+            f"Final disbursement may vary. - Nyota Zetu Bursary"
+        )
+        
+        # Log SMS
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=user.phone_number,
+            message=message,
+            related_application=application,
+            status='pending'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending allocation SMS: {e}', exc_info=True)
+
+
+def _send_rejection_email(application, reason, missing_docs=[]):
+    """Send rejection email notification"""
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        user = application.applicant.user
+        
+        subject = f'Bursary Application Update - {application.application_number}'
+        
+        docs_text = ''
+        if missing_docs:
+            docs_text = f'\n\nMissing Documents:\n' + '\n'.join([f'  - {doc}' for doc in missing_docs])
+        
+        message = f"""Dear {user.first_name} {user.last_name},
+
+We regret to inform you that your bursary application {application.application_number} could not be approved at this time.
+
+Reason: {reason}{docs_text}
+
+You may address the issues and reapply in the next application cycle.
+
+If you believe this decision was made in error, please contact your ward administrator.
+
+Best regards,
+Nyota Zetu Bursary Team
+{application.fiscal_year.county.name} County
+Ward: {application.applicant.ward.name}"""
+        
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=subject,
+            message=message,
+            related_application=application,
+            status='sent'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending rejection email: {e}', exc_info=True)
+
+
+def _send_rejection_sms(application, reason):
+    """Send rejection SMS notification"""
+    try:
+        user = application.applicant.user
+        
+        message = (
+            f"Dear {user.first_name}, "
+            f"your bursary application {application.application_number} "
+            f"could not be approved. Reason: {reason[:50]}... "
+            f"Check email for details. - Nyota Zetu Bursary"
+        )
+        
+        # Log SMS
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=user.phone_number,
+            message=message,
+            related_application=application,
+            status='pending'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending rejection SMS: {e}', exc_info=True)
+
+
+def _send_custom_email(user, application, title, message):
+    """Send custom email notification"""
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        email_message = f"""Dear {user.first_name} {user.last_name},
+
+{message}
+
+Application Number: {application.application_number}
+
+Best regards,
+Nyota Zetu Bursary Team"""
+        
+        send_mail(
+            subject=title,
+            message=email_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_address=user.email,
+            subject=title,
+            message=email_message,
+            related_application=application,
+            status='sent'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending custom email: {e}', exc_info=True)
+
+
+def _send_custom_sms(user, message):
+    """Send custom SMS notification"""
+    try:
+        # Truncate message to SMS length
+        sms_message = message[:160] if len(message) > 160 else message
+        
+        # Log SMS
+        SMSLog.objects.create(
+            recipient=user,
+            phone_number=user.phone_number,
+            message=sms_message,
+            status='pending'
+        )
+        
+    except Exception as e:
+        logger.error(f'Error sending custom SMS: {e}', exc_info=True)
 
 @login_required
 @ward_admin_required
