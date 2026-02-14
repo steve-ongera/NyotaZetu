@@ -5,10 +5,10 @@
 {% block title %}Ward Applications - {{ ward.name }}{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    /* Your Original CSS - Preserved Exactly */
+    /* Modern styling from second HTML */
     .breadcrumb {
         padding: 0;
         margin-bottom: 20px;
@@ -79,6 +79,117 @@
         margin: 0;
     }
 
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-outline:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .stat-card.stat-total { color: #3498db; }
+    .stat-card.stat-submitted { color: #f39c12; }
+    .stat-card.stat-approved { color: #27ae60; }
+    .stat-card.stat-rejected { color: #e74c3c; }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
     .filter-section {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -134,16 +245,19 @@
         gap: 6px;
     }
 
-    .filter-select {
+    .filter-select,
+    .form-control {
         padding: 10px 12px;
         border: 1px solid #E2E8F0;
         border-radius: 6px;
         font-size: 14px;
         background: white;
         transition: all 0.3s ease;
+        width: 100%;
     }
 
-    .filter-select:focus {
+    .filter-select:focus,
+    .form-control:focus {
         outline: none;
         border-color: #3498db;
         box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -154,56 +268,107 @@
         gap: 10px;
         margin-top: 16px;
         align-items: center;
+        grid-column: 1 / -1;
     }
 
-    .filter-btn {
-        padding: 10px 20px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .filter-btn:hover {
-        background: #2980b9;
-        transform: translateY(-1px);
-    }
-
-    .clear-btn {
-        padding: 10px 20px;
-        background: white;
-        color: #64748B;
+    /* Bulk Actions Bar */
+    .bulk-actions-bar {
+        background: #F8FAFC;
         border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .bulk-actions-bar.active {
+        display: flex;
+    }
+
+    .selection-info {
+        font-size: 14px;
+        color: #1E293B;
+        font-weight: 600;
+    }
+
+    .bulk-btn-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bulk-btn {
+        padding: 8px 16px;
         border-radius: 6px;
         font-size: 14px;
         font-weight: 600;
+        border: 1px solid;
         cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
+        transition: all 0.3s;
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        background: white;
     }
 
-    .clear-btn:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
+    .bulk-btn.allocate {
+        color: #27ae60;
+        border-color: #27ae60;
+    }
+
+    .bulk-btn.allocate:hover {
+        background: #27ae60;
+        color: white;
+    }
+
+    .bulk-btn.reject {
+        color: #e74c3c;
+        border-color: #e74c3c;
+    }
+
+    .bulk-btn.reject:hover {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .bulk-btn.notify {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .bulk-btn.notify:hover {
+        background: #3498db;
+        color: white;
+    }
+
+    .bulk-btn.export {
+        color: #64748B;
+        border-color: #64748B;
+    }
+
+    .bulk-btn.export:hover {
+        background: #64748B;
+        color: white;
+    }
+
+    .table-section {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        overflow: hidden;
     }
 
     .table-header {
+        background: #F8FAFC;
+        padding: 16px 20px;
+        border-bottom: 1px solid #E2E8F0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #F1F5F9;
     }
 
     .table-title {
@@ -216,7 +381,6 @@
     }
 
     .record-count {
-        display: inline-block;
         padding: 6px 12px;
         background: rgba(52, 152, 219, 0.1);
         color: #3498db;
@@ -225,13 +389,13 @@
         font-weight: 600;
     }
 
-    .applicants-table {
+    .data-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
     }
 
-    .applicants-table thead th {
+    .data-table thead th {
         background: #F8FAFC;
         padding: 12px 16px;
         text-align: left;
@@ -244,19 +408,38 @@
         white-space: nowrap;
     }
 
-    .applicants-table tbody td {
+    .data-table tbody td {
         padding: 16px;
         border-bottom: 1px solid #F1F5F9;
         font-size: 14px;
         color: #334155;
     }
 
-    .applicants-table tbody tr {
+    .data-table tbody tr {
         transition: background-color 0.2s ease;
     }
 
-    .applicants-table tbody tr:hover {
+    .data-table tbody tr:hover {
         background-color: #F8FAFC;
+    }
+
+    .applicant-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .applicant-name {
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 2px;
+    }
+
+    .applicant-id {
+        font-size: 12px;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
     .badge {
@@ -298,31 +481,61 @@
         color: #475569;
     }
 
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
     .action-btn {
-        padding: 8px 16px;
+        padding: 6px 12px;
         background: white;
-        color: #3498db;
-        border: 1px solid #3498db;
+        border: 1px solid;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
     }
 
-    .action-btn:hover {
+    .action-btn.view {
+        color: #3498db;
+        border-color: #3498db;
+    }
+
+    .action-btn.view:hover {
         background: #3498db;
         color: white;
-        transform: translateY(-1px);
     }
 
-    .action-btn.btn-sm {
-        padding: 6px 12px;
-        font-size: 12px;
+    .action-btn.allocate {
+        color: #27ae60;
+        border-color: #27ae60;
+    }
+
+    .action-btn.allocate:hover {
+        background: #27ae60;
+        color: white;
+    }
+
+    .action-btn.reject {
+        color: #e74c3c;
+        border-color: #e74c3c;
+    }
+
+    .action-btn.reject:hover {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .select-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
     }
 
     .empty-state {
@@ -353,8 +566,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 20px;
-        padding-top: 20px;
+        padding: 20px;
         border-top: 1px solid #F1F5F9;
         flex-wrap: wrap;
         gap: 16px;
@@ -412,232 +624,149 @@
         pointer-events: none;
     }
 
-    .applicant-info {
+    /* Modal styling from second HTML */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-dialog {
+        background: white;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-dialog.modal-lg {
+        max-width: 700px;
+    }
+
+    .modal-content {
         display: flex;
         flex-direction: column;
     }
 
-    .applicant-name {
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 2px;
-    }
-
-    .applicant-id {
-        font-size: 12px;
-        color: #64748B;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .form-control {
-        padding: 10px 12px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-
-    .form-control:focus {
-        outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
-    .form-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #64748B;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    /* Stats Grid - Clean version without border-left */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    .stat-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transform: translateY(-2px);
-    }
-
-    .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #1E293B;
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        font-size: 12px;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-    }
-
-    /* Color coding for different stat types */
-    .stat-card.total .stat-value {
-        color: #3498db;
-    }
-
-    .stat-card.submitted .stat-value {
-        color: #ffc107;
-    }
-
-    .stat-card.approved .stat-value {
-        color: #28a745;
-    }
-
-    .stat-card.rejected .stat-value {
-        color: #dc3545;
-    }
-
-    /* Bulk Actions Bar */
-    .bulk-actions-bar {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 20px;
-        display: none;
-    }
-
-    .bulk-actions-bar.active {
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #64748B;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-close:hover {
+        color: #1E293B;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #334155;
+        cursor: pointer;
+        font-weight: normal;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #E2E8F0;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .modal-footer {
+        padding: 20px 24px;
+        border-top: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: flex-end;
         gap: 12px;
     }
 
-    .selection-info {
-        font-size: 14px;
-        color: #1E293B;
-        font-weight: 600;
-    }
-
-    .bulk-btn-group {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .bulk-btn {
-        padding: 8px 16px;
+    .alert {
+        padding: 12px 16px;
         border-radius: 6px;
+        margin-bottom: 20px;
         font-size: 14px;
-        font-weight: 600;
-        border: 1px solid;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: white;
     }
 
-    .bulk-btn.allocate {
-        color: #28a745;
-        border-color: #28a745;
+    .alert-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+        border: 1px solid #BFDBFE;
     }
 
-    .bulk-btn.allocate:hover {
-        background: #28a745;
-        color: white;
+    .alert-warning {
+        background: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
     }
 
-    .bulk-btn.reject {
-        color: #dc3545;
-        border-color: #dc3545;
-    }
-
-    .bulk-btn.reject:hover {
-        background: #dc3545;
-        color: white;
-    }
-
-    .bulk-btn.notify {
-        color: #3498db;
-        border-color: #3498db;
-    }
-
-    .bulk-btn.notify:hover {
-        background: #3498db;
-        color: white;
-    }
-
-    .bulk-btn.export {
-        color: #6c757d;
-        border-color: #6c757d;
-    }
-
-    .bulk-btn.export:hover {
-        background: #6c757d;
-        color: white;
-    }
-
-    /* Table checkbox */
-    .select-checkbox {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-    }
-
-    /* Action buttons in table */
-    .action-btn-group {
-        display: flex;
-        gap: 6px;
-    }
-
-    .action-btn.allocate {
-        color: #28a745;
-        border-color: #28a745;
-    }
-
-    .action-btn.allocate:hover {
-        background: #28a745;
-        color: white;
-    }
-
-    .action-btn.reject {
-        color: #dc3545;
-        border-color: #dc3545;
-    }
-
-    .action-btn.reject:hover {
-        background: #dc3545;
-        color: white;
-    }
-
-    .action-btn.view {
-        color: #3498db;
-        border-color: #3498db;
-    }
-
-    .action-btn.view:hover {
-        background: #3498db;
-        color: white;
-    }
-
-    /* Toast notifications */
     .toast-container {
         position: fixed;
         top: 80px;
@@ -651,19 +780,48 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         min-width: 300px;
         margin-bottom: 12px;
-        border: 1px solid #E2E8F0;
+        border-left: 4px solid;
     }
 
     .toast.success {
-        border-left: 4px solid #28a745;
+        border-left-color: #27ae60;
     }
 
     .toast.error {
-        border-left: 4px solid #dc3545;
+        border-left-color: #e74c3c;
     }
 
     .toast.info {
-        border-left: 4px solid #3498db;
+        border-left-color: #3498db;
+    }
+
+    .toast-body {
+        padding: 16px;
+    }
+
+    /* Table styling enhancements */
+    .amount-cell {
+        font-weight: 600;
+        color: #1E293B;
+    }
+
+    .institution-name {
+        font-weight: 500;
+    }
+
+    .category-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #F1F5F9;
+        color: #475569;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .submitted-date {
+        font-size: 13px;
+        color: #64748B;
     }
 
     @media (max-width: 768px) {
@@ -676,12 +834,18 @@
             align-items: flex-start;
         }
 
-        .applicants-table {
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .data-table {
             font-size: 13px;
         }
 
-        .applicants-table thead th,
-        .applicants-table tbody td {
+        .data-table thead th,
+        .data-table tbody td {
             padding: 10px;
         }
 
@@ -706,6 +870,24 @@
         .bulk-btn-group {
             flex-direction: column;
         }
+
+        .modal-dialog {
+            margin: 20px;
+            width: calc(100% - 40px);
+        }
+
+        .modal-footer {
+            flex-direction: column;
+        }
+
+        .modal-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-wrap: wrap;
+        }
     }
 </style>
 {% endblock %}
@@ -722,28 +904,28 @@
         </ol>
     </nav>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - Updated with modern styling -->
     <div class="stats-grid">
-        <div class="stat-card total">
+        <div class="stat-card stat-total">
             <div class="stat-value">{{ stats.total }}</div>
-            <div class="stat-label">Total</div>
+            <div class="stat-label">Total Applications</div>
         </div>
-        <div class="stat-card submitted">
+        <div class="stat-card stat-submitted">
             <div class="stat-value">{{ stats.submitted }}</div>
             <div class="stat-label">Submitted</div>
         </div>
-        <div class="stat-card approved">
+        <div class="stat-card stat-approved">
             <div class="stat-value">{{ stats.approved }}</div>
             <div class="stat-label">Approved</div>
         </div>
-        <div class="stat-card rejected">
+        <div class="stat-card stat-rejected">
             <div class="stat-value">{{ stats.rejected }}</div>
             <div class="stat-label">Rejected</div>
         </div>
     </div>
 
     <div class="section-container">
-        <!-- Page Header -->
+        <!-- Page Header - Updated with header-actions -->
         <div class="page-header">
             <div>
                 <h1 class="page-title">
@@ -754,16 +936,16 @@
                     {{ ward.name }} Ward - All Applications
                 </p>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="bulk-btn export" onclick="exportFiltered()">
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="exportFiltered()">
                     <i class="bi bi-download"></i> Export Filtered
                 </button>
             </div>
         </div>
 
-        <!-- Filters -->
+        <!-- Filters - Preserved but using modern class names -->
         <div class="filter-section">
-            <div class="filter-header">
+            <div class="filter-header" onclick="toggleFilters()">
                 <h6 class="filter-title">
                     <i class="bi bi-funnel"></i>
                     Filter Applications
@@ -847,10 +1029,10 @@
                     </div>
                     
                     <div class="filter-actions">
-                        <button type="submit" class="filter-btn">
+                        <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Apply Filters
                         </button>
-                        <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
+                        <a href="{% url 'ward_admin_applications' %}" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> Reset Filters
                         </a>
                     </div>
@@ -858,7 +1040,7 @@
             </div>
         </div>
 
-        <!-- Bulk Actions Bar -->
+        <!-- Bulk Actions Bar - Updated styling -->
         <div class="bulk-actions-bar" id="bulkActionsBar">
             <div class="selection-info">
                 <span id="selectedCount">0</span> selected
@@ -879,204 +1061,213 @@
             </div>
         </div>
 
-        <!-- Applications Table -->
-        <div class="table-header">
-            <h6 class="table-title">
-                <i class="bi bi-table"></i>
-                Applications List
-            </h6>
-            <span class="record-count">{{ page_obj.paginator.count }} records</span>
-        </div>
-
-        <div class="table-responsive">
-            <table class="applicants-table">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="selectAll" class="select-checkbox"></th>
-                        <th>#</th>
-                        <th>Application Number</th>
-                        <th>Applicant</th>
-                        <th>Institution</th>
-                        <th>Category</th>
-                        <th>Amount Requested</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
-                        <th style="text-align: right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for app in page_obj %}
-                    <tr>
-                        <td><input type="checkbox" class="select-checkbox app-checkbox" 
-                                   data-app-id="{{ app.id }}" 
-                                   data-app-number="{{ app.application_number }}" 
-                                   data-amount="{{ app.amount_requested }}"></td>
-                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                        <td><strong>{{ app.application_number }}</strong></td>
-                        <td>
-                            <div class="applicant-info">
-                                <div class="applicant-name">{{ app.applicant.user.get_full_name }}</div>
-                                <div class="applicant-id">
-                                    <i class="bi bi-card-text"></i> {{ app.applicant.id_number }}
-                                </div>
-                            </div>
-                        </td>
-                        <td>{{ app.institution.name }}</td>
-                        <td>
-                            <span class="badge badge-info">
-                                {{ app.bursary_category.name }}
-                            </span>
-                        </td>
-                        <td>KES {{ app.amount_requested|intcomma }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if app.status == 'submitted' %}badge-warning
-                                {% elif app.status == 'approved' %}badge-success
-                                {% elif app.status == 'rejected' %}badge-danger
-                                {% elif app.status == 'under_review' %}badge-info
-                                {% elif app.status == 'disbursed' %}badge-purple
-                                {% else %}badge-secondary{% endif %}">
-                                {{ app.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if app.date_submitted %}
-                            {{ app.date_submitted|date:"d M Y" }}
-                            {% else %}
-                            <span class="text-muted">Not submitted</span>
-                            {% endif %}
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="action-btn-group">
-                                <a href="{% url 'ward_admin_application_detail' app.id %}" 
-                                   class="action-btn view btn-sm"
-                                   title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if app.status == 'submitted' %}
-                                <button class="action-btn allocate btn-sm" 
-                                        onclick="openAllocateModal({{ app.id }}, '{{ app.application_number }}', {{ app.amount_requested }})" 
-                                        title="Allocate">
-                                    <i class="bi bi-check"></i>
-                                </button>
-                                <button class="action-btn reject btn-sm" 
-                                        onclick="openRejectModal({{ app.id }}, '{{ app.application_number }}')" 
-                                        title="Reject">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="10">
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
-                                <h3 class="empty-title">No Applications Found</h3>
-                                <p class="empty-text">
-                                    {% if search_query or status_filter or category_filter or institution_filter %}
-                                        No applications match your current filters.
-                                    {% else %}
-                                        There are no applications in your ward yet.
-                                    {% endif %}
-                                </p>
-                                {% if search_query or status_filter or category_filter or institution_filter %}
-                                <a href="{% url 'ward_admin_applications' %}" class="clear-btn">
-                                    <i class="bi bi-x-circle"></i> Clear Filters
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        {% if page_obj.has_other_pages %}
-        <div class="pagination-container">
-            <div class="pagination-info">
-                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
+        <!-- Applications Table - Updated with table-section structure -->
+        <div class="table-section">
+            <div class="table-header">
+                <h6 class="table-title">
+                    <i class="bi bi-table"></i>
+                    Applications List
+                </h6>
+                <span class="record-count">{{ page_obj.paginator.count }} records</span>
             </div>
-            
-            <nav>
-                <ul class="pagination">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                        </li>
-                    {% endif %}
 
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="select-checkbox"></th>
+                            <th>#</th>
+                            <th>Application #</th>
+                            <th>Applicant</th>
+                            <th>Institution</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in page_obj %}
+                        <tr>
+                            <td><input type="checkbox" class="select-checkbox app-checkbox" 
+                                       data-app-id="{{ app.id }}" 
+                                       data-app-number="{{ app.application_number }}" 
+                                       data-amount="{{ app.amount_requested }}"></td>
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td><strong>{{ app.application_number }}</strong></td>
+                            <td>
+                                <div class="applicant-info">
+                                    <div class="applicant-name">{{ app.applicant.user.get_full_name }}</div>
+                                    <div class="applicant-id">
+                                        <i class="bi bi-card-text"></i> {{ app.applicant.id_number }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="institution-name">{{ app.institution.name|truncatechars:30 }}</span>
+                            </td>
+                            <td>
+                                <span class="category-badge">
+                                    {{ app.bursary_category.name|truncatechars:20 }}
+                                </span>
+                            </td>
+                            <td class="amount-cell">KES {{ app.amount_requested|intcomma }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if app.status == 'submitted' %}badge-warning
+                                    {% elif app.status == 'approved' %}badge-success
+                                    {% elif app.status == 'rejected' %}badge-danger
+                                    {% elif app.status == 'under_review' %}badge-info
+                                    {% elif app.status == 'disbursed' %}badge-purple
+                                    {% else %}badge-secondary{% endif %}">
+                                    {{ app.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="submitted-date">
+                                    {% if app.date_submitted %}
+                                    {{ app.date_submitted|date:"d M Y" }}
+                                    {% else %}
+                                    <span class="text-muted">Not submitted</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'ward_admin_application_detail' app.id %}" 
+                                       class="action-btn view"
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if app.status == 'submitted' %}
+                                    <button class="action-btn allocate" 
+                                            onclick="openAllocateModal({{ app.id }}, '{{ app.application_number }}', {{ app.amount_requested }})" 
+                                            title="Allocate">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                    <button class="action-btn reject" 
+                                            onclick="openRejectModal({{ app.id }}, '{{ app.application_number }}')" 
+                                            title="Reject">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h3 class="empty-title">No Applications Found</h3>
+                                    <p class="empty-text">
+                                        {% if search_query or status_filter or category_filter or institution_filter %}
+                                            No applications match your current filters.
+                                        {% else %}
+                                            There are no applications in your ward yet.
+                                        {% endif %}
+                                    </p>
+                                    {% if search_query or status_filter or category_filter or institution_filter %}
+                                    <a href="{% url 'ward_admin_applications' %}" class="btn btn-primary">
+                                        <i class="bi bi-x-circle"></i> Clear Filters
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination - Updated styling -->
+            {% if page_obj.has_other_pages %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} applications
+                </div>
+                
+                <nav>
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
                             </li>
                         {% endif %}
-                    {% endfor %}
 
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% for key, value in request.GET.items %}{% if key != 'page' and key != 'search' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Modals (All 5 modals remain exactly the same as before) -->
+<!-- All Modals - Updated with modern styling but preserving all functionality -->
 <!-- Single Allocate Modal -->
-<div class="modal fade" id="allocateModal" tabindex="-1">
+<div class="modal" id="allocateModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Allocate Funds</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-cash-coin"></i>
+                    Allocate Funds
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal('allocateModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Application Number</label>
+                    <label>Application Number</label>
                     <input type="text" class="form-control" id="allocAppNumber" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Requested Amount</label>
+                    <label>Requested Amount</label>
                     <input type="text" class="form-control" id="allocReqAmount" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Amount to Allocate <span class="text-danger">*</span></label>
+                    <label>Amount to Allocate <span class="text-danger">*</span></label>
                     <input type="number" class="form-control" id="allocAmount" placeholder="Enter amount" step="0.01" min="1">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Remarks (Optional)</label>
+                    <label>Remarks (Optional)</label>
                     <textarea class="form-control" id="allocRemarks" rows="3" placeholder="Any additional notes..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="submitAllocate()">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('allocateModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAllocate()">
                     <i class="bi bi-check-circle"></i> Allocate Funds
                 </button>
             </div>
@@ -1085,34 +1276,37 @@
 </div>
 
 <!-- Single Reject Modal -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
+<div class="modal" id="rejectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Reject Application</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-x-circle"></i>
+                    Reject Application
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal('rejectModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Application Number</label>
+                    <label>Application Number</label>
                     <input type="text" class="form-control" id="rejectAppNumber" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                    <label>Rejection Reason <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="rejectReason" rows="3" placeholder="Explain why application is rejected..." required></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Missing Documents (if any)</label>
-                    <div id="missingDocsChecks">
-                        <div><label><input type="checkbox" value="ID Card"> ID Card</label></div>
-                        <div><label><input type="checkbox" value="Admission Letter"> Admission Letter</label></div>
-                        <div><label><input type="checkbox" value="Fee Structure"> Fee Structure</label></div>
-                        <div><label><input type="checkbox" value="Fee Statement"> Fee Statement</label></div>
+                    <label>Missing Documents (if any)</label>
+                    <div class="checkbox-group" id="missingDocsChecks">
+                        <label><input type="checkbox" value="ID Card"> ID Card</label>
+                        <label><input type="checkbox" value="Admission Letter"> Admission Letter</label>
+                        <label><input type="checkbox" value="Fee Structure"> Fee Structure</label>
+                        <label><input type="checkbox" value="Fee Statement"> Fee Statement</label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('rejectModal')">Cancel</button>
                 <button type="button" class="btn btn-danger" onclick="submitReject()">
                     <i class="bi bi-x-circle"></i> Reject Application
                 </button>
@@ -1122,26 +1316,30 @@
 </div>
 
 <!-- Bulk Allocate Modal -->
-<div class="modal fade" id="bulkAllocateModal" tabindex="-1">
+<div class="modal" id="bulkAllocateModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Bulk Allocate Funds</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-cash-stack"></i>
+                    Bulk Allocate Funds
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal('bulkAllocateModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
-                    <strong><i class="bi bi-info-circle"></i> Note:</strong> Amount allocated may differ from final disbursement after verification.
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> Amount allocated may differ from final disbursement after verification.
                 </div>
                 <div id="bulkAllocList"></div>
                 <div class="form-group">
-                    <label class="form-label">General Message (Optional)</label>
+                    <label>General Message (Optional)</label>
                     <textarea class="form-control" id="bulkAllocMessage" rows="2" placeholder="Message to include in all notifications..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="submitBulkAllocate()">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('bulkAllocateModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitBulkAllocate()">
                     <i class="bi bi-check-circle"></i> Allocate All
                 </button>
             </div>
@@ -1150,24 +1348,28 @@
 </div>
 
 <!-- Bulk Reject Modal -->
-<div class="modal fade" id="bulkRejectModal" tabindex="-1">
+<div class="modal" id="bulkRejectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Bulk Reject Applications</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-x-octagon"></i>
+                    Bulk Reject Applications
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal('bulkRejectModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
                     <strong>Warning:</strong> You are about to reject <strong id="bulkRejectCount">0</strong> applications.
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                    <label>Rejection Reason <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="bulkRejectReason" rows="3" required></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('bulkRejectModal')">Cancel</button>
                 <button type="button" class="btn btn-danger" onclick="submitBulkReject()">
                     <i class="bi bi-x-circle"></i> Reject All
                 </button>
@@ -1177,32 +1379,37 @@
 </div>
 
 <!-- Bulk Notify Modal -->
-<div class="modal fade" id="bulkNotifyModal" tabindex="-1">
+<div class="modal" id="bulkNotifyModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Send Bulk Notification</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-bell"></i>
+                    Send Bulk Notification
+                </h5>
+                <button type="button" class="btn-close" onclick="closeModal('bulkNotifyModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
                     Sending to <strong id="bulkNotifyCount">0</strong> applicants
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Title <span class="text-danger">*</span></label>
+                    <label>Title <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="notifyTitle" placeholder="Notification title" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Message <span class="text-danger">*</span></label>
+                    <label>Message <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="notifyMessage" rows="4" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label><input type="checkbox" id="notifyEmail" checked> Send Email</label><br>
-                    <label><input type="checkbox" id="notifySMS" checked> Send SMS</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="notifyEmail" checked> Send Email</label>
+                        <label><input type="checkbox" id="notifySMS" checked> Send SMS</label>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('bulkNotifyModal')">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="submitBulkNotify()">
                     <i class="bi bi-send"></i> Send Notifications
                 </button>
@@ -1219,19 +1426,59 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// JavaScript remains exactly the same as before
+// JavaScript remains exactly the same as before with all functionality preserved
 const CSRF = '{{ csrf_token }}';
 let selectedApps = [];
 let currentAppId = null;
 
-document.getElementById('selectAll').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.app-checkbox');
-    checkboxes.forEach(cb => cb.checked = this.checked);
-    updateSelection();
-});
+// Modal management functions
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+}
 
-document.querySelectorAll('.app-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateSelection);
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+// Initialize all event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Select All functionality
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.app-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelection();
+        });
+    }
+
+    // Individual checkboxes
+    document.querySelectorAll('.app-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelection);
+    });
+
+    // Auto-expand filters if active
+    const hasActiveFilters = "{{ search_query|default:'' }}" !== "" || 
+                            "{{ status_filter|default:'' }}" !== "" || 
+                            "{{ category_filter|default:'' }}" !== "" ||
+                            "{{ institution_filter|default:'' }}" !== "";
+    
+    if (hasActiveFilters) {
+        const filtersContent = document.getElementById('filtersContent');
+        const filterToggle = document.getElementById('filterToggle');
+        if (filtersContent) {
+            filtersContent.style.display = 'grid';
+            filterToggle.classList.add('rotated');
+        }
+    }
+
+    // Focus search if present
+    const searchInput = document.getElementById('search');
+    const searchQuery = "{{ search_query|default:'' }}";
+    if (searchQuery && searchInput) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    }
 });
 
 function updateSelection() {
@@ -1244,13 +1491,23 @@ function updateSelection() {
         });
     });
     
-    document.getElementById('selectedCount').textContent = selectedApps.length;
-    document.getElementById('bulkActionsBar').classList.toggle('active', selectedApps.length > 0);
+    const selectedCountEl = document.getElementById('selectedCount');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    
+    if (selectedCountEl) {
+        selectedCountEl.textContent = selectedApps.length;
+    }
+    if (bulkActionsBar) {
+        bulkActionsBar.classList.toggle('active', selectedApps.length > 0);
+    }
 }
 
 function clearSelection() {
     document.querySelectorAll('.app-checkbox').forEach(cb => cb.checked = false);
-    document.getElementById('selectAll').checked = false;
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.checked = false;
+    }
     updateSelection();
 }
 
@@ -1260,7 +1517,7 @@ function openAllocateModal(appId, appNumber, reqAmount) {
     document.getElementById('allocReqAmount').value = 'KES ' + reqAmount.toLocaleString();
     document.getElementById('allocAmount').value = reqAmount;
     document.getElementById('allocRemarks').value = '';
-    new bootstrap.Modal(document.getElementById('allocateModal')).show();
+    openModal('allocateModal');
 }
 
 function submitAllocate() {
@@ -1285,7 +1542,7 @@ function submitAllocate() {
     .then(data => {
         if (data.success) {
             showToast(data.message, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('allocateModal')).hide();
+            closeModal('allocateModal');
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast(data.message, 'error');
@@ -1299,7 +1556,7 @@ function openRejectModal(appId, appNumber) {
     document.getElementById('rejectAppNumber').value = appNumber;
     document.getElementById('rejectReason').value = '';
     document.querySelectorAll('#missingDocsChecks input').forEach(cb => cb.checked = false);
-    new bootstrap.Modal(document.getElementById('rejectModal')).show();
+    openModal('rejectModal');
 }
 
 function submitReject() {
@@ -1327,7 +1584,7 @@ function submitReject() {
     .then(data => {
         if (data.success) {
             showToast(data.message, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+            closeModal('rejectModal');
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast(data.message, 'error');
@@ -1339,7 +1596,7 @@ function submitReject() {
 function openBulkAllocateModal() {
     if (selectedApps.length === 0) return;
     
-    let html = '<table class="table table-sm"><thead><tr><th>App #</th><th>Requested</th><th>Allocate</th></tr></thead><tbody>';
+    let html = '<table class="data-table"><thead><tr><th>App #</th><th>Requested</th><th>Allocate</th></tr></thead><tbody>';
     selectedApps.forEach(app => {
         html += `<tr>
             <td>${app.number}</td>
@@ -1351,17 +1608,24 @@ function openBulkAllocateModal() {
     
     document.getElementById('bulkAllocList').innerHTML = html;
     document.getElementById('bulkAllocMessage').value = 'Note: Final disbursement amount may vary after verification.';
-    new bootstrap.Modal(document.getElementById('bulkAllocateModal')).show();
+    openModal('bulkAllocateModal');
 }
 
 function submitBulkAllocate() {
     const applications = [];
     document.querySelectorAll('.bulk-alloc-amount').forEach(input => {
-        applications.push({
-            application_id: input.dataset.appId,
-            allocated_amount: input.value
-        });
+        if (input.value && input.value > 0) {
+            applications.push({
+                application_id: input.dataset.appId,
+                allocated_amount: input.value
+            });
+        }
     });
+    
+    if (applications.length === 0) {
+        showToast('Please enter valid amounts for at least one application', 'error');
+        return;
+    }
     
     const message = document.getElementById('bulkAllocMessage').value;
     
@@ -1377,7 +1641,7 @@ function submitBulkAllocate() {
     .then(data => {
         if (data.success) {
             showToast(`Allocated ${data.success_count} applications`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('bulkAllocateModal')).hide();
+            closeModal('bulkAllocateModal');
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast(data.message, 'error');
@@ -1390,7 +1654,7 @@ function openBulkRejectModal() {
     if (selectedApps.length === 0) return;
     document.getElementById('bulkRejectCount').textContent = selectedApps.length;
     document.getElementById('bulkRejectReason').value = '';
-    new bootstrap.Modal(document.getElementById('bulkRejectModal')).show();
+    openModal('bulkRejectModal');
 }
 
 function submitBulkReject() {
@@ -1413,7 +1677,7 @@ function submitBulkReject() {
     .then(data => {
         if (data.success) {
             showToast(`Rejected ${data.count} applications`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('bulkRejectModal')).hide();
+            closeModal('bulkRejectModal');
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast(data.message, 'error');
@@ -1427,7 +1691,7 @@ function openBulkNotifyModal() {
     document.getElementById('bulkNotifyCount').textContent = selectedApps.length;
     document.getElementById('notifyTitle').value = '';
     document.getElementById('notifyMessage').value = '';
-    new bootstrap.Modal(document.getElementById('bulkNotifyModal')).show();
+    openModal('bulkNotifyModal');
 }
 
 function submitBulkNotify() {
@@ -1456,7 +1720,7 @@ function submitBulkNotify() {
     .then(data => {
         if (data.success) {
             showToast(`Notification sent to ${data.count} applicants`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('bulkNotifyModal')).hide();
+            closeModal('bulkNotifyModal');
             clearSelection();
         } else {
             showToast(data.message, 'error');
@@ -1472,7 +1736,7 @@ function exportFiltered() {
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<div class="toast-body" style="padding:16px">${message}</div>`;
+    toast.innerHTML = `<div class="toast-body">${message}</div>`;
     document.getElementById('toastContainer').appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
 }
@@ -1480,33 +1744,13 @@ function showToast(message, type = 'info') {
 function toggleFilters() {
     const content = document.getElementById('filtersContent');
     const toggle = document.getElementById('filterToggle');
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'grid';
         toggle.classList.add('rotated');
     } else {
         content.style.display = 'none';
         toggle.classList.remove('rotated');
     }
 }
-
-// Auto-expand filters if active
-document.addEventListener('DOMContentLoaded', function() {
-    const hasActiveFilters = "{{ search_query|default:'' }}" !== "" || 
-                            "{{ status_filter|default:'' }}" !== "" || 
-                            "{{ category_filter|default:'' }}" !== "" ||
-                            "{{ institution_filter|default:'' }}" !== "";
-    
-    if (hasActiveFilters) {
-        document.getElementById('filtersContent').style.display = 'grid';
-        document.getElementById('filterToggle').classList.add('rotated');
-    }
-
-    const searchInput = document.getElementById('search');
-    const searchQuery = "{{ search_query|default:'' }}";
-    if (searchQuery && searchInput) {
-        searchInput.focus();
-        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
-    }
-});
 </script>
 {% endblock %}
