@@ -2901,7 +2901,8 @@ def budget_utilization_report(request):
         )
     ).order_by('-utilization_rate')
     
-    # Institution performance - correct relationship path through application
+    # Institution performance - FIXED: Count applications, not allocations
+    # The relationship is: Institution -> Application (one-to-many) -> Allocation (one-to-one)
     institution_performance = Institution.objects.filter(
         application__fiscal_year=fiscal_year,
         application__allocation__isnull=False
@@ -2911,7 +2912,8 @@ def budget_utilization_report(request):
             'application__allocation__amount_allocated',
             filter=Q(application__allocation__is_disbursed=True)
         ),
-        student_count=Count('application__allocation', distinct=True)
+        # FIX: Count applications with allocations, not allocations directly
+        student_count=Count('application', filter=Q(application__allocation__isnull=False), distinct=True)
     ).order_by('-total_allocated')[:20]
     
     # Prepare chart data
