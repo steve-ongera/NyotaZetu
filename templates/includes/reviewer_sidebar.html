@@ -24,7 +24,7 @@
     </div>
 
     <!-- ============= REVIEW MANAGEMENT ============= -->
-    <div class="menu-section">
+    <div class="menu-section"> 
         <div class="menu-title">Review Management</div>
         
         <!-- Applications Submenu -->
@@ -45,7 +45,7 @@
                 <i class="fas fa-check-circle"></i>
                 <span>Reviewed Applications</span>
             </a>
-            <a href="{% url 'ward_applications_list' %}" class="submenu-item {% if request.resolver_match.url_name == 'reviewed_applications' %}active{% endif %}">
+            <a href="{% url 'reviewer_ward_applications_list' %}" class="submenu-item {% if request.resolver_match.url_name == 'reviewed_applications' %}active{% endif %}">
                 <i class="fas fa-check-circle"></i>
                 <span>All Applications</span>
             </a>
