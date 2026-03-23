@@ -900,7 +900,7 @@
                                 <div style="font-size:11px;color:#94A3B8;margin-top:2px;">
                                     {% if app.date_submitted %}{{ app.date_submitted|date:"d M Y" }}{% else %}Not submitted{% endif %}
                                 </div>
-                                <a href="{% url 'application_detail' app.application_number %}" class="btn btn-sm btn-primary" style="margin-top:6px;">
+                                <a href="{% url 'student_application_detail' app.pk %}" class="btn btn-sm btn-primary" style="margin-top:6px;">
                                     <i class="bi bi-eye"></i> View
                                 </a>
                             </div>
@@ -908,7 +908,7 @@
                         {% endfor %}
 
                         <div style="margin-top:16px;">
-                            <a href="{% url 'student_applications' %}" class="btn btn-primary btn-sm">
+                            <a href="#" class="btn btn-primary btn-sm">
                                 <i class="bi bi-list-ul"></i> View All Applications
                             </a>
                         </div>
