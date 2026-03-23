@@ -24257,6 +24257,9 @@ def reviewer_dashboard(request):
 @login_required
 @reviewer_required
 def pending_applications(request):
+    """
+    List of applications pending review in reviewer's ward
+    """
     user = request.user
     assigned_ward = user.assigned_ward
     
@@ -24264,13 +24267,16 @@ def pending_applications(request):
         messages.error(request, "You are not assigned to any ward.")
         return redirect('reviewer_dashboard')
     
+    # Get current fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
+    # Base query
     applications = Application.objects.filter(
         applicant__ward=assigned_ward,
         fiscal_year=current_fiscal_year,
         status__in=['submitted', 'under_review']
     ).exclude(
+        # Exclude applications already reviewed by this reviewer
         reviews__reviewer=user,
         reviews__review_level='ward'
     ).select_related(
@@ -24286,17 +24292,6 @@ def pending_applications(request):
     institution_filter = request.GET.get('institution')
     status_filter = request.GET.get('status')
     sort_by = request.GET.get('sort', '-date_submitted')
-    search_query = request.GET.get('search', '').strip()  # NEW
-    
-    if search_query:  # NEW
-        applications = applications.filter(
-            Q(applicant__user__first_name__icontains=search_query) |
-            Q(applicant__user__last_name__icontains=search_query) |
-            Q(applicant__user__email__icontains=search_query) |
-            Q(application_number__icontains=search_query) |
-            Q(institution__name__icontains=search_query) |
-            Q(admission_number__icontains=search_query)
-        )
     
     if category_filter:
         applications = applications.filter(bursary_category_id=category_filter)
@@ -24307,17 +24302,21 @@ def pending_applications(request):
     if status_filter:
         applications = applications.filter(status=status_filter)
     
+    # Sorting
     applications = applications.order_by(sort_by)
     
+    # Pagination
     paginator = Paginator(applications, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Get filter options
     categories = BursaryCategory.objects.filter(
         fiscal_year=current_fiscal_year,
         is_active=True
     )
     
+    # FIXED: Use 'application' not 'applications'
     institutions = Institution.objects.filter(
         is_active=True,
         application__applicant__ward=assigned_ward
@@ -24333,7 +24332,6 @@ def pending_applications(request):
         'selected_institution': institution_filter,
         'selected_status': status_filter,
         'sort_by': sort_by,
-        'search_query': search_query,  # NEW
     }
     
     return render(request, 'reviewer/pending_applications.html', context)
@@ -26479,117 +26477,204 @@ from .models import *
 from .decorators import ward_admin_required
 
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncMonth, ExtractMonth
+from django.utils import timezone
+from datetime import timedelta
+from .models import (
+    Application, FiscalYear, WardAllocation, Review,
+    BursaryCategory, Institution, Allocation
+)
+from .decorators import ward_admin_required
+import json
+
+
 @login_required
 @ward_admin_required
 def ward_admin_dashboard_view(request):
     """
-    Main dashboard for Ward Administrator
-    Shows overview of ward applications, budget, and statistics
+    Main dashboard for Ward Administrator.
+    Provides all chart data directly from the database.
     """
     user = request.user
     ward = user.assigned_ward
-    
-    # Note: ward_admin_required decorator already checks for assigned_ward
-    # This is just a safety check - should never happen if decorator works correctly
+
     if not ward:
         messages.error(request, "You are not assigned to any ward. Please contact system administrator.")
-        # Redirect to logout to clear session and prevent loops
         return redirect('logout_view')
-    
-    # Get current fiscal year
+
+    # ── Current fiscal year ────────────────────────────────────
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
-    
-    # Get ward allocation for current year
+
+    # ── Ward allocation ────────────────────────────────────────
     ward_allocation = None
     if current_fiscal_year:
         ward_allocation = WardAllocation.objects.filter(
             ward=ward,
             fiscal_year=current_fiscal_year
         ).first()
-    
-    # Applications statistics
+
+    # ── Base application queryset for current FY ───────────────
     applications = Application.objects.filter(
         applicant__ward=ward,
         fiscal_year=current_fiscal_year
     ) if current_fiscal_year else Application.objects.none()
-    
+
+    # ── Stat card counts ───────────────────────────────────────
     total_applications = applications.count()
-    pending_review = applications.filter(status='submitted').count()
-    under_review = applications.filter(status='under_review').count()
-    approved = applications.filter(status='approved').count()
-    rejected = applications.filter(status='rejected').count()
-    disbursed = applications.filter(status='disbursed').count()
-    
-    # Budget statistics
+    pending_review     = applications.filter(status='submitted').count()
+    under_review       = applications.filter(status='under_review').count()
+    approved           = applications.filter(status='approved').count()
+    rejected           = applications.filter(status='rejected').count()
+    disbursed          = applications.filter(status='disbursed').count()
+
+    # ── Budget figures ─────────────────────────────────────────
     total_allocated = ward_allocation.allocated_amount if ward_allocation else 0
-    total_spent = ward_allocation.spent_amount if ward_allocation else 0
-    balance = ward_allocation.balance() if ward_allocation else 0
-    
-    # Calculate total requested
+    total_spent     = ward_allocation.spent_amount     if ward_allocation else 0
+    balance         = ward_allocation.balance()        if ward_allocation else 0
+
     total_requested = applications.aggregate(
         total=Sum('amount_requested')
     )['total'] or 0
-    
-    # Recent applications (last 10)
-    recent_applications = applications.order_by('-date_submitted')[:10]
-    
-    # Applications by category
-    applications_by_category = applications.values(
-        'bursary_category__name'
-    ).annotate(
-        count=Count('id'),
-        total_amount=Sum('amount_requested')
-    ).order_by('-count')
-    
-    # Applications by institution
-    applications_by_institution = applications.values(
-        'institution__name'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')[:5]
-    
-    # Gender distribution
-    gender_stats = applications.values(
-        'applicant__gender'
-    ).annotate(count=Count('id'))
-    
-    # Monthly application trend (last 6 months)
+
+    # ──────────────────────────────────────────────────────────
+    # CHART DATA
+    # ──────────────────────────────────────────────────────────
+
+    # 1. Monthly trend — last 6 months (label + count)
     six_months_ago = timezone.now() - timedelta(days=180)
-    monthly_trend = applications.filter(
-        date_submitted__gte=six_months_ago
-    ).extra(
-        select={'month': 'EXTRACT(month FROM date_submitted)'}
-    ).values('month').annotate(count=Count('id')).order_by('month')
-    
-    # Pending reviews assigned to this admin
+    monthly_qs = (
+        applications
+        .filter(date_submitted__gte=six_months_ago)
+        .annotate(month=TruncMonth('date_submitted'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    trend_labels = [
+        entry['month'].strftime('%b %Y') for entry in monthly_qs
+    ]
+    trend_data = [entry['count'] for entry in monthly_qs]
+
+    # 2. Status breakdown (donut)
+    status_data = {
+        'Pending':      pending_review,
+        'Under Review': under_review,
+        'Approved':     approved,
+        'Rejected':     rejected,
+        'Disbursed':    disbursed,
+    }
+
+    # 3. Applications by category (horizontal bar)
+    category_qs = (
+        applications
+        .values('bursary_category__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+    category_labels = [
+        entry['bursary_category__name'] or 'Unknown'
+        for entry in category_qs
+    ]
+    category_counts = [entry['count'] for entry in category_qs]
+
+    # 4. Gender distribution (pie)
+    gender_qs = (
+        applications
+        .values('applicant__gender')
+        .annotate(count=Count('id'))
+        .order_by('applicant__gender')
+    )
+    gender_map = {'M': 'Male', 'F': 'Female'}
+    gender_labels = [
+        gender_map.get(g['applicant__gender'], 'Unknown')
+        for g in gender_qs
+    ]
+    gender_counts = [g['count'] for g in gender_qs]
+
+    # 5. Budget grouped bar (Allocated / Spent / Requested / Balance)
+    budget_values = [
+        float(total_allocated),
+        float(total_spent),
+        float(total_requested),
+        float(balance),
+    ]
+
+    # 6. Institution distribution (top 5 — also used in table)
+    applications_by_institution = (
+        applications
+        .values('institution__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:5]
+    )
+
+    # ── Recent applications ────────────────────────────────────
+    recent_applications = (
+        applications
+        .select_related('applicant__user', 'institution', 'bursary_category')
+        .order_by('-date_submitted')[:10]
+    )
+
+    # ── My pending reviews ─────────────────────────────────────
     my_pending_reviews = Review.objects.filter(
         reviewer=user,
         application__applicant__ward=ward,
         review_level='ward'
     ).count()
-    
+
+    # ── Budget utilization % (safe division) ──────────────────
+    utilization = 0
+    if total_allocated and float(total_allocated) > 0:
+        utilization = round((float(total_spent) / float(total_allocated)) * 100)
+
+    # ──────────────────────────────────────────────────────────
+    # SERIALIZE TO JSON for template → JS
+    # ──────────────────────────────────────────────────────────
     context = {
-        'ward': ward,
-        'current_fiscal_year': current_fiscal_year,
-        'ward_allocation': ward_allocation,
-        'total_applications': total_applications,
-        'pending_review': pending_review,
-        'under_review': under_review,
-        'approved': approved,
-        'rejected': rejected,
-        'disbursed': disbursed,
-        'total_allocated': total_allocated,
-        'total_spent': total_spent,
-        'balance': balance,
-        'total_requested': total_requested,
-        'recent_applications': recent_applications,
-        'applications_by_category': applications_by_category,
-        'applications_by_institution': applications_by_institution,
-        'gender_stats': gender_stats,
-        'monthly_trend': monthly_trend,
-        'my_pending_reviews': my_pending_reviews,
+        # Ward / FY
+        'ward':                     ward,
+        'current_fiscal_year':      current_fiscal_year,
+        'ward_allocation':          ward_allocation,
+
+        # Stat cards
+        'total_applications':       total_applications,
+        'pending_review':           pending_review,
+        'under_review':             under_review,
+        'approved':                 approved,
+        'rejected':                 rejected,
+        'disbursed':                disbursed,
+
+        # Budget
+        'total_allocated':          total_allocated,
+        'total_spent':              total_spent,
+        'balance':                  balance,
+        'total_requested':          total_requested,
+        'utilization':              utilization,
+
+        # Table / list
+        'recent_applications':          recent_applications,
+        'applications_by_institution':  applications_by_institution,
+        'my_pending_reviews':           my_pending_reviews,
+
+        # ── Chart JSON (safe for <script> blocks) ──────────────
+        'trend_labels_json':    json.dumps(trend_labels),
+        'trend_data_json':      json.dumps(trend_data),
+
+        'status_labels_json':   json.dumps(list(status_data.keys())),
+        'status_data_json':     json.dumps(list(status_data.values())),
+
+        'category_labels_json': json.dumps(category_labels),
+        'category_data_json':   json.dumps(category_counts),
+
+        'gender_labels_json':   json.dumps(gender_labels),
+        'gender_data_json':     json.dumps(gender_counts),
+
+        'budget_values_json':   json.dumps(budget_values),
     }
-    
+
     return render(request, 'ward_admin/dashboard.html', context)
 
 

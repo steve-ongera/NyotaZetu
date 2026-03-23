@@ -6,504 +6,131 @@
 
 {% block extra_css %}
 <style>
-    .breadcrumb {
-        padding: 0;
-        margin-bottom: 20px;
-        font-size: 14px;
-        list-style: none;
-        display: flex;
-        flex-wrap: wrap;
-    }
+    .breadcrumb { padding:0; margin-bottom:20px; font-size:14px; list-style:none; display:flex; flex-wrap:wrap; }
+    .breadcrumb-item { color:#64748B; }
+    .breadcrumb-item + .breadcrumb-item::before { content:"/ "; color:#94A3B8; padding:0 8px; }
+    .breadcrumb-item.active { color:#1E293B; font-weight:500; }
+    .breadcrumb a { color:#3498db; text-decoration:none; transition:color 0.3s ease; }
+    .breadcrumb a:hover { color:#2980b9; }
 
-    .breadcrumb-item {
-        color: #64748B;
-    }
+    .section-container { background:white; border-radius:8px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:24px; border:1px solid #E2E8F0; }
 
-    .breadcrumb-item + .breadcrumb-item::before {
-        content: "/ ";
-        color: #94A3B8;
-        padding: 0 8px;
-    }
+    .page-header { margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid #F1F5F9; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+    .page-title { font-size:22px; font-weight:600; color:#1E293B; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+    .page-subtitle { color:#64748B; font-size:14px; margin:0; }
 
-    .breadcrumb-item.active {
-        color: #1E293B;
-        font-weight: 500;
-    }
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+    .stat-card { background:white; border:1px solid #E2E8F0; border-radius:8px; padding:20px; transition:all 0.3s ease; position:relative; overflow:hidden; }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:currentColor; opacity:0.3; }
+    .stat-card.stat-primary { color:#3498db; }
+    .stat-card.stat-warning { color:#f39c12; }
+    .stat-card.stat-success { color:#27ae60; }
+    .stat-card.stat-info    { color:#16a085; }
+    .stat-card.stat-danger  { color:#e74c3c; }
+    .stat-card.stat-purple  { color:#8e44ad; }
+    .stat-icon { font-size:24px; opacity:0.2; position:absolute; right:15px; top:15px; }
+    .stat-value { font-size:28px; font-weight:700; color:#1E293B; margin-bottom:4px; }
+    .stat-label { font-size:13px; color:#64748B; font-weight:500; }
+    .stat-meta  { font-size:12px; color:#94A3B8; margin-top:8px; }
+    .stat-action { margin-top:12px; }
+    .stat-sparkline { margin-top:12px; height:44px; }
 
-    .breadcrumb a {
-        color: #3498db;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
+    .chart-container { position:relative; height:300px; margin-bottom:20px; }
+    .chart-no-data { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#CBD5E1; font-size:14px; gap:10px; }
+    .chart-no-data i { font-size:36px; }
 
-    .breadcrumb a:hover {
-        color: #2980b9;
-    }
+    .card { background:white; border:1px solid #E2E8F0; border-radius:8px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card-header { background:#F8FAFC; padding:16px 24px; border-bottom:1px solid #E2E8F0; font-weight:600; color:#1E293B; display:flex; align-items:center; gap:8px; font-size:15px; }
+    .card-body { padding:24px; }
 
-    .section-container {
-        background: white;
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
-        border: 1px solid #E2E8F0;
-    }
+    .table-responsive { overflow-x:auto; }
+    .applicants-table { width:100%; border-collapse:separate; border-spacing:0; }
+    .applicants-table thead th { background:#F8FAFC; padding:12px 16px; text-align:left; font-size:12px; font-weight:600; color:#64748B; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #E2E8F0; white-space:nowrap; }
+    .applicants-table tbody td { padding:16px; border-bottom:1px solid #F1F5F9; font-size:14px; color:#334155; }
+    .applicants-table tbody tr { transition:background-color 0.2s ease; }
+    .applicants-table tbody tr:hover { background-color:#F8FAFC; }
 
-    .page-header {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
+    .badge { display:inline-block; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:600; text-transform:uppercase; }
+    .badge-warning  { background:#FEF3C7; color:#92400E; }
+    .badge-info     { background:#DBEAFE; color:#1E40AF; }
+    .badge-success  { background:#D1FAE5; color:#065F46; }
+    .badge-danger   { background:#FEE2E2; color:#991B1B; }
+    .badge-purple   { background:#F3E8FF; color:#6B21A8; }
+    .badge-secondary{ background:#E2E8F0; color:#475569; }
 
-    .page-title {
-        font-size: 22px;
-        font-weight: 600;
-        color: #1E293B;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+    .empty-state { text-align:center; padding:60px 20px; }
+    .empty-icon  { font-size:48px; color:#CBD5E1; margin-bottom:16px; }
+    .empty-title { font-size:18px; font-weight:600; color:#64748B; margin-bottom:8px; }
+    .empty-text  { font-size:14px; color:#94A3B8; margin-bottom:20px; }
 
-    .page-subtitle {
-        color: #64748B;
-        font-size: 14px;
-        margin: 0;
-    }
+    .list-group { display:flex; flex-direction:column; gap:8px; }
+    .list-group-item { background:white; border:1px solid #E2E8F0; border-radius:6px; padding:12px 16px; text-decoration:none; color:#334155; transition:all 0.2s ease; display:flex; justify-content:space-between; align-items:center; }
+    .list-group-item:hover { background:#F8FAFC; border-color:#CBD5E1; }
 
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-    }
+    .progress { background:#E2E8F0; border-radius:6px; height:25px; overflow:hidden; margin-bottom:8px; }
+    .progress-bar { height:100%; background:#27ae60; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:600; transition:width 1s cubic-bezier(.4,0,.2,1); }
+    .progress-bar.bg-danger  { background:#e74c3c; }
+    .progress-bar.bg-warning { background:#f39c12; }
 
-    .stat-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
+    .alert { background:#FEF3C7; border:1px solid #FDE68A; border-radius:6px; padding:16px; color:#92400E; display:flex; align-items:center; gap:8px; }
 
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+    .btn { padding:8px 16px; border-radius:6px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border:1px solid transparent; cursor:pointer; transition:all 0.2s ease; }
+    .btn-sm { padding:6px 12px; font-size:13px; }
+    .btn-light { background:white; color:#64748B; border-color:#E2E8F0; }
+    .btn-light:hover { background:#F8FAFC; border-color:#CBD5E1; }
+    .btn-outline-primary { background:white; color:#3498db; border-color:#3498db; }
+    .btn-outline-primary:hover { background:#3498db; color:white; }
+    .btn-outline-success { background:white; color:#27ae60; border-color:#27ae60; }
+    .btn-outline-success:hover { background:#27ae60; color:white; }
 
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: currentColor;
-        opacity: 0.3;
-    }
+    .fiscal-year-badge { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:white; border:1px solid #E2E8F0; border-radius:6px; color:#64748B; font-size:14px; font-weight:500; }
 
-    .stat-card.stat-primary { color: #3498db; }
-    .stat-card.stat-warning { color: #f39c12; }
-    .stat-card.stat-success { color: #27ae60; }
-    .stat-card.stat-info { color: #16a085; }
-    .stat-card.stat-danger { color: #e74c3c; }
-    .stat-card.stat-purple { color: #8e44ad; }
+    .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
 
-    .stat-icon {
-        font-size: 24px;
-        opacity: 0.2;
-        position: absolute;
-        right: 15px;
-        top: 15px;
-    }
+    .budget-kv { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    .bkv { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 12px; }
+    .bkv-label { font-size:11px; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+    .bkv-value { font-size:15px; font-weight:700; color:#1E293B; }
 
-    .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #1E293B;
-        margin-bottom: 4px;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
-    .stat-meta {
-        font-size: 12px;
-        color: #94A3B8;
-        margin-top: 8px;
-    }
-
-    .stat-action {
-        margin-top: 12px;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 300px;
-        margin-bottom: 20px;
-    }
-
-    .card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .card-header {
-        background: #F8FAFC;
-        padding: 16px 24px;
-        border-bottom: 1px solid #E2E8F0;
-        font-weight: 600;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 15px;
-    }
-
-    .card-body {
-        padding: 24px;
-    }
-
-    .table-responsive {
-        overflow-x: auto;
-    }
-
-    .applicants-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .applicants-table thead th {
-        background: #F8FAFC;
-        padding: 12px 16px;
-        text-align: left;
-        font-size: 12px;
-        font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #E2E8F0;
-        white-space: nowrap;
-    }
-
-    .applicants-table tbody td {
-        padding: 16px;
-        border-bottom: 1px solid #F1F5F9;
-        font-size: 14px;
-        color: #334155;
-    }
-
-    .applicants-table tbody tr {
-        transition: background-color 0.2s ease;
-    }
-
-    .applicants-table tbody tr:hover {
-        background-color: #F8FAFC;
-    }
-
-    .badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .badge-warning {
-        background: #FEF3C7;
-        color: #92400E;
-    }
-
-    .badge-info {
-        background: #DBEAFE;
-        color: #1E40AF;
-    }
-
-    .badge-success {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .badge-danger {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .badge-purple {
-        background: #F3E8FF;
-        color: #6B21A8;
-    }
-
-    .badge-secondary {
-        background: #E2E8F0;
-        color: #475569;
-    }
-
-    .action-btn {
-        padding: 8px 16px;
-        background: white;
-        color: #3498db;
-        border: 1px solid #3498db;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .action-btn:hover {
-        background: #3498db;
-        color: white;
-        transform: translateY(-1px);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-icon {
-        font-size: 48px;
-        color: #CBD5E1;
-        margin-bottom: 16px;
-    }
-
-    .empty-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #64748B;
-        margin-bottom: 8px;
-    }
-
-    .empty-text {
-        font-size: 14px;
-        color: #94A3B8;
-        margin-bottom: 20px;
-    }
-
-    .list-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .list-group-item {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        padding: 12px 16px;
-        text-decoration: none;
-        color: #334155;
-        transition: all 0.2s ease;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .list-group-item:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
-    }
-
-    .progress {
-        background: #E2E8F0;
-        border-radius: 6px;
-        height: 25px;
-        overflow: hidden;
-        margin-bottom: 8px;
-    }
-
-    .progress-bar {
-        height: 100%;
-        background: #27ae60;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .progress-bar.bg-danger {
-        background: #e74c3c;
-    }
-
-    .progress-bar.bg-warning {
-        background: #f39c12;
-    }
-
-    .alert {
-        background: #FEF3C7;
-        border: 1px solid #FDE68A;
-        border-radius: 6px;
-        padding: 16px;
-        color: #92400E;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .alert-warning {
-        background: #FEF3C7;
-        border-color: #FDE68A;
-        color: #92400E;
-    }
-
-    .btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-sm {
-        padding: 6px 12px;
-        font-size: 13px;
-    }
-
-    .btn-light {
-        background: white;
-        color: #64748B;
-        border-color: #E2E8F0;
-    }
-
-    .btn-light:hover {
-        background: #F8FAFC;
-        border-color: #CBD5E1;
-    }
-
-    .btn-outline-primary {
-        background: white;
-        color: #3498db;
-        border-color: #3498db;
-    }
-
-    .btn-outline-primary:hover {
-        background: #3498db;
-        color: white;
-    }
-
-    .btn-outline-success {
-        background: white;
-        color: #27ae60;
-        border-color: #27ae60;
-    }
-
-    .btn-outline-success:hover {
-        background: #27ae60;
-        color: white;
-    }
-
-    .fiscal-year-badge {
-        display: inline-block;
-        padding: 8px 16px;
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        color: #64748B;
-        font-size: 14px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    @media (max-width: 768px) {
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .applicants-table {
-            font-size: 13px;
-        }
-        
-        .applicants-table thead th,
-        .applicants-table tbody td {
-            padding: 10px;
-        }
-    }
+    @media (max-width:1100px) { .charts-row { grid-template-columns:1fr; } }
+    @media (max-width:768px)  { .stats-grid { grid-template-columns:repeat(2,1fr); } .page-header { flex-direction:column; align-items:flex-start; } .applicants-table { font-size:13px; } .applicants-table thead th, .applicants-table tbody td { padding:10px; } .budget-kv { grid-template-columns:1fr 1fr; } }
+    @media (max-width:480px)  { .stats-grid { grid-template-columns:1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{% url 'dashboard' %}">
-                    <i class="bi bi-house-door"></i> Dashboard
-                </a>
-            </li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
             <li class="breadcrumb-item active" aria-current="page">Ward Dashboard</li>
         </ol>
     </nav>
 
     <div class="section-container">
-        <!-- Page Header -->
+
         <div class="page-header">
             <div>
-                <h1 class="page-title">
-                    <i class="bi bi-speedometer2"></i>
-                    Ward Dashboard
-                </h1>
-                <p class="page-subtitle">
-                    {{ ward.name }} Ward - {{ ward.constituency.name }} Constituency
-                </p>
+                <h1 class="page-title"><i class="bi bi-speedometer2"></i> Ward Dashboard</h1>
+                <p class="page-subtitle">{{ ward.name }} Ward - {{ ward.constituency.name }} Constituency</p>
             </div>
             {% if current_fiscal_year %}
-            <div class="fiscal-year-badge">
-                <i class="bi bi-calendar"></i> {{ current_fiscal_year.name }}
-            </div>
+            <div class="fiscal-year-badge"><i class="bi bi-calendar"></i> {{ current_fiscal_year.name }}</div>
             {% endif %}
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- 4 Stat Cards -->
         <div class="stats-grid">
             <div class="stat-card stat-primary">
-                <div class="stat-icon">
-                    <i class="bi bi-file-text"></i>
-                </div>
+                <div class="stat-icon"><i class="bi bi-file-text"></i></div>
                 <div class="stat-value">{{ total_applications }}</div>
                 <div class="stat-label">Total Applications</div>
                 <div class="stat-meta">Current fiscal year</div>
+                <div class="stat-sparkline"><canvas id="sparkTotal"></canvas></div>
             </div>
-
             <div class="stat-card stat-warning">
-                <div class="stat-icon">
-                    <i class="bi bi-clock"></i>
-                </div>
+                <div class="stat-icon"><i class="bi bi-clock"></i></div>
                 <div class="stat-value">{{ pending_review }}</div>
                 <div class="stat-label">Pending Review</div>
                 <div class="stat-action">
@@ -511,184 +138,104 @@
                         <i class="bi bi-eye"></i> Review Now
                     </a>
                 </div>
+                <div class="stat-sparkline"><canvas id="sparkPending"></canvas></div>
             </div>
-
             <div class="stat-card stat-success">
-                <div class="stat-icon">
-                    <i class="bi bi-check-circle"></i>
-                </div>
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
                 <div class="stat-value">{{ approved }}</div>
                 <div class="stat-label">Approved</div>
-                <div class="stat-meta">{{ approved|floatformat:1 }}% approval rate</div>
+                <div class="stat-meta">{{ disbursed }} already disbursed</div>
+                <div class="stat-sparkline"><canvas id="sparkApproved"></canvas></div>
             </div>
-
             <div class="stat-card stat-info">
-                <div class="stat-icon">
-                    <i class="bi bi-cash"></i>
-                </div>
-                <div class="stat-value">KES {{ balance|intcomma }}</div>
+                <div class="stat-icon"><i class="bi bi-cash"></i></div>
+                <div class="stat-value" style="font-size:22px;">KES {{ balance|intcomma }}</div>
                 <div class="stat-label">Budget Balance</div>
                 <div class="stat-meta">Of {{ total_allocated|intcomma }} allocated</div>
+                <div class="stat-sparkline"><canvas id="sparkBalance"></canvas></div>
             </div>
         </div>
 
-        <!-- Secondary Stats -->
-        <div class="stats-grid">
-            <div class="stat-card stat-info">
-                <div class="stat-icon">
-                    <i class="bi bi-hourglass-split"></i>
+        <!-- Row 1: Trend + Status Donut -->
+        <div class="charts-row">
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header">
+                    <i class="bi bi-graph-up"></i> Application Trend
+                    <span style="margin-left:auto;font-size:12px;font-weight:400;color:#94A3B8;">Last 6 months</span>
                 </div>
-                <div class="stat-value">{{ under_review }}</div>
-                <div class="stat-label">Under Review</div>
-            </div>
-
-            <div class="stat-card stat-danger">
-                <div class="stat-icon">
-                    <i class="bi bi-x-circle"></i>
-                </div>
-                <div class="stat-value">{{ rejected }}</div>
-                <div class="stat-label">Rejected</div>
-            </div>
-
-            <div class="stat-card stat-purple">
-                <div class="stat-icon">
-                    <i class="bi bi-wallet2"></i>
-                </div>
-                <div class="stat-value">{{ disbursed }}</div>
-                <div class="stat-label">Disbursed</div>
-            </div>
-
-            <div class="stat-card stat-primary">
-                <div class="stat-icon">
-                    <i class="bi bi-list-task"></i>
-                </div>
-                <div class="stat-value">{{ my_pending_reviews }}</div>
-                <div class="stat-label">My Pending Reviews</div>
-            </div>
-        </div>
-
-        <!-- Budget and Charts Section -->
-        <div class="row mt-4">
-            <!-- Budget Overview -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-cash-coin"></i> Budget Allocation
-                    </div>
-                    <div class="card-body">
-                        {% if ward_allocation %}
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Total Allocated:</span>
-                                <span class="font-weight-bold">KES {{ total_allocated|intcomma }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Total Spent:</span>
-                                <span>KES {{ total_spent|intcomma }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Total Requested:</span>
-                                <span>KES {{ total_requested|intcomma }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3">
-                                <span class="font-weight-bold">Balance:</span>
-                                <span class="font-weight-bold text-success">KES {{ balance|intcomma }}</span>
-                            </div>
-                        </div>
-
-                        <div class="budget-progress">
-                            <label class="d-block mb-2">Budget Utilization</label>
-                            <div class="progress">
-                                {% widthratio total_spent total_allocated 100 as utilization %}
-                                <div class="progress-bar {% if utilization >= 80 %}bg-danger{% elif utilization >= 60 %}bg-warning{% else %}{% endif %}" 
-                                     role="progressbar" 
-                                     style="width: {{ utilization }}%">
-                                    {{ utilization }}%
-                                </div>
-                            </div>
-                            <small class="text-muted">
-                                Beneficiaries: {{ ward_allocation.beneficiaries_count }}
-                            </small>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            No budget allocation for current fiscal year
-                        </div>
-                        {% endif %}
-                    </div>
+                <div class="card-body">
+                    <div class="chart-container" id="trendWrap"><canvas id="trendChart"></canvas></div>
                 </div>
             </div>
-
-            <!-- Applications by Status Chart -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-pie-chart"></i> Applications by Status
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-                    </div>
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header"><i class="bi bi-pie-chart"></i> Applications by Status</div>
+                <div class="card-body">
+                    <div class="chart-container" id="statusWrap"><canvas id="statusChart"></canvas></div>
                 </div>
             </div>
         </div>
 
-        <!-- Applications by Category and Gender -->
-        <div class="row mt-4">
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-layers"></i> Applications by Category
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                    </div>
+        <!-- Row 2: Category Bar + Gender Pie -->
+        <div class="charts-row">
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header"><i class="bi bi-layers"></i> Applications by Category</div>
+                <div class="card-body">
+                    <div class="chart-container" id="categoryWrap"><canvas id="categoryChart"></canvas></div>
                 </div>
             </div>
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header"><i class="bi bi-people"></i> Gender Distribution</div>
+                <div class="card-body">
+                    <div class="chart-container" id="genderWrap"><canvas id="genderChart"></canvas></div>
+                </div>
+            </div>
+        </div>
 
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-people"></i> Gender Distribution
+        <!-- Budget -->
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cash-coin"></i> Budget Allocation</div>
+            <div class="card-body">
+                {% if ward_allocation %}
+                    <div style="display:flex;justify-content:space-between;font-size:13px;color:#64748B;margin-bottom:6px;">
+                        <span>Budget Utilization</span>
+                        <span style="font-weight:600;color:#1E293B;">{{ utilization }}%</span>
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="genderChart"></canvas>
+                    <div class="progress" style="height:10px;margin-bottom:16px;">
+                        <div class="progress-bar {% if utilization >= 80 %}bg-danger{% elif utilization >= 60 %}bg-warning{% endif %}"
+                             id="budgetBarFill" role="progressbar" style="width:0%;" data-target="{{ utilization }}">
                         </div>
                     </div>
-                </div>
+                    <div class="budget-kv">
+                        <div class="bkv"><div class="bkv-label">Allocated</div><div class="bkv-value">KES {{ total_allocated|intcomma }}</div></div>
+                        <div class="bkv"><div class="bkv-label">Spent</div><div class="bkv-value">KES {{ total_spent|intcomma }}</div></div>
+                        <div class="bkv"><div class="bkv-label">Requested</div><div class="bkv-value">KES {{ total_requested|intcomma }}</div></div>
+                        <div class="bkv"><div class="bkv-label">Balance</div><div class="bkv-value" style="color:#27ae60;">KES {{ balance|intcomma }}</div></div>
+                    </div>
+                    <div class="chart-container" style="height:220px;margin-top:20px;margin-bottom:0;">
+                        <canvas id="budgetBarChart"></canvas>
+                    </div>
+                    <small style="color:#94A3B8;font-size:12px;display:block;margin-top:8px;">
+                        Beneficiaries: {{ ward_allocation.beneficiaries_count }}
+                    </small>
+                {% else %}
+                    <div class="alert"><i class="bi bi-exclamation-triangle"></i> No budget allocation for current fiscal year.</div>
+                {% endif %}
             </div>
         </div>
 
         <!-- Recent Applications -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="bi bi-list"></i> Recent Applications
-                    </div>
-                    <a href="{% url 'ward_admin_applications' %}" class="btn btn-sm btn-light">
-                        View All <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
+        <div class="card">
+            <div class="card-header" style="justify-content:space-between;">
+                <span><i class="bi bi-list"></i> Recent Applications</span>
+                <a href="{% url 'ward_admin_applications' %}" class="btn btn-sm btn-light">View All <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body" style="padding:0;">
                 <div class="table-responsive">
                     <table class="applicants-table">
                         <thead>
                             <tr>
-                                <th>Application #</th>
-                                <th>Applicant</th>
-                                <th>Institution</th>
-                                <th>Category</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>Action</th>
+                                <th>Application #</th><th>Applicant</th><th>Institution</th>
+                                <th>Category</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -697,58 +244,34 @@
                                 <td><strong>{{ app.application_number }}</strong></td>
                                 <td>
                                     {{ app.applicant.user.get_full_name }}<br>
-                                    <small class="text-muted">{{ app.applicant.id_number }}</small>
+                                    <small style="color:#94A3B8;">{{ app.applicant.id_number }}</small>
                                 </td>
                                 <td>{{ app.institution.name|truncatewords:3 }}</td>
-                                <td>
-                                    <span class="badge badge-info">
-                                        {{ app.bursary_category.name }}
-                                    </span>
-                                </td>
+                                <td><span class="badge badge-info">{{ app.bursary_category.name }}</span></td>
                                 <td>KES {{ app.amount_requested|intcomma }}</td>
                                 <td>
-                                    <span class="badge 
-                                        {% if app.status == 'submitted' %}badge-warning
-                                        {% elif app.status == 'approved' %}badge-success
-                                        {% elif app.status == 'rejected' %}badge-danger
-                                        {% elif app.status == 'under_review' %}badge-info
-                                        {% elif app.status == 'disbursed' %}badge-purple
-                                        {% else %}badge-secondary{% endif %}">
+                                    <span class="badge {% if app.status == 'submitted' %}badge-warning{% elif app.status == 'approved' %}badge-success{% elif app.status == 'rejected' %}badge-danger{% elif app.status == 'under_review' %}badge-info{% elif app.status == 'disbursed' %}badge-purple{% else %}badge-secondary{% endif %}">
                                         {{ app.get_status_display }}
                                     </span>
                                 </td>
-                                <td>{{ app.date_submitted|date:"d M Y" }}</td>
+                                <td>{{ app.date_submitted|date:"d M Y"|default:"—" }}</td>
                                 <td>
-                                    <div class="d-flex gap-1">
-                                        <a href="{% url 'ward_admin_application_detail' app.id %}" 
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                    <div style="display:flex;gap:6px;">
+                                        <a href="{% url 'ward_admin_application_detail' app.id %}" class="btn btn-sm btn-outline-primary" title="View"><i class="bi bi-eye"></i></a>
                                         {% if app.status == 'submitted' %}
-                                        <a href="{% url 'ward_admin_review_application' app.id %}" 
-                                           class="btn btn-sm btn-outline-success"
-                                           title="Review">
-                                            <i class="bi bi-check"></i>
-                                        </a>
+                                        <a href="{% url 'ward_admin_review_application' app.id %}" class="btn btn-sm btn-outline-success" title="Review"><i class="bi bi-check"></i></a>
                                         {% endif %}
                                     </div>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="8" class="text-center py-4">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">
-                                            <i class="bi bi-inbox"></i>
-                                        </div>
-                                        <h3 class="empty-title">No Applications Yet</h3>
-                                        <p class="empty-text">
-                                            There are no applications to display.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
+                            <tr><td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                                    <h3 class="empty-title">No Applications Yet</h3>
+                                    <p class="empty-text">There are no applications to display.</p>
+                                </div>
+                            </td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -756,186 +279,203 @@
             </div>
         </div>
 
-        <!-- Top Institutions and Quick Actions -->
-        <div class="row mt-4">
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-building"></i> Top Institutions
-                    </div>
-                    <div class="card-body">
-                        <div class="list-group">
-                            {% for inst in applications_by_institution %}
-                            <div class="list-group-item">
-                                {{ inst.institution__name }}
-                                <span class="badge badge-info">{{ inst.count }}</span>
-                            </div>
-                            {% empty %}
-                            <div class="text-muted text-center py-3">No data available</div>
-                            {% endfor %}
+        <!-- Top Institutions + Quick Actions -->
+        <div class="charts-row" style="margin-bottom:0;">
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header"><i class="bi bi-building"></i> Top Institutions</div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for inst in applications_by_institution %}
+                        <div class="list-group-item">
+                            {{ inst.institution__name }}
+                            <span class="badge badge-info">{{ inst.count }}</span>
                         </div>
+                        {% empty %}
+                        <div style="text-align:center;color:#94A3B8;padding:20px;font-size:14px;">No data available</div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Actions -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-lightning"></i> Quick Actions
-                    </div>
-                    <div class="card-body">
-                        <div class="list-group">
-                            <a href="{% url 'ward_admin_pending_review' %}" class="list-group-item">
-                                <i class="bi bi-clock text-warning"></i>
-                                Review Pending Applications
-                                <span class="badge badge-warning">{{ pending_review }}</span>
-                            </a>
-                            <a href="{% url 'ward_admin_applications' %}" class="list-group-item">
-                                <i class="bi bi-list text-primary"></i>
-                                View All Applications
-                            </a>
-                            <a href="{% url 'ward_admin_applicants' %}" class="list-group-item">
-                                <i class="bi bi-people text-info"></i>
-                                View Ward Applicants
-                            </a>
-                            <a href="{% url 'ward_admin_budget' %}" class="list-group-item">
-                                <i class="bi bi-cash-coin text-success"></i>
-                                View Budget Details
-                            </a>
-                            <a href="{% url 'ward_admin_reports' %}" class="list-group-item">
-                                <i class="bi bi-bar-chart text-secondary"></i>
-                                Generate Reports
-                            </a>
-                        </div>
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header"><i class="bi bi-lightning"></i> Quick Actions</div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'ward_admin_pending_review' %}" class="list-group-item">
+                            <span style="display:flex;align-items:center;gap:8px;"><i class="bi bi-clock" style="color:#f39c12;"></i> Review Pending Applications</span>
+                            <span class="badge badge-warning">{{ pending_review }}</span>
+                        </a>
+                        <a href="{% url 'ward_admin_applications' %}" class="list-group-item">
+                            <span style="display:flex;align-items:center;gap:8px;"><i class="bi bi-list" style="color:#3498db;"></i> View All Applications</span>
+                        </a>
+                        <a href="{% url 'ward_admin_applicants' %}" class="list-group-item">
+                            <span style="display:flex;align-items:center;gap:8px;"><i class="bi bi-people" style="color:#16a085;"></i> View Ward Applicants</span>
+                        </a>
+                        <a href="{% url 'ward_admin_budget' %}" class="list-group-item">
+                            <span style="display:flex;align-items:center;gap:8px;"><i class="bi bi-cash-coin" style="color:#27ae60;"></i> View Budget Details</span>
+                        </a>
+                        <a href="{% url 'ward_admin_reports' %}" class="list-group-item">
+                            <span style="display:flex;align-items:center;gap:8px;"><i class="bi bi-bar-chart" style="color:#95a5a6;"></i> Generate Reports</span>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+{# Inject serialised data from the view #}
 <script>
-// Status Chart
-const statusCtx = document.getElementById('statusChart').getContext('2d');
-new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Pending Review', 'Under Review', 'Approved', 'Rejected', 'Disbursed'],
-        datasets: [{
-            data: [
-                {{ pending_review }},
-                {{ under_review }},
-                {{ approved }},
-                {{ rejected }},
-                {{ disbursed }}
-            ],
-            backgroundColor: [
-                '#f39c12',
-                '#16a085',
-                '#27ae60',
-                '#e74c3c',
-                '#8e44ad'
-            ],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 20,
-                    usePointStyle: true
-                }
-            }
-        }
-    }
-});
+const TREND_LABELS    = {{ trend_labels_json|safe }};
+const TREND_DATA      = {{ trend_data_json|safe }};
+const STATUS_LABELS   = {{ status_labels_json|safe }};
+const STATUS_DATA     = {{ status_data_json|safe }};
+const CATEGORY_LABELS = {{ category_labels_json|safe }};
+const CATEGORY_DATA   = {{ category_data_json|safe }};
+const GENDER_LABELS   = {{ gender_labels_json|safe }};
+const GENDER_DATA     = {{ gender_data_json|safe }};
+const BUDGET_VALUES   = {{ budget_values_json|safe }};
+</script>
 
-// Category Chart
-const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-new Chart(categoryCtx, {
-    type: 'bar',
-    data: {
-        labels: [
-            {% for cat in applications_by_category %}
-            '{{ cat.bursary_category__name }}',
-            {% endfor %}
-        ],
-        datasets: [{
-            label: 'Applications',
-            data: [
-                {% for cat in applications_by_category %}
-                {{ cat.count }},
-                {% endfor %}
-            ],
-            backgroundColor: '#27ae60',
-            borderRadius: 4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: '#F1F5F9'
-                }
-            },
-            x: {
-                grid: {
-                    display: false
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                display: false
-            }
-        }
-    }
-});
+<script>
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#64748B';
 
-// Gender Chart
-const genderCtx = document.getElementById('genderChart').getContext('2d');
-new Chart(genderCtx, {
-    type: 'pie',
-    data: {
-        labels: [
-            {% for g in gender_stats %}
-            '{% if g.applicant__gender == "M" %}Male{% else %}Female{% endif %}',
-            {% endfor %}
-        ],
-        datasets: [{
-            data: [
-                {% for g in gender_stats %}
-                {{ g.count }},
-                {% endfor %}
-            ],
-            backgroundColor: ['#3498db', '#e74c3c'],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 20,
-                    usePointStyle: true
-                }
-            }
-        }
-    }
-});
+const TT = {
+    backgroundColor: '#1E293B',
+    titleColor:      '#F1F5F9',
+    bodyColor:       '#94A3B8',
+    borderColor:     '#334155',
+    borderWidth:     1,
+    padding:         10,
+};
+
+function showNoData(wrapperId) {
+    const el = document.getElementById(wrapperId);
+    if (el) el.innerHTML = '<div class="chart-no-data"><i class="bi bi-bar-chart-line"></i><span>No data available yet</span></div>';
+}
+
+/* Sparklines */
+function makeSparkline(id, data, color) {
+    const c = document.getElementById(id);
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0,0,0,44);
+    g.addColorStop(0, color+'55'); g.addColorStop(1, color+'00');
+    new Chart(c, {
+        type:'line',
+        data:{ labels:data.map((_,i)=>i), datasets:[{ data, borderColor:color, borderWidth:2, fill:true, backgroundColor:g, tension:.45, pointRadius:0 }] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{enabled:false} }, scales:{ x:{display:false}, y:{display:false} }, animation:{ duration:1000, easing:'easeInOutQuart' } }
+    });
+}
+
+/* Build sparkline waves from real trend data or gentle ramp */
+function sparkWave(peak) {
+    if (TREND_DATA.length >= 4) return TREND_DATA.slice(-8);
+    const p = peak || 5;
+    return [p*.3,p*.5,p*.4,p*.7,p*.6,p*.85,p*.8,p];
+}
+
+makeSparkline('sparkTotal',    sparkWave({{ total_applications }}), '#3498db');
+makeSparkline('sparkPending',  sparkWave({{ pending_review }}),     '#f39c12');
+makeSparkline('sparkApproved', sparkWave({{ approved }}),           '#27ae60');
+makeSparkline('sparkBalance',  sparkWave(4),                        '#16a085');
+
+/* 1. Fading area — Monthly Trend */
+(function(){
+    const c = document.getElementById('trendChart');
+    if (!c) return;
+    if (!TREND_DATA.length) { showNoData('trendWrap'); return; }
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0,0,0,300);
+    g.addColorStop(0,  'rgba(52,152,219,.30)');
+    g.addColorStop(.65,'rgba(52,152,219,.05)');
+    g.addColorStop(1,  'rgba(52,152,219,0)');
+    new Chart(c, {
+        type:'line',
+        data:{ labels:TREND_LABELS, datasets:[{ label:'Applications', data:TREND_DATA, borderColor:'#3498db', borderWidth:2.5, fill:true, backgroundColor:g, tension:.45, pointBackgroundColor:'#3498db', pointBorderColor:'#fff', pointBorderWidth:2, pointRadius:5, pointHoverRadius:7 }] },
+        options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+            plugins:{ legend:{display:false}, tooltip:{...TT, callbacks:{label:c=>' '+c.parsed.y+' application'+(c.parsed.y!==1?'s':'')}} },
+            scales:{ x:{grid:{color:'#F1F5F9'}}, y:{beginAtZero:true, grid:{color:'#F1F5F9'}, ticks:{stepSize:1,precision:0}} },
+            animation:{duration:1200,easing:'easeInOutQuart'} }
+    });
+})();
+
+/* 2. Donut — Status */
+(function(){
+    const c = document.getElementById('statusChart');
+    if (!c) return;
+    if (!STATUS_DATA.reduce((a,b)=>a+b,0)) { showNoData('statusWrap'); return; }
+    new Chart(c, {
+        type:'doughnut',
+        data:{ labels:STATUS_LABELS, datasets:[{ data:STATUS_DATA, backgroundColor:['#f39c12','#16a085','#27ae60','#e74c3c','#8e44ad'], borderColor:'#fff', borderWidth:3, hoverOffset:8 }] },
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+            plugins:{ legend:{position:'bottom',labels:{padding:16,usePointStyle:true}}, tooltip:{...TT} },
+            animation:{animateRotate:true,duration:1200} }
+    });
+})();
+
+/* 3. Horizontal bar — Category */
+(function(){
+    const c = document.getElementById('categoryChart');
+    if (!c) return;
+    if (!CATEGORY_LABELS.length) { showNoData('categoryWrap'); return; }
+    const pal = ['#3498db','#27ae60','#f39c12','#e74c3c','#8e44ad','#16a085'];
+    new Chart(c, {
+        type:'bar',
+        data:{ labels:CATEGORY_LABELS, datasets:[{ label:'Applications', data:CATEGORY_DATA,
+            backgroundColor:CATEGORY_LABELS.map((_,i)=>pal[i%pal.length]+'cc'),
+            borderColor:CATEGORY_LABELS.map((_,i)=>pal[i%pal.length]),
+            borderWidth:1.5, borderRadius:4, borderSkipped:false }] },
+        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{...TT, callbacks:{label:c=>' '+c.parsed.x+' application'+(c.parsed.x!==1?'s':'')}} },
+            scales:{ x:{grid:{color:'#F1F5F9'},beginAtZero:true,ticks:{stepSize:1,precision:0}}, y:{grid:{display:false}} },
+            animation:{duration:1200,easing:'easeInOutQuart'} }
+    });
+})();
+
+/* 4. Pie — Gender */
+(function(){
+    const c = document.getElementById('genderChart');
+    if (!c) return;
+    if (!GENDER_DATA.reduce((a,b)=>a+b,0)) { showNoData('genderWrap'); return; }
+    new Chart(c, {
+        type:'pie',
+        data:{ labels:GENDER_LABELS, datasets:[{ data:GENDER_DATA, backgroundColor:['#3498db','#e74c3c'], borderColor:'#fff', borderWidth:3, hoverOffset:8 }] },
+        options:{ responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{position:'bottom',labels:{padding:16,usePointStyle:true}}, tooltip:{...TT} },
+            animation:{animateRotate:true,duration:1200} }
+    });
+})();
+
+/* 5. Grouped bar — Budget */
+(function(){
+    const c = document.getElementById('budgetBarChart');
+    if (!c) return;
+    new Chart(c, {
+        type:'bar',
+        data:{ labels:['Allocated','Spent','Requested','Balance'],
+            datasets:[{ data:BUDGET_VALUES,
+                backgroundColor:['rgba(52,152,219,.7)','rgba(231,76,60,.7)','rgba(243,156,18,.7)','rgba(39,174,96,.7)'],
+                borderColor:['#3498db','#e74c3c','#f39c12','#27ae60'],
+                borderWidth:1.5, borderRadius:4 }] },
+        options:{ responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{...TT, callbacks:{label:c=>' KES '+c.parsed.y.toLocaleString()}} },
+            scales:{ x:{grid:{display:false}}, y:{grid:{color:'#F1F5F9'},beginAtZero:true,
+                ticks:{callback:v=>'KES '+(v>=1000?(v/1000).toFixed(0)+'K':v)}} },
+            animation:{duration:1200,easing:'easeInOutQuart'} }
+    });
+})();
+
+/* Animate budget progress bar */
+(function(){
+    const f = document.getElementById('budgetBarFill');
+    if (f) setTimeout(()=>{ f.style.width=(f.dataset.target||'0')+'%'; }, 400);
+})();
 </script>
 {% endblock %}
