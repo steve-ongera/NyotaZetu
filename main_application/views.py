@@ -24257,9 +24257,6 @@ def reviewer_dashboard(request):
 @login_required
 @reviewer_required
 def pending_applications(request):
-    """
-    List of applications pending review in reviewer's ward
-    """
     user = request.user
     assigned_ward = user.assigned_ward
     
@@ -24267,16 +24264,13 @@ def pending_applications(request):
         messages.error(request, "You are not assigned to any ward.")
         return redirect('reviewer_dashboard')
     
-    # Get current fiscal year
     current_fiscal_year = FiscalYear.objects.filter(is_active=True).first()
     
-    # Base query
     applications = Application.objects.filter(
         applicant__ward=assigned_ward,
         fiscal_year=current_fiscal_year,
         status__in=['submitted', 'under_review']
     ).exclude(
-        # Exclude applications already reviewed by this reviewer
         reviews__reviewer=user,
         reviews__review_level='ward'
     ).select_related(
@@ -24292,6 +24286,17 @@ def pending_applications(request):
     institution_filter = request.GET.get('institution')
     status_filter = request.GET.get('status')
     sort_by = request.GET.get('sort', '-date_submitted')
+    search_query = request.GET.get('search', '').strip()  # NEW
+    
+    if search_query:  # NEW
+        applications = applications.filter(
+            Q(applicant__user__first_name__icontains=search_query) |
+            Q(applicant__user__last_name__icontains=search_query) |
+            Q(applicant__user__email__icontains=search_query) |
+            Q(application_number__icontains=search_query) |
+            Q(institution__name__icontains=search_query) |
+            Q(admission_number__icontains=search_query)
+        )
     
     if category_filter:
         applications = applications.filter(bursary_category_id=category_filter)
@@ -24302,21 +24307,17 @@ def pending_applications(request):
     if status_filter:
         applications = applications.filter(status=status_filter)
     
-    # Sorting
     applications = applications.order_by(sort_by)
     
-    # Pagination
     paginator = Paginator(applications, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get filter options
     categories = BursaryCategory.objects.filter(
         fiscal_year=current_fiscal_year,
         is_active=True
     )
     
-    # FIXED: Use 'application' not 'applications'
     institutions = Institution.objects.filter(
         is_active=True,
         application__applicant__ward=assigned_ward
@@ -24332,6 +24333,7 @@ def pending_applications(request):
         'selected_institution': institution_filter,
         'selected_status': status_filter,
         'sort_by': sort_by,
+        'search_query': search_query,  # NEW
     }
     
     return render(request, 'reviewer/pending_applications.html', context)
