@@ -75,89 +75,6 @@
         margin: 0;
     }
 
-    .export-btn {
-        padding: 10px 20px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .export-btn:hover {
-        background: #2980b9;
-        transform: translateY(-1px);
-        color: white;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    .stat-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 20px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: currentColor;
-        opacity: 0.3;
-    }
-
-    .stat-card.stat-primary { color: #3498db; }
-    .stat-card.stat-warning { color: #f39c12; }
-    .stat-card.stat-info { color: #16a085; }
-    .stat-card.stat-success { color: #27ae60; }
-    .stat-card.stat-danger { color: #e74c3c; }
-    .stat-card.stat-secondary { color: #95a5a6; }
-
-    .stat-icon {
-        font-size: 24px;
-        opacity: 0.2;
-        position: absolute;
-        right: 15px;
-        top: 15px;
-    }
-
-    .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #1E293B;
-        margin-bottom: 4px;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        color: #64748B;
-        font-weight: 500;
-    }
-
     .filter-section {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -170,8 +87,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: 0;
         cursor: pointer;
+        user-select: none;
     }
 
     .filter-title {
@@ -181,6 +99,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        margin: 0;
     }
 
     .filter-toggle {
@@ -192,7 +111,64 @@
         transform: rotate(180deg);
     }
 
-    .filter-content {
+    .filter-body {
+        margin-top: 20px;
+    }
+
+    .search-wrapper {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .search-wrapper .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94A3B8;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .search-wrapper .search-input {
+        width: 100%;
+        padding: 10px 38px 10px 36px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    .search-wrapper .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .search-wrapper .search-clear {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #94A3B8;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        transition: color 0.2s;
+    }
+
+    .search-wrapper .search-clear:hover {
+        color: #64748B;
+    }
+
+    .filter-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 16px;
@@ -231,6 +207,7 @@
         display: flex;
         gap: 10px;
         margin-top: 16px;
+        align-items: center;
     }
 
     .filter-btn {
@@ -243,6 +220,9 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .filter-btn:hover {
@@ -261,12 +241,52 @@
         cursor: pointer;
         transition: all 0.3s ease;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .clear-btn:hover {
         background: #F8FAFC;
         border-color: #CBD5E1;
+        color: #475569;
+    }
+
+    /* Active filter pills */
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .filter-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        color: #1D4ED8;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+
+    .filter-pill button {
+        background: none;
+        border: none;
+        color: #1D4ED8;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 0;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-pill button:hover {
+        color: #1E40AF;
     }
 
     .table-header {
@@ -287,13 +307,21 @@
         gap: 8px;
     }
 
-    .per-page-select {
-        padding: 8px 12px;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
+    .result-count {
         font-size: 13px;
-        background: white;
         color: #64748B;
+        background: #F1F5F9;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    /* Search highlight */
+    mark {
+        background: #FEF08A;
+        color: #1E293B;
+        padding: 0 2px;
+        border-radius: 2px;
     }
 
     .applications-table {
@@ -320,6 +348,7 @@
         border-bottom: 1px solid #F1F5F9;
         font-size: 14px;
         color: #334155;
+        vertical-align: middle;
     }
 
     .applications-table tbody tr {
@@ -331,15 +360,17 @@
     }
 
     .app-number {
-        font-weight: 600;
-        color: #1E293B;
+        font-weight: 700;
+        color: #3498db;
+        font-family: monospace;
+        font-size: 13px;
     }
 
     .applicant-name {
         font-weight: 500;
         color: #1E293B;
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .applicant-email {
@@ -351,10 +382,10 @@
         font-weight: 500;
         color: #1E293B;
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
-    .institution-county {
+    .institution-type {
         font-size: 13px;
         color: #64748B;
     }
@@ -362,23 +393,19 @@
     .amount-requested {
         font-weight: 600;
         color: #1E293B;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .amount-allocated {
-        font-size: 13px;
-        color: #27ae60;
     }
 
     .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 10px;
         border-radius: 6px;
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
+        white-space: nowrap;
     }
 
     .status-submitted {
@@ -391,26 +418,11 @@
         color: #1E40AF;
     }
 
-    .status-approved {
-        background: #D1FAE5;
-        color: #065F46;
-    }
-
-    .status-rejected {
-        background: #FEE2E2;
-        color: #991B1B;
-    }
-
-    .status-disbursed {
-        background: #E0E7FF;
-        color: #3730A3;
-    }
-
     .date-main {
         font-weight: 500;
         color: #1E293B;
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .date-time {
@@ -435,6 +447,7 @@
         text-decoration: none;
         border-radius: 6px;
         transition: all 0.2s ease;
+        font-size: 14px;
     }
 
     .action-btn:hover {
@@ -444,13 +457,19 @@
         transform: translateY(-1px);
     }
 
+    .action-btn.review-btn:hover {
+        border-color: #27ae60;
+        color: #27ae60;
+        background: rgba(39, 174, 96, 0.05);
+    }
+
     .empty-state {
         text-align: center;
         padding: 60px 20px;
     }
 
     .empty-icon {
-        font-size: 48px;
+        font-size: 52px;
         color: #CBD5E1;
         margin-bottom: 16px;
     }
@@ -531,76 +550,8 @@
         pointer-events: none;
     }
 
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal.show {
-        display: flex;
-    }
-
-    .modal-dialog {
-        background: white;
-        border-radius: 8px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    .modal-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: #64748B;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-    }
-
-    .modal-body {
-        padding: 24px;
-    }
-
-    .modal-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-    }
-
     @media (max-width: 768px) {
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .filter-content {
+        .filter-grid {
             grid-template-columns: 1fr;
         }
 
@@ -621,12 +572,19 @@
         .action-buttons {
             flex-direction: column;
         }
+
+        .table-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -640,6 +598,7 @@
     </nav>
 
     <div class="section-container">
+
         <!-- Page Header -->
         <div class="page-header">
             <div>
@@ -648,25 +607,54 @@
                     Pending Applications
                 </h1>
                 <p class="page-subtitle">
-                    {{ assigned_ward.name }} Ward - {{ current_fiscal_year.name }}
+                    <i class="bi bi-geo-alt" style="color:#3498db;"></i>
+                    {{ assigned_ward.name }} Ward
+                    {% if current_fiscal_year %}
+                        &bull; {{ current_fiscal_year.name }}
+                    {% endif %}
                 </p>
             </div>
-            <!-- No export button needed for this page -->
         </div>
 
-        <!-- Filters -->
+        <!-- ══ FILTER & SEARCH SECTION ══ -->
         <div class="filter-section">
             <div class="filter-header" onclick="toggleFilters()">
                 <h6 class="filter-title">
                     <i class="bi bi-funnel"></i>
-                    Filters
+                    Filters &amp; Search
+                    {% if active_filter_count %}
+                        <span style="background:#3498db;color:white;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;">
+                            {{ active_filter_count }} active
+                        </span>
+                    {% endif %}
                 </h6>
                 <i class="bi bi-chevron-down filter-toggle" id="filterToggle"></i>
             </div>
-            
-            <div class="filter-content" id="filtersContent" style="display: none;">
+
+            <div class="filter-body" id="filtersContent" style="display:none;">
                 <form method="get" id="filterForm">
-                    <div class="filter-content">
+
+                    <!-- Search -->
+                    <div class="search-wrapper">
+                        <i class="bi bi-search search-icon"></i>
+                        <input
+                            type="text"
+                            class="search-input"
+                            id="searchInput"
+                            name="search"
+                            value="{{ search_query }}"
+                            placeholder="Search by name, application number, email, institution, admission no…"
+                            autocomplete="off"
+                        >
+                        {% if search_query %}
+                        <button type="button" class="search-clear" onclick="clearSearch()" title="Clear search">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Dropdowns -->
+                    <div class="filter-grid">
                         <div class="filter-group">
                             <label class="filter-label" for="category">
                                 <i class="bi bi-tag"></i> Category
@@ -674,13 +662,14 @@
                             <select class="filter-select" id="category" name="category">
                                 <option value="">All Categories</option>
                                 {% for category in categories %}
-                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ category.id }}"
+                                    {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
                                     {{ category.name }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <div class="filter-group">
                             <label class="filter-label" for="institution">
                                 <i class="bi bi-building"></i> Institution
@@ -688,68 +677,121 @@
                             <select class="filter-select" id="institution" name="institution">
                                 <option value="">All Institutions</option>
                                 {% for institution in institutions %}
-                                <option value="{{ institution.id }}" {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ institution.id }}"
+                                    {% if selected_institution == institution.id|stringformat:"s" %}selected{% endif %}>
                                     {{ institution.name }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <div class="filter-group">
                             <label class="filter-label" for="status">
                                 <i class="bi bi-flag"></i> Status
                             </label>
                             <select class="filter-select" id="status" name="status">
                                 <option value="">All Statuses</option>
-                                <option value="submitted" {% if selected_status == 'submitted' %}selected{% endif %}>Submitted</option>
-                                <option value="under_review" {% if selected_status == 'under_review' %}selected{% endif %}>Under Review</option>
+                                <option value="submitted"
+                                    {% if selected_status == 'submitted' %}selected{% endif %}>
+                                    Submitted
+                                </option>
+                                <option value="under_review"
+                                    {% if selected_status == 'under_review' %}selected{% endif %}>
+                                    Under Review
+                                </option>
                             </select>
                         </div>
-                        
+
                         <div class="filter-group">
                             <label class="filter-label" for="sort">
                                 <i class="bi bi-sort-down"></i> Sort By
                             </label>
                             <select class="filter-select" id="sort" name="sort">
-                                <option value="-date_submitted" {% if sort_by == '-date_submitted' %}selected{% endif %}>Newest First</option>
-                                <option value="date_submitted" {% if sort_by == 'date_submitted' %}selected{% endif %}>Oldest First</option>
-                                <option value="-amount_requested" {% if sort_by == '-amount_requested' %}selected{% endif %}>Highest Amount</option>
-                                <option value="amount_requested" {% if sort_by == 'amount_requested' %}selected{% endif %}>Lowest Amount</option>
-                                <option value="applicant__user__last_name" {% if sort_by == 'applicant__user__last_name' %}selected{% endif %}>Name A-Z</option>
+                                <option value="-date_submitted"
+                                    {% if sort_by == '-date_submitted' %}selected{% endif %}>Newest First</option>
+                                <option value="date_submitted"
+                                    {% if sort_by == 'date_submitted' %}selected{% endif %}>Oldest First</option>
+                                <option value="-amount_requested"
+                                    {% if sort_by == '-amount_requested' %}selected{% endif %}>Highest Amount</option>
+                                <option value="amount_requested"
+                                    {% if sort_by == 'amount_requested' %}selected{% endif %}>Lowest Amount</option>
+                                <option value="applicant__user__last_name"
+                                    {% if sort_by == 'applicant__user__last_name' %}selected{% endif %}>Name A–Z</option>
                             </select>
                         </div>
                     </div>
-                    
+
+                    <!-- Actions -->
                     <div class="filter-actions">
                         <button type="submit" class="filter-btn">
-                            <i class="bi bi-funnel"></i> Apply Filters
+                            <i class="bi bi-funnel"></i> Apply
                         </button>
                         <a href="{% url 'pending_applications' %}" class="clear-btn">
-                            <i class="bi bi-x-circle"></i> Clear
+                            <i class="bi bi-x-circle"></i> Clear All
                         </a>
                     </div>
                 </form>
+
+                <!-- Active filter pills -->
+                {% if search_query or selected_category or selected_institution or selected_status %}
+                <div class="active-filters">
+                    {% if search_query %}
+                    <span class="filter-pill">
+                        <i class="bi bi-search" style="font-size:11px;"></i>
+                        &ldquo;{{ search_query }}&rdquo;
+                        <button onclick="removePill('search')" title="Remove"><i class="bi bi-x"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if selected_category %}
+                    <span class="filter-pill">
+                        <i class="bi bi-tag" style="font-size:11px;"></i>
+                        Category
+                        <button onclick="removePill('category')" title="Remove"><i class="bi bi-x"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if selected_institution %}
+                    <span class="filter-pill">
+                        <i class="bi bi-building" style="font-size:11px;"></i>
+                        Institution
+                        <button onclick="removePill('institution')" title="Remove"><i class="bi bi-x"></i></button>
+                    </span>
+                    {% endif %}
+                    {% if selected_status %}
+                    <span class="filter-pill">
+                        <i class="bi bi-flag" style="font-size:11px;"></i>
+                        {{ selected_status|title }}
+                        <button onclick="removePill('status')" title="Remove"><i class="bi bi-x"></i></button>
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
+        <!-- ══ END FILTER SECTION ══ -->
 
-        <!-- Applications Table -->
+        <!-- Table header -->
         <div class="table-header">
             <h6 class="table-title">
                 <i class="bi bi-table"></i>
-                Applications ({{ page_obj.paginator.count }})
+                Applications
             </h6>
-            <!-- No per-page selector for this page -->
+            <span class="result-count">
+                {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}
+                {% if search_query %}for &ldquo;{{ search_query }}&rdquo;{% endif %}
+            </span>
         </div>
 
+        <!-- Table -->
         <div class="table-responsive">
             <table class="applications-table">
                 <thead>
                     <tr>
-                        <th>Application #</th>
+                        <th>#</th>
+                        <th>App No.</th>
                         <th>Applicant</th>
                         <th>Institution</th>
                         <th>Category</th>
-                        <th>Amount</th>
+                        <th>Amount (KSh)</th>
                         <th>Status</th>
                         <th>Date Submitted</th>
                         <th>Actions</th>
@@ -758,40 +800,69 @@
                 <tbody>
                     {% for application in page_obj %}
                     <tr>
+                        <td style="color:#94A3B8;font-size:13px;">
+                            {{ page_obj.start_index|add:forloop.counter0 }}
+                        </td>
                         <td>
                             <span class="app-number">{{ application.application_number }}</span>
                         </td>
                         <td>
-                            <span class="applicant-name">{{ application.applicant.user.get_full_name }}</span>
-                            <span class="applicant-email">{{ application.applicant.user.email }}</span>
+                            <span class="applicant-name">
+                                {{ application.applicant.user.get_full_name }}
+                            </span>
+                            <span class="applicant-email">
+                                {{ application.applicant.user.email|default:"—" }}
+                            </span>
                         </td>
                         <td>
                             <span class="institution-name">{{ application.institution.name }}</span>
-                            <span class="institution-county">{{ application.institution.get_institution_type_display }}</span>
+                            <span class="institution-type">
+                                {{ application.institution.get_institution_type_display }}
+                            </span>
                         </td>
                         <td>
-                            <span class="applicant-email">{{ application.bursary_category.name }}</span>
+                            <span style="font-size:13px;color:#475569;">
+                                {{ application.bursary_category.name }}
+                            </span>
                         </td>
                         <td>
-                            <span class="amount-requested">KSh {{ application.amount_requested|floatformat:0|intcomma }}</span>
+                            <span class="amount-requested">
+                                {{ application.amount_requested|floatformat:0|intcomma }}
+                            </span>
                         </td>
                         <td>
                             {% if application.status == 'submitted' %}
-                                <span class="status-badge status-submitted">Submitted</span>
+                                <span class="status-badge status-submitted">
+                                    <i class="bi bi-send" style="font-size:10px;"></i> Submitted
+                                </span>
                             {% elif application.status == 'under_review' %}
-                                <span class="status-badge status-under-review">Under Review</span>
+                                <span class="status-badge status-under-review">
+                                    <i class="bi bi-hourglass-split" style="font-size:10px;"></i> Under Review
+                                </span>
+                            {% else %}
+                                <span class="status-badge" style="background:#F1F5F9;color:#475569;">
+                                    {{ application.get_status_display }}
+                                </span>
                             {% endif %}
                         </td>
                         <td>
-                            <span class="date-main">{{ application.date_submitted|date:"M d, Y" }}</span>
-                            <span class="date-time">{{ application.date_submitted|date:"g:i A" }}</span>
+                            {% if application.date_submitted %}
+                                <span class="date-main">{{ application.date_submitted|date:"M d, Y" }}</span>
+                                <span class="date-time">{{ application.date_submitted|date:"g:i A" }}</span>
+                            {% else %}
+                                <span style="color:#94A3B8;font-size:13px;">—</span>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="action-buttons">
-                                <a href="{% url 'reviewer_application_detail' application.id %}" class="action-btn" title="View Details">
+                                <a href="{% url 'reviewer_application_detail' application.id %}"
+                                   class="action-btn"
+                                   title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'submit_review' application.id %}" class="action-btn" title="Review Application">
+                                <a href="{% url 'submit_review' application.id %}"
+                                   class="action-btn review-btn"
+                                   title="Review Application">
                                     <i class="bi bi-clipboard-check"></i>
                                 </a>
                             </div>
@@ -799,18 +870,37 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="empty-state">
                                 <div class="empty-icon">
-                                    <i class="bi bi-inbox"></i>
+                                    {% if search_query or selected_category or selected_institution or selected_status %}
+                                        <i class="bi bi-search"></i>
+                                    {% else %}
+                                        <i class="bi bi-inbox"></i>
+                                    {% endif %}
                                 </div>
-                                <h3 class="empty-title">No Pending Applications</h3>
+                                <h3 class="empty-title">
+                                    {% if search_query or selected_category or selected_institution or selected_status %}
+                                        No matching applications found
+                                    {% else %}
+                                        No Pending Applications
+                                    {% endif %}
+                                </h3>
                                 <p class="empty-text">
-                                    All applications have been reviewed.
+                                    {% if search_query %}
+                                        No applications match your search for &ldquo;<strong>{{ search_query }}</strong>&rdquo;.
+                                        Try a different term or clear your filters.
+                                    {% elif selected_category or selected_institution or selected_status %}
+                                        No applications match the selected filters.
+                                    {% else %}
+                                        All applications in your ward have been reviewed.
+                                    {% endif %}
                                 </p>
+                                {% if search_query or selected_category or selected_institution or selected_status %}
                                 <a href="{% url 'pending_applications' %}" class="clear-btn">
-                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                    <i class="bi bi-x-circle"></i> Clear All Filters
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -823,87 +913,128 @@
         {% if page_obj.has_other_pages %}
         <div class="pagination-container">
             <div class="pagination-info">
-                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                of {{ page_obj.paginator.count }} entr{{ page_obj.paginator.count|pluralize:"y,ies" }}
             </div>
-            
-            <nav>
+
+            <nav aria-label="Page navigation">
                 <ul class="pagination">
                     {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                    </li>
                     {% endif %}
 
                     {% for num in page_obj.paginator.page_range %}
                         {% if page_obj.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                            </li>
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ num }}
+                            </a>
+                        </li>
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                    </li>
                     {% endif %}
                 </ul>
             </nav>
         </div>
         {% endif %}
-    </div>
-</div>
+
+    </div><!-- /section-container -->
+</div><!-- /container-fluid -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-expand filters if any filter is active
-        const hasActiveFilters = "{{ selected_category }}" !== "" || 
-                                "{{ selected_institution }}" !== "" || 
-                                "{{ selected_status }}" !== "" ||
-                                "{{ sort_by }}" !== "-date_submitted";
-        
+    // ── Auto-expand filters if any are active ──────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        const hasActiveFilters =
+            "{{ search_query|escapejs }}"       !== "" ||
+            "{{ selected_category|escapejs }}"  !== "" ||
+            "{{ selected_institution|escapejs }}" !== "" ||
+            "{{ selected_status|escapejs }}"    !== "" ||
+            "{{ sort_by|escapejs }}"            !== "-date_submitted";
+
         if (hasActiveFilters) {
-            document.getElementById('filtersContent').style.display = 'block';
-            document.getElementById('filterToggle').classList.add('rotated');
+            openFilters();
         }
+
+        // Focus search input if it has a value
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value) {
+            searchInput.focus();
+            // Move cursor to end
+            const len = searchInput.value.length;
+            searchInput.setSelectionRange(len, len);
+        }
+
+        // Submit form on Enter in search box
+        searchInput && searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('filterForm').submit();
+            }
+        });
     });
 
-    // Toggle filters visibility
+    // ── Toggle filter panel ────────────────────────────────────
+    function openFilters() {
+        document.getElementById('filtersContent').style.display = 'block';
+        document.getElementById('filterToggle').classList.add('rotated');
+    }
+
     function toggleFilters() {
         const content = document.getElementById('filtersContent');
-        const toggle = document.getElementById('filterToggle');
-        
+        const toggle  = document.getElementById('filterToggle');
+
         if (content.style.display === 'none' || content.style.display === '') {
-            content.style.display = 'block';
-            toggle.classList.add('rotated');
+            openFilters();
         } else {
             content.style.display = 'none';
             toggle.classList.remove('rotated');
         }
     }
 
-    // Close modal functions (kept for consistency even if not used)
-    function closeModal() {
-        document.getElementById('exportModal')?.classList.remove('show');
+    // ── Clear just the search field ────────────────────────────
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterForm').submit();
     }
 
-    // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                modal.classList.remove('show');
-            });
+    // ── Remove a single filter pill ────────────────────────────
+    function removePill(fieldName) {
+        const form = document.getElementById('filterForm');
+        const field = form.querySelector('[name="' + fieldName + '"]');
+        if (field) {
+            field.value = '';
         }
-    });
+        form.submit();
+    }
 </script>
 {% endblock %}
