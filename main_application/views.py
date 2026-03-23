@@ -203,7 +203,7 @@ def redirect_to_dashboard(user):
     Redirect user to their appropriate dashboard based on user type
     """
     dashboard_map = {
-        'admin': 'admin_dashboard',
+        'admin': 'county_admin_dashboard',
         'reviewer': 'reviewer_dashboard',
         'finance': 'finance_dashboard',
         'county_admin': 'county_admin_dashboard',
